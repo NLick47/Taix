@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+					xmlns:system="clr-namespace:System;assembly=netstandard"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	
+	<system:String x:Key="SideOverview">overview</system:String>
+	<system:String x:Key="SideStatistics">statistics</system:String>
+	<system:String x:Key="SideDetails">details</system:String>
+	<system:String x:Key="SideSort">sort</system:String>
+</ResourceDictionary>

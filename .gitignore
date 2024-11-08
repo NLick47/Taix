@@ -1,0 +1,59 @@
+# Visual Studio
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+
+# Build结果
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# 包管理
+*.nupkg
+*.snupkg
+packages/
+*.exe
+*.dll
+
+# 应用程序数据
+*.cache
+*.mdb
+*.pdb
+*.dbmdl
+*.dbproj
+
+# ASP.NET Core
+**/wwwroot/
+**/appsettings.Development.json
+**/appsettings.Staging.json
+**/appsettings.Production.json
+
+# Rider
+.idea/
+
+# JetBrains
+*.DotSettings
+
+# NCrunch
+_ncrunch_temp_/
+.nCrunchSolution.xml
+.nCrunchProject.xml
+
+# Visual Studio Code
+.vscode/
+
+# 文件系统
+*.bak
+*.log
+*.tmp
+*.temp
+*.swp
+
+# 操作系统
+Thumbs.db
+.DS_Store
