@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+<ui:DefaultWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:UI.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,11 +6,12 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="UI.Views.MainWindow"
 		xmlns:base="clr-namespace:UI.Controls.Base"
+		 xmlns:ui="clr-namespace:UI.Controls.Window"
         x:DataType="vm:MainViewModel"
-        Icon="/Resources/Icons/tai32.ico"
-		Height="585" Width="815" MinHeight="585" MinWidth="814"
-        Title="Taix">
-	 
+        IconSource="/Resources/Icons/tai32.ico"
 
-</Window>
+		Height="553" Width="815" MinHeight="553" MinWidth="814"
+        Title="Taix">
+	
+</ui:DefaultWindow>
 

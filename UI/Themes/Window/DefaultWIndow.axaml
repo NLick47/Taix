@@ -1,0 +1,99 @@
+<Styles xmlns="https://github.com/avaloniaui"
+		xmlns:button="clr-namespace:UI.Controls.Button"
+		xmlns:controls="clr-namespace:UI.Controls.Window"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+
+	<Style Selector="controls|DefaultWindow">
+		<Setter Property="ExtendClientAreaTitleBarHeightHint" Value="-1"/>
+		<Setter Property="ExtendClientAreaChromeHints" Value="NoChrome"/>
+		<Setter Property="ExtendClientAreaToDecorationsHint" Value="True"/>
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
+		<Setter Property="UseLayoutRounding" Value="True" />
+
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border x:Name="WindowBorder" >
+					<Border
+						BorderThickness="1"
+							BorderBrush="{DynamicResource WindowBorderBrush}"
+							Background="{DynamicResource WindowBackground}">
+						<Grid x:Name="WindowContent">
+							<Grid
+								   x:Name="TitleBar"
+								   Panel.ZIndex="999"
+								   Height="{DynamicResource WindowTitleBarHeight}"
+								   VerticalAlignment="Top">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"></ColumnDefinition>
+									<ColumnDefinition Width="*"></ColumnDefinition>
+								</Grid.ColumnDefinitions>
+
+								<Grid Grid.Column="0"
+									  Panel.ZIndex="3">
+									<StackPanel Orientation="Horizontal" Margin="15,0,0,0"
+												VerticalAlignment="Center"
+												HorizontalAlignment="Center">
+										<button:IconButton Width="0"
+														   VerticalAlignment="Center"
+														   ToolTip.Tip="{DynamicResource Back}"
+														   FontSize="10"
+														   x:Name="BackBtn"
+														   Icon="Back" />
+
+										<Image Source="{TemplateBinding IconSource}" VerticalAlignment="Center" Stretch="Uniform" Width="18"/>
+										<TextBlock VerticalAlignment="Center" Text="{TemplateBinding Title}" IsEnabled="{TemplateBinding IsActive}" Foreground="{DynamicResource DefaultTextBrush}" Margin="15,0,0,0"/>
+									</StackPanel>
+
+
+								</Grid>
+								<Grid Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
+										
+									  Panel.ZIndex="3">
+									<StackPanel Orientation="Horizontal">
+										<button:IconButton
+											ToolTip.Tip="{DynamicResource Minimization}"
+											Width="46"
+											Height="32"
+											FontSize="10"
+											Icon="ChromeMinimize"
+											
+											IsVisible="True"/>
+										<button:IconButton
+											x:Name="MaximizeButton"
+											ToolTip.Tip="{DynamicResource Maximize}"
+											Width="46"
+											Height="32"
+											FontSize="10"
+											Icon="ChromeMaximize"
+											IsVisible="True"/>
+										<button:IconButton
+											x:Name="RestoreButton"
+											ToolTip.Tip="{DynamicResource Restore}"
+											Width="46"
+											Height="32"
+											FontSize="10"
+											Icon="ChromeRestore"
+											
+										IsVisible="False"/>
+										<button:IconButton
+											ToolTip.Tip="{DynamicResource Close}"
+											Width="46"
+											Height="32"
+											FontSize="10"
+											Icon="ChromeClose"
+												
+											IsVisible="True"/>
+
+									</StackPanel>
+								</Grid>
+							</Grid>
+							<ContentPresenter Grid.Row="1"/>
+						</Grid>
+					</Border>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+</Styles>
