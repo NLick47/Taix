@@ -5,13 +5,10 @@
 
 
 	<Style Selector="controls|DefaultWindow">
-		<Setter Property="ExtendClientAreaTitleBarHeightHint" Value="-1"/>
-		<Setter Property="ExtendClientAreaChromeHints" Value="NoChrome"/>
 		<Setter Property="ExtendClientAreaToDecorationsHint" Value="True"/>
 		<Setter Property="Background" Value="Transparent" />
 		<Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
 		<Setter Property="UseLayoutRounding" Value="True" />
-
 		<Setter Property="Template">
 			<ControlTemplate>
 				<Border x:Name="WindowBorder" >

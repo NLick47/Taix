@@ -1,9 +1,11 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Styling;
+using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +26,16 @@ namespace UI.Controls.Window
             set => SetValue(IconSourceProperty, value);
         }
         public DefaultWindow() {
-           
+          
+        }
+
+        protected override void OnPointerPressed(PointerPressedEventArgs e)
+        {
+            base.OnPointerPressed(e);
+            if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            {
+                this.BeginMoveDrag(e);
+            }
         }
 
         protected override void OnLoaded(RoutedEventArgs e)
