@@ -50,21 +50,23 @@
 									  Panel.ZIndex="3">
 									<StackPanel Orientation="Horizontal">
 										<button:IconButton
+											x:Name="MinimizeButton"
 											ToolTip.Tip="{DynamicResource Minimization}"
 											Width="46"
 											Height="32"
 											FontSize="10"
 											Icon="ChromeMinimize"
-											
+											Command="{x:Static controls:DefaultWindow.MinimizeWindowCommand}"
 											IsVisible="True"/>
-										<button:IconButton
+										<button:IconButton 
 											x:Name="MaximizeButton"
 											ToolTip.Tip="{DynamicResource Maximize}"
 											Width="46"
 											Height="32"
 											FontSize="10"
 											Icon="ChromeMaximize"
-											IsVisible="True"/>
+											Command="{x:Static controls:DefaultWindow.MaximizeWindowCommand}"
+											IsVisible="{TemplateBinding MaximizeVisible}"/>
 										<button:IconButton
 											x:Name="RestoreButton"
 											ToolTip.Tip="{DynamicResource Restore}"
@@ -72,15 +74,15 @@
 											Height="32"
 											FontSize="10"
 											Icon="ChromeRestore"
-											
-										IsVisible="False"/>
+											Command="{x:Static controls:DefaultWindow.RestoreWindowCommand}"
+										IsVisible="{TemplateBinding RestoreVisible}"/>
 										<button:IconButton
 											ToolTip.Tip="{DynamicResource Close}"
 											Width="46"
 											Height="32"
 											FontSize="10"
 											Icon="ChromeClose"
-												
+												Command="{x:Static controls:DefaultWindow.CloseWindowCommand}"
 											IsVisible="True"/>
 
 									</StackPanel>
