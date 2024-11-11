@@ -45,6 +45,9 @@ namespace UI.Controls.Window
         public static ReactiveCommand<Unit, Unit> LogoButtonClickCommand { get; private set; }
         public static ReactiveCommand<Unit, Unit> BackCommand { get; private set; }
         #endregion
+
+        private bool IsWindowClosed_ = false;
+        public bool IsWindowClosed { get { return IsWindowClosed_; } }
         public IImage? IconSource
         {
             get => GetValue(IconSourceProperty);
@@ -89,7 +92,11 @@ namespace UI.Controls.Window
             });
         }
 
-
+        protected override void OnClosed(EventArgs e)
+        {
+            base.OnClosed(e);
+            IsWindowClosed_ = true;
+        }
         protected override void OnPointerPressed(PointerPressedEventArgs e)
         {
             base.OnPointerPressed(e);

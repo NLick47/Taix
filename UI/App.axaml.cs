@@ -13,6 +13,9 @@ using UI.Views;
 using Infrastructure.Librarys;
 using System.Reflection;
 using Avalonia.Media;
+using UI.Servicers;
+using UI.Controls.Window;
+using Platform;
 
 namespace UI
 {
@@ -20,7 +23,9 @@ namespace UI
     {
         private readonly ServiceProvider serviceProvider;
         private System.Threading.Mutex mutex;
-        
+        private HideWindow keepaliveWindow;
+        private static IClassicDesktopStyleApplicationLifetime? AppLife;
+
         public App()
         {
             AppDomain.CurrentDomain.UnhandledException += App_DispatcherUnhandledException;
@@ -51,18 +56,61 @@ namespace UI
 
         private void ConfigureServices(IServiceCollection services)
         {
+            //  核心服务
             services.AddSingleton<IDatabase, Database>();
             services.AddSingleton<IAppTimerServicer, AppTimerServicer>();
             services.AddSingleton<IWebServer, WebServer>();
             services.AddSingleton<IMain, Main>();
             services.AddSingleton<IData, Data>();
             services.AddSingleton<IWebData, WebData>();
-           
             services.AddSingleton<IAppConfig, AppConfig>();
             services.AddSingleton<IDateTimeObserver, DateTimeObserver>();
             services.AddSingleton<IAppData, AppData>();
             services.AddSingleton<ICategorys, Categorys>();
             services.AddSingleton<IWebFilter, WebFilter>();
+
+            //  UI服务
+            services.AddSingleton<IUIServicer, UIServicer>();
+            //services.AddSingleton<IAppContextMenuServicer, AppContextMenuServicer>();
+            services.AddSingleton<IThemeServicer, ThemeServicer>();
+            services.AddSingleton<IMainServicer, MainServicer>();
+            //services.AddSingleton<IInputServicer, InputServicer>();
+            //services.AddSingleton<IWebSiteContextMenuServicer, WebSiteContextMenuServicer>();
+            services.AddSingleton<IStatusBarIconServicer, StatusBarIconServicer>();
+
+            services.AddSingleton<MainViewModel>();
+            ////  首页
+            //services.AddTransient<IndexPage>();
+            //services.AddTransient<IndexPageVM>();
+
+            ////  数据页
+            //services.AddTransient<DataPage>();
+            //services.AddTransient<DataPageVM>();
+
+            ////  设置页
+            //services.AddTransient<SettingPage>();
+            //services.AddTransient<SettingPageVM>();
+
+            ////  详情页
+            //services.AddTransient<DetailPage>();
+            //services.AddTransient<DetailPageVM>();
+
+            ////  分类
+            //services.AddTransient<CategoryPage>();
+            //services.AddTransient<CategoryPageVM>();
+
+            ////  分类app
+            //services.AddTransient<CategoryAppListPage>();
+            //services.AddTransient<CategoryAppListPageVM>();
+            ////  分类站点
+            //services.AddTransient<CategoryWebSiteListPage>();
+            //services.AddTransient<CategoryWebSiteListPageVM>();
+            ////  图表
+            //services.AddTransient<ChartPage>();
+            //services.AddTransient<ChartPageVM>();
+            ////  网站详情
+            //services.AddTransient<WebSiteDetailPage>();
+            //services.AddTransient<WebSiteDetailPageVM>();
         }
 
 
@@ -76,8 +124,8 @@ namespace UI
 
         }
 
-     
-
+       
+        
 
         private bool IsRuned()
         {
@@ -92,7 +140,7 @@ namespace UI
             }
             return false;
         }
-
+        
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);
@@ -103,13 +151,45 @@ namespace UI
            
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                desktop.MainWindow = new MainWindow
+                OnStartup(this, Environment.GetCommandLineArgs());
+                desktop.Exit += (e, r) =>
                 {
-                    DataContext = new MainViewModel(),
+                    Logger.Save(true);
                 };
+                AppLife = desktop;
             }
           
             base.OnFrameworkInitializationCompleted();
+        }
+
+
+        private void OnStartup(object sender, string[] args)
+        {
+            //  阻止多开进程
+            if (IsRuned())
+            {
+                Exit();
+            }
+            var main = serviceProvider.GetService<IMainServicer>();
+
+            bool isSelfStart = false;
+            if (args.Length > 1)
+            {
+                if (args[1].Equals("--selfStart"))
+                {
+                    isSelfStart = true;
+                }
+            }
+            main.Start(isSelfStart);
+
+            //  创建保活窗口
+            keepaliveWindow = new HideWindow();
+        }
+
+
+        public static void Exit()
+        {
+            AppLife?.Shutdown();
         }
     }
 }

@@ -14,9 +14,18 @@
 		<ResourceDictionary>
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceInclude Source="/Resources/Themes/Dark.axaml"/>
-				<ResourceInclude Source="/Resources/Themes/Light.axaml"/>
+				<!--<ResourceInclude Source="/Resources/Themes/Light.axaml"/>-->
 				<ResourceInclude Source="/Resources/Localization/StringResources.en.axaml"/>
 			</ResourceDictionary.MergedDictionaries>
-		</ResourceDictionary>
+		</ResourceDictionary>	
 	</Application.Resources>
+
+	<!--<Application.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.ThemeDictionaries>
+
+				
+			</ResourceDictionary.ThemeDictionaries>
+		</ResourceDictionary>
+	</Application.Resources>-->
 </Application>

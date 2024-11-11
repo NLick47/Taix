@@ -35,9 +35,9 @@ namespace UI
             string[] platforms = new []{"Win","Mac","Linux" };
             string directory = AppContext.BaseDirectory;
 
-            var platformDllsMissing = platforms
-                .Where(x => !File.Exists(Path.Combine(directory,string.Concat(x,".dll")))).ToList();
-            if (platformDllsMissing.Count == 0) return;
+            //var platformDllsMissing = platforms
+            //    .Where(x => !File.Exists(Path.Combine(directory,string.Concat(x,".dll")))).ToList();
+            //if (platformDllsMissing.Count == 0) return;
             while (!string.IsNullOrEmpty(directory))
             {
                 if (Directory.Exists(Path.Combine(directory, "Platform")))
@@ -52,12 +52,12 @@ namespace UI
                 throw new DirectoryNotFoundException(directory);
             }
 
-            foreach (var platfromName in platformDllsMissing)
+            foreach (var platfromName in platforms)
             {
                 var dll = string.Concat(platfromName, ".dll");
                 var targetFilePath = Path.Combine(directory,platfromName,"bin","Debug","net8.0", dll);
                 if(!File.Exists(targetFilePath)) throw new FileNotFoundException(targetFilePath);
-                File.Copy(targetFilePath,Path.Combine(AppContext.BaseDirectory, dll));
+                File.Copy(targetFilePath,Path.Combine(AppContext.BaseDirectory, dll),true);
             }
         }
 #endif

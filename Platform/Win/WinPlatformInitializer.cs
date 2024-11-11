@@ -18,6 +18,7 @@ namespace Win
             services.AddSingleton<IAppObserver, WinAppObserver>();
             services.AddSingleton<IAppManager, WinAppManager>();
             services.AddSingleton<IWindowManager, WindowManager>();
+            services.AddSingleton<ISystemInfrastructure, WinSystemInfrastructure>();
         }
     }
 }
