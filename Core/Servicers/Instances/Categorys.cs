@@ -1,6 +1,7 @@
 ﻿using Core.Librarys.SQLite;
 using Core.Models;
 using Core.Servicers.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,31 +18,27 @@ namespace Core.Servicers.Instances
         {
             this._categories = new List<CategoryModel>();
         }
-     
-        public CategoryModel Create(CategoryModel category)
+
+        public async Task<CategoryModel> Create(CategoryModel category)
         {
-            using (var db = new TaiDbContext())
-            {
-                db.Categorys.Add(category);
-                db.SaveChanges();
-                _categories.Add(category);
-                return category;
-            }
+            using var db = new TaiDbContext();
+            db.Categorys.Add(category);
+            await db.SaveChangesAsync();
+            _categories.Add(category);
+            return category;
         }
 
-        public void Delete(CategoryModel category)
+        public async Task Delete(CategoryModel category)
         {
-            using (var db = new TaiDbContext())
-            {
-                var item = db.Categorys.Where(m => m.ID == category.ID).FirstOrDefault();
-                if (item != null)
-                {
-                    db.Categorys.Remove(item);
-                    db.SaveChanges();
-                    _categories.Remove(category);
-                }
-            }
+            using var db = new TaiDbContext();
 
+            var item = await db.Categorys.FirstOrDefaultAsync(m => m.ID == category.ID);
+            if (item != null)
+            {
+                db.Categorys.Remove(item);
+                await db.SaveChangesAsync();
+                _categories.Remove(category);
+            }
         }
 
         public List<CategoryModel> GetCategories()
@@ -54,25 +51,21 @@ namespace Core.Servicers.Instances
             return _categories.Where(m => m.ID == id).FirstOrDefault();
         }
 
-        public void Load()
+        public async Task Load()
         {
             Debug.WriteLine("加载分类");
-            using (var db = new TaiDbContext())
-            {
-                this._categories = db.Categorys.ToList();
-                Debug.WriteLine("加载分类完成");
+            using var db = new TaiDbContext();
+            this._categories = await db.Categorys.ToListAsync();
+            Debug.WriteLine("加载分类完成");
 
-            }
         }
 
 
-        public void Update(CategoryModel category)
+        public async Task Update(CategoryModel category)
         {
-            using (var db = new TaiDbContext())
-            {
-                db.Entry(category).State = System.Data.Entity.EntityState.Modified;
-                db.SaveChanges();
-            }
+            using var db = new TaiDbContext();
+            db.Categorys.Update(category);
+            await db.SaveChangesAsync();
         }
     }
 }

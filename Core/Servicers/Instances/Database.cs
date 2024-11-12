@@ -2,7 +2,6 @@
 using Core.Servicers.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -40,7 +39,6 @@ namespace Core.Servicers.Instances
                 _writerContext?.Dispose();
                 _readerNum++;
                 var db = new TaiDbContext();
-                db.Database.Connection.StateChange += Connection_StateChange;
                 return db;
             }
         }

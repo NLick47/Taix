@@ -1,9 +1,8 @@
 ﻿using Core.Models;
 using Core.Models.Db;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
-using System.Data.SQLite;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -45,25 +44,23 @@ namespace Core.Librarys.SQLite
         public DbSet<WebUrlModel> WebUrls { get; set; }
 
         private static string _dbFilePath = Path.Combine(FileHelper.GetRootDirectory(), "Data", "data.db");
-        public TaiDbContext()
-       : base(new SQLiteConnection()
-       {
-           ConnectionString = $"Data Source={_dbFilePath}",
-           BusyTimeout = 60
-       }, true)
+
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            DbConfiguration.SetConfiguration(new SQLiteConfiguration());
+            optionsBuilder.UseSqlite($"Data Source={_dbFilePath}");
         }
 
-        protected override void OnModelCreating(DbModelBuilder modelBuilder)
-        {
-            var model = modelBuilder.Build(Database.Connection);
-            new SQLiteBuilder(model).SelfCheck();
-        }
+
+        //protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        //{
+        //    var model = modelBuilder.Build(Database.Connection);
+        //    new SQLiteBuilder(model).SelfCheck();
+        //}
 
         public void SelfCheck()
         {
-            Database.ExecuteSqlCommand("select count(*) from sqlite_master where type='table' and name='tai'");
-        }
+            Database.ExecuteSqlInterpolated($"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='tai'");
+        } 
     }
 }

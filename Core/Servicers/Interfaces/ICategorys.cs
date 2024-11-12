@@ -17,10 +17,10 @@ namespace Core.Servicers.Interfaces
         /// <summary>
         /// 加载已存储的分类数据，仅建议在启动时调用一次，无必要请勿再次调用
         /// </summary>
-        void Load();
+        Task Load();
         CategoryModel GetCategory(int id);
-        CategoryModel Create(CategoryModel category);
-        void Update(CategoryModel category);
-        void Delete(CategoryModel category);
+        Task<CategoryModel> Create(CategoryModel category);
+        Task Update(CategoryModel category);
+        Task Delete(CategoryModel category);
     }
 }

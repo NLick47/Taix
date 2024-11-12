@@ -14,7 +14,6 @@ using Core.Models.Config.Link;
 using Core.Servicers.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;

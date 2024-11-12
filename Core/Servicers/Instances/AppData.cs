@@ -115,7 +115,6 @@ namespace Core.Servicers.Instances
                         int res = db.SaveChanges();
                         if (res > 0)
                         {
-                            Debug.WriteLine("add done!" + r.ID);
 
                             _apps.Add(app);
                         }
