@@ -399,7 +399,7 @@ namespace Core.Servicers.Instances
 
         public async Task<IReadOnlyList<InfrastructureDataModel>> GetCategoriesStatistics(DateTime start_, DateTime end_)
         {
-            using (var db = _database.GetReaderContext())
+            using (var db = new TaiDbContext())
             {
                 var data = await db.WebBrowserLogs
                 .Where(log => log.LogTime >= start_ && log.LogTime <= end_.AddDays(1).AddTicks(-1)) // 筛选 LogTime

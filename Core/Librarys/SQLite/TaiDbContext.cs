@@ -1,6 +1,7 @@
 ﻿using Core.Models;
 using Core.Models.Db;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -51,12 +52,10 @@ namespace Core.Librarys.SQLite
             optionsBuilder.UseSqlite($"Data Source={_dbFilePath}");
         }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
 
-        //protected override void OnModelCreating(DbModelBuilder modelBuilder)
-        //{
-        //    var model = modelBuilder.Build(Database.Connection);
-        //    new SQLiteBuilder(model).SelfCheck();
-        //}
+        }
 
         public void SelfCheck()
         {
