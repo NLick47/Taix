@@ -83,12 +83,12 @@ namespace UI.Servicers
 
         public void LoadTheme(string themeName, bool isRefresh = false)
         {
-            throw new NotImplementedException();
+            
         }
 
         public void SetMainWindow(MainWindow mainWindow)
         {
-            throw new NotImplementedException();
+            
            
         }
     }

@@ -124,7 +124,7 @@ namespace UI
 
         }
 
-       
+        
         
 
         private bool IsRuned()
@@ -183,7 +183,8 @@ namespace UI
             main.Start(isSelfStart);
 
             //  创建保活窗口
-            keepaliveWindow = new HideWindow();
+            //keepaliveWindow = new HideWindow();
+            //keepaliveWindow.Hide();
         }
 
 
@@ -191,5 +192,8 @@ namespace UI
         {
             AppLife?.Shutdown();
         }
+
+
+      
     }
 }

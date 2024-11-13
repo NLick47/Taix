@@ -1,19 +1,13 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Core;
 using Core.Servicers.Interfaces;
 using Infrastructure.Librarys;
-using Infrastructure.Servicers;
+using ReactiveUI;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Policy;
-using System.Text;
 using System.Threading.Tasks;
 using UI.ViewModels;
 using UI.Views;
@@ -22,17 +16,26 @@ namespace UI.Servicers
 {
     public class StatusBarIconServicer : IStatusBarIconServicer
     {
-        private ContextMenu _contextMenu;
+        private NativeMenu _contextMenu;
 
         private TrayIcon _trayIcon;
 
-
-        private readonly IAppObserver _appObserver;
         private readonly IThemeServicer _themeServicer;
         private readonly MainViewModel _mainVM;
         private readonly IAppConfig _appConfig;
         private readonly IUIServicer _uIServicer;
         private MainWindow _mainWindow;
+
+        public StatusBarIconServicer(IThemeServicer themeServicer_, 
+            MainViewModel mainVM_,
+            IAppConfig appConfig_, IUIServicer uIServicer_)
+        {
+            this._themeServicer = themeServicer_;
+            this._appConfig = appConfig_;
+            this._uIServicer = uIServicer_;
+            this._mainVM = mainVM_;
+        }
+
 
         public enum IconType
         {
@@ -61,8 +64,10 @@ namespace UI.Servicers
                         iconName = "tai32";
                         break;
                 }
-               
-                _trayIcon.Icon = new WindowIcon(AssetLoader.Open(new Uri($"avares://UI/Resources/Icons/{iconName}.ico")));
+                Dispatcher.UIThread.Invoke(() =>
+                {
+                    _trayIcon.Icon = new WindowIcon(AssetLoader.Open(new Uri($"avares://UI/Resources/Icons/{iconName}.ico")));
+                });
             }
             catch (Exception ex)
             {
@@ -73,18 +78,31 @@ namespace UI.Servicers
 
         private void InitMenu()
         {
-            _contextMenu = new ContextMenu();
-            var mainWindowMenuItem = new MenuItem();
-            mainWindowMenuItem.Header = "打开";
-            var exitMenuItem = new MenuItem();
-            exitMenuItem.Header = "退出";
-            exitMenuItem.Click += (s, e) =>
+            _contextMenu = new ();
+            _contextMenu.Items.Add(new NativeMenuItem
             {
-                ExitApp();
-            };
-            _contextMenu.Items.Add(mainWindowMenuItem);
-            _contextMenu.Items.Add(exitMenuItem);
-
+                Header = Application.Current.TryFindResource("Open",out var p) == null ? "打开" : p as string,
+                Command = ReactiveCommand.Create(() =>
+                {
+                    if (_mainWindow.IsVisible)
+                    {
+                        _mainWindow.Activate();
+                    }
+                    else
+                    {
+                        _mainWindow.Show();
+                    }
+                })
+            });
+            _contextMenu.Items.Add(new NativeMenuItem
+            {
+                Header = Application.Current.TryFindResource("Exit", out var e) == null ? "退出" : e as string,
+                Command = ReactiveCommand.Create(() =>
+                {
+                    ExitApp();
+                })
+            });
+            _trayIcon.Menu = _contextMenu;
         }
 
         private void ExitApp()
@@ -117,14 +135,11 @@ namespace UI.Servicers
 
         public void Init()
         {
-            InitMenu();
             _trayIcon = new TrayIcon();
+            InitMenu();
             SetIcon(IconType.Busy);
             WatchStateAsync();
-
         }
-
-
 
         public void ShowMainWindow()
         {
@@ -140,6 +155,8 @@ namespace UI.Servicers
                 _mainWindow.Loaded += _mainWindow_Loaded;
                 _mainVM.LoadDefaultPage();
             }
+
+            _mainWindow.Show();
             _mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             _mainWindow.WindowState = WindowState.Normal;
             _mainWindow.Show();

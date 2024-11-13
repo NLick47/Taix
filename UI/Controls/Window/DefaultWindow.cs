@@ -88,7 +88,7 @@ namespace UI.Controls.Window
 
             CloseWindowCommand = ReactiveCommand.Create(() =>
             {
-                this.Hide();
+                App.Exit();
             });
         }
 

@@ -13,4 +13,7 @@
 	<system:String x:Key="Maximize">max</system:String>
 	<system:String x:Key="Restore">restore</system:String>
 	<system:String x:Key="Close">close</system:String>
+
+	<system:String x:Key="Open">open</system:String>
+	<system:String x:Key="Exit">exit</system:String>
 </ResourceDictionary>

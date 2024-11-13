@@ -8,6 +8,7 @@
         <SimpleTheme />
 		<StyleInclude Source="/Themes/Base/Icon.axaml"/>
 		<StyleInclude Source="/Themes/Window/DefaultWIndow.axaml"/>
+		<StyleInclude Source="/Themes/Window/HideWindow.axaml"/>
 		<StyleInclude Source="/Themes/Button/IconButton.axaml"/>
     </Application.Styles>
 	<Application.Resources>

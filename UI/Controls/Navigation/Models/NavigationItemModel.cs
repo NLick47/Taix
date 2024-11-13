@@ -1,17 +1,21 @@
-﻿using System;
+﻿using ReactiveUI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UI.Base.Color;
 using UI.Controls.Base;
+using UI.ViewModels;
 
 namespace UI.Controls.Navigation.Models
 {
-    public class NavigationItemModel
+    public class NavigationItemModel : ReactiveObject
     {
         public int ID { get; set; }
-        public string Title { get; set; }
+
+        private string _title;
+        public string Title { get => _title; set => this.RaiseAndSetIfChanged(ref _title,value); }
         /// <summary>
         /// 未选择时默认图标
         /// </summary>
