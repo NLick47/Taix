@@ -6,17 +6,21 @@
 
     <Application.Styles>
         <SimpleTheme />
-		<StyleInclude Source="/Themes/Base/Icon.axaml"/>
-		<StyleInclude Source="/Themes/Window/DefaultWIndow.axaml"/>
-		<StyleInclude Source="/Themes/Window/HideWindow.axaml"/>
-		<StyleInclude Source="/Themes/Button/IconButton.axaml"/>
-    </Application.Styles>
+	</Application.Styles>
+	
 	<Application.Resources>
 		<ResourceDictionary>
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceInclude Source="/Resources/Themes/Dark.axaml"/>
 				<!--<ResourceInclude Source="/Resources/Themes/Light.axaml"/>-->
 				<ResourceInclude Source="/Resources/Localization/StringResources.en.axaml"/>
+				<ResourceInclude Source="/Themes/Base/Icon.axaml"/>
+				
+				<ResourceInclude Source="/Themes/Window/DefaultWIndow.axaml"/>
+				<ResourceInclude Source="/Themes/Window/HideWindow.axaml"/>
+				
+				<ResourceInclude Source="/Themes/Navigation/Navigation.axaml"/>
+				<ResourceInclude Source="/Themes/Button/IconButton.axaml"/>
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>	
 	</Application.Resources>

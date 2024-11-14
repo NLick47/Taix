@@ -1,98 +1,100 @@
-<Styles xmlns="https://github.com/avaloniaui"
-		xmlns:button="clr-namespace:UI.Controls.Button"
-		xmlns:controls="clr-namespace:UI.Controls.Window"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:button="using:UI.Controls.Button"
+        xmlns:controls="using:UI.Controls.Window">
+
+ 
+  <ControlTheme x:Key="{x:Type controls:DefaultWindow}" 
+				TargetType="controls:DefaultWindow">
+	  <Setter Property="ExtendClientAreaToDecorationsHint"
+						   Value="True"/>
+	  <Setter Property="Background" Value="Transparent" />
+	  <Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
+	  <Setter Property="UseLayoutRounding" Value="True" />
+    <Setter Property="Template">
+		<ControlTemplate>
+			<Border x:Name="WindowBorder" >
+				<Border
+					BorderThickness="1"
+						BorderBrush="{DynamicResource WindowBorderBrush}"
+						Background="{DynamicResource WindowBackground}">
+					<Grid x:Name="WindowContent">
+						<Grid
+							   x:Name="TitleBar"
+							   Panel.ZIndex="999"
+							   Height="{DynamicResource WindowTitleBarHeight}"
+							   VerticalAlignment="Top">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="Auto"></ColumnDefinition>
+								<ColumnDefinition Width="*"></ColumnDefinition>
+							</Grid.ColumnDefinitions>
+
+							<Grid Grid.Column="0"
+								  Panel.ZIndex="3">
+								<StackPanel Orientation="Horizontal" Margin="15,0,0,0"
+											VerticalAlignment="Center"
+											HorizontalAlignment="Center">
+									<button:IconButton Width="0"
+													   VerticalAlignment="Center"
+													   ToolTip.Tip="{DynamicResource Back}"
+													   FontSize="10"
+													   x:Name="BackBtn"
+													   Icon="Back" />
+
+									<Image Source="{TemplateBinding IconSource}" VerticalAlignment="Center" Stretch="Uniform" Width="18"/>
+									<TextBlock VerticalAlignment="Center" Text="{TemplateBinding Title}" IsEnabled="{TemplateBinding IsActive}" Foreground="{DynamicResource DefaultTextBrush}" Margin="15,0,0,0"/>
+								</StackPanel>
 
 
-	<Style Selector="controls|DefaultWindow">
-		<Setter Property="ExtendClientAreaToDecorationsHint" Value="True"/>
-		<Setter Property="Background" Value="Transparent" />
-		<Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
-		<Setter Property="UseLayoutRounding" Value="True" />
-		<Setter Property="Template">
-			<ControlTemplate>
-				<Border x:Name="WindowBorder" >
-					<Border
-						BorderThickness="1"
-							BorderBrush="{DynamicResource WindowBorderBrush}"
-							Background="{DynamicResource WindowBackground}">
-						<Grid x:Name="WindowContent">
-							<Grid
-								   x:Name="TitleBar"
-								   Panel.ZIndex="999"
-								   Height="{DynamicResource WindowTitleBarHeight}"
-								   VerticalAlignment="Top">
-								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="Auto"></ColumnDefinition>
-									<ColumnDefinition Width="*"></ColumnDefinition>
-								</Grid.ColumnDefinitions>
-
-								<Grid Grid.Column="0"
-									  Panel.ZIndex="3">
-									<StackPanel Orientation="Horizontal" Margin="15,0,0,0"
-												VerticalAlignment="Center"
-												HorizontalAlignment="Center">
-										<button:IconButton Width="0"
-														   VerticalAlignment="Center"
-														   ToolTip.Tip="{DynamicResource Back}"
-														   FontSize="10"
-														   x:Name="BackBtn"
-														   Icon="Back" />
-
-										<Image Source="{TemplateBinding IconSource}" VerticalAlignment="Center" Stretch="Uniform" Width="18"/>
-										<TextBlock VerticalAlignment="Center" Text="{TemplateBinding Title}" IsEnabled="{TemplateBinding IsActive}" Foreground="{DynamicResource DefaultTextBrush}" Margin="15,0,0,0"/>
-									</StackPanel>
-
-
-								</Grid>
-								<Grid Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
-										
-									  Panel.ZIndex="3">
-									<StackPanel Orientation="Horizontal">
-										<button:IconButton
-											x:Name="MinimizeButton"
-											ToolTip.Tip="{DynamicResource Minimization}"
-											Width="46"
-											Height="32"
-											FontSize="10"
-											Icon="ChromeMinimize"
-											Command="{x:Static controls:DefaultWindow.MinimizeWindowCommand}"
-											IsVisible="True"/>
-										<button:IconButton 
-											x:Name="MaximizeButton"
-											ToolTip.Tip="{DynamicResource Maximize}"
-											Width="46"
-											Height="32"
-											FontSize="10"
-											Icon="ChromeMaximize"
-											Command="{x:Static controls:DefaultWindow.MaximizeWindowCommand}"
-											IsVisible="{TemplateBinding MaximizeVisible}"/>
-										<button:IconButton
-											x:Name="RestoreButton"
-											ToolTip.Tip="{DynamicResource Restore}"
-											Width="46"
-											Height="32"
-											FontSize="10"
-											Icon="ChromeRestore"
-											Command="{x:Static controls:DefaultWindow.RestoreWindowCommand}"
-										IsVisible="{TemplateBinding RestoreVisible}"/>
-										<button:IconButton
-											ToolTip.Tip="{DynamicResource Close}"
-											Width="46"
-											Height="32"
-											FontSize="10"
-											Icon="ChromeClose"
-												Command="{x:Static controls:DefaultWindow.CloseWindowCommand}"
-											IsVisible="True"/>
-
-									</StackPanel>
-								</Grid>
 							</Grid>
-							<ContentPresenter Grid.Row="1"/>
+							<Grid Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
+										
+								  Panel.ZIndex="3">
+								<StackPanel Orientation="Horizontal">
+									<button:IconButton
+										x:Name="MinimizeButton"
+										ToolTip.Tip="{DynamicResource Minimization}"
+										Width="46"
+										Height="32"
+										FontSize="10"
+										Icon="ChromeMinimize"
+										Command="{x:Static controls:DefaultWindow.MinimizeWindowCommand}"
+										IsVisible="True"/>
+									<button:IconButton
+										x:Name="MaximizeButton"
+										ToolTip.Tip="{DynamicResource Maximize}"
+										Width="46"
+										Height="32"
+										FontSize="10"
+										Icon="ChromeMaximize"
+										Command="{x:Static controls:DefaultWindow.MaximizeWindowCommand}"
+										IsVisible="{TemplateBinding MaximizeVisible}"/>
+									<button:IconButton
+										x:Name="RestoreButton"
+										ToolTip.Tip="{DynamicResource Restore}"
+										Width="46"
+										Height="32"
+										FontSize="10"
+										Icon="ChromeRestore"
+										Command="{x:Static controls:DefaultWindow.RestoreWindowCommand}"
+									IsVisible="{TemplateBinding RestoreVisible}"/>
+									<button:IconButton
+										ToolTip.Tip="{DynamicResource Close}"
+										Width="46"
+										Height="32"
+										FontSize="10"
+										Icon="ChromeClose"
+											Command="{x:Static controls:DefaultWindow.CloseWindowCommand}"
+										IsVisible="True"/>
+
+								</StackPanel>
+							</Grid>
 						</Grid>
-					</Border>
+						<ContentPresenter Grid.Row="1"/>
+					</Grid>
 				</Border>
-			</ControlTemplate>
-		</Setter>
-	</Style>
-</Styles>
+			</Border>
+		</ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>

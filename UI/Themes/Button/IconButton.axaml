@@ -1,27 +1,36 @@
-<Styles xmlns="https://github.com/avaloniaui"
-		xmlns:controls="clr-namespace:UI.Controls.Button"
-		   xmlns:base="clr-namespace:UI.Controls.Base"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-	<Style Selector="controls|IconButton /template/ Border:pointerover">
-		<Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}" />
-	</Style>
-	<Style Selector="controls|IconButton">
-		<Setter Property="Width" Value="35"/>
-		<Setter Property="Height" Value="35"/>
-		<Setter Property="FontSize" Value="16"/>
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Template">
-			<ControlTemplate>
-				<Border  Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" x:Name="BoxBorder" CornerRadius="4" Padding="5" Background="Transparent">
-					<Grid>
-						<base:Icon x:Name="Icon" IconType="{TemplateBinding Icon}" Foreground="{DynamicResource StandardTextBrush}" VerticalAlignment="Center"  FontSize="{TemplateBinding FontSize}" >
-						</base:Icon>
-						<ContentPresenter />
-					</Grid>
-					
-				</Border>
-				
-			</ControlTemplate>
-		</Setter>
-	</Style>
-</Styles>
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+       xmlns:controls="using:UI.Controls.Button"
+		   xmlns:base="using:UI.Controls.Base">
+
+  <ControlTheme x:Key="{x:Type controls:IconButton}" 
+				TargetType="controls:IconButton">
+	  <Setter Property="Width" Value="35"/>
+	  <Setter Property="Height" Value="35"/>
+	  <Setter Property="FontSize" Value="16"/>
+	  <Setter Property="Background" Value="Transparent"/>
+	  <Styles>
+		  <Style Selector="Border:pointerover">
+			  <Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}" />
+		  </Style>
+	  </Styles>
+    <Setter Property="Template">
+		<ControlTemplate>
+			<Border Width="{TemplateBinding Width}" 
+					 Height="{TemplateBinding Height}" 
+					x:Name="BoxBorder" CornerRadius="4" Padding="5" 
+					Background="Transparent">
+				<Grid>
+					<base:Icon x:Name="Icon" 
+							   IconType="{TemplateBinding Icon}" 
+							   Foreground="{DynamicResource StandardTextBrush}" 
+							   VerticalAlignment="Center"  
+							   FontSize="{TemplateBinding FontSize}" >
+					</base:Icon>
+					<ContentPresenter />
+				</Grid>
+			</Border>
+		</ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>
