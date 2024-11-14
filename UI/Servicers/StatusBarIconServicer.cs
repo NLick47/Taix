@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using Core;
 using Core.Servicers.Interfaces;
 using Infrastructure.Librarys;
+using MathNet.Numerics;
 using ReactiveUI;
 using System;
 using System.Threading.Tasks;
@@ -18,7 +19,7 @@ namespace UI.Servicers
     {
         private NativeMenu _contextMenu;
 
-        private TrayIcon _trayIcon;
+        private static TrayIcon _trayIcon = new TrayIcon();
 
         private readonly IThemeServicer _themeServicer;
         private readonly MainViewModel _mainVM;
@@ -27,13 +28,14 @@ namespace UI.Servicers
         private MainWindow _mainWindow;
 
         public StatusBarIconServicer(IThemeServicer themeServicer_, 
-            MainViewModel mainVM_,
+            MainViewModel mainVM_,MainWindow mainWindow_,
             IAppConfig appConfig_, IUIServicer uIServicer_)
         {
             this._themeServicer = themeServicer_;
             this._appConfig = appConfig_;
             this._uIServicer = uIServicer_;
             this._mainVM = mainVM_;
+            this._mainWindow = mainWindow_;
         }
 
 
@@ -50,8 +52,9 @@ namespace UI.Servicers
         }
 
 
-        private void SetIcon(IconType iconType_ = IconType.Normal)
+        private  async Task SetIcon(IconType iconType_ = IconType.Normal)
         {
+            
             try
             {
                 string iconName = "tai32";
@@ -64,8 +67,9 @@ namespace UI.Servicers
                         iconName = "tai32";
                         break;
                 }
-                Dispatcher.UIThread.Invoke(() =>
+                await  Dispatcher.UIThread.InvokeAsync(() =>
                 {
+
                     _trayIcon.Icon = new WindowIcon(AssetLoader.Open(new Uri($"avares://UI/Resources/Icons/{iconName}.ico")));
                 });
             }
@@ -76,23 +80,22 @@ namespace UI.Servicers
             }
         }
 
-        private void InitMenu()
+        private  void InitMenu()
         {
             _contextMenu = new ();
+            _trayIcon.Command = ReactiveCommand.Create(() =>
+            {
+                ShowMianWindow();
+            });
+
             _contextMenu.Items.Add(new NativeMenuItem
             {
                 Header = Application.Current.TryFindResource("Open",out var p) == null ? "打开" : p as string,
                 Command = ReactiveCommand.Create(() =>
                 {
-                    if (_mainWindow.IsVisible)
-                    {
-                        _mainWindow.Activate();
-                    }
-                    else
-                    {
-                        _mainWindow.Show();
-                    }
+                    ShowMianWindow();
                 })
+
             });
             _contextMenu.Items.Add(new NativeMenuItem
             {
@@ -102,7 +105,11 @@ namespace UI.Servicers
                     ExitApp();
                 })
             });
-            _trayIcon.Menu = _contextMenu;
+            Dispatcher.UIThread.Invoke(() =>
+            {
+                _trayIcon.Menu = _contextMenu;
+            });
+            
         }
 
         private void ExitApp()
@@ -111,63 +118,63 @@ namespace UI.Servicers
             App.Exit();
         }
 
+        private void ShowMianWindow()
+        {
+            if (_mainWindow.IsVisible &&
+                    _mainWindow.WindowState != WindowState.Minimized)
+            {
+                _mainWindow.Activate();
+                
+            }else
+            {
+                _mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                _mainWindow.WindowState = WindowState.Normal;
+                if (!_mainWindow.IsVisible)
+                {
+                    _mainWindow.Show();
+                }
+            }
+        }
+
         /// <summary>
         /// 等待程序加载
         /// </summary>
-        private async void WatchStateAsync()
+        private  async Task WatchStateAsync()
         {
-            await Task.Run(() =>
+            string previousText = string.Empty;
+            await Task.Run(async () =>
             {
                 while (AppState.IsLoading)
                 {
-                    Dispatcher.UIThread.Invoke(() =>
+                    await Task.Delay(500); 
+                    var newText = $"[{AppState.ProcessValue}%] Tai [{AppState.ActionText}]";
+                    if (newText != previousText)
                     {
-                        _trayIcon.ToolTipText = $"[{AppState.ProcessValue}%] Tai [{AppState.ActionText}]";
-                    });
+                        previousText = newText;
+                        await Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            _trayIcon.ToolTipText = newText;
+                        });
+                    }
                 }
-                Dispatcher.UIThread.Invoke(() =>
+                await  Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     _trayIcon.ToolTipText = "Tai!";
                 });
-                SetIcon();
+
+                await SetIcon();
             });
+             
         }
 
-        public void Init()
+        public async Task Init()
         {
-            _trayIcon = new TrayIcon();
+            await SetIcon(IconType.Busy);
+            await WatchStateAsync();
             InitMenu();
-            SetIcon(IconType.Busy);
-            WatchStateAsync();
         }
 
-        public void ShowMainWindow()
-        {
-            var config = _appConfig.GetConfig();
-            if (config == null)
-            {
-                return;
-            }
-            if (_mainWindow == null || _mainWindow.IsWindowClosed)
-            {
-                _mainWindow = new MainWindow();
-                _mainWindow.DataContext = _mainVM;
-                _mainWindow.Loaded += _mainWindow_Loaded;
-                _mainVM.LoadDefaultPage();
-            }
-
-            _mainWindow.Show();
-            _mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            _mainWindow.WindowState = WindowState.Normal;
-            _mainWindow.Show();
-            _mainWindow.Activate();
-            _uIServicer.InitWindow(_mainWindow);
-        }
-
-        private void _mainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            var window = sender as MainWindow;
-            _themeServicer.SetMainWindow(window);
-        }
+      
+      
     }
 }

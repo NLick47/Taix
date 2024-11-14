@@ -16,6 +16,8 @@ using Avalonia.Media;
 using UI.Servicers;
 using UI.Controls.Window;
 using Platform;
+using Avalonia.Controls;
+using System.Threading.Tasks;
 
 namespace UI
 {
@@ -79,6 +81,7 @@ namespace UI
             services.AddSingleton<IStatusBarIconServicer, StatusBarIconServicer>();
 
             services.AddSingleton<MainViewModel>();
+            services.AddSingleton<MainWindow>();
             ////  首页
             //services.AddTransient<IndexPage>();
             //services.AddTransient<IndexPageVM>();
@@ -146,12 +149,21 @@ namespace UI
             AvaloniaXamlLoader.Load(this);
         }
 
-        public override void OnFrameworkInitializationCompleted()
+        public override async void OnFrameworkInitializationCompleted()
         {
            
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                OnStartup(this, Environment.GetCommandLineArgs());
+                void ShowMainWindow()
+                {
+                    var window = serviceProvider.GetService<MainWindow>();
+                    window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                    window.WindowState = WindowState.Normal;
+                    window.DataContext = serviceProvider.GetService<MainViewModel>();
+                    desktop.MainWindow = window;
+                }
+                ShowMainWindow();
+                await OnStartup(this, Environment.GetCommandLineArgs());
                 desktop.Exit += (e, r) =>
                 {
                     Logger.Save(true);
@@ -163,7 +175,7 @@ namespace UI
         }
 
 
-        private void OnStartup(object sender, string[] args)
+        private async Task OnStartup(object sender, string[] args)
         {
             //  阻止多开进程
             if (IsRuned())
@@ -180,7 +192,7 @@ namespace UI
                     isSelfStart = true;
                 }
             }
-            main.Start(isSelfStart);
+           await main.Start(isSelfStart);
 
             //  创建保活窗口
             //keepaliveWindow = new HideWindow();
@@ -193,7 +205,6 @@ namespace UI
             AppLife?.Shutdown();
         }
 
-
-      
+        
     }
 }

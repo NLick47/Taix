@@ -141,7 +141,7 @@ namespace Core.Servicers.Instances
             }
         }
 
-        public async void Run()
+        public async Task Run()
         {
             await Task.Run(() =>
              {
