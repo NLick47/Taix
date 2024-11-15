@@ -20,6 +20,7 @@
 				<ResourceInclude Source="/Themes/Window/HideWindow.axaml"/>
 				
 				<ResourceInclude Source="/Themes/Navigation/Navigation.axaml"/>
+				<ResourceInclude Source="/Themes/Navigation/NavigationItem.axaml"/>
 				<ResourceInclude Source="/Themes/Button/IconButton.axaml"/>
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>	

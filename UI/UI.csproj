@@ -47,4 +47,8 @@
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Themes\Navigation\NavigationItem.axaml" />
+  </ItemGroup>
 </Project>

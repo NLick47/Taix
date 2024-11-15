@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:base="clr-namespace:UI.Controls.Base"
+        xmlns:controls="using:UI.Controls.Navigation">
+
+  <ControlTheme x:Key="{x:Type controls:NavigationItem}" 
+				TargetType="controls:NavigationItem">
+	  <Setter Property="Width" Value="60"/>
+	  <Setter Property="Height" Value="60"/>
+	  <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+		  <Border Background="Transparent" CornerRadius="10" 
+				  x:Name="Border">
+
+			  <Grid x:Name="Content"  Margin="5">
+				  <base:Icon x:Name="Icon" IconType="{TemplateBinding Icon}"
+							Foreground="{Binding ElementName=Title,Path=Foreground}"
+							 VerticalAlignment="Center" Grid.Column="1" 
+							 FontSize="17"
+							 RenderTransformOrigin="0.5,0.5">
+					  <base:Icon.RenderTransform>
+						  <TransformGroup>
+							  <TranslateTransform X="0" Y="-5"/>
+						  </TransformGroup>
+					  </base:Icon.RenderTransform>
+				  </base:Icon>
+				  <TextBlock x:Name="Title"
+							 RenderOptions.EdgeMode="Aliased" 
+							 Text="{TemplateBinding Title}" 
+							 Grid.Column="2" 
+							 VerticalAlignment="Bottom" HorizontalAlignment="Center"  
+							 FontSize="10" 
+							 Foreground="{DynamicResource NavUnselectedTextBrush}" 
+							 Margin="0,5,0,0"/>
+			  </Grid>
+			</Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>

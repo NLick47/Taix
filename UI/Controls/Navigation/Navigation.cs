@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Core.Servicers.Instances;
 using DynamicData.Binding;
 using System;
 using System.Collections.Generic;
@@ -38,11 +39,21 @@ namespace UI.Controls.Navigation
             get { return (NavigationItemModel)GetValue(SelectedItemProperty); }
             set { SetValue(SelectedItemProperty, value); }
         }
-        public Navigation()
+
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
-            SelectedItemProperty.Changed.Subscribe(OnSelectedItemChanged);
-            DataProperty.Changed.Subscribe(OnDataChanged);
+            base.OnPropertyChanged(change);
+            if (change.Property == SelectedItemProperty)
+            {
+                SelectedItemProperty.Changed.Subscribe(OnSelectedItemChanged);
+            }
+            if (change.Property == DataProperty)
+            {
+                OnDataChanged(change);
+            }
+
         }
+
         public object TopExtContent
         {
             get { return (object)GetValue(TopExtContentProperty); }
@@ -107,12 +118,10 @@ namespace UI.Controls.Navigation
             }
         }
 
-        private  void OnDataChanged(AvaloniaPropertyChangedEventArgs<ObservableCollection<NavigationItemModel>> change)
+        private  void OnDataChanged(AvaloniaPropertyChangedEventArgs e)
         {
-            var control = this;
-            var oldItem = change.OldValue.Value;
-            var newItem = change.NewValue.Value;
-            if (oldItem != newItem)
+            var control = e.Sender as Navigation;
+            if (e.OldValue != e.NewValue)
             {
                 if (control.Data != null)
                 {
@@ -157,6 +166,17 @@ namespace UI.Controls.Navigation
             }
         }
 
+        public Navigation()
+        {
+            ItemsDictionary = new Dictionary<int, NavigationItem>();
+            Loaded += Navigation_Loaded;
+        }
+
+        private void Navigation_Loaded(object sender, RoutedEventArgs e)
+        {
+            ScrollToActive();
+        }
+
         private void RemoveItem(NavigationItemModel item)
         {
             var navItem = ItemsDictionary[item.ID];
@@ -167,10 +187,11 @@ namespace UI.Controls.Navigation
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            ItemsPanel = this.FindControl<StackPanel>("ItemsPanel")!;
-            ActiveBlock = this.FindControl<Border>("ActiveBlock")!;
+            ItemsPanel = e.NameScope.Find<StackPanel>("ItemsPanel")!;
+            ActiveBlock = e.NameScope.Find<Border>("ActiveBlock")!;
+            Render();
         }
-      
+
         protected override Type StyleKeyOverride => typeof(Navigation);
 
         private void AddItem(NavigationItemModel item)
@@ -183,7 +204,6 @@ namespace UI.Controls.Navigation
                 {
                     return;
                 }
-
                 item.ID = id;
                 navItem.ID = id;
                 navItem.Title = item.Title;
@@ -261,8 +281,33 @@ namespace UI.Controls.Navigation
 
             //}
         }
+        private void UpdateActiveLocation()
+        {
+            if (SelectedItem == null || !IsLoaded)
+            {
+                return;
+            }
+            var item = ItemsDictionary[SelectedItem.ID];
+            item.Loaded += (e, c) =>
+            {
+                ScrollToActive(0);
+            };
+        }
 
+        private void Render()
+        {
+            ItemsPanel.Children.Clear();
+            ItemsDictionary.Clear();
 
+            if (Data != null)
+            {
+                foreach (var item in Data)
+                {
+                    AddItem(item);
+                }
+            }
 
+            UpdateActiveLocation();
+        }
     }
 }

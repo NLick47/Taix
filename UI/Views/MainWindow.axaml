@@ -24,7 +24,11 @@
 					   >
 	
 			<na:Navigation.BottomExtContent>
-				<na:NavigationItem Icon="Settings" Title="设置" Uri="SettingsPage" Command="{Binding GotoPageCommand}" CommandParameter="SettingPage"/>
+				<na:NavigationItem Icon="Settings" 
+								   Title="{StaticResource SideSetting}" 
+								   Uri="SettingsPage" 
+								   Command="{Binding GotoPageCommand}"
+								   CommandParameter="SettingPage"/>
 			</na:Navigation.BottomExtContent>
 		</na:Navigation>
     </Grid>

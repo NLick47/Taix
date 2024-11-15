@@ -36,7 +36,7 @@ namespace UI.ViewModels
 
             //OnSelectedCommand = new Command(new Action<object>(OnSelectedCommandHandle));
             //GotoPageCommand = new Command(new Action<object>(OnGotoPageCommand));
-            Items = new System.Collections.ObjectModel.ObservableCollection<Controls.Navigation.Models.NavigationItemModel>();
+            Items = new ObservableCollection<NavigationItemModel>();
             PropertyChanged += MainViewModel_PropertyChanged;
             InitNavigation();
         }

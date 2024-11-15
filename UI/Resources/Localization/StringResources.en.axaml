@@ -6,6 +6,7 @@
 	<system:String x:Key="SideStatistics">statistics</system:String>
 	<system:String x:Key="SideDetails">details</system:String>
 	<system:String x:Key="SideSort">sort</system:String>
+	<system:String x:Key="SideSetting">setting</system:String>
 
 	<!--window button Tip-->
 	<system:String x:Key="Back">back</system:String>
@@ -13,6 +14,7 @@
 	<system:String x:Key="Maximize">max</system:String>
 	<system:String x:Key="Restore">restore</system:String>
 	<system:String x:Key="Close">close</system:String>
+
 
 	<system:String x:Key="Open">open</system:String>
 	<system:String x:Key="Exit">exit</system:String>
