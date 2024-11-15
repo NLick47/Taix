@@ -18,12 +18,17 @@
 			<ColumnDefinition Width="*"/>
 		</Grid.ColumnDefinitions>
 
-		<!--<na:Navigation x:Name="Navigation" Margin="0,32,0,0" Width="80"
+		<na:Navigation x:Name="Navigation" Margin="0,32,0,0" Width="80"
 					   Data="{Binding Items,Mode=TwoWay}"
 					   SelectedItem="{Binding NavSelectedItem,Mode=TwoWay}"
-					   >-->
-		<na:Navigation >
+					   >
+	
+			<na:Navigation.BottomExtContent>
+				<na:NavigationItem Icon="Settings" Title="设置" Uri="SettingsPage" Command="{Binding GotoPageCommand}" CommandParameter="SettingPage"/>
+			</na:Navigation.BottomExtContent>
 		</na:Navigation>
     </Grid>
+	
+
 </ui:DefaultWindow>
 

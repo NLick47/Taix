@@ -8,7 +8,10 @@
 				TargetType="controls:DefaultWindow">
 	  <Setter Property="ExtendClientAreaToDecorationsHint"
 						   Value="True"/>
+	  
+	  <Setter Property="ExtendClientAreaTitleBarHeightHint" Value="32"/>
 	  <Setter Property="Background" Value="Transparent" />
+	  <Setter Property="ExtendClientAreaChromeHints" Value="NoChrome"/>
 	  <Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
 	  <Setter Property="UseLayoutRounding" Value="True" />
     <Setter Property="Template">
@@ -90,7 +93,7 @@
 								</StackPanel>
 							</Grid>
 						</Grid>
-						<ContentPresenter Grid.Row="1"/>
+						<ContentPresenter Content="{TemplateBinding Content}"	 Grid.Row="1"/>
 					</Grid>
 				</Border>
 			</Border>
