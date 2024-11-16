@@ -1,7 +1,11 @@
 ﻿using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
+using DynamicData.Binding;
+using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +17,7 @@ using UI.Controls.Base;
 
 namespace UI.Controls.Navigation
 {
+    [PseudoClasses(":pressed")]
     public class NavigationItem : TemplatedControl
     {
         public static readonly StyledProperty<int> IDProperty =
@@ -115,16 +120,23 @@ namespace UI.Controls.Navigation
             set => SetValue(IsSelectedProperty, value);
         }
 
-        public delegate void NavigationEventHandler(object sender, PointerReleasedEventArgs e);
+        private static NavigationItem _currentPressedItem;
+
+        public delegate void NavigationEventHandler(object sender, PointerPressedEventArgs e);
         public event NavigationEventHandler MouseUp;
 
         public NavigationItem()
         {
-            this.PointerReleased += OnPointerReleased;
+            this.PointerPressed += OnPointerPressed;
+            this.WhenPropertyChanged(x => x.IsSelected).Subscribe(x =>
+            {
+                 PseudoClasses.Set(":pressed", x.Value);
+            });
         }
 
-        private void OnPointerReleased(object sender, PointerReleasedEventArgs e)
+        private void OnPointerPressed(object sender, PointerPressedEventArgs e)
         {
+            
             MouseUp?.Invoke(this, e);
             if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             {

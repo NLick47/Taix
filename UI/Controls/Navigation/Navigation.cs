@@ -2,6 +2,7 @@
 using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
@@ -45,7 +46,7 @@ namespace UI.Controls.Navigation
             base.OnPropertyChanged(change);
             if (change.Property == SelectedItemProperty)
             {
-                SelectedItemProperty.Changed.Subscribe(OnSelectedItemChanged);
+                OnSelectedItemChanged(change);
             }
             if (change.Property == DataProperty)
             {
@@ -90,6 +91,8 @@ namespace UI.Controls.Navigation
 
         private Dictionary<int, NavigationItem> ItemsDictionary;
 
+        public event EventHandler OnSelected;
+        public event EventHandler OnMouseRightButtonUP;
         //  选中标记块
         private Border ActiveBlock;
         //  滚动动画
@@ -99,11 +102,11 @@ namespace UI.Controls.Navigation
 
         private StackPanel ItemsPanel;
 
-        private void OnSelectedItemChanged(AvaloniaPropertyChangedEventArgs<NavigationItemModel> change)
+        private void OnSelectedItemChanged(AvaloniaPropertyChangedEventArgs e)
         {
-            var control = this;
-            var oldItem = change.OldValue.Value;
-            var newItem = change.NewValue.Value;
+            var control = e.Sender as Navigation;
+            var oldItem = e.OldValue as NavigationItemModel;
+            var newItem = e.NewValue as NavigationItemModel;
             if (newItem != oldItem)
             {
                 if (newItem != null && control.ItemsDictionary.ContainsKey(newItem.ID))
@@ -213,16 +216,45 @@ namespace UI.Controls.Navigation
                 navItem.BadgeText = item.BadgeText;
                 navItem.Uri = item.Uri;
 
-                //if (!string.IsNullOrEmpty(item.Title))
-                //{
-                //    navItem.MouseUp += NavItem_MouseUp;
-                //    navItem.Unloaded += (e, c) =>
-                //    {
-                //        navItem.MouseUp -= NavItem_MouseUp;
-                //    };
-                //}
+                if (!string.IsNullOrEmpty(item.Title))
+                {
+                    navItem.MouseUp += NavItem_MouseUp;
+                    navItem.Unloaded += (e, c) =>
+                    {
+                        navItem.MouseUp -= NavItem_MouseUp;
+                    };
+                }
                 ItemsPanel.Children.Add(navItem);
                 ItemsDictionary.Add(id, navItem);
+            }
+        }
+
+        private void NavItem_MouseUp(object sender, PointerPressedEventArgs e)
+        {
+            var navitem = sender as NavigationItem;
+            if (navitem != null)
+            {
+                var properties = e.GetCurrentPoint(null).Properties;
+
+                if (properties.IsLeftButtonPressed)
+                {
+                    // 左键选中
+                    SelectedItem = Data.FirstOrDefault(m => m.ID == navitem.ID);
+                    OnSelected?.Invoke(this, EventArgs.Empty);
+
+                    if (SelectedItem != null && SelectedItem.ID != navitem.ID)
+                    {
+                        ScrollToActive();
+                    }
+                }
+                else if (properties.IsRightButtonPressed)
+                {
+                    // 右键
+                    var args = new RoutedEventArgs();
+                    args.RoutedEvent = e.RoutedEvent;
+                    args.Source = Data.FirstOrDefault(m => m.ID == navitem.ID);
+                    OnMouseRightButtonUP?.Invoke(this, args);
+                }
             }
         }
 
@@ -247,8 +279,8 @@ namespace UI.Controls.Navigation
             var item = ItemsDictionary[SelectedItem.ID];
             item.IsSelected = true;
 
-            scrollAnimation.Duration = TimeSpan.FromSeconds(animationDuration);
-            stretchAnimation.Duration = TimeSpan.FromSeconds(animationDuration);
+            //scrollAnimation.Duration = TimeSpan.FromSeconds(animationDuration);
+            //stretchAnimation.Duration = TimeSpan.FromSeconds(animationDuration);
 
 
             ////  选中项的坐标
