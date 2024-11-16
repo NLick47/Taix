@@ -4,6 +4,9 @@
 
 	<ControlTheme x:Key="{x:Type controls:Navigation}" 
 				  TargetType="controls:Navigation">
+
+		<Setter Property="MinWidth" Value="44"/>
+		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Template">
 			<ControlTemplate>
 				<Grid Margin="10">
@@ -15,10 +18,10 @@
 					<ContentPresenter Content="{TemplateBinding TopExtContent}"/>
 					<Grid  Grid.Row="1" Background="Transparent" x:Name="MenuGrid">
 						<Border x:Name="ActiveBlock" Width="5" Height="25"
+								ZIndex="10"
 								CornerRadius="2" Background="{DynamicResource ThemeBrush}" HorizontalAlignment="Left"
 								VerticalAlignment="Top"
-								RenderTransformOrigin="0,0">
-
+								>
 						</Border>
 						<ScrollViewer VerticalScrollBarVisibility="Auto">
 							<StackPanel x:Name="ItemsPanel"/>

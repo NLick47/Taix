@@ -1,11 +1,13 @@
 ﻿using Avalonia;
 using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.Media.Transformation;
 using Core.Servicers.Instances;
 using DynamicData.Binding;
 using System;
@@ -33,7 +35,7 @@ namespace UI.Controls.Navigation
             AvaloniaProperty.Register<Navigation, ContextMenu>(nameof(ItemContextMenu));
 
         public static readonly StyledProperty<NavigationItemModel> SelectedItemProperty =
-          AvaloniaProperty.Register<Navigation,NavigationItemModel>(nameof(SelectedItem));
+          AvaloniaProperty.Register<Navigation, NavigationItemModel>(nameof(SelectedItem));
 
         public NavigationItemModel SelectedItem
         {
@@ -79,14 +81,14 @@ namespace UI.Controls.Navigation
         }
 
         public static readonly StyledProperty<ObservableCollection<NavigationItemModel>> DataProperty =
-           AvaloniaProperty.Register<Navigation,ObservableCollection<NavigationItemModel>>(nameof(Data));
+           AvaloniaProperty.Register<Navigation, ObservableCollection<NavigationItemModel>>(nameof(Data));
 
 
         public static readonly StyledProperty<object> BottomExtContentProperty =
         AvaloniaProperty.Register<Navigation, object>(nameof(BottomExtContent));
 
         public static readonly StyledProperty<object> TopExtContentProperty =
-          AvaloniaProperty.Register<Navigation,object>(nameof(TopExtContent));
+          AvaloniaProperty.Register<Navigation, object>(nameof(TopExtContent));
 
 
         private Dictionary<int, NavigationItem> ItemsDictionary;
@@ -95,10 +97,6 @@ namespace UI.Controls.Navigation
         public event EventHandler OnMouseRightButtonUP;
         //  选中标记块
         private Border ActiveBlock;
-        //  滚动动画
-        Animation scrollAnimation;
-        //  伸缩动画
-        Animation stretchAnimation;
 
         private StackPanel ItemsPanel;
 
@@ -121,7 +119,7 @@ namespace UI.Controls.Navigation
             }
         }
 
-        private  void OnDataChanged(AvaloniaPropertyChangedEventArgs e)
+        private void OnDataChanged(AvaloniaPropertyChangedEventArgs e)
         {
             var control = e.Sender as Navigation;
             if (e.OldValue != e.NewValue)
@@ -192,6 +190,7 @@ namespace UI.Controls.Navigation
             base.OnApplyTemplate(e);
             ItemsPanel = e.NameScope.Find<StackPanel>("ItemsPanel")!;
             ActiveBlock = e.NameScope.Find<Border>("ActiveBlock")!;
+            CreateTransitions();
             Render();
         }
 
@@ -228,6 +227,21 @@ namespace UI.Controls.Navigation
                 ItemsDictionary.Add(id, navItem);
             }
         }
+
+
+
+        public void CreateTransitions()
+        {
+            ActiveBlock.Transitions = new Transitions
+            {
+                new TransformOperationsTransition
+                {
+                    Property = Border.RenderTransformProperty,
+                    Duration = TimeSpan.FromSeconds(0.25),
+                }
+            };
+        }
+
 
         private void NavItem_MouseUp(object sender, PointerPressedEventArgs e)
         {
@@ -279,40 +293,14 @@ namespace UI.Controls.Navigation
             var item = ItemsDictionary[SelectedItem.ID];
             item.IsSelected = true;
 
-            //scrollAnimation.Duration = TimeSpan.FromSeconds(animationDuration);
-            //stretchAnimation.Duration = TimeSpan.FromSeconds(animationDuration);
+            //  选中项的坐标
+            var relativePoint = item.Bounds.Position;
+            var activeBlockTTF = ActiveBlock.Bounds.Position;
+            ActiveBlock.RenderTransform = TransformOperations.Parse($"translateY({relativePoint.Y + 16}px)");
 
 
-            ////  选中项的坐标
-            //Point relativePoint = item.TransformToAncestor(this).Transform(new Point(0, 0));
-
-            ////  设定动画方向
-            //var activeBlockTTF = (ActiveBlock.RenderTransform as TransformGroup).Children[0] as TranslateTransform;
-            //scrollAnimation.to = relativePoint.Y + 8;
-
-            ////  伸缩动画
-
-            //stretchAnimation.To = 1.6;
-
-            //if (relativePoint.Y > activeBlockTTF.Y)
-            //{
-            //    //  向下移动
-            //    var transformGroup = new TransformGroup();
-            //    transformGroup.Children.Add(new TranslateTransform(0, activeBlockTTF.Y));
-            //    transformGroup.Children.Add(new ScaleTransform(1, 1, 0, 200));
-
-            //    ActiveBlock.RenderTransform = transformGroup;
-            //}
-            //else
-            //{
-            //    var transformGroup = new TransformGroup();
-            //    transformGroup.Children.Add(new TranslateTransform(0, activeBlockTTF.Y));
-            //    transformGroup.Children.Add(new ScaleTransform(1, 1, 0, 0));
-
-            //    ActiveBlock.RenderTransform = transformGroup;
-
-            //}
         }
+
         private void UpdateActiveLocation()
         {
             if (SelectedItem == null || !IsLoaded)

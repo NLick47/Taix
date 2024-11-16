@@ -8,6 +8,7 @@ using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Reactive.Linq;
 using UI.Controls.Base;
 using UI.Controls.Navigation.Models;
@@ -97,14 +98,17 @@ namespace UI.ViewModels
                 Title = sideSort as string,
                 ID = 3,
             });
+
+            LoadDefaultPage();
         }
 
 
         public void LoadDefaultPage()
         {
-            int startPageIndex = appConfig.GetConfig().General.StartPage;
-            NavSelectedItem = Items[startPageIndex];
-            Uri = NavSelectedItem.Uri;
+            //int startPageIndex = appConfig.GetConfig().General.StartPage;
+            //NavSelectedItem = Items[startPageIndex];
+            //Uri = NavSelectedItem.Uri;
+            NavSelectedItem = Items.First();
         }
 
         private void SubscribeToResource(string key)
