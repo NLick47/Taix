@@ -1,8 +1,11 @@
 ﻿using Avalonia;
 using Avalonia.ReactiveUI;
+using Infrastructure.Librarys;
+using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace UI
 {
@@ -32,12 +35,8 @@ namespace UI
 #if DEBUG
         private static void DebugMovePlatfromDll()
         {
-            string[] platforms = new []{"Win","Mac","Linux" };
+            var platformName = PlatformInfo.GetPlatformName();
             string directory = AppContext.BaseDirectory;
-
-            //var platformDllsMissing = platforms
-            //    .Where(x => !File.Exists(Path.Combine(directory,string.Concat(x,".dll")))).ToList();
-            //if (platformDllsMissing.Count == 0) return;
             while (!string.IsNullOrEmpty(directory))
             {
                 if (Directory.Exists(Path.Combine(directory, "Platform")))
@@ -47,18 +46,13 @@ namespace UI
                 }
                 directory = Directory.GetParent(directory)?.FullName;
             }
-            if(string.IsNullOrEmpty(directory))
+            if (string.IsNullOrEmpty(directory))
             {
                 throw new DirectoryNotFoundException(directory);
             }
-
-            foreach (var platfromName in platforms)
-            {
-                var dll = string.Concat(platfromName, ".dll");
-                var targetFilePath = Path.Combine(directory,platfromName,"bin","Debug","net8.0", dll);
-                if(!File.Exists(targetFilePath)) throw new FileNotFoundException(targetFilePath);
-                File.Copy(targetFilePath,Path.Combine(AppContext.BaseDirectory, dll),true);
-            }
+            var dll = string.Concat(platformName, ".dll");
+            var targetFilePath = Path.Combine(directory, platformName, "bin", "Debug", "net8.0", dll);
+            if (!File.Exists(targetFilePath)) throw new FileNotFoundException(targetFilePath);
         }
 #endif
     }

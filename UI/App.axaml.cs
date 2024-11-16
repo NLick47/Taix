@@ -43,11 +43,7 @@ namespace UI
 
         private void CreatePlatformInitializer(IServiceCollection services)
         {
-            string platfromName = string.Empty;
-#if WINDOWS
-            platfromName = "Win";
-
-#endif
+            string platfromName = PlatformInfo.GetPlatformName();
             string dllPath = Path.Combine(AppContext.BaseDirectory, $"{platfromName}.dll");
             var assembly = Assembly.LoadFile(dllPath);
             var classType = assembly.GetType($"{platfromName}.WinPlatformInitializer");
