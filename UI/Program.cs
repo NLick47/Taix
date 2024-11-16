@@ -53,6 +53,7 @@ namespace UI
             var dll = string.Concat(platformName, ".dll");
             var targetFilePath = Path.Combine(directory, platformName, "bin", "Debug", "net8.0", dll);
             if (!File.Exists(targetFilePath)) throw new FileNotFoundException(targetFilePath);
+            File.Copy(targetFilePath, Path.Combine(AppContext.BaseDirectory, dll), true);
         }
 #endif
     }
