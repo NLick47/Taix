@@ -14,6 +14,8 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 using System.Reactive;
 using Core.Librarys;
 using UI.Views;
+using Avalonia;
+using Avalonia.Controls;
 
 namespace UI.ViewModels
 {
@@ -50,9 +52,12 @@ namespace UI.ViewModels
 
         private async void Init()
         {
+            Application.Current.TryFindResource("Today", out var d);
+            Application.Current.TryFindResource("Thisweek", out var w);
             TabbarData = new System.Collections.ObjectModel.ObservableCollection<string>()
             {
-                "今日","本周"
+                d as string,
+                w as string
             };
             TabbarSelectedIndex = 0;
             //AppContextMenu = appContextMenuServicer.GetContextMenu();

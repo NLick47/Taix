@@ -75,7 +75,7 @@ namespace UI.Controls.Tabbar
             base.OnPropertyChanged(change);
             if(change.Property == SelectedIndexProperty)
             {
-
+                OnSelectedItemChanged(change);
             }
         }
         private static void OnSelectedItemChanged(AvaloniaPropertyChangedEventArgs change)
@@ -89,7 +89,18 @@ namespace UI.Controls.Tabbar
 
         private void ScrollToActive(int oldSelectedIndex = 0)
         {
-            
+            if (oldSelectedIndex > ItemsDictionary.Count || ItemsDictionary.Count == 0 || !IsLoaded)
+            {
+                return;
+            }
+            //  获取选中项
+            var item = ItemsDictionary[SelectedIndex];
+            var oldSelectedItem = ItemsDictionary[oldSelectedIndex];
+
+            //  选中项的坐标
+            var relativePoint = item.Bounds.Position;
+            double scrollX = relativePoint.X;
+            item.Foreground = new SolidColorBrush(SelectedTextColor);
         }
 
 
@@ -150,7 +161,6 @@ namespace UI.Controls.Tabbar
 
         private void Reset()
         {
-            
             foreach (var item in ItemsContainer.Children)
             {
                 if (item != ItemsContainer.Children[SelectedIndex])

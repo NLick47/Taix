@@ -5,12 +5,37 @@
 
   <ControlTheme x:Key="{x:Type controls:Tabbar}" 
 				TargetType="controls:Tabbar">
+
+	  <Styles>
+		  <Style Selector="Border">
+			  <Setter Property="Transitions">
+				  <Transitions>
+					  <TransformOperationsTransition
+						 Property="RenderTransform"
+					   Duration="0:0:0.1"/>
+				  </Transitions>
+			  </Setter>
+		  </Style>
+
+		  <Style Selector="TextBlock">
+			  <Setter Property="Transitions">
+				  <Transitions>
+					  <BrushTransition
+						 Property="Foreground"
+					   Duration="0:0:0.3"/>
+				  </Transitions>
+			  </Setter>
+			  
+			  <Setter Property="Foreground" Value="#CCCCCC" />
+		  </Style>
+	  </Styles>
 	  <Setter Property="MinWidth" Value="44"/>
 	  <Setter Property="Background" Value="Transparent"/>
 	  <Setter Property="SelectedTextColor" Value="{DynamicResource ThemeColor}"/>
     <Setter Property="Template">
       <ControlTemplate>
-		  <Grid  Background="{TemplateBinding Background}">
+		  <Grid  
+			  Background="{TemplateBinding Background}">
 			  <Border x:Name="ActiveBlock" Width="35"  
 					  CornerRadius="2"  HorizontalAlignment="Left"  
 					  VerticalAlignment="Bottom" ZIndex="9" 
