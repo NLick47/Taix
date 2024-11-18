@@ -13,6 +13,7 @@ using System.Reactive.Linq;
 using UI.Controls.Base;
 using UI.Controls.Navigation.Models;
 using UI.Models;
+using UI.Views;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace UI.ViewModels
@@ -24,7 +25,8 @@ namespace UI.ViewModels
         public Command OnSelectedCommand { get; }
         public Command GotoPageCommand { get; }
 
-        //private string[] pages = { nameof(IndexPage), nameof(ChartPage), nameof(DataPage), nameof(CategoryPage) };
+        public IndexPageViewModel view { get; }
+        private string[] pages = { nameof(IndexPage),/* nameof(ChartPage), nameof(DataPage), nameof(CategoryPage)*/ };
         public MainViewModel(
            IServiceProvider serviceProvider,
            IAppConfig appConfig,
@@ -34,7 +36,6 @@ namespace UI.ViewModels
             this.serviceProvider = serviceProvider;
             this.appConfig = appConfig;
             ServiceProvider = serviceProvider;
-
             //OnSelectedCommand = new Command(new Action<object>(OnSelectedCommandHandle));
             //GotoPageCommand = new Command(new Action<object>(OnGotoPageCommand));
             Items = new ObservableCollection<NavigationItemModel>();
@@ -46,16 +47,16 @@ namespace UI.ViewModels
         {
             if (e.PropertyName == nameof(Uri))
             {
-                //if (Uri == nameof(IndexPage))
-                //{
-                //    Data = null;
-                //}
+                if (Uri == nameof(IndexPageViewModel))
+                {
+                    Data = null;
+                }
             }
         }
         private void InitNavigation()
         {
             IndexUriList = new ();
-            //IndexUriList.AddRange(pages);
+            IndexUriList.AddRange(pages);
             Application.Current.TryFindResource("SideOverview", out var sideOverview);
             Application.Current.TryFindResource("SideStatistics", out var sideStatistics);
             Application.Current.TryFindResource("SideDetails", out var sideDetails);
@@ -67,11 +68,12 @@ namespace UI.ViewModels
             });
 
 
-            Items.Add(new ()
+            Items.Add(new()
             {
                 UnSelectedIcon = Controls.Base.IconTypes.Home,
                 SelectedIcon = IconTypes.HomeSolid,
                 Title = sideOverview as string,
+                Uri = nameof(IndexPage),
                 ID = -1
             });
 
@@ -109,6 +111,7 @@ namespace UI.ViewModels
             //NavSelectedItem = Items[startPageIndex];
             //Uri = NavSelectedItem.Uri;
             NavSelectedItem = Items.First();
+            Uri = NavSelectedItem.Uri;
         }
 
         private void SubscribeToResource(string key)

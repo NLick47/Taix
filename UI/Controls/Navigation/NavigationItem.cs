@@ -76,7 +76,7 @@ namespace UI.Controls.Navigation
 
         public static readonly StyledProperty<SolidColorBrush> IconColorBrushProperty =
             AvaloniaProperty.Register<NavigationItem, SolidColorBrush>(nameof(IconColorBrush),
-                new SolidColorBrush(Colors.Blue));
+                new SolidColorBrush(Avalonia.Media.Colors.Blue));
 
         public SolidColorBrush IconColorBrush
         {

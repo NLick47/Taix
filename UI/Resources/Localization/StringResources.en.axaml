@@ -8,6 +8,9 @@
 	<system:String x:Key="SideSort">sort</system:String>
 	<system:String x:Key="SideSetting">setting</system:String>
 
+	<system:String x:Key="Refresh">refresh</system:String>
+	<system:String x:Key="MostFrequent">Mmost frequent</system:String>
+	<system:String x:Key="App">App</system:String>
 	<!--window button Tip-->
 	<system:String x:Key="Back">back</system:String>
 	<system:String x:Key="Minimization">mini</system:String>

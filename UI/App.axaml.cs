@@ -23,13 +23,18 @@ namespace UI
 {
     public partial class App : Application
     {
-        private readonly ServiceProvider serviceProvider;
+        private  readonly ServiceProvider serviceProvider;
         private System.Threading.Mutex mutex;
         private HideWindow keepaliveWindow;
         private static IClassicDesktopStyleApplicationLifetime? AppLife;
 
+
+        public static ServiceProvider ServiceProvider => Instance.serviceProvider;
+        public static App Instance { get; private set; }
+
         public App()
         {
+            Instance = this;
             AppDomain.CurrentDomain.UnhandledException += App_DispatcherUnhandledException;
 #if DEBUG
             AppDomain.CurrentDomain.UnhandledException -= App_DispatcherUnhandledException;
@@ -51,6 +56,9 @@ namespace UI
             var methodInfo = classType!.GetMethod("Initialize");
             methodInfo!.Invoke(Instance, new object[] { services });
         }
+
+        
+
 
         private void ConfigureServices(IServiceCollection services)
         {
@@ -78,9 +86,9 @@ namespace UI
 
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<MainWindow>();
-            ////  首页
-            //services.AddTransient<IndexPage>();
-            //services.AddTransient<IndexPageVM>();
+            //  首页
+            services.AddTransient<IndexPage>();
+            services.AddTransient<IndexPageViewModel>();
 
             ////  数据页
             //services.AddTransient<DataPage>();

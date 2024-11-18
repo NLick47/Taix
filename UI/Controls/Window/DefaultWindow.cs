@@ -36,7 +36,9 @@ namespace UI.Controls.Window
 
         public bool RestoreVisible { get => GetValue(RestoreVisibleProperty); set => SetValue(RestoreVisibleProperty, value); }
 
-
+        public static readonly StyledProperty<PageContainer> PageContainerProperty = 
+            AvaloniaProperty.Register<DefaultWindow, PageContainer>(nameof(PageContainer));
+        public PageContainer PageContainer { get { return (PageContainer)GetValue(PageContainerProperty); } set { SetValue(PageContainerProperty, value); } }
         #region sys command
         public static ReactiveCommand<Unit, Unit> MinimizeWindowCommand { get; private set; }
         public static ReactiveCommand<Unit, Unit> RestoreWindowCommand { get; private set; }
@@ -45,6 +47,63 @@ namespace UI.Controls.Window
         public static ReactiveCommand<Unit, Unit> LogoButtonClickCommand { get; private set; }
         public static ReactiveCommand<Unit, Unit> BackCommand { get; private set; }
         #endregion
+
+
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if(change.Property == PageContainerProperty)
+            {
+                OnPageContainerChanged(change);
+            }
+            if (change.Property == IsCanBackProperty)
+            {
+                OnIsCanBackChanged(change);
+            }
+        }
+
+        /// <summary>
+        /// 是否可以返回
+        /// </summary>
+        public bool IsCanBack { get { return (bool)GetValue(IsCanBackProperty); } set { SetValue(IsCanBackProperty, value); } }
+
+        public static readonly StyledProperty<bool> IsCanBackProperty =
+            AvaloniaProperty.Register<DefaultWindow,bool>(nameof(IsCanBack));
+
+        private static void OnIsCanBackChanged(AvaloniaPropertyChangedEventArgs e)
+        {
+            var that = e.Sender as DefaultWindow;
+            if (that != null)
+            {
+                //if (that.IsCanBack)
+                //{
+                //    VisualStateManager.GoToState(that, "CanBackState", true);
+                //}
+                //else
+                //{
+                //    VisualStateManager.GoToState(that, "Normal", true);
+                //}
+            }
+        }
+
+        private static void OnPageContainerChanged(AvaloniaPropertyChangedEventArgs e)
+        {
+            var that = (DefaultWindow)e.Sender;
+            if (that != null)
+            {
+                if (e.NewValue != null)
+                {
+                    that.IsCanBack = that.PageContainer.Index >= 1;
+
+                    that.PageContainer.OnLoadPaged += (s, v) =>
+                    {
+                        var pc = s as PageContainer;
+                        that.IsCanBack = pc?.Index >= 1;
+                    };
+                }
+            }
+        }
+
 
         private bool IsWindowClosed_ = false;
         public bool IsWindowClosed { get { return IsWindowClosed_; } }

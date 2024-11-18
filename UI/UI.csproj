@@ -10,10 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Base\Color\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="Resources\Fonts\Segoe Fluent Icons.ttf" />
     <None Remove="Resources\Icons\defaultIcon.png" />
     <None Remove="Resources\Icons\tai.ico" />
@@ -50,5 +46,13 @@
 
   <ItemGroup>
     <UpToDateCheckInput Remove="Themes\Navigation\NavigationItem.axaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Views\IndexPage.axaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Views\DetailPage.axaml" />
   </ItemGroup>
 </Project>

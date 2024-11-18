@@ -11,7 +11,7 @@ namespace UI.Controls.Window
     {
         public HideWindow()
         {
-            
+           
         }
 
         protected override Type StyleKeyOverride => typeof(HideWindow);
