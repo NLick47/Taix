@@ -4,4 +4,15 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="UI.Views.DetailPage">
+
+	<UserControl.ContextMenu>
+		<ContextMenu>
+			<MenuItem Header="{DynamicResource Refresh}" />
+		</ContextMenu>
+	</UserControl.ContextMenu>
+
+	<StackPanel Margin="20">
+		<TextBlock Text="{DynamicResource App}" 
+				   FontSize="18" Margin="0,0,0,20"/>
+	</StackPanel>
 </UserControl>

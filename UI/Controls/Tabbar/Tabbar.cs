@@ -14,6 +14,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Transformation;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using DynamicData;
 using UI.Controls.Base;
 
@@ -52,7 +53,7 @@ namespace UI.Controls.Tabbar
 
         //  选中标记块
         private Border ActiveBlock;
-        private Grid _gridIcon;
+        private Grid GridIcon;
 
         public Tabbar()
         {
@@ -65,7 +66,6 @@ namespace UI.Controls.Tabbar
             base.OnApplyTemplate(e);
             ActiveBlock = e.NameScope.Find("ActiveBlock") as Border;
             ItemsContainer = e.NameScope.Find("ItemsContainer") as Grid;
-            _gridIcon = e.NameScope.Find("GridIcon") as Grid;
             Render();
         }
 
@@ -111,7 +111,7 @@ namespace UI.Controls.Tabbar
 
         private void GetNewSelectedStyle(Point relativePoint)
         {
-            _gridIcon.RenderTransform = TransformOperations.Parse(
+            ActiveBlock.RenderTransform = TransformOperations.Parse(
                 $"translateX({relativePoint.X - 5}px)"
             );
         }
