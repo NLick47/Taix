@@ -1,15 +1,21 @@
-﻿using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Input;
-using Avalonia.Media;
-using DynamicData;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
+using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.Media.Transformation;
+using Avalonia.Styling;
+using DynamicData;
+using UI.Controls.Base;
 
 namespace UI.Controls.Tabbar
 {
@@ -33,32 +39,25 @@ namespace UI.Controls.Tabbar
         public static readonly StyledProperty<int> SelectedIndexProperty =
             AvaloniaProperty.Register<Tabbar, int>(nameof(SelectedIndex));
 
-
         public ObservableCollection<string> Data
         {
-            get
-            {
-                return (ObservableCollection<string>)GetValue(DataProperty);
-            }
-            set
-            {
-                SetValue(DataProperty, value);
-            }
+            get { return (ObservableCollection<string>)GetValue(DataProperty); }
+            set { SetValue(DataProperty, value); }
         }
         public static readonly StyledProperty<ObservableCollection<string>> DataProperty =
             AvaloniaProperty.Register<Tabbar, ObservableCollection<string>>(nameof(Data));
-
-
 
         private List<TextBlock> ItemsDictionary;
         private Grid ItemsContainer;
 
         //  选中标记块
         private Border ActiveBlock;
+        private Grid _gridIcon;
 
         public Tabbar()
         {
             ItemsDictionary = new List<TextBlock>();
+            
         }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -66,23 +65,24 @@ namespace UI.Controls.Tabbar
             base.OnApplyTemplate(e);
             ActiveBlock = e.NameScope.Find("ActiveBlock") as Border;
             ItemsContainer = e.NameScope.Find("ItemsContainer") as Grid;
+            _gridIcon = e.NameScope.Find("GridIcon") as Grid;
             Render();
         }
-
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if(change.Property == SelectedIndexProperty)
+            if (change.Property == SelectedIndexProperty)
             {
                 OnSelectedItemChanged(change);
             }
         }
+
         private static void OnSelectedItemChanged(AvaloniaPropertyChangedEventArgs change)
         {
             var control = change.Sender as Tabbar;
             if (change.NewValue != change.OldValue)
-            {   
+            {
                 control.ScrollToActive(int.Parse(change.OldValue.ToString()));
             }
         }
@@ -101,8 +101,20 @@ namespace UI.Controls.Tabbar
             var relativePoint = item.Bounds.Position;
             double scrollX = relativePoint.X;
             item.Foreground = new SolidColorBrush(SelectedTextColor);
+            //给新选项赋样式
+            GetNewSelectedStyle(relativePoint);
+            //移除旧样式
+            ReOldSelectedStyle();
         }
 
+        private void ReOldSelectedStyle() => Reset();
+
+        private void GetNewSelectedStyle(Point relativePoint)
+        {
+            _gridIcon.RenderTransform = TransformOperations.Parse(
+                $"translateX({relativePoint.X - 5}px)"
+            );
+        }
 
         private void Render()
         {
@@ -115,10 +127,9 @@ namespace UI.Controls.Tabbar
                 for (int i = 0; i < Data.Count; i++)
                 {
                     var item = Data[i];
-                    ItemsContainer.ColumnDefinitions.Add(new ColumnDefinition()
-                    {
-                        Width = new GridLength(1, GridUnitType.Star)
-                    });
+                    ItemsContainer.ColumnDefinitions.Add(
+                        new ColumnDefinition() { Width = new GridLength(1, GridUnitType.Star) }
+                    );
                     AddItem(item, i);
                 }
             }
@@ -169,10 +180,7 @@ namespace UI.Controls.Tabbar
                     text.Foreground = UI.Base.Color.Colors.GetFromString("#ccc");
                 }
             }
-
         }
-
-
 
         protected override Type StyleKeyOverride => typeof(Tabbar);
     }
