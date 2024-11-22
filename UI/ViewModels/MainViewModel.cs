@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Linq;
 using UI.Controls.Base;
 using UI.Controls.Navigation.Models;
@@ -22,7 +23,7 @@ namespace UI.ViewModels
     {
         private readonly IServiceProvider serviceProvider;
         private readonly IAppConfig appConfig;
-        public Command OnSelectedCommand { get; }
+        public ReactiveCommand<object, Unit> OnSelectedCommand { get; }
         public Command GotoPageCommand { get; }
 
         public IndexPageViewModel view { get; }
@@ -36,7 +37,7 @@ namespace UI.ViewModels
             this.serviceProvider = serviceProvider;
             this.appConfig = appConfig;
             ServiceProvider = serviceProvider;
-            //OnSelectedCommand = new Command(new Action<object>(OnSelectedCommandHandle));
+            OnSelectedCommand = ReactiveCommand.Create<object>(OnSelectedCommandHandle);
             //GotoPageCommand = new Command(new Action<object>(OnGotoPageCommand));
             Items = new ObservableCollection<NavigationItemModel>();
             PropertyChanged += MainViewModel_PropertyChanged;
@@ -117,6 +118,14 @@ namespace UI.ViewModels
         private void SubscribeToResource(string key)
         {
 
+        }
+
+        private void OnSelectedCommandHandle(object obj)
+        {
+            if (!string.IsNullOrEmpty(NavSelectedItem.Uri))
+            {
+                Uri = NavSelectedItem.Uri;
+            }
         }
     }
 }

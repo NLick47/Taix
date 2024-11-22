@@ -19,6 +19,15 @@
 	<system:String x:Key="Maximize">max</system:String>
 	<system:String x:Key="Restore">restore</system:String>
 	<system:String x:Key="Close">close</system:String>
+	
+	
+	<system:String x:Key="LongerTip">The app no longer counts time</system:String>
+	<system:String x:Key="IgnoredText">Have been ignored</system:String>
+	<system:String x:Key="MatchREIgnoredText">The match has been ignored by the RE</system:String>
+	<system:String x:Key="ApplicationAlias">Application alias</system:String>
+	<system:String x:Key="ApplicationPName">Application process name</system:String>
+	<system:String x:Key="ApplicationDescription">Application description</system:String>
+	<system:String x:Key="ApplicationFilePath">Application file path</system:String>
 
 
 	<system:String x:Key="Open">open</system:String>

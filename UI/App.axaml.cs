@@ -30,7 +30,7 @@ namespace UI
 
 
         public static ServiceProvider ServiceProvider => Instance.serviceProvider;
-        public static App Instance { get; private set; }
+        private static App Instance;
 
         public App()
         {
@@ -99,8 +99,8 @@ namespace UI
             //services.AddTransient<SettingPageVM>();
 
             ////  œÍ«È“≥
-            //services.AddTransient<DetailPage>();
-            //services.AddTransient<DetailPageVM>();
+            services.AddTransient<DetailPage>();
+            services.AddTransient<DetailPageViewModel>();
 
             ////  ∑÷¿‡
             //services.AddTransient<CategoryPage>();

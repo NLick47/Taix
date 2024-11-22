@@ -15,6 +15,8 @@
 				<!--<ResourceInclude Source="/Resources/Themes/Light.axaml"/>-->
 				<ResourceInclude Source="/Resources/Localization/StringResources.en.axaml"/>
 				<ResourceInclude Source="/Themes/Base/Icon.axaml"/>
+				<ResourceInclude Source="/Themes/Base/Img.axaml"/>
+				<ResourceInclude Source="/Themes/Base/View.axaml"/>
 				
 				<ResourceInclude Source="/Themes/Window/DefaultWIndow.axaml"/>
 				<ResourceInclude Source="/Themes/Window/HideWindow.axaml"/>

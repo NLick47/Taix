@@ -2,12 +2,118 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="800" 
+			 d:DesignHeight="450"
+			 xmlns:base="clr-namespace:UI.Controls.Base"
+			 xmlns:Tabbar="clr-namespace:UI.Controls.Tabbar"
+			 xmlns:btn="clr-namespace:UI.Controls.Button"
+			 Foreground="{DynamicResource StandardTextBrush}" 
+			 Background="Transparent"
+			 xmlns:s="clr-namespace:UI.Controls.Select" 
+			  xmlns:vm="using:UI.ViewModels"
+			 x:DataType="vm:DetailPageViewModel"
              x:Class="UI.Views.DetailPage">
 
 	<UserControl.ContextMenu>
 		<ContextMenu>
 			<MenuItem Header="{DynamicResource Refresh}" />
+			<Border
+			   Background="{DynamicResource SettingPanelBgBrush}"
+			   CornerRadius="12"
+			   Padding="0,20">
+
+				<Grid>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="100"/>
+						<ColumnDefinition Width="9*"/>
+						<ColumnDefinition Width="3*"/>
+
+					</Grid.ColumnDefinitions>
+					<base:Img URL="{Binding App.IconFile}"   Width="25" Height="25" 
+							  HorizontalAlignment="Center" 
+							  VerticalAlignment="Center"/>
+					<StackPanel Grid.Column="1" 
+								VerticalAlignment="Center">
+						<base:View Condition="=False" 
+								   Value="{Binding IsRegexIgnore}">
+							<Border Background="#f51837" Padding="10,5" CornerRadius="4" Margin="0,0,0,5" VerticalAlignment="Center" 
+									HorizontalAlignment="Left" IsVisible="{Binding CancelBlockBtnVisibility}" 
+									ToolTip.Tip="{DynamicResource LongerTip}">
+								<StackPanel Orientation="Horizontal"  VerticalAlignment="Center">
+									<base:Icon IconType="StatusCircleBlock" FontSize="12" 
+											   VerticalAlignment="Center" 
+											   Foreground="White"/>
+									<TextBlock Text="{DynamicResource IgnoredText}" 
+											   Foreground="White" 
+											   VerticalAlignment="Center" 
+											   Margin="5,0,0,0"/>
+								</StackPanel>
+							</Border>
+						</base:View>
+						<base:View Value="{Binding IsRegexIgnore}">
+							<Border Background="#f51837" Padding="10,5" CornerRadius="4" 
+									Margin="0,0,0,5" VerticalAlignment="Center"
+									HorizontalAlignment="Left"
+									ToolTip.Tip="{DynamicResource LongerTip}">
+								<StackPanel Orientation="Horizontal"  VerticalAlignment="Center">
+									<base:Icon IconType="StatusCircleBlock" FontSize="12" VerticalAlignment="Center" Foreground="White"/>
+									<TextBlock Text="{DynamicResource MatchREIgnoredText}" Foreground="White" VerticalAlignment="Center" Margin="5,0,0,0"/>
+								</StackPanel>
+							</Border>
+						</base:View>
+
+						<base:View Value="{Binding App.Alias}" Condition="not empty">
+							<StackPanel>
+								<TextBlock ToolTip.Tip="{DynamicResource ApplicationAlias}" Grid.Column="1" 
+										   Text="{Binding App.Alias}" 
+										   FontSize="18" VerticalAlignment="Center" TextWrapping="WrapWithOverflow">
+									<TextBlock ToolTip.Tip="{DynamicResource ApplicationPName}">
+										<Run Text="{Binding App.Name}"/>
+									</TextBlock>
+									<Run Text="(" />
+									<TextBlock ToolTip.Tip="{DynamicResource ApplicationDescription}">
+										<Run Text="{Binding App.Description}"/>
+									</TextBlock>
+									<Run Text=")" />
+								</TextBlock>
+							</StackPanel>
+						</base:View>
+						<base:View Value="{Binding App.Alias}" Condition="empty">
+							<StackPanel>
+								<TextBlock ToolTip.Tip="{DynamicResource ApplicationPName}" 
+										   Grid.Column="1" 
+										   Text="{Binding App.Description}" 
+										   FontSize="18" 
+										   VerticalAlignment="Center" 
+										   TextWrapping="WrapWithOverflow"/>
+
+								<TextBlock 
+									ToolTip.Tip="{DynamicResource ApplicationDescription}" 
+									Text="{Binding App.Name}" FontSize="12" 
+									Foreground="Gray"
+									VerticalAlignment="Center" 
+									HorizontalAlignment="Left"
+									Margin="0,5,0,0"/>
+
+								<TextBlock ToolTip.Tip="{DynamicResource ApplicationFilePath}" 
+										   Foreground="Gray" 
+										   Text="{Binding App.File}"  
+										   Margin="0,5,0,0" 
+							TextWrapping="WrapWithOverflow"/>
+
+								<base:View Condition="not null" Value="{Binding Category}" HorizontalAlignment="Left">
+									<!--<s:Select Margin="0,10,0,0" ="分类" 
+												   SelectedItem="{Binding Category,Mode=TwoWay}" 
+												   Options="{Binding Categorys}"  
+												   Padding="10,0"
+												   Height="30"/>-->
+								</base:View>
+							</StackPanel>
+						</base:View>
+					
+					</StackPanel>
+				</Grid>
+			</Border>
 		</ContextMenu>
 	</UserControl.ContextMenu>
 

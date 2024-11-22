@@ -12,6 +12,8 @@
         xmlns:na="using:UI.Controls.Navigation"
 		xmlns:control="clr-namespace:UI.Controls"
 		PageContainer="{Binding PageContainer}"
+		xmlns:i="using:Avalonia.Xaml.Interactivity"
+		xmlns:ia="using:Avalonia.Xaml.Interactions.Core"	
 		Height="553" Width="815" MinHeight="553" MinWidth="814"
         Title="Taix">
 	<Grid>
@@ -22,9 +24,16 @@
 
 		<na:Navigation x:Name="Navigation" Margin="0,32,0,0" Width="80"
 					   Data="{Binding Items,Mode=TwoWay}"
-					   SelectedItem="{Binding NavSelectedItem,Mode=TwoWay}"
-					   >
-	
+					   SelectedItem="{Binding NavSelectedItem,Mode=TwoWay}">
+
+			<i:Interaction.Behaviors>
+				<ia:EventTriggerBehavior EventName="OnSelected">
+					<ia:InvokeCommandAction Command="{Binding OnSelectedCommand}"
+										   CommandParameter="{Binding ElementName=Navigation}"
+										   />
+				</ia:EventTriggerBehavior>
+			</i:Interaction.Behaviors>
+			
 			<na:Navigation.BottomExtContent>
 				<na:NavigationItem Icon="Settings" 
 								   Title="{StaticResource SideSetting}" 

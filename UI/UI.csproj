@@ -55,4 +55,8 @@
   <ItemGroup>
     <UpToDateCheckInput Remove="Views\DetailPage.axaml" />
   </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Themes\Base\Img.axaml" />
+  </ItemGroup>
 </Project>
