@@ -59,6 +59,60 @@
 					</Border>
 				</StackPanel>
 			</Border>
+
+			<!--网页-->
+			<Border Grid.Column="2" Padding="10" CornerRadius="10">
+				<Border.Background>
+					<SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".1"/>
+				</Border.Background>
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="auto"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+					<Border HorizontalAlignment="Left" Padding="10,5" CornerRadius="6">
+						<Border.Background>
+							<SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".2"/>
+						</Border.Background>
+						<StackPanel Orientation="Horizontal" TextElement.Foreground="{DynamicResource ThemeBrush}">
+							<base:Icon VerticalAlignment="Center" IconType="Website"/>
+							<TextBlock FontSize="10" VerticalAlignment="Center" Text="网站" Margin="5,0,0,0"/>
+						</StackPanel>
+					</Border>
+
+					<!--<Charts:Charts IconSize="18" Grid.Row="1" Margin="0,5,0,0" IsCanScroll="False" ClickCommand="{Binding ToDetailCommand}" Data="{Binding WebFrequentUseData}" ChartsType="List" IsLoading="{Binding IsLoading,Mode=TwoWay}" ItemMenu="{Binding WebSiteContextMenu}">
+						<Charts:Charts.Resources>
+							<SolidColorBrush x:Key="ListItemIconBgBrush" Color="{StaticResource ThemeColor}" Opacity=".2"/>
+							<SolidColorBrush x:Key="ChartTypeListProgressBarBrush" Color="{StaticResource ThemeColor}" Opacity=".6"/>
+						</Charts:Charts.Resources>
+					</Charts:Charts>-->
+				</Grid>
+			</Border>
 		</Grid>
+
+		<StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+			<TextBlock Text="更多" FontSize="14" VerticalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+			<!--<select:Select Margin="10,0,0,0" VerticalAlignment="Center" Padding="10,5"  IsShowIcon="False" SelectedItem="{Binding MoreType,Mode=TwoWay}" Options="{Binding MoreTypeOptions}"/>-->
+		</StackPanel>
+
+		<TabControl
+                SelectedIndex="{Binding MoreType.Id}"
+                BorderThickness="0"
+                Margin="0,10,0,0"
+                Padding="0"
+                Background="Transparent"
+                >
+
+				
+			<!--<TabItem>
+				<Charts:Charts Data="{Binding AppMoreData}"  ItemMenu="{Binding AppContextMenu}" ChartsType="Card" ShowLimit="{Binding MoreNum}" IsLoading="{Binding IsLoading,Mode=TwoWay}" ClickCommand="{Binding ToDetailCommand}"/>
+			</TabItem>
+			<TabItem>
+				<Grid>
+					<Charts:Charts Data="{Binding WebMoreData}" ClickCommand="{Binding ToDetailCommand}" ChartsType="Card" ShowLimit="{Binding MoreNum}" IsLoading="{Binding IsLoading,Mode=TwoWay}" ItemMenu="{Binding WebSiteContextMenu}"/>
+				</Grid>
+			</TabItem>-->
+		</TabControl>
+
 	</StackPanel>
 </UserControl>
