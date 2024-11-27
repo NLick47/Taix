@@ -1,0 +1,40 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+					xmlns:input="clr-namespace:UI.Controls.Input"
+        xmlns:controls="using:UI.Controls.Charts">
+
+	<ControlTheme x:Key="{x:Type controls:Charts}"
+				  TargetType="controls:Charts">
+		<Setter Property="FontSize" Value="14"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Grid Background="{TemplateBinding Background}" >
+					<Border x:Name="Radar"  Visibility="Collapsed">
+					</Border>
+				</Grid>
+				<Canvas x:Name="CommonCanvasContainer"  Visibility="Collapsed">
+				</Canvas>
+				<Grid x:Name="List"  Visibility="Collapsed" >
+					<Grid.RowDefinitions>
+						<RowDefinition Height="auto"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+
+					<Grid x:Name="AHeader" Visibility="Collapsed">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="auto"/>
+							<RowDefinition Height="*"/>
+						</Grid.RowDefinitions>
+						<TextBlock FontSize="14" Foreground="{DynamicResource SubTextBrush}">
+							<Run Text="总计"/>
+							<Run x:Name="ACount"/>
+							<Run Text="个"/>
+						</TextBlock>
+						<input:InputBox IconColor="{DynamicResource DefaultTextBrush}" x:Name="ASearchBox" Grid.Row="1" Placeholder="搜索" Margin="0,10,0,10" BoxPadding="5,0" Icon="Search"/>
+					</Grid>
+				</Grid>
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
+</ResourceDictionary>
