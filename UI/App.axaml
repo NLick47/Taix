@@ -24,6 +24,7 @@
 				<ResourceInclude Source="/Themes/Navigation/Navigation.axaml"/>
 				<ResourceInclude Source="/Themes/Navigation/NavigationItem.axaml"/>
 				<ResourceInclude Source="/Themes/Button/IconButton.axaml"/>
+				<ResourceInclude Source="/Themes/Input/InputBox.axaml"/>
 				
 				<ResourceInclude Source="/Themes/Tabbar/Tabbar.axaml"/>
 				<ResourceInclude Source="/Themes/PageContainer.axaml"/>
