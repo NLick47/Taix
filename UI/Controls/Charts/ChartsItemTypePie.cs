@@ -1,7 +1,9 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -63,15 +65,98 @@ namespace UI.Controls.Charts
             {
                 var angle = item.Value / MaxValue * 360;
                 var path = CreatePath(angle, UI.Base.Color.Colors.GetFromString(item.Color));
-                path.ToolTip = item.PopupText;
-                path.MouseEnter += Path_MouseEnter;
-                path.MouseLeave += Path_MouseLeave;
+                //path.ToolTip = item.PopupText;
+                path.PointerEntered += Path_PointerEntered;
+                path.PointerExited += Path_PointerExited;
                 _paths.Add(path);
                 Children.Add(path);
                 i++;
             }
         }
 
-       
+        private void Path_PointerExited(object? sender, PointerEventArgs e)
+        {
+            foreach (var p in _paths)
+            {
+                p.Opacity = 1;
+            }
+        }
+
+        private void Path_PointerEntered(object? sender, PointerEventArgs e)
+        {
+            var path = sender as Path;
+            foreach (var p in _paths)
+            {
+                if (p != path)
+                {
+                    p.Opacity = .2;
+                }
+            }
+        }
+
+        private Path CreatePath(double angle_, SolidColorBrush color_)
+        {
+            Path path = new Path();
+
+            PathGeometry pathGeometry = new PathGeometry();
+            double Radius = Bounds.Height / 2;
+            //double Angle = angle_;
+            //Point startPoint = new Point(Radius, Radius);
+
+            //if (Angle >= 360)
+            //{
+            //    Angle = 359;
+            //}
+
+
+            double x = Math.Cos(_lastAngle) * Radius + Radius;
+            double y = Math.Sin(_lastAngle) * Radius + Radius;
+            var lin1 = new LineSegment() { Point = new Point(x, y) };
+
+            _lastAngle += Math.PI * angle_ / 180;
+
+            x = Math.Cos(_lastAngle) * Radius + Radius;
+            y = Math.Sin(_lastAngle) * Radius + Radius;
+            //Point endPoint = ComputeCartesianCoordinate(Angle, Radius);
+            //endPoint.X += Radius;
+            //endPoint.Y += Radius;
+
+            //_lastX = endPoint.X;
+            //_lastY = endPoint.Y;
+            //Debug.WriteLine($"angle:{angle_},start:{startPoint},endpoint:{endPoint}");
+
+            var arcSeg = new ArcSegment()
+            {
+                Size = new Size(Radius, Radius),
+                IsLargeArc = angle_ > 180,
+                SweepDirection = SweepDirection.Clockwise,
+                Point = new Point(x, y),
+                RotationAngle = angle_,
+            };
+            var line2 = new LineSegment() { Point = new Point(Radius, Radius) };
+            var fig = new PathFigure()
+            {
+                 StartPoint = new Point(Radius, Radius),
+                 Segments = new PathSegments { lin1, arcSeg, line2 }, 
+                 IsClosed = false
+            };
+            pathGeometry.Figures.Add(fig);
+            path.Data = pathGeometry;
+            path.Fill = color_;
+            return path;
+        }
+
+        private Point ComputeCartesianCoordinate(double angle, double radius)
+        {
+            // convert to radians
+            double angleRad = (Math.PI / 180.0) * (angle - 90);
+
+            double x = radius * Math.Cos(angleRad);
+            double y = radius * Math.Sin(angleRad);
+
+            return new Point(x, y);
+        }
+
+
     }
 }
