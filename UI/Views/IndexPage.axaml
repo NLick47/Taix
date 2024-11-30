@@ -7,8 +7,9 @@
 			 Background="Transparent"
 			  xmlns:vm="using:UI.ViewModels"
 			  x:DataType="vm:IndexPageViewModel"
-			 xmlns:Tabbar="clr-namespace:UI.Controls.Tabbar" 
-			  xmlns:base="clr-namespace:UI.Controls.Base"
+			  xmlns:Charts="using:UI.Controls.Charts"
+			 xmlns:Tabbar="using:UI.Controls.Tabbar" 
+			  xmlns:base="using:UI.Controls.Base"
              x:Class="UI.Views.IndexPage">
 
 	<UserControl.ContextMenu>
@@ -80,12 +81,12 @@
 						</StackPanel>
 					</Border>
 
-					<!--<Charts:Charts IconSize="18" Grid.Row="1" Margin="0,5,0,0" IsCanScroll="False" ClickCommand="{Binding ToDetailCommand}" Data="{Binding WebFrequentUseData}" ChartsType="List" IsLoading="{Binding IsLoading,Mode=TwoWay}" ItemMenu="{Binding WebSiteContextMenu}">
+					<Charts:Charts IconSize="18" Grid.Row="1" Margin="0,5,0,0" IsCanScroll="False" ClickCommand="{Binding ToDetailCommand}" Data="{Binding WebFrequentUseData}" ChartsType="List" IsLoading="{Binding IsLoading,Mode=TwoWay}" ItemMenu="{Binding WebSiteContextMenu}">
 						<Charts:Charts.Resources>
 							<SolidColorBrush x:Key="ListItemIconBgBrush" Color="{StaticResource ThemeColor}" Opacity=".2"/>
 							<SolidColorBrush x:Key="ChartTypeListProgressBarBrush" Color="{StaticResource ThemeColor}" Opacity=".6"/>
 						</Charts:Charts.Resources>
-					</Charts:Charts>-->
+					</Charts:Charts>
 				</Grid>
 			</Border>
 		</Grid>

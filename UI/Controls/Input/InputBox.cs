@@ -1,8 +1,11 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,16 +15,9 @@ using UI.Controls.Base;
 
 namespace UI.Controls.Input
 {
+    [Obsolete]
     public class InputBox : TextBox
     {
-        public CornerRadius CornerRadius
-        {
-            get { return (CornerRadius)GetValue(CornerRadiusProperty); }
-            set { SetValue(CornerRadiusProperty, value); }
-        }
-        public static readonly StyledProperty<CornerRadius> CornerRadiusProperty =
-            AvaloniaProperty.Register<InputBox, CornerRadius>(nameof(CornerRadius));
-
         /// <summary>
         /// 图标
         /// </summary>
@@ -36,7 +32,7 @@ namespace UI.Controls.Input
         public Thickness BoxPadding { get { return (Thickness)GetValue(BoxPaddingProperty); } set { SetValue(BoxPaddingProperty, value); } 
         }
         public static readonly StyledProperty<Thickness> BoxPaddingProperty =
-             AvaloniaProperty.Register<InputBox, Thickness>(nameof(Icon));
+             AvaloniaProperty.Register<InputBox, Thickness>(nameof(BoxPadding));
 
         public string Title { get { return (string)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
         public static readonly StyledProperty<string> TitleProperty =
@@ -74,6 +70,7 @@ namespace UI.Controls.Input
         public static readonly StyledProperty<string> PlaceholderProperty = AvaloniaProperty.Register<InputBox, string>(nameof(Placeholder));
         private Popup ErrorPopup;
 
+
         protected override Type StyleKeyOverride => typeof(InputBox);
 
         public InputBox()
@@ -93,7 +90,7 @@ namespace UI.Controls.Input
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            ErrorPopup = e.NameScope.Find("ErrorPopup") as Popup;
+            ErrorPopup = e.NameScope.Get<Popup>("ErrorPopup");
             ErrorPopup.Closed += ErrorPopup_Closed;
         }
 

@@ -1,0 +1,62 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:UI.Controls.Charts">
+
+
+	<ControlTheme x:Key="{x:Type controls:ChartsItemTypeRadar}"
+				  TargetType="controls:ChartsItemTypeRadar">
+		<Setter Property="Background" Value="Transparent"/>
+
+		<Styles>
+			<Style Selector="controls|ChartsItemTypeRadar">
+				<Style Selector="^[IsLoading=True]">
+					<Style Selector="^#Loading">
+						<Setter Property="IsVisible" Value="True"/>
+					</Style>
+					<Style Selector="^#Normal">
+						<Setter Property="IsVisible" Value="False"/>
+					</Style>
+				</Style>
+			</Style>
+		</Styles>
+		
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Grid Background="{TemplateBinding Background}">
+					<Grid x:Name="Normal">
+						<Canvas x:Name="Canvas" RenderTransformOrigin=".5,.5">
+							<Canvas.RenderTransform>
+								<RotateTransform Angle="-90"></RotateTransform>
+							</Canvas.RenderTransform>
+						</Canvas>
+
+
+						<Rectangle x:Name="ValueBlockObj" Width="20"
+                                Height="20"   HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                           Margin="0"
+                                            RenderTransformOrigin="0.5,0.5">
+							<Rectangle.Effect>
+								<BlurEffect   Radius="35" />
+							</Rectangle.Effect>
+
+							<Rectangle.Fill>
+								<LinearGradientBrush  EndPoint="2,1" StartPoint="-2,0">
+									<GradientStop Color="White"/>
+									<GradientStop Color="#ff305b" Offset="1"/>
+								</LinearGradientBrush>
+							</Rectangle.Fill>
+
+							<Rectangle.RenderTransform>
+								<ScaleTransform ScaleX="3"  ScaleY="3" />
+							</Rectangle.RenderTransform>
+						</Rectangle>
+					</Grid>
+
+					<Grid x:Name="Loading">
+					</Grid>
+				</Grid>
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
+</ResourceDictionary>

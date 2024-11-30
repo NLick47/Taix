@@ -360,7 +360,7 @@ namespace UI.Controls.Charts
             {
                 charts.SetColBorderActiveBg((int)change.OldValue, (int)change.NewValue);
             }
-
+            
         }
 
         /// <summary>

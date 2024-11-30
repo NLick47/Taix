@@ -5,8 +5,66 @@
         xmlns:controls="using:UI.Controls.Input">
 
 	<ControlTheme x:Key="{x:Type controls:InputBox}" TargetType="controls:InputBox">
-		<Setter Property="CornerRadius" Value="6"/>
+		
+		<Styles>
+			<Style Selector=":disabled">
+				<Style Selector="^ base|Icon#Icon">
+					<Setter  Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
+				</Style>
 
+				<Style Selector="^ TextBlock#Placeholder">
+					<Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
+				</Style>
+
+				<Style Selector="^ Border#BoxBorder">
+					<Setter Property="Background" Value="{DynamicResource DisabledBackgroundBrush}"/>
+				</Style>
+			</Style>
+
+			<Style Selector="controls|InputBox[IsError=true]">
+				<Style Selector="^#BoxBorder">
+					<Setter Property="Background" Value="red"/>
+				</Style>
+				<Style Selector="^#Shadow">
+					<Setter Property="IsVisible" Value="false"/>
+				</Style>
+				<Style Selector="^#ErrorIcon">
+					<Setter Property="IsVisible" Value="false"/>
+				</Style>
+			</Style>
+
+			<Style Selector="controls|InputBox:focus">
+				<Style Selector="^#Shadow">
+					<Setter Property="IsVisible" Value="true"/>
+				</Style>
+				<Style Selector="^#ErrorIcon">
+					<Setter Property="IsVisible" Value="false"/>
+				</Style>
+			</Style>
+		
+			<Style Selector="controls|InputBox[Title='']">
+				<Style Selector="^#Title">
+					<Setter Property="IsVisible" Value="false" />
+				</Style>
+			</Style>
+
+			<Style Selector="controls|InputBox[Icon=None]">
+				<Style Selector="^#Icon">
+					<Setter Property="IsVisible" Value="false" />
+				</Style>
+			</Style>
+
+			<Style Selector="controls|InputBox[IsError=true]:focus">
+				<Setter Property="Foreground" Value="White"/>
+				<Style Selector="^#Icon">
+					<Setter Property="Foreground" Value="White" />
+				</Style>
+				<Style Selector="^#Title">
+					<Setter Property="Foreground" Value="White" />
+				</Style>
+			</Style>
+		</Styles>
+		<Setter Property="CornerRadius" Value="6"/>
 		<Setter Property="Height" Value="37"/>
 		<Setter Property="IconMargin" Value="5,0,0,0"/>
 		<Setter Property="IconColor" Value="#333"/>
@@ -19,118 +77,103 @@
 
 		<Setter Property="Background" Value="{DynamicResource InputBoxBgBrush}"/>
 
-		<Styles>
-			<Style Selector="^:disabled">
-				<Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
-				<Style Selector="^#Icon">
-					<Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
-				</Style>
-
-				<Style Selector="^#Placeholder">
-					<Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
-				</Style>
-
-				<Style Selector="^#BoxBorder">
-					<Setter Property="Background" Value="{DynamicResource DisabledBackgroundBrush}"/>
-				</Style>
-			</Style>
-		</Styles>
 		<Setter Property="Template">
-			<ControlTemplate>
-				<Grid>
-					<Border Name="Shadow" IsVisible="False"
-					  BorderBrush="{Binding ElementName=BoxBorder, Path=BorderBrush}"
-					  BorderThickness="{Binding ElementName=BoxBorder, Path=BorderThickness}"
-					  ZIndex="-1"
-					  Width="{Binding ElementName=BoxBorder, Path=Bounds.Width}"
-					  Height="{Binding ElementName=BoxBorder, Path=Bounds.Height}"
-					  CornerRadius="{Binding ElementName=BoxBorder, Path=CornerRadius}"
-					  Background="{Binding ElementName=BoxBorder, Path=Background}">
-						<Border.Effect>
-							<DropShadowEffect  Color="#d8d2d2"
-											   OffsetY="4"
-											   BlurRadius="1"
-											   Opacity="0.1"
-											   OffsetX="0"/>
-						</Border.Effect>
-					</Border>
-					<Border x:Name="BoxBorder"
-							BorderBrush="Transparent"
-							Background="{TemplateBinding Background}"
-							BorderThickness="2"
-							CornerRadius="{TemplateBinding CornerRadius}"
-							Padding="{TemplateBinding BoxPadding}">
-
+					<ControlTemplate>
 						<Grid>
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="auto"/>
-								<ColumnDefinition Width="*"/>
-								<ColumnDefinition Width="auto"/>
-							</Grid.ColumnDefinitions>
-							<base:Icon x:Name="Icon" IconType="{TemplateBinding Icon}" Margin="{TemplateBinding IconMargin}" Foreground="{TemplateBinding IconColor}" RenderTransformOrigin=".5,.5" FontSize="{TemplateBinding IconSize}">
-								<base:Icon.RenderTransform>
-									<ScaleTransform ScaleX="1" ScaleY="1"/>
-								</base:Icon.RenderTransform>
-							</base:Icon>
+							<Border Name="Shadow" IsVisible="False"
+							  BorderBrush="{Binding ElementName=BoxBorder, Path=BorderBrush}"
+							  BorderThickness="{Binding ElementName=BoxBorder, Path=BorderThickness}"
+							  ZIndex="-1"
+							  Width="{Binding ElementName=BoxBorder, Path=Bounds.Width}"
+							  Height="{Binding ElementName=BoxBorder, Path=Bounds.Height}"
+							  CornerRadius="{Binding ElementName=BoxBorder, Path=CornerRadius}"
+							  Background="{Binding ElementName=BoxBorder, Path=Background}">
+								<Border.Effect>
+									<DropShadowEffect  Color="#d8d2d2"
+													   OffsetY="4"
+													   BlurRadius="1"
+													   Opacity="0.1"
+													   OffsetX="0"/>
+								</Border.Effect>
+							</Border>
+							<Border x:Name="BoxBorder"
+									BorderBrush="Transparent"
+									Background="{TemplateBinding Background}"
+									BorderThickness="2"
+									CornerRadius="{TemplateBinding CornerRadius}"
+									Padding="{TemplateBinding BoxPadding}">
 
-							<StackPanel Grid.Column="1" Margin="5,0" VerticalAlignment="Center" >
-								<TextBlock x:Name="Title" Text="{TemplateBinding Title}" Foreground="{TemplateBinding TitleColor}" FontSize="{TemplateBinding TitleSize}" Margin="{TemplateBinding TitleMargin}"/>
 								<Grid>
-									<TextBlock x:Name="Placeholder" Text="{TemplateBinding Placeholder}"
-											   Foreground="#a3a3a3"
-											   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-											   VerticalAlignment="Center"
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="auto"/>
+										<ColumnDefinition Width="*"/>
+										<ColumnDefinition Width="auto"/>
+									</Grid.ColumnDefinitions>
+									<base:Icon x:Name="Icon" IconType="{TemplateBinding Icon}" Margin="{TemplateBinding IconMargin}" Foreground="{TemplateBinding IconColor}" RenderTransformOrigin=".5,.5"
+											   FontSize="{TemplateBinding IconSize}">
+										<base:Icon.RenderTransform>
+											<ScaleTransform ScaleX="1" ScaleY="1"/>
+										</base:Icon.RenderTransform>
+									</base:Icon>
+
+									<StackPanel Grid.Column="1" Margin="5,0" VerticalAlignment="Center" >
+										<TextBlock x:Name="Title" Text="{TemplateBinding Title}" Foreground="{TemplateBinding TitleColor}" FontSize="{TemplateBinding TitleSize}" Margin="{TemplateBinding TitleMargin}"/>
+										<Grid>
+											<TextBlock x:Name="Placeholder" Text="{TemplateBinding Placeholder}"
+													   Foreground="#a3a3a3"
+													   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+													   VerticalAlignment="Center"
+													   IsVisible="False"
+													   Padding="{TemplateBinding Padding}"/>
+											<TextPresenter  x:Name="PART_TextPresenter" 
+														   Text="{TemplateBinding Text}"/>
+										</Grid>
+									</StackPanel>
+
+									<base:Icon x:Name="ErrorIcon" IconType="Error" Grid.Column="2"
 											   IsVisible="False"
-											   Padding="{TemplateBinding Padding}"/>
-									<ScrollViewer
-										x:Name="PART_ContentHost" VerticalAlignment="Center" />
+											   Margin="0,0,5,0" Foreground="White"/>
 								</Grid>
-							</StackPanel>
+							</Border>
 
-							<base:Icon x:Name="ErrorIcon" IconType="Error" Grid.Column="2"
-									   IsVisible="False"
-									   Margin="0,0,5,0" Foreground="White"/>
-						</Grid>
-					</Border>
-
-					<Popup
-                          x:Name="ErrorPopup"
-								IsLightDismissEnabled="True"
-								IsOpen="{TemplateBinding IsShowError}"
-								Placement="Bottom"
+							<Popup
+								  x:Name="ErrorPopup"
+										IsLightDismissEnabled="True"
+										IsOpen="{TemplateBinding IsShowError}"
+										Placement="Bottom"
 									 
-						PlacementTarget="{Binding ElementName=BoxBorder}">
-						<Border
-									Background="Red"
-									CornerRadius="12"
-									Padding="10"
-									Margin="10">
-							<Border.Effect>
-								<DropShadowEffect
-									BlurRadius="10"
-									 Color="Gray"
-											   Opacity="0.2"/>
-							</Border.Effect>
+								PlacementTarget="{Binding ElementName=BoxBorder}">
+								<Border
+											Background="Red"
+											CornerRadius="12"
+											Padding="10"
+											Margin="10">
+									<Border.Effect>
+										<DropShadowEffect
+											BlurRadius="10"
+											 Color="Gray"
+													   Opacity="0.2"/>
+									</Border.Effect>
 
-							<Grid>
-								<Path
-				  Width="15"
-				  Height="15"
-				  Data="M 0 15 L 7.5 7.5 L 15 15" Fill="Red"
-									Stroke="Red"
-									StrokeThickness="1"
-									VerticalAlignment="Top"
-									HorizontalAlignment="Left"
-									Margin="0,-25,0,0"
-                                        />
-								<TextBlock Foreground="White" Text="{TemplateBinding Error}"/>
-							</Grid>
+									<Grid>
+										<Path
+						  Width="15"
+						  Height="15"
+						  Data="M 0 15 L 7.5 7.5 L 15 15" Fill="Red"
+											Stroke="Red"
+											StrokeThickness="1"
+											VerticalAlignment="Top"
+											HorizontalAlignment="Left"
+											Margin="0,-25,0,0"
+											/>
+										<TextBlock Foreground="White" Text="{TemplateBinding Error}"/>
+									</Grid>
 
-						</Border>
-					</Popup>
+								</Border>
+							</Popup>
 
-				</Grid>
-			</ControlTemplate>
-		</Setter>
+						</Grid>
+					</ControlTemplate>
+			</Setter>
 	</ControlTheme>
 </ResourceDictionary>
