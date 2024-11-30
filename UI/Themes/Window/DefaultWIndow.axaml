@@ -10,7 +10,6 @@
 						   Value="True"/>
 	  
 	  <Setter Property="ExtendClientAreaTitleBarHeightHint" Value="32"/>
-	  <Setter Property="Background" Value="Transparent" />
 	  <Setter Property="ExtendClientAreaChromeHints" Value="NoChrome"/>
 	  <Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
 	  <Setter Property="UseLayoutRounding" Value="True" />

@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+					xmlns:system="clr-namespace:System;assembly=netstandard"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<system:String x:Key="SideOverview">概览</system:String>
+	<system:String x:Key="SideStatistics">统计</system:String>
+	<system:String x:Key="SideDetails">详细</system:String>
+	<system:String x:Key="SideSort">分类</system:String>
+	<system:String x:Key="SideSetting">设置</system:String>
+
+	<system:String x:Key="Refresh">刷新</system:String>
+	<system:String x:Key="MostFrequent">最为频繁</system:String>
+	<system:String x:Key="App">应用</system:String>
+	<system:String x:Key="Today">今日</system:String>
+	<system:String x:Key="Thisweek">本周</system:String>
+
+
+	<!--base-->
+	<system:String x:Key="NoData">暂时没有数据</system:String>
+	
+	
+	<!--window button Tip-->
+	<system:String x:Key="Back">返回</system:String>
+	<system:String x:Key="Minimization">最小化</system:String>
+	<system:String x:Key="Maximize">最大化</system:String>
+	<system:String x:Key="Restore">向下还原</system:String>
+	<system:String x:Key="Close">关闭</system:String>
+
+
+	<system:String x:Key="LongerTip">该应用将不再统计使用时长</system:String>
+	<system:String x:Key="IgnoredText">已被忽略</system:String>
+	<system:String x:Key="MatchREIgnoredText">已被正则忽略匹配</system:String>
+	<system:String x:Key="ApplicationAlias">别名</system:String>
+	<system:String x:Key="ApplicationPName">应用进程名称</system:String>
+	<system:String x:Key="ApplicationDescription">应用描述</system:String>
+	<system:String x:Key="ApplicationFilePath">应用文件路径</system:String>
+
+
+	<system:String x:Key="Open">打开</system:String>
+	<system:String x:Key="Exit">退出</system:String>
+</ResourceDictionary>

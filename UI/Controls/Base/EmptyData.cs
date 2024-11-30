@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace UI.Controls.Base
 {
-    public class EmptyData : Control
+    public class EmptyData : TemplatedControl
     {
         protected override Type StyleKeyOverride => typeof(EmptyData);
     }

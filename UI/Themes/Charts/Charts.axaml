@@ -10,76 +10,73 @@
 		<Setter Property="FontSize" Value="14"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Styles>
-			<Style Selector="controls|Charts[IsShowCategory=True]">
-				<Style Selector="^#Category">
-					<Setter Property="IsVisible" Value="True"/>
-				</Style>
-				
+			<Style Selector="controls|Charts[IsShowCategory=True] /template/ Grid#Category">
+				<Setter Property="IsVisible" Value="True"/>
 			</Style>
 
 			<Style Selector="controls|Charts[IsEmpty=True][ChartsType=Column]">
-				<Style Selector="^#ColumnEmpty">
+				<Style Selector="^ /template/ base|EmptyData#ColumnEmpty">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
 
-				<Style Selector="^#ColumnMain">
+				<Style Selector="^ /template/ Grid#ColumnMain">
 					<Setter Property="IsVisible" Value="False"/>
 				</Style>
 			</Style>
 
 			<Style Selector="controls|Charts[IsShowTotal=False][ChartsType=Column]">
-				<Style Selector="^#ColumnTotal">
+				<Style Selector="^ /template/ StackPanel#ColumnTotal">
 					<Setter Property="IsVisible" Value="False"/>
 				</Style>
 			</Style>
 
 			<Style Selector="controls|Charts[IsSearch=True][ChartsType=List]">
-				<Style Selector="^#AHeader">
+				<Style Selector="^ /template/ Grid#AHeader">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
 			</Style>
 
 			<Style Selector="controls|Charts[ChartsType=List]">
-				<Style Selector="^#List">
+				<Style Selector="^ /template/ Grid#List">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
 			</Style>
 
 			<Style Selector="controls|Charts[ChartsType=List]">
-				<Style Selector="^#CardContainer">
+				<Style Selector="^ /template/ WrapPanel#CardContainer">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
 			</Style>
 
 			<Style Selector="controls|Charts[ChartsType=Month]">
-				<Style Selector="^#MonthContainer">
+				<Style Selector="^  /template/ Grid#MonthContainer">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
 			</Style>
 
 			<Style Selector="controls|Charts[ChartsType=Column]">
-				<Style Selector="^#Column">
+				<Style Selector="^ /template/ Grid#Column">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
 			</Style>
 
 			<Style Selector="controls|Charts[ChartsType=Radar]">
-				<Style Selector="^#Radar">
+				<Style Selector="^ /template/ Border#Radar">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
 			</Style>
 
 			<Style Selector="controls|Charts[ChartsType=Pie]">
-				<Style Selector="^#CommonCanvasContainer">
+				<Style Selector="^ /template/ Canvas#CommonCanvasContainer">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
 			</Style>
 
 			<Style  Selector="controls|Charts[IsLoading=True][ChartsType=List]">
-				<Style Selector="^#TypeATempContainer">
+				<Style Selector="^ /template/ StackPanel#TypeATempContainer">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
-				<Style Selector="^#ListView">
+				<Style Selector="^ /template/ ListBox#ListView">
 					<Setter Property="IsVisible" Value="False"/>
 				</Style>
 			</Style>
@@ -88,11 +85,11 @@
 				<Style Selector="^#TypeATempContainer">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
-				<Style Selector="^#ListView">
+				<Style Selector="^ /template/ StackPanel#TypeATempContainer">
 					<Setter Property="IsVisible" Value="False"/>
 				</Style>
 			</Style>
-			
+
 		</Styles>
 		<Setter Property="Template">
 			<ControlTemplate>
@@ -187,42 +184,42 @@
                                         HorizontalAlignment="Left"
                                         Margin="0,0,0,-22" />
 
-												<ListBox ItemsSource="{TemplateBinding ColumnValuesInfoList}" 
-														 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-													<ListBox.ItemsPanel>
-														<ItemsPanelTemplate>
-															<VirtualizingStackPanel/>
-														</ItemsPanelTemplate>
-													</ListBox.ItemsPanel>
+											<ListBox ItemsSource="{TemplateBinding ColumnValuesInfoList}"
+													 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+												<ListBox.ItemsPanel>
+													<ItemsPanelTemplate>
+														<VirtualizingStackPanel/>
+													</ItemsPanelTemplate>
+												</ListBox.ItemsPanel>
 
-													<ListBox.ItemTemplate>
-														<DataTemplate x:DataType="models:ChartColumnInfoModel">
-															<StackPanel>
-																<Grid>
-																	<Grid.ColumnDefinitions>
-																		<ColumnDefinition Width="auto"/>
-																		<ColumnDefinition Width="auto"/>
-																		<ColumnDefinition Width="auto"/>
+												<ListBox.ItemTemplate>
+													<DataTemplate x:DataType="models:ChartColumnInfoModel">
+														<StackPanel>
+															<Grid>
+																<Grid.ColumnDefinitions>
+																	<ColumnDefinition Width="auto"/>
+																	<ColumnDefinition Width="auto"/>
+																	<ColumnDefinition Width="auto"/>
 
-																	</Grid.ColumnDefinitions>
-																	<base:View Condition="not null" Value="{Binding Color}">
-																		<Border Margin="0,0,5,0" Width="10" CornerRadius="4" Height="10" Background="{Binding Color,Converter={StaticResource HextoColorConverter}}">
-																		
-																		</Border>
-																	</base:View>
+																</Grid.ColumnDefinitions>
+																<base:View Condition="not null" Value="{Binding Color}">
+																	<Border Margin="0,0,5,0" Width="10" CornerRadius="4" Height="10" Background="{Binding Color,Converter={StaticResource HextoColorConverter}}">
 
-
-																	<Border Grid.Column="1" Margin="0,0,0,0">
-																		<TextBlock Foreground="{DynamicResource DefaultTextBrush}" VerticalAlignment="Center" Text="{Binding Name}" FontSize="12"/>
 																	</Border>
-																	<Border Grid.Column="2">
-																		<TextBlock FontSize="12" Margin="5,0,0,0" Foreground="{DynamicResource SubTextBrush}" VerticalAlignment="Center" Text="{Binding Text}"/>
-																	</Border>
-																</Grid>
-															</StackPanel>
-														</DataTemplate>
-													</ListBox.ItemTemplate>
-												</ListBox>
+																</base:View>
+
+
+																<Border Grid.Column="1" Margin="0,0,0,0">
+																	<TextBlock Foreground="{DynamicResource DefaultTextBrush}" VerticalAlignment="Center" Text="{Binding Name}" FontSize="12"/>
+																</Border>
+																<Border Grid.Column="2">
+																	<TextBlock FontSize="12" Margin="5,0,0,0" Foreground="{DynamicResource SubTextBrush}" VerticalAlignment="Center" Text="{Binding Text}"/>
+																</Border>
+															</Grid>
+														</StackPanel>
+													</DataTemplate>
+												</ListBox.ItemTemplate>
+											</ListBox>
 										</Grid>
 									</Border>
 								</Popup>
@@ -234,7 +231,7 @@
 
 							<!--信息-->
 							<Grid Grid.Row="2" Margin="0,5,0,0" x:Name="Category" IsVisible="False">
-								<ListBox ItemsSource="{TemplateBinding ColumnInfoList}" 
+								<ListBox ItemsSource="{TemplateBinding ColumnInfoList}"
 										 ScrollViewer.HorizontalScrollBarVisibility="Disabled" >
 									<ListBox.ItemsPanel>
 										<ItemsPanelTemplate>

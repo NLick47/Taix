@@ -108,16 +108,22 @@
                 Padding="0"
                 Background="Transparent"
                 >
-
+			<TabControl.Styles>
+				<Style Selector="TabItem">
+					<Setter Property="Template">
+						<ControlTemplate/>
+					</Setter>
+				</Style>
+			</TabControl.Styles>
 				
-			<!--<TabItem>
+			<TabItem>
 				<Charts:Charts Data="{Binding AppMoreData}"  ItemMenu="{Binding AppContextMenu}" ChartsType="Card" ShowLimit="{Binding MoreNum}" IsLoading="{Binding IsLoading,Mode=TwoWay}" ClickCommand="{Binding ToDetailCommand}"/>
 			</TabItem>
 			<TabItem>
 				<Grid>
 					<Charts:Charts Data="{Binding WebMoreData}" ClickCommand="{Binding ToDetailCommand}" ChartsType="Card" ShowLimit="{Binding MoreNum}" IsLoading="{Binding IsLoading,Mode=TwoWay}" ItemMenu="{Binding WebSiteContextMenu}"/>
 				</Grid>
-			</TabItem>-->
+			</TabItem>
 		</TabControl>
 
 	</StackPanel>

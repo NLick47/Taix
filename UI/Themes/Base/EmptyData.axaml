@@ -1,0 +1,58 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:UI.Controls.Base">
+
+	<ControlTheme x:Key="{x:Type controls:EmptyData}" TargetType="controls:EmptyData">
+		<Setter Property="HorizontalAlignment"
+		 Value="Left" />
+		<Setter Property="ToolTip.Tip"
+          Value="什么都没有" />
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border>
+					<Grid>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="auto"/>
+							<RowDefinition Height="auto"/>
+						</Grid.RowDefinitions>
+						<Grid>
+							<Border Background="{DynamicResource StandardBackgroundBrush}" BorderThickness="4" CornerRadius="10" Width="100" Height="100">
+								<Border.RenderTransform>
+									<RotateTransform Angle="5"/>
+								</Border.RenderTransform>
+								<Border.Effect>
+									<DropShadowDirectionEffect Direction="300" 
+															   ShadowDepth="4"
+															   Color="#d8d2d2" BlurRadius="10"   
+															   Opacity="0.1" ></DropShadowDirectionEffect>
+								</Border.Effect>
+								<StackPanel>
+									<Border Background="#c4c4c4" BorderThickness="4" CornerRadius="6" Height="20" Margin="5"/>
+									<Border Background="#f0f0f0" BorderThickness="4" CornerRadius="6" Height="40" Margin="5"/>
+								</StackPanel>
+							</Border>
+
+							<Border HorizontalAlignment="Left" Margin="30,0,0,30" Background="{DynamicResource StandardBackgroundBrush}" BorderThickness="4" CornerRadius="10" Width="100" Height="100">
+
+								<Border.Effect>
+									<DropShadowDirectionEffect  Direction="300" 
+																Color="#d8d2d2" 
+																BlurRadius="10"  
+																ShadowDepth="4" Opacity="0.1"  ></DropShadowDirectionEffect>
+								</Border.Effect>
+								<StackPanel>
+									<Border Background="#c4c4c4" BorderThickness="4" CornerRadius="6" Height="20" Margin="5"/>
+									<Border Background="#f0f0f0" BorderThickness="4" CornerRadius="6" Height="30" Margin="5,0">
+										<TextBlock Foreground="Gray" Opacity=".4" Text="Taix" FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+									</Border>
+									<TextBlock VerticalAlignment="Center" Text="{DynamicResource NoData}" FontSize="10" Margin="0,5" HorizontalAlignment="Center" Foreground="Gray" Opacity=".7"/>
+								</StackPanel>
+
+							</Border>
+						</Grid>
+					</Grid>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
+</ResourceDictionary>

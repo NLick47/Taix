@@ -6,6 +6,7 @@
 
     <Application.Styles>
         <SimpleTheme />
+		
 	</Application.Styles>
 	
 	<Application.Resources>
@@ -13,14 +14,17 @@
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceInclude Source="/Resources/Themes/Dark.axaml"/>
 				<!--<ResourceInclude Source="/Resources/Themes/Light.axaml"/>-->
-				<ResourceInclude Source="/Resources/Localization/StringResources.en.axaml"/>
+				<ResourceInclude Source="/Resources/Localization/StringResources.cn.axaml"/>
 				<ResourceInclude Source="/Themes/Base/Icon.axaml"/>
 				<ResourceInclude Source="/Themes/Base/Img.axaml"/>
 				<ResourceInclude Source="/Themes/Base/View.axaml"/>
 				<ResourceInclude Source="/Themes/Base/Placeholder.axaml"/>
+				<ResourceInclude Source="/Themes/Base/EmptyData.axaml"/>
+				
 				<ResourceInclude Source="/Themes/Select/DateSelect.axaml"/>
 				<ResourceInclude Source="/Themes/Select/Select.axaml"/>
 				<ResourceInclude Source="/Themes/Select/Option.axaml"/>
+			
 				
 				<ResourceInclude Source="/Themes/Window/DefaultWIndow.axaml"/>
 				<ResourceInclude Source="/Themes/Window/HideWindow.axaml"/>

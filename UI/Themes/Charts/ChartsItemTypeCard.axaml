@@ -10,14 +10,15 @@
 
 		<Styles>
 			<Style Selector="controls|ChartsItemTypeCard[IsLoading=True]">
-				<Style Selector="^#Loading">
+				<Style Selector="^ /template/ base|Placeholder#Loading">
 					<Setter Property="IsVisible" Value="true"/>
 				</Style>
-				<Style Selector="^#Normal">
+				<Style Selector="^ /template/ Border#Normal">
 					<Setter Property="IsVisible" Value="false"/>
 				</Style>
 			</Style>
 		</Styles>
+		
 		<Setter Property="Template">
 			<ControlTemplate>
 				<Grid>

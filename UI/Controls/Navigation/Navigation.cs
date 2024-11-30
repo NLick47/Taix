@@ -253,7 +253,7 @@ namespace UI.Controls.Navigation
                 if (properties.IsLeftButtonPressed)
                 {
                     // 左键选中
-                    SelectedItem = Data.FirstOrDefault(m => m.ID == navitem.ID);
+                    SelectedItem = Data.First(m => m.ID == navitem.ID);
                     OnSelected?.Invoke(this, EventArgs.Empty);
 
                     if (SelectedItem != null && SelectedItem.ID != navitem.ID)
