@@ -19,7 +19,7 @@ using Avalonia.Controls;
 
 namespace UI.ViewModels
 {
-    public class IndexPageViewModel : IndexPageModel
+    public class IndexPageViewModel :   IndexPageModel
     {
         public ReactiveCommand<object, Unit> ToDetailCommand { get; }
         public ReactiveCommand<object, Unit> RefreshCommand { get; }

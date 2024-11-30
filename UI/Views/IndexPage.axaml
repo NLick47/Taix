@@ -10,6 +10,7 @@
 			  xmlns:Charts="using:UI.Controls.Charts"
 			 xmlns:Tabbar="using:UI.Controls.Tabbar" 
 			  xmlns:base="using:UI.Controls.Base"
+			 xmlns:select="using:UI.Controls.Select"
              x:Class="UI.Views.IndexPage">
 
 	<UserControl.ContextMenu>
@@ -93,7 +94,11 @@
 
 		<StackPanel Orientation="Horizontal" Margin="0,20,0,0">
 			<TextBlock Text="更多" FontSize="14" VerticalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
-			<!--<select:Select Margin="10,0,0,0" VerticalAlignment="Center" Padding="10,5"  IsShowIcon="False" SelectedItem="{Binding MoreType,Mode=TwoWay}" Options="{Binding MoreTypeOptions}"/>-->
+			<select:Select Margin="10,0,0,0" 
+						   VerticalAlignment="Center" Padding="10,5"  IsShowIcon="False" 
+							SelectedItem="{Binding MoreType}"
+							
+						   Options="{Binding MoreTypeOptions}"/>
 		</StackPanel>
 
 		<TabControl

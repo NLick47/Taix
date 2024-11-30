@@ -49,7 +49,7 @@ namespace UI.Controls.Select
             {
                 control.RenderOptions();
             }
-            if (change.Property == SelectItemProperty && change.NewValue != change.OldValue)
+            if (change.Property == SelectedItemProperty && change.NewValue != change.OldValue)
             {
                 control.OnSelectedItemChange();
             }
@@ -57,12 +57,12 @@ namespace UI.Controls.Select
 
         public SelectItemModel SelectedItem
         {
-            get { return (SelectItemModel)GetValue(SelectItemProperty); }
-            set { SetValue(SelectItemProperty, value); }
+            get { return (SelectItemModel)GetValue(SelectedItemProperty); }
+            set { SetValue(SelectedItemProperty, value); }
         }
 
-        public static readonly StyledProperty<SelectItemModel> SelectItemProperty =
-            AvaloniaProperty.Register<Select, SelectItemModel>(nameof(SelectedItem));
+        public static readonly StyledProperty<SelectItemModel> SelectedItemProperty =
+        AvaloniaProperty.Register<Select, SelectItemModel>(nameof(SelectedItem));
 
         public event EventHandler OnSelectedItemChanged;
 
@@ -83,7 +83,7 @@ namespace UI.Controls.Select
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            _optionsContainer = e.NameScope.Find("OptionsContainer") as StackPanel;
+            _optionsContainer = e.NameScope.Get<StackPanel>("OptionsContainer");
             this.RenderOptions();
         }
 
