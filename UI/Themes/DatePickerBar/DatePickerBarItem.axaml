@@ -1,0 +1,49 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		 xmlns:base="using:UI.Controls.Base"
+        xmlns:controls="using:UI.Controls.DatePickerBar">
+	
+
+	<ControlTheme x:Key="{x:Type controls:DatePickerBarItem}" TargetType="controls:DatePickerBarItem">
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Styles>
+			<Style Selector="controls|DatePickerBarItem[IsSelected=True]">
+				<Style Selector="^ /template/ Border#Bg">
+					<Setter Property="Background" Value="{DynamicResource ThemeBrush}"/>
+				</Style>
+
+				<Style Selector="^ /template/ TextBlock#Text">
+					<Setter Property="Foreground" Value="white"/>
+				</Style>
+			</Style>
+
+			<Style Selector="controls|DatePickerBarItem[IsDisabled=True]">
+				<Style Selector="^ /template/ Border#Bg">
+					<Setter Property="Background" Value="Transparent"/>
+				</Style>
+
+				<Style Selector="^ /template/ TextBlock#Text">
+					<Setter Property="Foreground" Value="#ccc"/>
+				</Style>
+			</Style>
+		</Styles>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border>
+					<Grid Margin="2">
+						<Border x:Name="Bg" Background="{DynamicResource DatePickerItemBgBrush}" 
+								Width="45" Height="45" 
+								CornerRadius="25">
+							<TextBlock x:Name="Text" 
+									   Foreground="{DynamicResource DefaultTextBrush}" 
+									   Text="{TemplateBinding Title}" 
+									   HorizontalAlignment="Center" 
+									   VerticalAlignment="Center"/>
+						</Border>
+					</Grid>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
+</ResourceDictionary>

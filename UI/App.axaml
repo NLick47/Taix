@@ -31,8 +31,18 @@
 				
 				<ResourceInclude Source="/Themes/Navigation/Navigation.axaml"/>
 				<ResourceInclude Source="/Themes/Navigation/NavigationItem.axaml"/>
+				
 				<ResourceInclude Source="/Themes/Button/IconButton.axaml"/>
+				<ResourceInclude Source="/Themes/Button/Button.axaml"/>
+				
 				<ResourceInclude Source="/Themes/Input/InputBox.axaml"/>
+				
+				<ResourceInclude Source="/Themes/List/BaseList.axaml"/>
+				<ResourceInclude Source="/Themes/List/BaseListItem.axaml"/>
+				
+				<ResourceInclude Source="/Themes/DatePickerBar/DatePickerBar.axaml"/>
+				<ResourceInclude Source="/Themes/DatePickerBar/DatePickerBarItem.axaml"/>
+				
 
 				<ResourceInclude Source="/Themes/Charts/Charts.axaml"/>
 				<ResourceInclude Source="/Themes/Charts/ChartsItemTypeCard.axaml"/>

@@ -1,0 +1,53 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:base="using:UI.Controls.Base"
+		xmlns:controls="using:UI.Controls.List">
+
+  <ControlTheme x:Key="{x:Type controls:BaseListItem}" TargetType="controls:BaseListItem">
+	 <Setter Property="UseLayoutRounding" Value="True"/>
+	  <Setter Property="Height" Value="35"/>
+	  <Setter Property="Margin" Value="0,10,0,0"/>
+	  <Setter Property="Background" Value="Transparent"/>
+
+	  <Styles>
+		  <Style Selector="controls|BaseListItem[IsSelected=True]">
+			  <Setter Property="Foreground" Value="White"/>
+			  <Style Selector="^ /template/ Border#BoxBorder">
+				  <Setter Property="Background" Value="{DynamicResource ThemeBrush}"/>
+			  </Style>
+		  </Style>
+	  </Styles>
+    <Setter Property="Template">
+      <ControlTemplate>
+		  <Grid Background="{TemplateBinding Background}">
+			  <Border BorderBrush="#f3f3f3" BorderThickness="0" Width="{TemplateBinding Width}" 
+					  Height="{TemplateBinding Height}" x:Name="BoxBorder" CornerRadius="4" 
+					  Background="{DynamicResource BaseListItemBgBrush}" >
+				  <Grid VerticalAlignment="Center" Margin="10,0">
+					  <Grid.ColumnDefinitions>
+						  <ColumnDefinition Width="9*"/>
+						  <ColumnDefinition Width="1*"/>
+					  </Grid.ColumnDefinitions>
+					  <TextBlock Text="{TemplateBinding Text}"/>
+				  </Grid>
+				</Border>
+
+			  <Border x:Name="Shadow" 
+					  BorderBrush="{Binding ElementName=BoxBorder,Path=BorderBrush}" 
+					  BorderThickness="{Binding ElementName=BoxBorder,Path=BorderThickness}"
+					  ZIndex="-1" Width="{Binding ElementName=BoxBorder,Path=Bounds.Width}" 
+					  Height="{Binding ElementName=BoxBorder,Path=Bounds.Height}" 
+					  CornerRadius="{Binding ElementName=BoxBorder,Path=CornerRadius}"
+					  Background="{Binding ElementName=BoxBorder,Path=Background}">
+				  <Border.Effect>
+					  <DropShadowDirectionEffect BlurRadius="5" 
+												 ShadowDepth="2" 
+												 Direction="315" Color="#ccc" 
+												 Opacity=".05"/>
+				  </Border.Effect>
+			  </Border>
+			</Grid>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>

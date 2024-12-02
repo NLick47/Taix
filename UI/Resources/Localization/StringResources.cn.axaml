@@ -34,6 +34,7 @@
 	<system:String x:Key="ApplicationPName">应用进程名称</system:String>
 	<system:String x:Key="ApplicationDescription">应用描述</system:String>
 	<system:String x:Key="ApplicationFilePath">应用文件路径</system:String>
+	<system:String x:Key="Classification">分类</system:String>
 
 
 	<system:String x:Key="Open">打开</system:String>

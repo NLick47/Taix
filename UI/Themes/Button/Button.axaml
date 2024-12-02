@@ -1,0 +1,61 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:base="using:UI.Controls.Base"
+        xmlns:controls="using:UI.Controls.Button">
+ 
+  <ControlTheme x:Key="{x:Type controls:Button}" TargetType="controls:Button">
+	  <Setter Property="UseLayoutRounding" Value="True"/>
+	  <Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}"/>
+	  <Setter Property="Height" Value="35"/>
+	  <Styles>
+		  <Style Selector="controls|Button[Icon=None] /template/ base|Icon#Icon">
+			  <Setter Property="IsVisible" Value="False"/>
+		  </Style>
+
+		  <Style Selector="controls|Button:pointerover /template/ Border#BoxBorder">
+			  <Setter Property="BorderThickness" Value="0"/>
+		  </Style>
+	  </Styles>
+	  <Setter Property="Background" Value="{DynamicResource StandardBackgroundBrush}"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+		  <Grid>
+			  <Border BorderBrush="#f3f3f3" BorderThickness="0" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+					  x:Name="BoxBorder" 
+					  CornerRadius="4" 
+					  Background="{TemplateBinding Background}">
+				  <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+					  <Grid.ColumnDefinitions>
+						  <ColumnDefinition Width="auto"/>
+						  <ColumnDefinition Width="auto"/>
+					  </Grid.ColumnDefinitions>
+					  <base:Icon x:Name="Icon" Margin="0,0,5,0" IconType="{TemplateBinding Icon}" 
+								 VerticalAlignment="Center"  FontSize="12" >
+
+					  </base:Icon>
+					  <ContentPresenter
+						  Grid.Column="1"
+				  HorizontalAlignment="Center"
+				  VerticalAlignment="Center"
+				  RecognizesAccessKey="True"/>
+				  </Grid>
+			  </Border>
+
+			  <Border x:Name="Shadow" BorderBrush="{Binding ElementName=BoxBorder,Path=BorderBrush}" BorderThickness="{Binding ElementName=BoxBorder,Path=BorderThickness}" 
+					  ZIndex="-1" Width="{Binding ElementName=BoxBorder,Path=Bounds.Width}" 
+					  Height="{Binding ElementName=BoxBorder,Path=Bounds.Height}" 
+					  CornerRadius="{Binding ElementName=BoxBorder,Path=CornerRadius}"
+					  Background="{Binding ElementName=BoxBorder,Path=Background}">
+				  <Border.Effect>
+					  <DropShadowDirectionEffect BlurRadius="5" ShadowDepth="2"
+										Direction="315"
+										Color="Gray" 
+										Opacity=".1"/>
+				  </Border.Effect>
+			  </Border>
+		  </Grid>
+		  
+	  </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>
