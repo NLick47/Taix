@@ -7,59 +7,59 @@
 	<ControlTheme x:Key="{x:Type controls:InputBox}" TargetType="controls:InputBox">
 		
 		<Styles>
-			<Style Selector=":disabled">
-				<Style Selector="^ base|Icon#Icon">
+			<Style Selector="controls|InputBox:disabled">
+				<Style Selector="^ /template/ base|Icon#Icon">
 					<Setter  Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
 				</Style>
 
-				<Style Selector="^ TextBlock#Placeholder">
+				<Style Selector="^ /template/ TextBlock#Placeholder">
 					<Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
 				</Style>
 
-				<Style Selector="^ Border#BoxBorder">
+				<Style Selector="^ /template/ Border#BoxBorder">
 					<Setter Property="Background" Value="{DynamicResource DisabledBackgroundBrush}"/>
 				</Style>
 			</Style>
 
 			<Style Selector="controls|InputBox[IsError=true]">
-				<Style Selector="^#BoxBorder">
+				<Style Selector="^  /template/ Border#BoxBorder">
 					<Setter Property="Background" Value="red"/>
 				</Style>
-				<Style Selector="^#Shadow">
+				<Style Selector="^  /template/ Border#Shadow">
 					<Setter Property="IsVisible" Value="false"/>
 				</Style>
-				<Style Selector="^#ErrorIcon">
+				<Style Selector="^  /template/ base|Icon#ErrorIcon">
 					<Setter Property="IsVisible" Value="false"/>
 				</Style>
 			</Style>
 
 			<Style Selector="controls|InputBox:focus">
-				<Style Selector="^#Shadow">
+				<Style Selector="^ /template/ Border#Shadow">
 					<Setter Property="IsVisible" Value="true"/>
 				</Style>
-				<Style Selector="^#ErrorIcon">
+				<Style Selector="^ /template/ base|Icon#ErrorIcon">
 					<Setter Property="IsVisible" Value="false"/>
 				</Style>
 			</Style>
 		
 			<Style Selector="controls|InputBox[Title='']">
-				<Style Selector="^#Title">
+				<Style Selector="^ /template/ TextBlock#Title">
 					<Setter Property="IsVisible" Value="false" />
 				</Style>
 			</Style>
 
 			<Style Selector="controls|InputBox[Icon=None]">
-				<Style Selector="^#Icon">
+				<Style Selector="^ /template/ base|Icon#Icon">
 					<Setter Property="IsVisible" Value="false" />
 				</Style>
 			</Style>
 
 			<Style Selector="controls|InputBox[IsError=true]:focus">
 				<Setter Property="Foreground" Value="White"/>
-				<Style Selector="^#Icon">
+				<Style Selector="^ /template/ base|Icon#Icon">
 					<Setter Property="Foreground" Value="White" />
 				</Style>
-				<Style Selector="^#Title">
+				<Style Selector="^ /template/ TextBlock#Title">
 					<Setter Property="Foreground" Value="White" />
 				</Style>
 			</Style>

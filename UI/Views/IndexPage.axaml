@@ -59,6 +59,9 @@
 									   Margin="5,0,0,0"/>
 						</StackPanel>
 					</Border>
+					<Charts:Charts IconSize="20" Margin="0,5,0,0" IsCanScroll="False"  Data="{Binding WeekData}" ChartsType="List" ShowLimit="{Binding FrequentUseNum}" IsLoading="{Binding IsLoading,Mode=TwoWay}"  
+								   ClickCommand="{Binding ToDetailCommand}" 
+								   ItemMenu="{Binding AppContextMenu}"/>
 				</StackPanel>
 			</Border>
 
@@ -82,7 +85,10 @@
 						</StackPanel>
 					</Border>
 
-					<Charts:Charts IconSize="18" Grid.Row="1" Margin="0,5,0,0" IsCanScroll="False" ClickCommand="{Binding ToDetailCommand}" Data="{Binding WebFrequentUseData}" ChartsType="List" IsLoading="{Binding IsLoading,Mode=TwoWay}" ItemMenu="{Binding WebSiteContextMenu}">
+					<Charts:Charts IconSize="18" Grid.Row="1" Margin="0,5,0,0" IsCanScroll="False" ClickCommand="{Binding ToDetailCommand}" Data="{Binding WebFrequentUseData}" 
+								   ChartsType="List"
+								   IsLoading="{Binding IsLoading,Mode=TwoWay}" 
+								   ItemMenu="{Binding WebSiteContextMenu}">
 						<Charts:Charts.Resources>
 							<SolidColorBrush x:Key="ListItemIconBgBrush" Color="{StaticResource ThemeColor}" Opacity=".2"/>
 							<SolidColorBrush x:Key="ChartTypeListProgressBarBrush" Color="{StaticResource ThemeColor}" Opacity=".6"/>

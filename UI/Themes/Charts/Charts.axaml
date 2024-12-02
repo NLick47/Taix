@@ -42,7 +42,7 @@
 				</Style>
 			</Style>
 
-			<Style Selector="controls|Charts[ChartsType=List]">
+			<Style Selector="controls|Charts[ChartsType=Card]">
 				<Style Selector="^ /template/ WrapPanel#CardContainer">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
@@ -82,10 +82,10 @@
 			</Style>
 
 			<Style  Selector="controls|Charts[IsEmpty=True][ChartsType=List]">
-				<Style Selector="^#TypeATempContainer">
+				<Style Selector="^ /template/ StackPanel#TypeATempContainer">
 					<Setter Property="IsVisible" Value="True"/>
 				</Style>
-				<Style Selector="^ /template/ StackPanel#TypeATempContainer">
+				<Style Selector="^ /template/ ListBox#ListView">
 					<Setter Property="IsVisible" Value="False"/>
 				</Style>
 			</Style>
@@ -104,7 +104,7 @@
 							<RowDefinition Height="*"/>
 						</Grid.RowDefinitions>
 
-						<Grid x:Name="AHeader" >
+						<Grid x:Name="AHeader" IsVisible="False">
 							<Grid.RowDefinitions>
 								<RowDefinition Height="auto"/>
 								<RowDefinition Height="*"/>
