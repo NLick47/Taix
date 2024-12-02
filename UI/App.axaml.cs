@@ -90,9 +90,9 @@ namespace UI
             services.AddTransient<IndexPage>();
             services.AddTransient<IndexPageViewModel>();
 
-            ////  数据页
-            //services.AddTransient<DataPage>();
-            //services.AddTransient<DataPageVM>();
+            //  数据页
+            services.AddTransient<DataPage>();
+            services.AddTransient<DataPageViewModel>();
 
             ////  设置页
             //services.AddTransient<SettingPage>();

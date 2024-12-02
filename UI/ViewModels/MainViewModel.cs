@@ -27,7 +27,7 @@ namespace UI.ViewModels
         public Command GotoPageCommand { get; }
 
         public IndexPageViewModel view { get; }
-        private string[] pages = { nameof(IndexPage),/* nameof(ChartPage), nameof(DataPage), nameof(CategoryPage)*/ };
+        private string[] pages = { nameof(IndexPage), nameof(DataPage),/* nameof(ChartPage), nameof(DataPage), nameof(CategoryPage)*/ };
         public MainViewModel(
            IServiceProvider serviceProvider,
            IAppConfig appConfig,
@@ -91,6 +91,7 @@ namespace UI.ViewModels
                 UnSelectedIcon = Controls.Base.IconTypes.Calendar,
                 SelectedIcon = IconTypes.CalendarSolid,
                 Title = sideDetails as string,
+                Uri = nameof(DataPage),
                 ID = 2,
             });
 
