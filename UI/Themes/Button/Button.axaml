@@ -15,28 +15,20 @@
 		  <Style Selector="controls|Button:pointerover /template/ Border#BoxBorder">
 			  <Setter Property="BorderThickness" Value="0"/>
 
-			  
-		  </Style>
-
-		  <Style Selector="controls|Button:pointerover /template/ Border#Shadow">
 			  <Setter Property="Transitions">
 				  <Transitions>
 					  <BrushTransition Property="Background" Duration="0.18"/>
 				  </Transitions>
 			  </Setter>
-			  
-			  <Setter Property="Background" Value="Red"/>
+
+			  <Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}"/>
 		  </Style>
-
-
-		
-		
 	  </Styles>
 	  <Setter Property="Background" Value="{DynamicResource StandardBackgroundBrush}"/>
     <Setter Property="Template">
       <ControlTemplate>
 		  <Grid>
-			  <Border BorderBrush="#f3f3f3" BorderThickness="0" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+			  <Border  BorderBrush="#f3f3f3" BorderThickness="0" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
 					  x:Name="BoxBorder" 
 					  CornerRadius="4" 
 					  Background="{TemplateBinding Background}">
@@ -57,7 +49,10 @@
 				  </Grid>
 			  </Border>
 
-			  <Border x:Name="Shadow" BorderBrush="{Binding ElementName=BoxBorder,Path=BorderBrush}" BorderThickness="{Binding ElementName=BoxBorder,Path=BorderThickness}" 
+			  <Border x:Name="Shadow" 
+					  Background="{Binding ElementName=BoxBorder,Path=Background}"
+					  BorderBrush="{Binding ElementName=BoxBorder,Path=BorderBrush}" 
+					  BorderThickness="{Binding ElementName=BoxBorder,Path=BorderThickness}" 
 					  ZIndex="-1" Width="{Binding ElementName=BoxBorder,Path=Bounds.Width}" 
 					  Height="{Binding ElementName=BoxBorder,Path=Bounds.Height}" 
 					  CornerRadius="{Binding ElementName=BoxBorder,Path=CornerRadius}"
