@@ -1,21 +1,23 @@
 ﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using System;
 using System.Windows.Input;
 using UI.Controls.Base;
 
 namespace UI.Controls.Button
 {
-    public class IconButton : TemplatedControl
+    public class IconButton : ContentControl
     {
         public ICommand Command
         {
-            get { return (ICommand)GetValue(CommandProperty); }
+            get { return GetValue(CommandProperty); }
             set { SetValue(CommandProperty, value); }
         }
 
-        public static readonly StyledProperty<ICommand> CommandProperty =
-           AvaloniaProperty.Register<IconButton, ICommand>(nameof(Command));
+        public static readonly StyledProperty<ICommand?> CommandProperty =
+              AvaloniaProperty.Register<IconButton, ICommand?>(nameof(Command), enableDataValidation: true);
 
         public object CommandParameter
         {
@@ -35,10 +37,15 @@ namespace UI.Controls.Button
         public static readonly StyledProperty<IconTypes> IconProperty =
           AvaloniaProperty.Register<IconButton,IconTypes>(nameof(Icon));
 
+
+        protected override Type StyleKeyOverride => typeof(IconButton);
+
         protected override void OnPointerPressed(PointerPressedEventArgs e)
         {
             base.OnPointerPressed(e);
             Command?.Execute(CommandParameter);
         }
+
+     
     }
 }

@@ -94,9 +94,9 @@
 		<Setter Property="Template">
 			<ControlTemplate>
 				<Grid Background="{TemplateBinding Background}" >
-					<Border x:Name="Radar" >
+					<Border x:Name="Radar" IsVisible="False" >
 					</Border>
-					<Canvas x:Name="CommonCanvasContainer"  >
+					<Canvas x:Name="CommonCanvasContainer" IsVisible="False" >
 					</Canvas>
 					<Grid x:Name="List" IsVisible="False" >
 						<Grid.RowDefinitions>

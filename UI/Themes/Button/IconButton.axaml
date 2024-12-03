@@ -27,7 +27,7 @@
 							   VerticalAlignment="Center"  
 							   FontSize="{TemplateBinding FontSize}" >
 					</base:Icon>
-					<ContentPresenter />
+					<ContentPresenter Content="{TemplateBinding Content}"/>
 				</Grid>
 			</Border>
 		</ControlTemplate>

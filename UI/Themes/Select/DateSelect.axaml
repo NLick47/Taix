@@ -2,39 +2,280 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:button="using:UI.Controls.Button"
 		xmlns:base="using:UI.Controls.Base"
+		xmlns:converter="using:UI.Controls.Converters"
         xmlns:controls="using:UI.Controls.Select">
 	<SolidColorBrush x:Key="ThemeLightBrush" Color="{DynamicResource ThemeColor}" Opacity=".1"/>
-  <ControlTheme x:Key="{x:Type controls:DateSelect}" TargetType="controls:DateSelect">
-	 <Setter Property="Background" Value="Transparent"/>
-    <Setter Property="Template">
-      <ControlTemplate>
-		  <!--<Border  Background="{TemplateBinding Background}"  
-				   HorizontalAlignment="Left" >
-			  <Grid>
-				  --><!--当前选择项--><!--
-				  <Border Background="{Binding ElementName=Main,Path=Background}"  ZIndex="-1" 
-						  Width="{Binding ElementName=Main,Path=ActualWidth}"  
-						  Height="{Binding ElementName=Main,Path=ActualHeight}" 
-						  CornerRadius="{Binding ElementName=Main,Path=CornerRadius}">
-					  <Border.Effect>
-						  <DropShadowEffect  Color="#d8d2d2"  BlurRadius="1" 
-											 OffsetX="-3.46"
-											 OffsetY="2" Opacity="0.1">
-							  
-						  </DropShadowEffect>
-					  </Border.Effect>
-					 </Border>
+	<converter:ToStringConverter x:Key="ToStringConverter"/>
+	<ControlTheme x:Key="{x:Type controls:DateSelect}" TargetType="controls:DateSelect">
+		<Setter Property="Background" Value="Transparent"/>
 
-				  <Border x:Name="Main" Margin="0,0,0,0" 
-						  Background="{DynamicResource StandardBackgroundBrush}" 
-						  HorizontalAlignment="Left" Padding="18,10" 
-						  CornerRadius="5">
-						
-					</Border>
-			  </Grid>
-			  
-		 </Border>-->
-      </ControlTemplate>
-    </Setter>
-  </ControlTheme>
+		<Styles>
+			<Style Selector="controls|DateSelect[SelectType=Day]">
+				<Style Selector="^ /template/ Border#DaySelect">
+					<Setter Property="IsVisible" Value="True"/>
+				</Style>
+
+				<Style Selector="^ /template/ StackPanel#MonthSelect">
+					<Setter Property="IsVisible" Value="True"/>
+				</Style>
+			</Style>
+
+
+			<Style Selector="controls|DateSelect[SelectType=Month]">
+				<Style Selector="^ /template/ Border#DaySelect">
+					<Setter Property="IsVisible" Value="False"/>
+				</Style>
+
+				<Style Selector="^ /template/ StackPanel#MonthSelect">
+					<Setter Property="IsVisible" Value="True"/>
+				</Style>
+			</Style>
+
+
+			<Style Selector="controls|DateSelect[SelectType=Year]">
+				<Style Selector="^ /template/ Border#DaySelect">
+					<Setter Property="IsVisible" Value="False"/>
+				</Style>
+
+				<Style Selector="^ /template/ StackPanel#MonthSelect">
+					<Setter Property="IsVisible" Value="False"/>
+				</Style>
+			</Style>
+
+			<Style Selector="controls|DateSelect:pointerover">
+				<Style Selector="^ /template/ Border#Main">
+					<Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
+				</Style>
+
+				<Style Selector="^ /template/ base|Icon#Icon">
+					<Setter Property="Foreground" Value="{DynamicResource ThemeBrush}"/>
+				</Style>
+			</Style>
+		</Styles>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border  Background="{TemplateBinding Background}"
+						 HorizontalAlignment="Left" >
+					<Grid>
+
+						<Border Background="{Binding ElementName=Main,Path=Background}"  ZIndex="-1"
+								Width="{Binding ElementName=Main,Path=Bounds.Width}"
+								Height="{Binding ElementName=Main,Path=Bounds.Height}"
+								CornerRadius="{Binding ElementName=Main,Path=CornerRadius}">
+							<Border.Effect>
+								<DropShadowEffect  Color="#d8d2d2"  BlurRadius="1"
+												   OffsetX="-3.46"
+												   OffsetY="2" Opacity="0.1">
+
+								</DropShadowEffect>
+							</Border.Effect>
+						</Border>
+
+						<Border x:Name="Main" Margin="0,0,0,0"
+								Background="{DynamicResource StandardBackgroundBrush}"
+								HorizontalAlignment="Left" Padding="18,10"
+								CornerRadius="5">
+							<Interaction.Behaviors>
+								<EventTriggerBehavior EventName="PointerPressed">
+									<InvokeCommandAction
+									Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:DateSelect}}, 
+									Path=ShowSelectCommand}"/>
+
+								</EventTriggerBehavior>
+
+							</Interaction.Behaviors>
+							<StackPanel Orientation="Horizontal">
+								<base:Icon x:Name="Icon" IconType="Calendar"  Foreground="{DynamicResource StandardTextBrush}"/>
+								<TextBlock Foreground="{DynamicResource StandardTextBrush}" Text="{TemplateBinding DateStr}" VerticalAlignment="Center" Margin="5,0,0,0"/>
+							</StackPanel>
+						</Border>
+
+						<!--选择-->
+						<Popup
+							x:Name="Popup"
+							Placement="Bottom"
+							PlacementTarget="{Binding ElementName=Main}"
+							IsOpen="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:DateSelect}}, 
+							Path=IsOpen,Mode=TwoWay}" >
+							<Border
+									x:Name="SelectContainer"
+									CornerRadius="10"
+									BorderBrush="{DynamicResource PopupBorderBrush}"
+									BorderThickness="1"
+									Background="{DynamicResource PopupBackgroundBrush}"
+									Padding="10"
+									Margin="10">
+								<Border.Effect>
+									<DropShadowDirectionEffect
+										BlurRadius="10" ShadowDepth="2"
+										Direction="315" Color="Gray"
+										Opacity=".1"/>
+								</Border.Effect>
+
+								<Grid>
+									<Grid.RowDefinitions>
+										<RowDefinition Height="40"/>
+										<RowDefinition Height="auto"/>
+										<RowDefinition Height="auto"/>
+									</Grid.RowDefinitions>
+
+									<!--年份月份选择-->
+									<Border>
+										<Grid>
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="*"/>
+												<ColumnDefinition Width="*"/>
+											</Grid.ColumnDefinitions>
+
+											<!--年份选择-->
+											<StackPanel Orientation="Horizontal">
+												<button:IconButton Icon="ChevronLeft"
+																   FontSize="12"
+																   VerticalAlignment="Center"
+																    Command="{Binding SetYearCommand, RelativeSource={RelativeSource TemplatedParent}}"
+																   CommandParameter="-1"/>
+												<TextBlock Width="50"
+														   Foreground="{DynamicResource StandardTextBrush}"
+														   TextAlignment="Center" Margin="5,0"
+														   VerticalAlignment="Center" >
+													<Run Text="{TemplateBinding Year ,Converter={StaticResource ToStringConverter}}"/>
+													<Run Text="年"/>
+												</TextBlock>
+												<button:IconButton Icon="ChevronRight" FontSize="12"
+																   VerticalAlignment="Center"
+															  Command="{Binding SetYearCommand, RelativeSource={RelativeSource TemplatedParent}}"
+															   CommandParameter="1"/>
+
+											</StackPanel>
+											<StackPanel Grid.Column="1"
+														Orientation="Horizontal" x:Name="MonthSelect"
+														IsVisible="False">
+												<button:IconButton Icon="ChevronLeft"
+																   FontSize="12"
+																   VerticalAlignment="Center"
+																   Command="{Binding SetMonthCommand, RelativeSource={RelativeSource TemplatedParent}}"
+																   CommandParameter="-1"/>
+												<TextBlock Width="30"
+														   Foreground="{DynamicResource StandardTextBrush}"
+														   TextAlignment="Center" Margin="5,0"
+														   VerticalAlignment="Center">
+													<Run Text="{TemplateBinding Month ,Converter= {StaticResource ToStringConverter}}"/>
+													<Run Text="月"/>
+												</TextBlock>
+
+												<button:IconButton Icon="ChevronRight"
+																   FontSize="12"
+																   VerticalAlignment="Center"
+																   Command="{Binding SetMonthCommand, RelativeSource={RelativeSource TemplatedParent}}"
+																   CommandParameter="1"/>
+
+											</StackPanel>
+										</Grid>
+									</Border>
+
+									<!--日选择-->
+									<Border Grid.Row="1" Width="250" x:Name="DaySelect" IsVisible="False">
+										<Grid>
+											<Grid.RowDefinitions>
+												<RowDefinition Height="auto"/>
+												<RowDefinition Height="auto"/>
+											</Grid.RowDefinitions>
+
+											<Border Grid.Row="0" Margin="0,15,0,0" BorderBrush="{DynamicResource SettingPanelSpliteLineBrush}" BorderThickness="0,0,0,.5" Padding="0,0,0,10">
+												<Grid >
+													<Grid.ColumnDefinitions>
+														<ColumnDefinition Width="35"/>
+														<ColumnDefinition Width="35"/>
+														<ColumnDefinition Width="35"/>
+														<ColumnDefinition Width="35"/>
+														<ColumnDefinition Width="35"/>
+														<ColumnDefinition Width="35"/>
+														<ColumnDefinition Width="35"/>
+													</Grid.ColumnDefinitions>
+													<TextBlock Grid.Column="0" Text="一" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="1" Text="二" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="2" Text="三" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="3" Text="四" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="4" Text="五" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="5" Text="六" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="6" Text="日" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+
+												</Grid>
+											</Border>
+
+											<ListBox Grid.Row="1"
+													  ItemsSource="{TemplateBinding Days}"
+													
+													  Margin="0,10,0,0"
+													  ScrollViewer.HorizontalScrollBarVisibility="Disabled" >
+												<ListBox.Styles>
+													<Style Selector="ListBox">
+														<Setter Property="Template">
+															<ControlTemplate>
+																<Border>
+																	<ItemsPresenter 
+																	ItemsPanel="{TemplateBinding ItemsPanel}" />
+																</Border>
+															</ControlTemplate>
+														</Setter>
+													</Style>
+
+													<Style Selector="ListBoxItem">
+														<Setter  Property="Foreground" Value="{DynamicResource StandardTextBrush}"/>
+														<Setter Property="Template">
+															<ControlTemplate>
+																<Border BorderBrush="Transparent" BorderThickness="2"
+																		x:Name="Border" Background="Transparent"
+																		Margin="0,0,0,0" Padding="0"
+																		Width="35" Height="35"
+																		CornerRadius="5">
+																	<ContentPresenter
+																		 HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+																		 VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+																		 Background="{TemplateBinding Background}"
+																		 ContentTemplate="{TemplateBinding ContentTemplate}"
+																		 Content="{TemplateBinding Content}"
+																		VerticalAlignment="Center" HorizontalAlignment="Center"/>
+																</Border>
+															</ControlTemplate>
+														</Setter>
+													</Style>
+												</ListBox.Styles>
+
+
+
+												<ListBox.ItemsPanel>
+													<ItemsPanelTemplate>
+														<WrapPanel/>
+													</ItemsPanelTemplate>
+												</ListBox.ItemsPanel>
+
+												<ListBox.ItemTemplate>
+													<DataTemplate>
+														<WrapPanel Orientation="Horizontal">
+															<Border >
+																<TextBlock  x:DataType="controls:DayModel" Text="{Binding DayText} " />
+															</Border>
+														</WrapPanel>
+													</DataTemplate>
+												</ListBox.ItemTemplate>
+											</ListBox>
+										</Grid>
+									</Border>
+
+									<Border Grid.Row="2" HorizontalAlignment="Right" Margin="0,10,0,0">
+										<StackPanel Orientation="Horizontal">
+											<button:Button Content="确认" Width="100"
+														   Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:DateSelect}}, Path=DoneCommand}"/>
+										</StackPanel>
+									</Border>
+								</Grid>
+							</Border>
+						</Popup>
+					</Grid>
+
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
 </ResourceDictionary>

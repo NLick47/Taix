@@ -35,7 +35,9 @@ namespace UI.ViewModels
             this.appConfig = appConfig;
             _webData = webData;
             ToDetailCommand = ReactiveCommand.Create<object>(OnTodetailCommand);
-
+            DayDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+            MonthDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            YearDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
             Init();
         }
 

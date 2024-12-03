@@ -10,7 +10,7 @@ using System.Linq;
 using System.Reactive;
 using System.Text;
 using System.Threading.Tasks;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using System.Windows.Input;
 
 namespace UI.Controls.Select
 {
@@ -108,9 +108,9 @@ namespace UI.Controls.Select
         public static readonly StyledProperty<bool> IsOpenProperty =
             AvaloniaProperty.Register<DateSelect,bool>(nameof(IsOpen));
 
-        public ReactiveCommand<object,Unit> ShowSelectCommand { get;}
-        public ReactiveCommand<object, Unit> SetYearCommand { get;}
-        public ReactiveCommand<object, Unit> SetMonthCommand { get;}
+        public ICommand ShowSelectCommand { get;}
+        public ICommand SetYearCommand { get;}
+        public ICommand SetMonthCommand { get;}
         public ReactiveCommand<object, Unit> DoneCommand { get;}
 
         private bool IsFirstClick = false;
@@ -173,6 +173,8 @@ namespace UI.Controls.Select
             UpdateDays();
         }
 
+       
+
         private void OnSetYear(object obj)
         {
             int newYear = Year + int.Parse(obj.ToString());
@@ -199,7 +201,7 @@ namespace UI.Controls.Select
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            SelectContainer = e.NameScope.Find("SelectContainer") as Border;
+            SelectContainer = e.NameScope.Get<Border>("SelectContainer");
 
             UpdateDays();
 

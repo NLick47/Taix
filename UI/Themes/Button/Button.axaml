@@ -14,7 +14,23 @@
 
 		  <Style Selector="controls|Button:pointerover /template/ Border#BoxBorder">
 			  <Setter Property="BorderThickness" Value="0"/>
+
+			  
 		  </Style>
+
+		  <Style Selector="controls|Button:pointerover /template/ Border#Shadow">
+			  <Setter Property="Transitions">
+				  <Transitions>
+					  <BrushTransition Property="Background" Duration="0.18"/>
+				  </Transitions>
+			  </Setter>
+			  
+			  <Setter Property="Background" Value="Red"/>
+		  </Style>
+
+
+		
+		
 	  </Styles>
 	  <Setter Property="Background" Value="{DynamicResource StandardBackgroundBrush}"/>
     <Setter Property="Template">
@@ -34,10 +50,10 @@
 
 					  </base:Icon>
 					  <ContentPresenter
+						  Content="{TemplateBinding Content}"
 						  Grid.Column="1"
-				  HorizontalAlignment="Center"
-				  VerticalAlignment="Center"
-				  RecognizesAccessKey="True"/>
+						  HorizontalAlignment="Center"
+						  VerticalAlignment="Center"/>
 				  </Grid>
 			  </Border>
 
@@ -45,7 +61,7 @@
 					  ZIndex="-1" Width="{Binding ElementName=BoxBorder,Path=Bounds.Width}" 
 					  Height="{Binding ElementName=BoxBorder,Path=Bounds.Height}" 
 					  CornerRadius="{Binding ElementName=BoxBorder,Path=CornerRadius}"
-					  Background="{Binding ElementName=BoxBorder,Path=Background}">
+					 >
 				  <Border.Effect>
 					  <DropShadowDirectionEffect BlurRadius="5" ShadowDepth="2"
 										Direction="315"
