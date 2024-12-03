@@ -237,7 +237,6 @@
 																		<MultiBinding Converter="{StaticResource MultiValueToBoolConverter}">
 																			<Binding Path="IsOut" />
 																			<Binding Path="IsDisabled" />
-																			<Binding Path="IsToday" />
 																		</MultiBinding>
 																	</Border.IsEnabled>
 																	<ContentPresenter
