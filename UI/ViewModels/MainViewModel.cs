@@ -13,6 +13,7 @@ using System.Reactive;
 using System.Reactive.Linq;
 using UI.Controls.Base;
 using UI.Controls.Navigation.Models;
+using UI.Controls.Window;
 using UI.Models;
 using UI.Views;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
@@ -27,7 +28,7 @@ namespace UI.ViewModels
         public Command GotoPageCommand { get; }
 
         public IndexPageViewModel view { get; }
-        private string[] pages = { nameof(IndexPage), nameof(DataPage),/* nameof(ChartPage), nameof(DataPage), nameof(CategoryPage)*/ };
+        private string[] pages = [ nameof(IndexPage), nameof(DataPage), nameof(CategoryPage)]; /* nameof(ChartPage), nameof(DataPage), nameof(CategoryPage)*/
         public MainViewModel(
            IServiceProvider serviceProvider,
            IAppConfig appConfig,
@@ -100,11 +101,22 @@ namespace UI.ViewModels
                 UnSelectedIcon = Controls.Base.IconTypes.EndPoint,
                 SelectedIcon = IconTypes.EndPointSolid,
                 Title = sideSort as string,
+                Uri = nameof(CategoryPage),
                 ID = 3,
             });
 
             LoadDefaultPage();
         }
+
+        public void Toast(string content, ToastType type = ToastType.Info, IconTypes icon = IconTypes.Accept)
+        {
+            ToastContent = content;
+            ToastIcon = icon;
+            ToastType = type;
+            IsShowToast = true;
+
+        }
+
 
 
         public void LoadDefaultPage()
@@ -127,6 +139,21 @@ namespace UI.ViewModels
             {
                 Uri = NavSelectedItem.Uri;
             }
+        }
+
+        public void Error(string message_)
+        {
+            Toast(message_, ToastType.Error, IconTypes.Error);
+        }
+
+        public void Info(string message_)
+        {
+            Toast(message_, ToastType.Info, IconTypes.Info);
+        }
+
+        public void Success(string message_)
+        {
+            Toast(message_, ToastType.Success, IconTypes.Accept);
         }
     }
 }

@@ -1,0 +1,133 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:button="using:UI.Controls.Button"
+		xmlns:converter="using:UI.Controls.Converters"
+		xmlns:sys="using:System"
+        xmlns:controls="using:UI.Controls.Base">
+	<converter:HextoColorConverter x:Key="HextoColorConverter"/>
+	<ControlTheme x:Key="{x:Type controls:ColorSelect}" TargetType="controls:ColorSelect">
+		<Styles>
+			<Style Selector="controls|ColorSelect:pointerover">
+				<Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
+			</Style>
+		</Styles>
+
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="#f7f8fa" CornerRadius="5"
+						BorderThickness="2" Width="38" Height="38">
+					<Interaction.Behaviors>
+						<EventTriggerBehavior EventName="PointerPressed">
+							<InvokeCommandAction 
+								Command="{Binding ShowSelectCommand,RelativeSource={RelativeSource TemplatedParent}}" />
+						</EventTriggerBehavior>
+					</Interaction.Behaviors>
+				
+					<Grid>
+						<Border CornerRadius="4" Width="28" Height="28"
+								Background="{Binding RelativeSource={RelativeSource TemplatedParent},
+					Path=Color,Converter={StaticResource HextoColorConverter}}"	/>
+
+						<Popup
+                                x:Name="Popup"
+                                Placement="Bottom"
+                                IsOpen="{TemplateBinding IsOpen}">
+							<Border
+								   x:Name="SelectContainer"
+								   CornerRadius="10"
+								   BorderBrush="{DynamicResource PopupBorderBrush}"
+								   BorderThickness="1"
+								   Background="{DynamicResource PopupBackgroundBrush}"
+								   Padding="10" Width="275"
+								   MaxHeight="300"
+								   Margin="10">
+								<Border.Effect>
+									<DropShadowDirectionEffect
+										BlurRadius="6" ShadowDepth="2"
+										Direction="315" Color="Gray" Opacity=".1"/>
+								</Border.Effect>
+
+								<Grid>
+									<Grid.RowDefinitions>
+										<RowDefinition Height="auto"/>
+										<RowDefinition Height="*"/>
+										<RowDefinition Height="auto"/>
+									</Grid.RowDefinitions>
+									<TextBlock Text="选择颜色" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+
+									<ScrollViewer Grid.Row="1">
+										<ListBox Grid.Row="1"
+												 ItemsSource="{TemplateBinding Colors}"
+												 SelectedItem="{TemplateBinding Color,Mode=TwoWay}"
+												 SelectionMode="AlwaysSelected"
+												 Margin="0,10,0,0"
+												 ScrollViewer.HorizontalScrollBarVisibility="Disabled" >
+
+											<ListBox.Styles>
+												<Style Selector="ListBox">
+													<Setter Property="Template">
+														<ControlTemplate>
+															<Border>
+																<ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+															</Border>
+														</ControlTemplate>
+													</Setter>
+												</Style>
+
+												<Style Selector="ListBoxItem">
+													<Setter Property="Template">
+														<ControlTemplate>
+															<Border BorderBrush="Transparent"
+															BorderThickness="2" x:Name="Border"
+															Background="White" Margin="0,0,0,0"
+															Padding="0" Width="35" Height="35"
+															CornerRadius="5">
+																<ContentPresenter
+																	HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+																	VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+																	Background="{TemplateBinding Background}"
+																	ContentTemplate="{TemplateBinding ContentTemplate}"
+																	Content="{TemplateBinding Content}"
+																	VerticalAlignment="Center"
+																	HorizontalAlignment="Center"/>
+															</Border>
+														</ControlTemplate>
+													</Setter>
+												</Style>
+											</ListBox.Styles>
+
+											<ListBox.ItemsPanel>
+												<ItemsPanelTemplate>
+													<WrapPanel/>
+												</ItemsPanelTemplate>
+											</ListBox.ItemsPanel>
+
+											<ListBox.ItemTemplate>
+												<DataTemplate>
+													<WrapPanel x:DataType="sys:String" Orientation="Horizontal">
+														<Border Width="25" CornerRadius="4"
+																Height="25"
+																Background="{Binding .,
+																Converter={StaticResource HextoColorConverter}}"
+																/>
+														
+													</WrapPanel>
+
+												</DataTemplate>
+											</ListBox.ItemTemplate>
+										</ListBox>
+									</ScrollViewer>
+									<button:Button Grid.Row="2"
+												   HorizontalAlignment="Right"
+												   Command="{Binding RelativeSource={RelativeSource TemplatedParent}}, Path=ColorSelectCommand}"
+												   Content="自定义颜色" Width="120"/>
+								</Grid>
+							</Border>
+						</Popup>
+					</Grid>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
+</ResourceDictionary>

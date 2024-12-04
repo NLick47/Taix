@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using UI.Models;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 using UI.Servicers;
 
 namespace UI.ViewModels
@@ -22,9 +22,9 @@ namespace UI.ViewModels
         private readonly IUIServicer _uIServicer;
 
         private ConfigModel config;
-        public Command BlockActionCommand { get; set; }
-        public Command ClearSelectMonthDataCommand { get; set; }
-        public Command RefreshCommand { get; set; }
+        public ICommand BlockActionCommand { get; set; }
+        public ICommand ClearSelectMonthDataCommand { get; set; }
+        public ICommand RefreshCommand { get; set; }
         private MenuItem _setCategoryMenuItem;
         private MenuItem _whiteListMenuItem;
     }

@@ -46,7 +46,7 @@ namespace UI.ViewModels
 
             ToDetailCommand = ReactiveCommand.Create<object>(OnTodetailCommand);
             RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshCommand);
-
+            
             Init();
         }
 

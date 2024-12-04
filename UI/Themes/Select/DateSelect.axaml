@@ -240,7 +240,7 @@
 																		</MultiBinding>
 																	</Border.IsEnabled>
 																	<ContentPresenter
-																		
+
 																		 HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
 																		 VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
 																		 Background="{TemplateBinding Background}"

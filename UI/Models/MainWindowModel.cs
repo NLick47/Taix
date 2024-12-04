@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using UI.Controls;
 using UI.Controls.Base;
 using UI.Controls.Navigation.Models;
+using UI.Controls.Window;
 
 namespace UI.Models
 {
@@ -92,11 +93,11 @@ namespace UI.Models
         private IconTypes ToastIcon_;
         public IconTypes ToastIcon { get { return ToastIcon_; } set { ToastIcon_ = value; OnPropertyChanged(); } }
 
-        //private ToastType ToastType_;
-        //public ToastType ToastType
-        //{
-        //    get { return ToastType_; }
-        //    set { ToastType_ = value; OnPropertyChanged(); }
-        //}
+        private ToastType ToastType_;
+        public ToastType ToastType
+        {
+            get { return ToastType_; }
+            set { ToastType_ = value; OnPropertyChanged(); }
+        }
     }
 }
