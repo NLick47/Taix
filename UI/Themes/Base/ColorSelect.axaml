@@ -26,8 +26,7 @@
 				
 					<Grid>
 						<Border CornerRadius="4" Width="28" Height="28"
-								Background="{Binding RelativeSource={RelativeSource TemplatedParent},
-					Path=Color,Converter={StaticResource HextoColorConverter}}"	/>
+								Background="{TemplateBinding Color,Converter={StaticResource HextoColorConverter}}"	/>
 
 						<Popup
                                 x:Name="Popup"
@@ -60,15 +59,14 @@
 										<ListBox Grid.Row="1"
 												 x:Name="listBox"
 												 ItemsSource="{TemplateBinding Colors}"
-												 SelectedItem="{TemplateBinding Color,Mode=TwoWay}"
-												 SelectionMode="AlwaysSelected"
+												 SelectedItem="{TemplateBinding Color}"
 												 Margin="0,10,0,0"
-												 
 												 ScrollViewer.HorizontalScrollBarVisibility="Disabled" >
 
 											<Interaction.Behaviors>
 												<EventTriggerBehavior EventName="SelectionChanged">
 													<InvokeCommandAction
+														CommandParameter="{Binding #listBox.SelectedItem}"
 														Command="{Binding SelectionChangedCommand,RelativeSource={RelativeSource TemplatedParent}}" />
 												</EventTriggerBehavior>
 											</Interaction.Behaviors>

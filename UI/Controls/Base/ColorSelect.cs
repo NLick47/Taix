@@ -30,10 +30,10 @@ namespace UI.Controls.Base
     {
         public List<string> Colors
         {
-            get { return (List<string>)GetValue(ColorsProperty); }
+            get { return GetValue(ColorsProperty); }
             set { SetValue(ColorsProperty, value); }
         }
-        public static readonly AvaloniaProperty<List<string>> ColorsProperty =
+        public static readonly StyledProperty<List<string>> ColorsProperty =
             AvaloniaProperty.Register<ColorSelect,List<string>>(nameof(Colors) );
 
         private void OnWindowPointerPressed(object sender, PointerPressedEventArgs e)
@@ -43,19 +43,19 @@ namespace UI.Controls.Base
 
         public string Color
         {
-            get { return (string)GetValue(ColorProperty); }
+            get { return GetValue(ColorProperty); }
             set { SetValue(ColorProperty, value); }
         }
-        public static readonly AvaloniaProperty<string> ColorProperty =
-               AvaloniaProperty.Register<ColorSelect, string>(nameof(ColorProperty),defaultBindingMode: BindingMode.TwoWay);
+        public static readonly StyledProperty<string> ColorProperty =
+               AvaloniaProperty.Register<ColorSelect, string>(nameof(Color), "#00FFAB");
 
         public bool IsOpen
         {
-            get { return (bool)GetValue(IsOpenProperty); }
+            get { return GetValue(IsOpenProperty); }
             set { SetValue(IsOpenProperty, value); }
         }
 
-        public static readonly AvaloniaProperty<bool> IsOpenProperty =
+        public static readonly StyledProperty<bool> IsOpenProperty =
            AvaloniaProperty.Register<ColorSelect, bool>(nameof(IsOpen));
 
         private Border SelectContainer;
@@ -82,7 +82,7 @@ namespace UI.Controls.Base
             });
             ShowSelectCommand = ReactiveCommand.Create<object>(OnShowSelect);
             ColorSelectCommand = ReactiveCommand.Create<object>(OnColorSelect);
-            SelectionChangedCommand = ReactiveCommand.Create<SelectionChangedEventArgs>(OnSelectionChanged);
+            SelectionChangedCommand = ReactiveCommand.Create<string>(OnSelectionChanged);
 
             LoadColors();
         }
@@ -130,9 +130,10 @@ namespace UI.Controls.Base
             }
         }
 
-        private void OnSelectionChanged(SelectionChangedEventArgs e)
+        private void OnSelectionChanged(string e)
         {
             IsOpen = false;
+            Color = e;
         }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
