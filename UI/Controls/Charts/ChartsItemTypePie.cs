@@ -20,7 +20,7 @@ namespace UI.Controls.Charts
         /// </summary>
         public List<ChartsDataModel> Data
         {
-            get { return (List<ChartsDataModel>)GetValue(DataProperty); }
+            get { return GetValue(DataProperty); }
             set { SetValue(DataProperty, value); }
         }
         public static readonly StyledProperty<List<ChartsDataModel>> DataProperty =
@@ -32,7 +32,7 @@ namespace UI.Controls.Charts
         /// </summary>
         public double MaxValue
         {
-            get { return (double)GetValue(MaxValueProperty); }
+            get { return GetValue(MaxValueProperty); }
             set { SetValue(MaxValueProperty, value); }
         }
         public static readonly StyledProperty<double> MaxValueProperty =

@@ -14,7 +14,7 @@ namespace UI.Controls.Button
     {
         public IconTypes Icon
         {
-            get { return (IconTypes)GetValue(IconProperty); }
+            get { return GetValue(IconProperty); }
             set { SetValue(IconProperty, value); }
         }
 
@@ -23,7 +23,7 @@ namespace UI.Controls.Button
 
         public string Text
         {
-            get { return (string)GetValue(TextProperty); }
+            get { return GetValue(TextProperty); }
             set { SetValue(TextProperty, value); }
         }
 
@@ -42,7 +42,7 @@ namespace UI.Controls.Button
 
         public bool Value
         {
-            get { return (bool)GetValue(ValueProperty); }
+            get { return GetValue(ValueProperty); }
             set { SetValue(ValueProperty, value); }
         }
 

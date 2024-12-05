@@ -14,7 +14,7 @@ namespace UI.Controls.Base
     {
         public string Condition
         {
-            get { return (string)GetValue(ConditionProperty); }
+            get { return GetValue(ConditionProperty); }
             set { SetValue(ConditionProperty, value); }
         }
 
@@ -23,7 +23,7 @@ namespace UI.Controls.Base
 
         public object Value
         {
-            get { return (object)GetValue(ValueProperty); }
+            get { return GetValue(ValueProperty); }
             set { SetValue(ValueProperty, value); }
         }
         public static readonly StyledProperty<string> ValueProperty =

@@ -17,7 +17,7 @@ namespace UI.Controls.Charts
     {
         public double MaxValue
         {
-            get { return (double)GetValue(MaxValueProperty); }
+            get { return GetValue(MaxValueProperty); }
             set { SetValue(MaxValueProperty, value); }
         }
         public static readonly StyledProperty<double> MaxValueProperty =
@@ -25,7 +25,7 @@ namespace UI.Controls.Charts
 
         public double Value
         {
-            get { return (double)GetValue(ValueProperty); }
+            get { return GetValue(ValueProperty); }
             set { SetValue(ValueProperty, value); }
         }
         public static readonly StyledProperty<double> ValueProperty =
@@ -33,7 +33,7 @@ namespace UI.Controls.Charts
 
         public string Color
         {
-            get { return (string)GetValue(ColorProperty); }
+            get { return GetValue(ColorProperty); }
             set { SetValue(ColorProperty, value); }
         }
         public static readonly StyledProperty<string> ColorProperty =
@@ -41,7 +41,7 @@ namespace UI.Controls.Charts
 
         public string ColumnName
         {
-            get { return (string)GetValue(ColumnNameProperty); }
+            get { return GetValue(ColumnNameProperty); }
             set { SetValue(ColumnNameProperty, value); }
         }
         public static readonly StyledProperty<string> ColumnNameProperty =
@@ -63,8 +63,8 @@ namespace UI.Controls.Charts
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            ValueBlockObj = e.NameScope.Find("ValueBlockObj") as Rectangle;
-            ValueContainer = e.NameScope.Find("ValueContainer") as Border;
+            ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
+            ValueContainer = e.NameScope.Get<Border>("ValueContainer");
             if (!IsAddEvent)
             {
                 Loaded += ChartItemTypeColumn_Loaded;

@@ -38,7 +38,7 @@ namespace UI.Controls.Window
 
         public static readonly StyledProperty<PageContainer> PageContainerProperty = 
             AvaloniaProperty.Register<DefaultWindow, PageContainer>(nameof(PageContainer));
-        public PageContainer PageContainer { get { return (PageContainer)GetValue(PageContainerProperty); } set { SetValue(PageContainerProperty, value); } }
+        public PageContainer PageContainer { get { return GetValue(PageContainerProperty); } set { SetValue(PageContainerProperty, value); } }
         #region sys command
         public static ReactiveCommand<Unit, Unit> MinimizeWindowCommand { get; private set; }
         public static ReactiveCommand<Unit, Unit> RestoreWindowCommand { get; private set; }
@@ -65,7 +65,7 @@ namespace UI.Controls.Window
         /// <summary>
         /// 是否可以返回
         /// </summary>
-        public bool IsCanBack { get { return (bool)GetValue(IsCanBackProperty); } set { SetValue(IsCanBackProperty, value); } }
+        public bool IsCanBack { get { return GetValue(IsCanBackProperty); } set { SetValue(IsCanBackProperty, value); } }
 
         public static readonly StyledProperty<bool> IsCanBackProperty =
             AvaloniaProperty.Register<DefaultWindow,bool>(nameof(IsCanBack));

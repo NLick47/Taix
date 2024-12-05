@@ -21,7 +21,7 @@ namespace UI.Controls.Button
 
         public object CommandParameter
         {
-            get { return (object)GetValue(CommandParameterProperty); }
+            get { return GetValue(CommandParameterProperty); }
             set { SetValue(CommandParameterProperty, value); }
         }
 
@@ -30,7 +30,7 @@ namespace UI.Controls.Button
 
         public IconTypes Icon
         {
-            get { return (IconTypes)GetValue(IconProperty); }
+            get { return GetValue(IconProperty); }
             set { SetValue(IconProperty, value); }
         }
 

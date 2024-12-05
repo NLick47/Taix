@@ -47,14 +47,14 @@ namespace UI.Controls.Select
 
         public DateSelectType SelectType
         {
-            get { return (DateSelectType)GetValue(SelectTypeProperty); }
+            get { return GetValue(SelectTypeProperty); }
             set { SetValue(SelectTypeProperty, value); }
         }
         public static readonly StyledProperty<DateSelectType> SelectTypeProperty =
             AvaloniaProperty.Register<DateSelect, DateSelectType>(nameof(SelectType));
         public DateTime Date
         {
-            get { return (DateTime)GetValue(DateProperty); }
+            get { return GetValue(DateProperty); }
             set { SetValue(DateProperty, value); }
         }
         public static readonly StyledProperty<DateTime> DateProperty =
@@ -63,7 +63,7 @@ namespace UI.Controls.Select
      
         public int Year
         {
-            get { return (int)GetValue(YearProperty); }
+            get { return GetValue(YearProperty); }
             set { SetValue(YearProperty, value); }
         }
         public static readonly StyledProperty<int> YearProperty =
@@ -71,7 +71,7 @@ namespace UI.Controls.Select
 
         public int Month
         {
-            get { return (int)GetValue(MonthProperty); }
+            get { return GetValue(MonthProperty); }
             set { SetValue(MonthProperty, value); }
         }
 
@@ -80,21 +80,21 @@ namespace UI.Controls.Select
 
         public DayModel Day
         {
-            get { return (DayModel)GetValue(DayProperty); }
+            get { return GetValue(DayProperty); }
             set { SetValue(DayProperty, value); }
         }
         public static readonly StyledProperty<DayModel> DayProperty =
             AvaloniaProperty.Register<DateSelect,DayModel>(nameof(Day));
         public string DateStr
         {
-            get { return (string)GetValue(DateStrProperty); }
+            get { return GetValue(DateStrProperty); }
             set { SetValue(DateStrProperty, value); }
         }
         public static readonly StyledProperty<string> DateStrProperty =
             AvaloniaProperty.Register<DateSelect,string>(nameof(DateSelect));
         public List<DayModel> Days
         {
-            get { return (List<DayModel>)GetValue(DaysProperty); }
+            get { return GetValue(DaysProperty); }
             set { SetValue(DaysProperty, value); }
         }
         public static readonly StyledProperty<List<DayModel>> DaysProperty =
@@ -102,7 +102,7 @@ namespace UI.Controls.Select
 
         public bool IsOpen
         {
-            get { return (bool)GetValue(IsOpenProperty); }
+            get { return GetValue(IsOpenProperty); }
             set { SetValue(IsOpenProperty, value); }
         }
         public static readonly StyledProperty<bool> IsOpenProperty =

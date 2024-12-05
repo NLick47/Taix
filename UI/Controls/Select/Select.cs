@@ -14,7 +14,7 @@ namespace UI.Controls.Select
     {
         public bool IsShowIcon
         {
-            get { return (bool)GetValue(IsShowIconProperty); }
+            get { return GetValue(IsShowIconProperty); }
             set { SetValue(IsShowIconProperty, value); }
         }
         public static readonly StyledProperty<bool> IsShowIconProperty =
@@ -22,7 +22,7 @@ namespace UI.Controls.Select
 
         public bool IsOpen
         {
-            get { return (bool)GetValue(IsOpenProperty); }
+            get { return GetValue(IsOpenProperty); }
             set { SetValue(IsOpenProperty, value); }
         }
 
@@ -32,7 +32,7 @@ namespace UI.Controls.Select
 
         public List<SelectItemModel> Options
         {
-            get { return (List<SelectItemModel>)GetValue(OptionsProperty); }
+            get { return GetValue(OptionsProperty); }
             set { SetValue(OptionsProperty, value); }
         }
 
@@ -57,7 +57,7 @@ namespace UI.Controls.Select
 
         public SelectItemModel SelectedItem
         {
-            get { return (SelectItemModel)GetValue(SelectedItemProperty); }
+            get { return GetValue(SelectedItemProperty); }
             set { SetValue(SelectedItemProperty, value); }
         }
 

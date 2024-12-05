@@ -27,7 +27,7 @@ namespace UI.Controls.Navigation
     {
         public ContextMenu ItemContextMenu
         {
-            get { return (ContextMenu)GetValue(ItemContextMenuProperty); }
+            get { return GetValue(ItemContextMenuProperty); }
             set { SetValue(SelectedItemProperty, value); }
         }
 
@@ -39,7 +39,7 @@ namespace UI.Controls.Navigation
 
         public NavigationItemModel SelectedItem
         {
-            get { return (NavigationItemModel)GetValue(SelectedItemProperty); }
+            get { return GetValue(SelectedItemProperty); }
             set { SetValue(SelectedItemProperty, value); }
         }
 
@@ -59,12 +59,12 @@ namespace UI.Controls.Navigation
 
         public object TopExtContent
         {
-            get { return (object)GetValue(TopExtContentProperty); }
+            get { return GetValue(TopExtContentProperty); }
             set { SetValue(TopExtContentProperty, value); }
         }
         public object BottomExtContent
         {
-            get { return (object)GetValue(BottomExtContentProperty); }
+            get { return GetValue(BottomExtContentProperty); }
             set { SetValue(BottomExtContentProperty, value); }
         }
 
@@ -72,7 +72,7 @@ namespace UI.Controls.Navigation
         {
             get
             {
-                return (ObservableCollection<NavigationItemModel>)GetValue(DataProperty);
+                return GetValue(DataProperty);
             }
             set
             {
@@ -188,8 +188,8 @@ namespace UI.Controls.Navigation
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            ItemsPanel = e.NameScope.Find<StackPanel>("ItemsPanel")!;
-            ActiveBlock = e.NameScope.Find<Border>("ActiveBlock")!;
+            ItemsPanel = e.NameScope.Get<StackPanel>("ItemsPanel")!;
+            ActiveBlock = e.NameScope.Get<Border>("ActiveBlock")!;
             CreateTransitions();
             Render();
         }

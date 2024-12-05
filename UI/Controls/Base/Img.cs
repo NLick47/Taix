@@ -13,7 +13,7 @@ namespace UI.Controls.Base
     {
         public CornerRadius Radius
         {
-            get { return (CornerRadius)GetValue(RadiusProperty); }
+            get { return GetValue(RadiusProperty); }
             set { SetValue(RadiusProperty, value); }
         }
 
@@ -22,7 +22,7 @@ namespace UI.Controls.Base
 
         public string Src
         {
-            get { return (string)GetValue(SrcProperty); }
+            get { return GetValue(SrcProperty); }
             set { SetValue(SrcProperty, value); }
         }
 
@@ -34,7 +34,7 @@ namespace UI.Controls.Base
         /// </summary>
         public string URL
         {
-            get { return (string)GetValue(URLProperty); }
+            get { return GetValue(URLProperty); }
             set { SetValue(URLProperty, value); }
         }
 

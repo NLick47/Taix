@@ -18,7 +18,7 @@ namespace UI.Controls.Charts
     {
         public ChartsDataModel Data
         {
-            get { return (ChartsDataModel)GetValue(DataProperty); }
+            get { return GetValue(DataProperty); }
             set { SetValue(DataProperty, value); }
         }
         public static readonly StyledProperty<ChartsDataModel> DataProperty =
@@ -26,7 +26,7 @@ namespace UI.Controls.Charts
 
         public double MaxValue
         {
-            get { return (double)GetValue(MaxValueProperty); }
+            get { return GetValue(MaxValueProperty); }
             set { SetValue(MaxValueProperty, value); }
         }
         public static readonly StyledProperty<double> MaxValueProperty =
@@ -34,7 +34,7 @@ namespace UI.Controls.Charts
 
         public bool IsLoading
         {
-            get { return (bool)GetValue(IsLoadingProperty); }
+            get { return GetValue(IsLoadingProperty); }
             set { SetValue(IsLoadingProperty, value); }
         }
         public static readonly StyledProperty<bool> IsLoadingProperty =
@@ -64,11 +64,11 @@ namespace UI.Controls.Charts
         {
             base.OnApplyTemplate(e);
 
-            NameTextObj = e.NameScope.Find("NameTextObj") as TextBlock;
-            ValueTextObj = e.NameScope.Find("ValueTextObj") as TextBlock;
-            ValueBlockObj = e.NameScope.Find("ValueBlockObj") as Rectangle;
-            ValueContainer = e.NameScope.Find("ValueContainer") as StackPanel;
-            IconObj = e.NameScope.Find("IconObj") as Image;
+            NameTextObj = e.NameScope.Get<TextBlock>("NameTextObj");
+            ValueTextObj = e.NameScope.Get<TextBlock>("ValueTextObj");
+            ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
+            ValueContainer = e.NameScope.Get<StackPanel>("ValueContainer");
+            IconObj = e.NameScope.Get<Image>("IconObj");
             if (!IsAddEvent)
             {
                 Loaded += ChartsItemTypeCard_Loaded;

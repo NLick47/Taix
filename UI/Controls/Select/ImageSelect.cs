@@ -22,7 +22,7 @@ namespace UI.Controls.Select
 
         public string URL
         {
-            get { return (string)GetValue(URLProperty); }
+            get { return GetValue(URLProperty); }
             set { SetValue(URLProperty, value); }
         }
         public static readonly StyledProperty<string> URLProperty =
@@ -30,7 +30,7 @@ namespace UI.Controls.Select
 
         public bool IsSelected
         {
-            get { return (bool)GetValue(IsSelectedProperty); }
+            get { return GetValue(IsSelectedProperty); }
             set { SetValue(IsSelectedProperty, value); }
         }
 
@@ -39,7 +39,7 @@ namespace UI.Controls.Select
 
         public double ImageWidth
         {
-            get { return (double)GetValue(ImageWidthProperty); }
+            get { return GetValue(ImageWidthProperty); }
             set { SetValue(ImageWidthProperty, value); }
         }
 
@@ -48,7 +48,7 @@ namespace UI.Controls.Select
 
         public double ImageHeight
         {
-            get { return (double)GetValue(ImageHeightProperty); }
+            get { return GetValue(ImageHeightProperty); }
             set { SetValue(ImageHeightProperty, value); }
         }
 

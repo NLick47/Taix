@@ -28,7 +28,7 @@ namespace UI.Controls.Charts
         /// </summary>
         public ChartsDataModel Data
         {
-            get { return (ChartsDataModel)GetValue(DataProperty); }
+            get { return GetValue(DataProperty); }
             set { SetValue(DataProperty, value); }
         }
         public static readonly StyledProperty<ChartsDataModel> DataProperty =
@@ -36,7 +36,7 @@ namespace UI.Controls.Charts
 
         public double MaxValue
         {
-            get { return (double)GetValue(MaxValueProperty); }
+            get { return GetValue(MaxValueProperty); }
             set { SetValue(MaxValueProperty, value); }
         }
         public static readonly StyledProperty<double> MaxValueProperty =
@@ -47,7 +47,7 @@ namespace UI.Controls.Charts
         /// </summary>
         public bool IsLoading
         {
-            get { return (bool)GetValue(IsLoadingProperty); }
+            get { return GetValue(IsLoadingProperty); }
             set { SetValue(IsLoadingProperty, value); }
         }
         public static readonly StyledProperty<bool> IsLoadingProperty =
@@ -58,7 +58,7 @@ namespace UI.Controls.Charts
         /// </summary>
         public bool IsSelected
         {
-            get { return (bool)GetValue(IsSelectedProperty); }
+            get { return GetValue(IsSelectedProperty); }
             set { SetValue(IsSelectedProperty, value); }
         }
         public static readonly StyledProperty<bool> IsSelectedProperty =
@@ -86,7 +86,7 @@ namespace UI.Controls.Charts
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            ValueBlockObj = e.NameScope.Find("ValueBlockObj") as Rectangle;
+            ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
             if (!IsAddEvent)
             {
                 IsAddEvent = true;

@@ -42,7 +42,7 @@ namespace UI.Controls.Tabbar
 
         public ObservableCollection<string> Data
         {
-            get { return (ObservableCollection<string>)GetValue(DataProperty); }
+            get { return GetValue(DataProperty); }
             set { SetValue(DataProperty, value); }
         }
         public static readonly StyledProperty<ObservableCollection<string>> DataProperty =
@@ -64,8 +64,8 @@ namespace UI.Controls.Tabbar
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            ActiveBlock = e.NameScope.Find("ActiveBlock") as Border;
-            ItemsContainer = e.NameScope.Find("ItemsContainer") as Grid;
+            ActiveBlock = e.NameScope.Get<Border>("ActiveBlock");
+            ItemsContainer = e.NameScope.Get<Grid>("ItemsContainer");
             Render();
         }
 

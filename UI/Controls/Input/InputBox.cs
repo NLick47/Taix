@@ -23,50 +23,50 @@ namespace UI.Controls.Input
         /// </summary>
         public IconTypes Icon
         {
-            get { return (IconTypes)GetValue(IconProperty); }
+            get { return GetValue(IconProperty); }
             set { SetValue(IconProperty, value); }
         }
         public static readonly StyledProperty<IconTypes> IconProperty =
         AvaloniaProperty.Register<InputBox, IconTypes>(nameof(Icon));
 
-        public Thickness BoxPadding { get { return (Thickness)GetValue(BoxPaddingProperty); } set { SetValue(BoxPaddingProperty, value); } 
+        public Thickness BoxPadding { get { return GetValue(BoxPaddingProperty); } set { SetValue(BoxPaddingProperty, value); } 
         }
         public static readonly StyledProperty<Thickness> BoxPaddingProperty =
              AvaloniaProperty.Register<InputBox, Thickness>(nameof(BoxPadding));
 
-        public string Title { get { return (string)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
+        public string Title { get { return GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
         public static readonly StyledProperty<string> TitleProperty =
              AvaloniaProperty.Register<InputBox, string>(nameof(Title));
 
-        public Thickness TitleMargin { get { return (Thickness)GetValue(TitleMarginProperty); } set { SetValue(TitleMarginProperty, value); } }
+        public Thickness TitleMargin { get { return GetValue(TitleMarginProperty); } set { SetValue(TitleMarginProperty, value); } }
         public static readonly StyledProperty<Thickness> TitleMarginProperty = AvaloniaProperty.Register<InputBox, Thickness>(nameof(TitleMargin));
 
-        public Thickness IconMargin { get { return (Thickness)GetValue(IconMarginProperty); } set { SetValue(IconMarginProperty, value); } }
+        public Thickness IconMargin { get { return GetValue(IconMarginProperty); } set { SetValue(IconMarginProperty, value); } }
         public static readonly StyledProperty<Thickness> IconMarginProperty = AvaloniaProperty.Register<InputBox, Thickness>(nameof(IconMargin));
 
-        public IBrush IconColor { get { return (SolidColorBrush)GetValue(IconColorProperty); } set { SetValue(IconColorProperty, value); } }
+        public IBrush IconColor { get { return GetValue(IconColorProperty); } set { SetValue(IconColorProperty, value); } }
         public static readonly StyledProperty<IBrush> IconColorProperty = AvaloniaProperty.Register<InputBox, IBrush>(nameof(IconColor));
 
-        public IBrush TitleColor { get { return (SolidColorBrush)GetValue(TitleColorProperty); } set { SetValue(TitleColorProperty, value); } }
+        public IBrush TitleColor { get { return GetValue(TitleColorProperty); } set { SetValue(TitleColorProperty, value); } }
         public static readonly StyledProperty<IBrush> TitleColorProperty = AvaloniaProperty.Register<InputBox, IBrush>(nameof(TitleColor));
 
-        public double IconSize { get { return (double)GetValue(IconSizeProperty); } set { SetValue(IconSizeProperty, value); } }
+        public double IconSize { get { return GetValue(IconSizeProperty); } set { SetValue(IconSizeProperty, value); } }
         public static readonly StyledProperty<double> IconSizeProperty = AvaloniaProperty.Register<InputBox, double>(nameof(IconSize));
 
-        public double TitleSize { get { return (double)GetValue(TitleSizeProperty); } set { SetValue(TitleSizeProperty, value); } }
+        public double TitleSize { get { return GetValue(TitleSizeProperty); } set { SetValue(TitleSizeProperty, value); } }
         public static readonly StyledProperty<double> TitleSizeProperty = AvaloniaProperty.Register<InputBox, double>(nameof(TitleSize));
 
-        public string Error { get { return (string)GetValue(ErrorProperty); } set { SetValue(ErrorProperty, value); } }
+        public string Error { get { return GetValue(ErrorProperty); } set { SetValue(ErrorProperty, value); } }
         public static readonly StyledProperty<string> ErrorProperty = AvaloniaProperty.Register<InputBox, string>(nameof(Error));
 
-        public bool IsError { get { return (bool)GetValue(IsErrorProperty); } set { SetValue(IsErrorProperty, value); } }
+        public bool IsError { get { return GetValue(IsErrorProperty); } set { SetValue(IsErrorProperty, value); } }
         public static readonly StyledProperty<bool> IsErrorProperty = AvaloniaProperty.Register<InputBox, bool>(nameof(IsError));
 
-        public bool IsShowError { get { return (bool)GetValue(IsShowErrorProperty); } set { SetValue(IsShowErrorProperty, value); } }
+        public bool IsShowError { get { return GetValue(IsShowErrorProperty); } set { SetValue(IsShowErrorProperty, value); } }
         public static readonly StyledProperty<bool> IsShowErrorProperty = AvaloniaProperty.Register<InputBox, bool>(nameof(IsShowError));
 
 
-        public string Placeholder { get { return (string)GetValue(PlaceholderProperty); } set { SetValue(PlaceholderProperty, value); } }
+        public string Placeholder { get { return GetValue(PlaceholderProperty); } set { SetValue(PlaceholderProperty, value); } }
         public static readonly StyledProperty<string> PlaceholderProperty = AvaloniaProperty.Register<InputBox, string>(nameof(Placeholder));
         private Popup ErrorPopup;
 

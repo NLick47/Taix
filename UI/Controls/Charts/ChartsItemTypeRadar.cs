@@ -19,7 +19,7 @@ namespace UI.Controls.Charts
     {
         public List<ChartsDataModel> Data
         {
-            get { return (List<ChartsDataModel>)GetValue(DataProperty); }
+            get { return GetValue(DataProperty); }
             set { SetValue(DataProperty, value); }
         }
         public static readonly StyledProperty<List<ChartsDataModel>> DataProperty =
@@ -27,7 +27,7 @@ namespace UI.Controls.Charts
 
         public double MaxValue
         {
-            get { return (double)GetValue(MaxValueProperty); }
+            get { return GetValue(MaxValueProperty); }
             set { SetValue(MaxValueProperty, value); }
         }
         public static readonly StyledProperty<double> MaxValueProperty =
@@ -35,7 +35,7 @@ namespace UI.Controls.Charts
 
         public bool IsLoading
         {
-            get { return (bool)GetValue(IsLoadingProperty); }
+            get { return GetValue(IsLoadingProperty); }
             set { SetValue(IsLoadingProperty, value); }
         }
         public static readonly StyledProperty<bool> IsLoadingProperty =
@@ -43,7 +43,7 @@ namespace UI.Controls.Charts
 
         public Geometry RadarPathData
         {
-            get { return (Geometry)GetValue(RadarPathDataProperty); }
+            get { return GetValue(RadarPathDataProperty); }
             set { SetValue(RadarPathDataProperty, value); }
         }
         public static readonly StyledProperty<Geometry> RadarPathDataProperty =
@@ -56,7 +56,7 @@ namespace UI.Controls.Charts
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            canvas = e.NameScope.Find("Canvas") as Canvas;
+            canvas = e.NameScope.Get<Canvas>("Canvas");
             Loaded += ChartsItemTypeRadar_Loaded;
         }
 

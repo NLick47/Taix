@@ -12,17 +12,17 @@ namespace UI.Controls.Base
     {
         public string Content
         {
-            get { return (string)GetValue(ContentProperty); }
+            get { return GetValue(ContentProperty); }
             set { SetValue(ContentProperty, value); }
         }
-        public static readonly AvaloniaProperty<string> ContentProperty =
+        public static readonly StyledProperty<string> ContentProperty =
             AvaloniaProperty.Register<Text, string>(nameof(Text));  
         public bool Value
         {
-            get { return (bool)GetValue(ValueProperty); }
+            get { return GetValue(ValueProperty); }
             set { SetValue(ValueProperty, value); }
         }
-        public static readonly AvaloniaProperty<bool> ValueProperty =
+        public static readonly StyledProperty<bool> ValueProperty =
                AvaloniaProperty.Register<Text, bool>(nameof(Value));
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

@@ -17,7 +17,7 @@ namespace UI.Controls.Charts
     {
         public ChartsDataModel Data
         {
-            get { return (ChartsDataModel)GetValue(DataProperty); }
+            get { return GetValue(DataProperty); }
             set { SetValue(DataProperty, value); }
         }
         public static readonly StyledProperty<ChartsDataModel> DataProperty =
@@ -25,7 +25,7 @@ namespace UI.Controls.Charts
 
         public double MaxValue
         {
-            get { return (double)GetValue(MaxValueProperty); }
+            get { return GetValue(MaxValueProperty); }
             set { SetValue(MaxValueProperty, value); }
         }
         public static readonly StyledProperty<double> MaxValueProperty =
@@ -36,7 +36,7 @@ namespace UI.Controls.Charts
         /// </summary>
         public bool IsLoading
         {
-            get { return (bool)GetValue(IsLoadingProperty); }
+            get { return GetValue(IsLoadingProperty); }
             set { SetValue(IsLoadingProperty, value); }
         }
         public static readonly StyledProperty<bool> IsLoadingProperty =
@@ -47,7 +47,7 @@ namespace UI.Controls.Charts
         /// </summary>
         public bool IsShowBadge
         {
-            get { return (bool)GetValue(IsShowBadgeProperty); }
+            get { return GetValue(IsShowBadgeProperty); }
             set { SetValue(IsShowBadgeProperty, value); }
         }
         public static readonly StyledProperty<bool> IsShowBadgeProperty =
@@ -86,13 +86,13 @@ namespace UI.Controls.Charts
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            NameTextObj = e.NameScope.Find("NameTextObj") as TextBlock;
-            ValueTextObj = e.NameScope.Find("ValueTextObj") as TextBlock;
-            ValueBlockObj = e.NameScope.Find("ValueBlockObj") as Rectangle;
+            NameTextObj = e.NameScope.Get<TextBlock>("NameTextObj");
+            ValueTextObj = e.NameScope.Get<TextBlock>("ValueTextObj");
+            ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
             //ValueContainer = GetTemplateChild("ValueContainer") as Grid;
-            ValueContainer = e.NameScope.Find("ValueContainer") as StackPanel;
+            ValueContainer = e.NameScope.Get<StackPanel>("ValueContainer");
 
-            IconObj = e.NameScope.Find("IconObj") as Image;
+            IconObj = e.NameScope.Get<Image>("IconObj");
 
             if (!IsAddEvent)
             {

@@ -50,7 +50,7 @@ namespace UI.Controls
           AvaloniaProperty.Register<PageContainer, string>(nameof(Uri),string.Empty);
 
 
-        public PageContainer Instance { get { return (PageContainer)GetValue(InstanceProperty); } set { SetValue(InstanceProperty, value); } }
+        public PageContainer Instance { get { return GetValue(InstanceProperty); } set { SetValue(InstanceProperty, value); } }
 
         public static readonly StyledProperty<PageContainer> InstanceProperty =
             AvaloniaProperty.Register<PageContainer, PageContainer>(nameof(Instance));

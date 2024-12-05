@@ -15,7 +15,7 @@ namespace UI.Controls.DatePickerBar
     {
         public DatePickerShowType ShowType
         {
-            get { return (DatePickerShowType)GetValue(ShowTypeProperty); }
+            get { return GetValue(ShowTypeProperty); }
             set { SetValue(ShowTypeProperty, value); }
         }
 
@@ -40,7 +40,7 @@ namespace UI.Controls.DatePickerBar
 
         public DateTime SelectedDate
         {
-            get { return (DateTime)GetValue(SelectedDateProperty); }
+            get { return GetValue(SelectedDateProperty); }
             set { SetValue(SelectedDateProperty, value); }
         }
         public static readonly StyledProperty<DateTime> SelectedDateProperty =
@@ -48,7 +48,7 @@ namespace UI.Controls.DatePickerBar
 
         public string SelectedDateString
         {
-            get { return (string)GetValue(SelectedDateStringProperty); }
+            get { return GetValue(SelectedDateStringProperty); }
             set { SetValue(SelectedDateStringProperty, value); }
         }
         public static readonly StyledProperty<string> SelectedDateStringProperty =
@@ -56,7 +56,7 @@ namespace UI.Controls.DatePickerBar
 
         public bool IsShowDatePickerPopup
         {
-            get { return (bool)GetValue(IsShowDatePickerPopupProperty); }
+            get { return GetValue(IsShowDatePickerPopupProperty); }
             set { SetValue(IsShowDatePickerPopupProperty, value); }
         }
         public static readonly StyledProperty<bool> IsShowDatePickerPopupProperty =

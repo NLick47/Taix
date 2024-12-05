@@ -15,7 +15,7 @@ namespace UI.Controls.Base
     {
         public CornerRadius CornerRadius
         {
-            get { return (CornerRadius)GetValue(CornerRadiusProperty); }
+            get { return GetValue(CornerRadiusProperty); }
             set { SetValue(CornerRadiusProperty, value); }
         }
         public static readonly StyledProperty<CornerRadius> CornerRadiusProperty =

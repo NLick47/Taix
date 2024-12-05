@@ -15,27 +15,27 @@ namespace UI.Controls.Base
     {
         public List<string> Icons
         {
-            get { return (List<string>)GetValue(DaysProperty); }
+            get { return GetValue(DaysProperty); }
             set { SetValue(DaysProperty, value); }
         }
-        public static readonly AvaloniaProperty<List<string>> DaysProperty =
+        public static readonly StyledProperty<List<string>> DaysProperty =
             AvaloniaProperty.Register<IconSelect, List<string>>(nameof(Icons));
 
         public string URL
         {
-            get { return (string)GetValue(URLProperty); }
+            get { return GetValue(URLProperty); }
             set { SetValue(URLProperty, value); }
         }
-        public static readonly AvaloniaProperty<string> URLProperty =
+        public static readonly StyledProperty<string> URLProperty =
                 AvaloniaProperty.Register<IconSelect, string>(nameof(URL));
 
         public bool IsOpen
         {
-            get { return (bool)GetValue(IsOpenProperty); }
+            get { return GetValue(IsOpenProperty); }
             set { SetValue(IsOpenProperty, value); }
         }
 
-        public static readonly AvaloniaProperty<bool> IsOpenProperty =
+        public static readonly StyledProperty<bool> IsOpenProperty =
            AvaloniaProperty.Register<IconSelect, bool>(nameof(IsOpen));
 
         private bool IsFirstClick = false;

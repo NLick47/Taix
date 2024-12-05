@@ -12,7 +12,7 @@ namespace UI.Controls.DatePickerBar
     {
         public string Title
         {
-            get { return (string)GetValue(TitleProperty); }
+            get { return GetValue(TitleProperty); }
             set { SetValue(TitleProperty, value); }
         }
         public static readonly StyledProperty<string> TitleProperty =
@@ -20,7 +20,7 @@ namespace UI.Controls.DatePickerBar
 
         public bool IsSelected
         {
-            get { return (bool)GetValue(IsSelectedProperty); }
+            get { return GetValue(IsSelectedProperty); }
             set { SetValue(IsSelectedProperty, value); }
         }
         public static readonly StyledProperty<bool> IsSelectedProperty =
@@ -28,7 +28,7 @@ namespace UI.Controls.DatePickerBar
 
         public bool IsDisabled
         {
-            get { return (bool)GetValue(IsDisabledProperty); }
+            get { return GetValue(IsDisabledProperty); }
             set { SetValue(IsDisabledProperty, value); }
         }
         public static readonly StyledProperty<bool> IsDisabledProperty =
@@ -36,7 +36,7 @@ namespace UI.Controls.DatePickerBar
 
         public DateTime Date
         {
-            get { return (DateTime)GetValue(DateProperty); }
+            get { return GetValue(DateProperty); }
             set { SetValue(DateProperty, value); }
         }
         public static readonly StyledProperty<DateTime> DateProperty =

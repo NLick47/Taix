@@ -416,17 +416,17 @@ namespace UI.Controls.Charts
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            CardContainer = e.NameScope.Find("CardContainer") as WrapPanel;
-            MonthContainer = e.NameScope.Find("MonthContainer") as Grid;
-            RadarContainer = e.NameScope.Find("Radar") as Border;
-            _listView = e.NameScope.Find("ListView") as ListBox;
-            _typeATempContainer = e.NameScope.Find("TypeATempContainer") as StackPanel;
-            _commonCanvas = e.NameScope.Find("CommonCanvasContainer") as Canvas;
-            _countText = e.NameScope.Find("ACount") as Run;
-            _searchBox = e.NameScope.Find("ASearchBox") as TextBox;
+            CardContainer = e.NameScope.Get<WrapPanel>("CardContainer");
+            MonthContainer = e.NameScope.Get<Grid>("MonthContainer");
+            RadarContainer = e.NameScope.Get<Border>("Radar");
+            _listView = e.NameScope.Get<ListBox>("ListView");
+            _typeATempContainer = e.NameScope.Get<StackPanel>("TypeATempContainer");
+            _commonCanvas = e.NameScope.Get<Canvas>("CommonCanvasContainer");
+            _countText = e.NameScope.Get<Run>("ACount");
+            _searchBox = e.NameScope.Get<TextBox>("ASearchBox");
             if (ChartsType == ChartsType.Column)
             {
-                _typeColumnCanvas = e.NameScope.Find("TypeColumnCanvas") as Canvas;
+                _typeColumnCanvas = e.NameScope.Get<Canvas>("TypeColumnCanvas") ;
                 _typeColumnCanvas.SizeChanged += _typeColumnCanvas_SizeChanged;
             }
             if (ChartsType == ChartsType.Pie)
