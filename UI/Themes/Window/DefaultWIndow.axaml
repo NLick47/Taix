@@ -86,7 +86,7 @@
 										Height="32"
 										FontSize="10"
 										Icon="ChromeClose"
-											Command="{x:Static controls:DefaultWindow.CloseWindowCommand}"
+										Command="{x:Static controls:DefaultWindow.CloseWindowCommand}"
 										IsVisible="True"/>
 
 								</StackPanel>

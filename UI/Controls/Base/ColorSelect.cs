@@ -1,17 +1,27 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
+using Avalonia.Platform;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
+using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using UI.Controls.Window;
+using UI.Servicers.Dialogs;
+using UI.Views;
+using UI.Views.Dialogs;
 
 
 namespace UI.Controls.Base
@@ -28,12 +38,8 @@ namespace UI.Controls.Base
 
         private void OnWindowPointerPressed(object sender, PointerPressedEventArgs e)
         {
-            var point = e.GetPosition(this);
-            if (!this.Bounds.Contains(point))
-            {
-                IsOpen = false;
-            }
-        }
+            IsOpen = false;
+        }   
 
         public string Color
         {
@@ -52,40 +58,32 @@ namespace UI.Controls.Base
         public static readonly AvaloniaProperty<bool> IsOpenProperty =
            AvaloniaProperty.Register<ColorSelect, bool>(nameof(IsOpen));
 
-        private string HexConverter(System.Drawing.Color c)
-        {
-            return "#" + c.R.ToString("X2") + c.G.ToString("X2") + c.B.ToString("X2");
-        }
-
-        private bool IsFirstClick = false;
         private Border SelectContainer;
         private void OnShowSelect(object obj)
         {
             IsOpen = !IsOpen;
-            IsFirstClick = !IsFirstClick;
+          
         }
 
-        private ColorPicker _colorPicker;
-        public ICommand ShowSelectCommand { get; set; }
-        public ICommand ColorSelectCommand { get; set; }
+       
+        public ICommand ShowSelectCommand { get; private set; }
+        public ICommand ColorSelectCommand { get; private set; }
+
+        public ICommand SelectionChangedCommand { get; private set; }
         public event EventHandler OnSelected;
 
 
         protected override Type StyleKeyOverride => typeof(ColorSelect);
         public ColorSelect()
         {
-            _colorPicker = new ColorPicker
-            {
-                Name = "ColorPicker"
-            };
-
             this.GetObservable(IsOpenProperty).Subscribe(isOpen =>
             {
                 HandleWindowEvents(isOpen);
             });
-
             ShowSelectCommand = ReactiveCommand.Create<object>(OnShowSelect);
             ColorSelectCommand = ReactiveCommand.Create<object>(OnColorSelect);
+            SelectionChangedCommand = ReactiveCommand.Create<SelectionChangedEventArgs>(OnSelectionChanged);
+
             LoadColors();
         }
 
@@ -97,28 +95,19 @@ namespace UI.Controls.Base
                 if (isOpen)
                 {
                     window.PointerPressed += OnWindowPointerPressed;
-                    window.LostFocus += OnLostFocus;
                     window.Deactivated += OnDeactivated;
+                    window.PointerWheelChanged += OnPointerWheelChanged;
                 }
                 else
                 {
                     window.PointerPressed -= OnWindowPointerPressed;
-                    window.LostFocus -= OnLostFocus;
                     window.Deactivated -= OnDeactivated;
+                    window.PointerWheelChanged -= OnPointerWheelChanged;
                 }
             }
         }
 
-        protected override void OnPointerPressed(PointerPressedEventArgs e)
-        {
-            base.OnPointerPressed(e);
-            if (e.GetCurrentPoint(this).Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonPressed)
-            {
-                HandleMouseEvent(e);
-            }
-        }
-
-        private void OnLostFocus(object sender, RoutedEventArgs e)
+        private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
         {
             IsOpen = false;
         }
@@ -128,24 +117,22 @@ namespace UI.Controls.Base
             IsOpen = false;
         }
 
-        private void OnColorSelect(object obj)
+        private async void OnColorSelect(object obj)
         {
             IsOpen = false;
-            IsFirstClick = false;
-
-            //System.Windows.Forms.ColorDialog colorDialog = new System.Windows.Forms.ColorDialog();
-            //if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            //{
-            //    Color = HexConverter(colorDialog.Color);
-            //}
-            
-          
+            var picker = new ColorPickerDialog();
+            var desk = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+            var result = await picker.ShowDialog<IDialogResult?>(desk.MainWindow);
+            if(result?.Result == ButtonResult.OK)
+            {
+                result.Parameters.TryGetValue("pickColor",out var pickColor);
+                Color = pickColor.ToString();
+            }
         }
 
-        protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
+        private void OnSelectionChanged(SelectionChangedEventArgs e)
         {
-            base.OnPointerWheelChanged(e);
-            HandleMouseEvent(e);
+            IsOpen = false;
         }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -154,30 +141,7 @@ namespace UI.Controls.Base
             SelectContainer = e.NameScope.Get<Border>("SelectContainer");
         }
 
-        private void HandleMouseEvent(PointerEventArgs  e)
-        {
-            if (!IsFirstClick)
-            {
-                bool isInControl = IsInControl(e);
-
-                if (!isInControl)
-                {
-                    IsOpen = false;
-                }
-            }
-            IsFirstClick = false;
-        }
-
-        private bool IsInControl(PointerEventArgs e)
-        {
-            var p = e.GetPosition(SelectContainer);
-            if (p.X < 0 || p.Y < 0 || p.X > SelectContainer.Bounds.Width || p.Y > SelectContainer.Bounds.Height)
-            {
-                return false;
-            }
-            return true;
-        }
-
+      
         private void LoadColors()
         {
             Colors = [

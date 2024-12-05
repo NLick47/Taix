@@ -6,7 +6,7 @@
 
     <Application.Styles>
         <SimpleTheme />
-		
+		<StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Simple/Simple.xaml" />
 	</Application.Styles>
 	
 	<Application.Resources>
@@ -52,6 +52,8 @@
 				<ResourceInclude Source="/Themes/Charts/ChartsItemTypeMonth.axaml"/>
 				<ResourceInclude Source="/Themes/Charts/ChartsItemTypeRadar.axaml"/>
 				<ResourceInclude Source="/Themes/Charts/ChartsItemTypeColumn.axaml"/>
+				
+				<ResourceInclude Source="/Themes/ColorPicker/ColorPicker.axaml"/>
 				
 				<ResourceInclude Source="/Themes/Tabbar/Tabbar.axaml"/>
 				<ResourceInclude Source="/Themes/PageContainer.axaml"/>

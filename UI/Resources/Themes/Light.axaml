@@ -24,7 +24,8 @@
 
 	<SolidColorBrush x:Key="StandardTextBrush" Color="#000" />
 	<SolidColorBrush x:Key="SubTextBrush" Color="#7e7e7e" />
-
+	
+	<SolidColorBrush x:Key="Background" Color="#f3f3f3" />
 	<!--窗口背景颜色-->
 	<!--<SolidColorBrush x:Key="WindowBackground" Color="#f3f3f3" />-->
 	<LinearGradientBrush x:Key="WindowBackground" >
