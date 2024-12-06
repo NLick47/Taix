@@ -1,5 +1,10 @@
 ﻿using Avalonia;
 using Avalonia.Controls.Primitives;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
+using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,14 +25,13 @@ namespace UI.Controls.Base
         public static readonly StyledProperty<CornerRadius> RadiusProperty =
           AvaloniaProperty.Register<Img, CornerRadius>(nameof(Radius));
 
-        public string Src
+        public IImage Resource
         {
-            get { return GetValue(SrcProperty); }
-            set { SetValue(SrcProperty, value); }
+            get { return GetValue(ResourceProperty); }
+            set { SetValue(ResourceProperty, value); }
         }
-
-        public static readonly StyledProperty<string> SrcProperty =
-         AvaloniaProperty.Register<Img,string>(nameof(Src), "avares://UI/Resources/Icons/defaultIcon.png");
+        public static readonly StyledProperty<IImage> ResourceProperty =
+         AvaloniaProperty.Register<Img, IImage>(nameof(Resource), new Bitmap(AssetLoader.Open(new Uri("avares://UI/Resources/Icons/defaultIcon.png"))));
 
         /// <summary>
         /// 图片链接
@@ -52,22 +56,34 @@ namespace UI.Controls.Base
            AvaloniaProperty.Register<Img,string>(nameof(URL));
 
 
-        private void Handle(string path)
+        private async void Handle(string path)
         {
             string defaultIconFile = "avares://UI/Resources/Icons/defaultIcon.png";
             if (string.IsNullOrEmpty(path))
             {
-                Src = defaultIconFile;
+                Resource = new Bitmap(AssetLoader.Open(new Uri(defaultIconFile)));
                 return;
             }
             if (path.IndexOf("avares:") != -1)
             {
-                Src = path;
+                Resource = new Bitmap(AssetLoader.Open(new Uri(path)));
                 return;
             }
 
             string src = path.IndexOf(":") != -1 ? path : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
-            Src = File.Exists(src) ? src : defaultIconFile;
+            var win = this.GetVisualRoot() as Avalonia.Controls.Window;
+            var storage = win.StorageProvider;
+
+            var result = await storage.TryGetFileFromPathAsync(src);
+            if(result != null)
+            {
+                Resource = new Bitmap( await result.OpenReadAsync());
+            }
+            else
+            {
+                Resource = new Bitmap(AssetLoader.Open(new Uri(defaultIconFile)));
+            }
+           
         }
 
         protected override Type StyleKeyOverride => typeof(Img);

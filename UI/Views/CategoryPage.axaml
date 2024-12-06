@@ -13,10 +13,10 @@
 			 x:DataType="vm:CategoryPageViewModel"
              x:Class="UI.Views.CategoryPage">
 	<Grid>
-		<Grid 
+		<Grid
 			  ZIndex="2"
 			  Margin="0"
-			 
+			 IsVisible="{Binding EditVisibility}"
 			  HorizontalAlignment="Stretch"
 			  VerticalAlignment="Stretch">
 			<Border Background="Black" Opacity=".7" CornerRadius="2"/>
@@ -25,9 +25,9 @@
 					Background="{Binding ElementName=EditBorder,Path=Background}"
 					CornerRadius="{Binding ElementName=EditBorder,Path=CornerRadius}">
 				<Border.Effect>
-					<DropShadowDirectionEffect  BlurRadius="30" Direction="0" 
-												ShadowDepth="0" 
-												Opacity=".2" 
+					<DropShadowDirectionEffect  BlurRadius="30" Direction="0"
+												ShadowDepth="0"
+												Opacity=".2"
 												Color="{DynamicResource ThemeColor}"/>
 				</Border.Effect>
 			</Border>
@@ -45,7 +45,7 @@
 					</Grid.RowDefinitions>
 					<Grid>
 						<StackPanel Orientation="Horizontal" Margin="10,0,0,0">
-							<base:Text Content="?创建:编辑" Value="{Binding IsCreate}" 
+							<base:Text Content="?创建:编辑" Value="{Binding IsCreate}"
 									   VerticalAlignment="Center" />
 							<TextBlock  VerticalAlignment="Center" >
 								<Run Text="{Binding ShowType.Name}"/>
@@ -53,9 +53,9 @@
 							</TextBlock>
 						</StackPanel>
 						<Button:IconButton Foreground="#ccc"
-										   Icon="ChromeClose" 
+										   Icon="ChromeClose"
 										   HorizontalAlignment="Right"
-										   FontSize="12" Margin="0,0,10,0" 
+										   FontSize="12" Margin="0,0,10,0"
 										   Command="{Binding EditCloseCommand}"/>
 					</Grid>
 
@@ -68,20 +68,20 @@
 									<ColumnDefinition Width="auto"/>
 									<ColumnDefinition Width="*"/>
 								</Grid.ColumnDefinitions>
-								<base:ColorSelect Color="{Binding EditColor,Mode=TwoWay}" 
+								<base:ColorSelect Color="{Binding EditColor,Mode=TwoWay}"
 												  ToolTip.Tip="选择分类颜色"
-												  HorizontalAlignment="Left" 
+												  HorizontalAlignment="Left"
 												  Margin="0,10,0,0" />
 
 								<input:InputBox Grid.Column="1" Error="{Binding EditErrorText}"
-												IsShowError="{Binding IsEditError,Mode=TwoWay}" 
-												Text="{Binding EditName,Mode=TwoWay}" 
-												MaxLength="10" Margin="5,10,0,0" 
+												IsShowError="{Binding IsEditError,Mode=TwoWay}"
+												Text="{Binding EditName,Mode=TwoWay}"
+												MaxLength="10" Margin="5,10,0,0"
 												Placeholder="请输入分类名称"/>
 							</Grid>
 							<TextBlock Text="图标" Margin="0,10,0,0"/>
-							<base:IconSelect  URL="{Binding EditIconFile,Mode=TwoWay}" 
-											  HorizontalAlignment="Left" 
+							<base:IconSelect  URL="{Binding EditIconFile,Mode=TwoWay}"
+											  HorizontalAlignment="Left"
 											  Margin="0,10,0,0" />
 							<base:View Condition="=0" Value="{Binding ShowType.Id}">
 								<StackPanel>
@@ -92,11 +92,11 @@
 										<StackPanel Margin="0,10,0,0">
 											<Button:Button HorizontalAlignment="Right" Width="100"
 														   Command="{Binding AddDirectoryCommand}">添加目录</Button:Button>
-											<list:BaseList Items="{Binding EditDirectories}" 
+											<list:BaseList Items="{Binding EditDirectories}"
 														   SelectedItem="{Binding EditSelectedDirectory,Mode=TwoWay}">
 												<list:BaseList.ContextMenu>
 													<ContextMenu>
-														<MenuItem Header="移除" 
+														<MenuItem Header="移除"
 																  Command="{Binding DirectoriesCommand}"
 																  CommandParameter="remove"/>
 													</ContextMenu>
@@ -114,6 +114,299 @@
 					</Button:Button>
 				</Grid>
 			</Border>
+		</Grid>
+
+		<Grid Margin="20" Background="Transparent">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="auto"/>
+				<RowDefinition Height="*"/>
+			</Grid.RowDefinitions>
+			<Grid.ContextMenu>
+				<ContextMenu>
+					<MenuItem Header="刷新" Command="{Binding RefreshCommand}" />
+					<Separator/>
+					<MenuItem Header="新建分类" Command="{Binding EditCommand}" />
+				</ContextMenu>
+			</Grid.ContextMenu>
+
+			<StackPanel>
+				<StackPanel Orientation="Horizontal" Margin="0,5,0,20" >
+					<TextBlock Text="分类" FontSize="18" VerticalAlignment="Center"/>
+					<select:Select Margin="10,0,0,0" VerticalAlignment="Top" Padding="10,5"
+								   IsShowIcon="False" SelectedItem="{Binding ShowType,Mode=TwoWay}"
+								   Options="{Binding ShowTypeOptions}"/>
+				</StackPanel>
+
+				<Button:Button Icon="CalculatorAddition"
+							   Content="新建分类"
+							   HorizontalAlignment="Right"
+							   Margin="0,0,20,0" Width="150"
+							   Command="{Binding EditCommand}"/>
+			</StackPanel>
+
+			<TabControl
+			 SelectedIndex="{Binding ShowType.Id}"
+			 BorderThickness="0"
+			 Margin="0,10,0,0"
+			 Padding="0"
+			 Background="Transparent"
+			 Grid.Row="1">
+				<TabControl.Styles>
+					<Style Selector="TabItem">
+						<Setter Property="Template">
+							<ControlTemplate>
+
+							</ControlTemplate>
+						</Setter>
+					</Style>
+				</TabControl.Styles>
+
+				<TabItem>
+					<Grid>
+						<base:View Condition="empty" Value="{Binding Data}">
+							<base:EmptyData/>
+						</base:View>
+
+						<ListBox Margin="10,20,10,0" ItemsSource="{Binding Data}"
+								 
+								 SelectedItem="{Binding SelectedAppCategoryItem,Mode=TwoWay}"
+								  ScrollViewer.HorizontalScrollBarVisibility="Disabled" >
+
+							<ListBox.ContextMenu>
+								<ContextMenu>
+									<MenuItem Header="查看分类应用列表" Command="{Binding GotoListCommand}"
+											  CommandParameter="{Binding SelectedAppCategoryItem}"/>
+									<MenuItem Header="编辑" Command="{Binding EditCommand}"
+											  CommandParameter="{Binding SelectedAppCategoryItem}"/>
+									<MenuItem Header="删除分类" Command="{Binding DelCommand}"
+											  CommandParameter="{Binding SelectedAppCategoryItem}"/>
+								</ContextMenu>
+							</ListBox.ContextMenu>
+
+							<ListBox.Styles>
+								<Style Selector="ListBox">
+									<Setter Property="Template">
+										<ControlTemplate>
+											<ScrollViewer>
+												<Border>
+													<ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}"/>
+												</Border>
+											</ScrollViewer>
+										</ControlTemplate>
+									</Setter>
+								</Style>
+
+								<Style Selector="ListBoxItem">
+									<Setter Property="Template">
+										<ControlTemplate>
+											<Grid>
+												<Border BorderBrush="{Binding ElementName=Border,Path=BorderBrush}"
+														BorderThickness="{Binding ElementName=Border,Path=BorderThickness}"
+														Margin="{Binding ElementName=Border,Path=Margin}"
+														CornerRadius="{Binding ElementName=Border,Path=CornerRadius}">
+													<Border.Effect>
+														<DropShadowDirectionEffect
+															Color="#d8d2d2"
+															BlurRadius="10" Direction="300"
+															ShadowDepth="4" Opacity="0.1"></DropShadowDirectionEffect>
+													</Border.Effect>
+												</Border>
+												<Border BorderBrush="Transparent"
+														BorderThickness="2" x:Name="Border"
+														Background="{DynamicResource StandardBackgroundBrush}"
+														Margin="5" CornerRadius="20">
+													<ContentPresenter  ContentTemplate="{TemplateBinding ContentTemplate}"
+																		 Content="{TemplateBinding Content}"/>
+												</Border>
+											</Grid>
+										</ControlTemplate>
+									</Setter>
+								</Style>
+							</ListBox.Styles>
+
+							<ListBox.ItemsPanel>
+								<ItemsPanelTemplate>
+									<WrapPanel/>
+								</ItemsPanelTemplate>
+							</ListBox.ItemsPanel>
+
+							<ListBox.ItemTemplate>
+								<DataTemplate>
+									<WrapPanel Orientation="Vertical">
+										<Border Width="160" Height="160">
+											<Grid>
+												<Grid.RowDefinitions>
+													<RowDefinition Height="50"/>
+
+													<RowDefinition Height="40"/>
+													<RowDefinition Height="30"/>
+													<RowDefinition Height="*"/>
+
+												</Grid.RowDefinitions>
+
+												<Rectangle HorizontalAlignment="Left"
+														   Margin="10"
+														   VerticalAlignment="Top"
+														   RadiusX="20" RadiusY="20"
+														   Width="15"
+														   Height="15"
+														   Fill="{Binding Data.Color,Converter={StaticResource HextoColorConverter}}"/>
+
+												<base:View Value="{Binding Data.IsDirectoryMath}">
+													<Border Background="{DynamicResource ThemeBrush}"
+															VerticalAlignment="Top" HorizontalAlignment="Right"
+															Margin="10" Padding="8,0" CornerRadius="10" Height="20">
+														<TextBlock VerticalAlignment="Center"
+																   HorizontalAlignment="Center" FontSize="10"
+																   Foreground="White" Text="目录匹配"></TextBlock>
+													</Border>
+												</base:View>
+
+												<Grid Grid.Row="1">
+													<base:Img Radius="8" Width="40" Height="40" URL="{Binding Data.IconFile}"/>
+												</Grid>
+
+												<TextBlock Foreground="{DynamicResource StandardTextBrush}"
+														   HorizontalAlignment="Center" VerticalAlignment="Center"
+														   Grid.Row="2" Text="{Binding Data.Name}"
+														   FontSize="14"
+														   FontWeight="Bold"/>
+
+												<Border Grid.Row="3" >
+													<Border Margin="10,0,10,0"
+															CornerRadius="10"
+															Background="{DynamicResource CategoryAppNumBgBrush}"
+															HorizontalAlignment="Right" VerticalAlignment="Center"
+															Padding="10,5" ToolTip.Tip="分类应用数量">
+														<TextBlock Foreground="{DynamicResource DefaultTextBrush}">
+															<Run Text="×"/>
+															<Run Text="{Binding Count}"/>
+														</TextBlock>
+													</Border>
+
+												</Border>
+											</Grid>
+										</Border>
+									</WrapPanel>
+								</DataTemplate>
+							</ListBox.ItemTemplate>
+						</ListBox>
+					</Grid>
+				</TabItem>
+
+
+				<ScrollViewer>
+					<StackPanel>
+						<base:View Condition="empty" Value="{Binding WebCategoryData}">
+							<base:EmptyData/>
+						</base:View>
+
+						<ListBox Margin="10,20,10,0"
+								 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+								 SelectedItem="{Binding SelectedWebCategoryItem,Mode=TwoWay}"
+								 ItemsSource="{Binding WebCategoryData}">
+							<ListBox.ContextMenu>
+								<ContextMenu>
+									<MenuItem Header="查看网站列表" Command="{Binding GotoListCommand}"
+											  CommandParameter="{Binding SelectedWebCategoryItem}"/>
+									<MenuItem Header="编辑" Command="{Binding EditCommand}"
+											  CommandParameter="{Binding SelectedWebCategoryItem}"/>
+									<MenuItem Header="删除分类" Command="{Binding DelCommand}"
+											  CommandParameter="{Binding SelectedWebCategoryItem}"/>
+								</ContextMenu>
+							</ListBox.ContextMenu>
+
+							<ListBox.Styles>
+								<Style Selector="ListBox">
+									<Setter Property="Template">
+										<ControlTemplate>
+											<Border>
+												<ItemsPresenter 
+													ItemsPanel="{TemplateBinding ItemsPanel}"/>
+											</Border>
+										</ControlTemplate>
+									</Setter>
+								</Style>
+
+								<Style Selector="ListBoxItem">
+									<Setter Property="Template">
+										<ControlTemplate>
+											<Grid>
+												<Border BorderBrush="{Binding ElementName=Border,Path=BorderBrush}"
+														BorderThickness="{Binding ElementName=Border,Path=BorderThickness}"
+														Margin="{Binding ElementName=Border,Path=Margin}"
+														CornerRadius="{Binding ElementName=Border,Path=CornerRadius}">
+													<Border.Effect>
+														<DropShadowDirectionEffect Color="#d8d2d2" BlurRadius="10"
+																				   Direction="300" ShadowDepth="4" Opacity="0.1"/>
+													</Border.Effect>
+												</Border>
+												<Border BorderBrush="Transparent" BorderThickness="2" x:Name="Border"
+														Background="{DynamicResource StandardBackgroundBrush}"
+														Margin="5" CornerRadius="20">
+													<ContentPresenter 	 ContentTemplate="{TemplateBinding ContentTemplate}"
+																		 Content="{TemplateBinding Content}"/>
+												</Border>
+											</Grid>
+										</ControlTemplate>
+									</Setter>
+								</Style>
+							</ListBox.Styles>
+
+							<ListBox.ItemsPanel>
+								<ItemsPanelTemplate>
+									<WrapPanel/>
+								</ItemsPanelTemplate>
+							</ListBox.ItemsPanel>
+
+							<ListBox.ItemTemplate>
+								<DataTemplate>
+									<WrapPanel Orientation="Vertical">
+										<Border Width="150" Height="150">
+
+											<Grid>
+												<Grid.RowDefinitions>
+													<RowDefinition Height="40"/>
+
+													<RowDefinition Height="40"/>
+													<RowDefinition Height="30"/>
+													<RowDefinition Height="*"/>
+
+												</Grid.RowDefinitions>
+
+												<Rectangle HorizontalAlignment="Left" Margin="10,0,0,0" 
+														   VerticalAlignment="Center"  
+														   RadiusX="20" RadiusY="20" Width="15" Height="15" 
+														   Fill="{Binding Data.Color,Converter={StaticResource HextoColorConverter}}"/>
+												
+												<Grid Grid.Row="1">
+													<base:Img Radius="8" Width="40" Height="40" URL="{Binding Data.IconFile}"/>
+												</Grid>
+
+												<TextBlock Foreground="{DynamicResource StandardTextBrush}" 
+														   HorizontalAlignment="Center" 
+														   VerticalAlignment="Center" Grid.Row="2" Text="{Binding Data.Name}"  FontSize="14"/>
+
+												<Border Grid.Row="3" >
+													<Border Margin="10,0,10,0" CornerRadius="10" Background="{DynamicResource CategoryAppNumBgBrush}" 
+															HorizontalAlignment="Right" VerticalAlignment="Center" 
+															Padding="10,5">
+														<TextBlock Foreground="{DynamicResource DefaultTextBrush}">
+															<Run Text="×"/>
+															<Run Text="{Binding Count}"/>
+														</TextBlock>
+													</Border>
+
+												</Border>
+											</Grid>
+										</Border>
+									</WrapPanel>
+								</DataTemplate>
+							</ListBox.ItemTemplate>
+						</ListBox>
+					</StackPanel>
+				</ScrollViewer>
+			</TabControl>
 		</Grid>
 	</Grid>
 </UserControl>

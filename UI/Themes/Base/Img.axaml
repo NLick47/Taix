@@ -17,7 +17,8 @@
 						CornerRadius="{TemplateBinding Radius}">
 					<Border.Background>
 						<ImageBrush Stretch="Fill"
-									  Source="{Binding Src, RelativeSource={RelativeSource AncestorType=controls:Img}}"/>
+								
+									  Source="{Binding Resource,RelativeSource={RelativeSource TemplatedParent}}"/>
 					</Border.Background>
 				</Border>
 			</ControlTemplate>

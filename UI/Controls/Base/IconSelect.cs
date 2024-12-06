@@ -2,6 +2,9 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
+using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,10 +18,10 @@ namespace UI.Controls.Base
     {
         public List<string> Icons
         {
-            get { return GetValue(DaysProperty); }
-            set { SetValue(DaysProperty, value); }
+            get { return GetValue(IconsProperty); }
+            set { SetValue(IconsProperty, value); }
         }
-        public static readonly StyledProperty<List<string>> DaysProperty =
+        public static readonly StyledProperty<List<string>> IconsProperty =
             AvaloniaProperty.Register<IconSelect, List<string>>(nameof(Icons));
 
         public string URL
@@ -38,7 +41,6 @@ namespace UI.Controls.Base
         public static readonly StyledProperty<bool> IsOpenProperty =
            AvaloniaProperty.Register<IconSelect, bool>(nameof(IsOpen));
 
-        private bool IsFirstClick = false;
         private Border SelectContainer;
 
         private void LoadIcons()
@@ -58,7 +60,42 @@ namespace UI.Controls.Base
         private void OnShowSelect(object obj)
         {
             IsOpen = true;
-            IsFirstClick = true;
+
+        }
+
+        public IconSelect()
+        {
+            this.GetObservable(IsOpenProperty).Subscribe(isOpen =>
+            {
+                HandleWindowEvents(isOpen);
+            });
+            URL = "avares://UI/Resources/Emoji/(1).png";
+            ShowSelectCommand = ReactiveCommand.Create<object>(OnShowSelect);
+            FileSelectCommand = ReactiveCommand.CreateFromTask<object>(OnFileSelect);
+            LoadIcons();
+        }
+
+
+
+        private async Task OnFileSelect(object obj)
+        {
+            var win = this.GetVisualRoot() as Avalonia.Controls.Window;
+            var storage = win.StorageProvider;
+            var result = await storage.OpenFilePickerAsync(new()
+            {
+                AllowMultiple = false,
+                FileTypeFilter =
+                [
+                    new FilePickerFileType("Images")
+                    {
+                       Patterns = [ "*.png", "*.jpg", "*.jpeg"]
+                    }
+                ]
+            });
+            if(result?.Count > 0)
+            {
+                URL = result[0].Path.LocalPath;
+            }
         }
 
         protected override Type StyleKeyOverride => typeof(IconSelect);
@@ -69,33 +106,32 @@ namespace UI.Controls.Base
             SelectContainer = e.NameScope.Get<Border>("SelectContainer");
         }
 
-        protected override void OnPointerPressed(PointerPressedEventArgs e)
+        private void HandleWindowEvents(bool isOpen)
         {
-            base.OnPointerPressed(e);
-            if (e.GetCurrentPoint(this).Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonPressed)
+            var window = this.GetVisualRoot() as Avalonia.Controls.Window;
+            if (window != null)
             {
-                HandleMouseEvent(e);
-            }
-        }
-
-        protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
-        {
-            base.OnPointerWheelChanged(e);
-            HandleMouseEvent(e);
-        }
-
-        private void HandleMouseEvent(PointerEventArgs e)
-        {
-            if (!IsFirstClick)
-            {
-                bool isInControl = IsInControl(e);
-
-                if (!isInControl)
+                if (isOpen)
                 {
-                    IsOpen = false;
+                    window.PointerPressed += OnWindowPointerPressed;
+                    window.Deactivated += OnDeactivated;
+                }
+                else
+                {
+                    window.PointerPressed -= OnWindowPointerPressed;
+                    window.Deactivated -= OnDeactivated;
                 }
             }
-            IsFirstClick = false;
+        }
+
+        private void OnDeactivated(object sender, EventArgs e)
+        {
+            IsOpen = false;
+        }
+
+        private void OnWindowPointerPressed(object sender, PointerPressedEventArgs e)
+        {
+            IsOpen = false;
         }
 
         private bool IsInControl(PointerEventArgs e)

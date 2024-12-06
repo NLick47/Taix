@@ -12,7 +12,7 @@
 				</Style>	
 			</Style>
 			<Style Selector="controls|Select[IsShowIcon=False]">
-				<Style Selector="^ /template/ base|Icon#Img">
+				<Style Selector="^ /template/ base|Img#Img">
 					<Setter Property="IsVisible"  Value="False"/>
 				</Style>
 			</Style>
