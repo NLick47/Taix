@@ -1,4 +1,5 @@
-﻿using Core.Models;
+﻿using Avalonia.Controls.ApplicationLifetimes;
+using Core.Models;
 using Core.Servicers.Interfaces;
 using DynamicData.Binding;
 using Infrastructure.Librarys;
@@ -69,7 +70,7 @@ namespace UI.ViewModels
             EditCloseCommand = ReactiveCommand.Create<object>(OnEditClose);
             DelCommand = ReactiveCommand.Create<object>(OnDel);
             RefreshCommand = ReactiveCommand.Create<object>(OnRefresh);
-            AddDirectoryCommand = ReactiveCommand.Create<object>(OnAddDirectory);
+            AddDirectoryCommand = ReactiveCommand.CreateFromTask<object>(OnAddDirectory);
             DirectoriesCommand = ReactiveCommand.Create<object>(OnDirectoriesCommand);
             //LoadData();
         }
@@ -130,27 +131,23 @@ namespace UI.ViewModels
             }
         }
 
-        private void OnAddDirectory(object obj)
+        private async Task OnAddDirectory(object obj)
         {
             try
             {
-                //FolderBrowserDialog dialog = new FolderBrowserDialog();
-                //dialog.Description = "选择匹配目录";
-                //if (dialog.ShowDialog() == DialogResult.OK)
-                //{
-                //    string path = dialog.SelectedPath;
-                //    if (path.Last() != '\\')
-                //    {
-                //        path += "\\";
-                //    }
-                //    if (EditDirectories.Contains(path))
-                //    {
-                //        mainVM.Toast("目录已存在", Controls.Window.ToastType.Error);
-                //        return;
-                //    }
-                //    EditDirectories.Add(path);
-                //    mainVM.Toast("已添加", Controls.Window.ToastType.Success);
-                //}
+                var desk = App.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                var result = await desk.MainWindow.StorageProvider.OpenFolderPickerAsync(new() { AllowMultiple = false});
+                if(result?.Count > 0)
+                {
+                    var path = result[0].Path.LocalPath;
+                    if (EditDirectories.Contains(path))
+                    {
+                        mainVM.Toast("目录已存在", Controls.Window.ToastType.Error);
+                        return;
+                    }
+                    EditDirectories.Add(path);
+                    mainVM.Toast("已添加", Controls.Window.ToastType.Success);
+                }
             }
             catch (Exception ec)
             {

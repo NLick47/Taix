@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using DynamicData;
+using MathNet.Numerics;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -38,6 +39,17 @@ namespace UI.Controls.List
             Items = new ObservableCollection<string>();
             ItemsMap = new List<BaseListItem>();
             AddCollectionChangedHandler();
+        }
+
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if(change.Property == ItemsProperty)
+            {
+                var control = change.Sender as BaseList;
+                control.Render();
+                control.AddCollectionChangedHandler();  
+            }
         }
 
         protected override Type StyleKeyOverride => typeof(BaseList);
