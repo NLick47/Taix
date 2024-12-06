@@ -23,7 +23,6 @@ public partial class CategoryPage : ReactiveUserControl<CategoryPageViewModel>
         {
             val.CollectionChanged += OnEditDirectoriesCollectionChanged;
         });
-        Unloaded += OnUnloaded;
     }
 
     private void OnEditDirectoriesCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -31,15 +30,6 @@ public partial class CategoryPage : ReactiveUserControl<CategoryPageViewModel>
         if (e.Action == NotifyCollectionChangedAction.Add)
         {
             this.viewer.ScrollToEnd();
-        }
-    }
-
-    protected void OnUnloaded(object sender, RoutedEventArgs e)
-    {
-        var editDirectories = this.ViewModel.EditDirectories;
-        if (editDirectories != null)
-        {
-            editDirectories.CollectionChanged -= OnEditDirectoriesCollectionChanged;
         }
     }
 
