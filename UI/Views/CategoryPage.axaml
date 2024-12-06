@@ -9,6 +9,7 @@
 			  xmlns:input="using:UI.Controls.Input"
 			  xmlns:select="using:UI.Controls.Select"
 			 xmlns:base="using:UI.Controls.Base"
+			 xmlns:toggle="using:UI.Controls.Toggle"
 			 xmlns:vm ="using:UI.ViewModels"
 			 x:DataType="vm:CategoryPageViewModel"
              x:Class="UI.Views.CategoryPage">
@@ -86,7 +87,8 @@
 							<base:View Condition="=0" Value="{Binding ShowType.Id}">
 								<StackPanel>
 									<Border Margin="0,10,0,0">
-										<!--<toggle:Toggle IsChecked="{Binding EditIsDirectoryMath,Mode=TwoWay}" TextPosition="Left" OnText="目录匹配" OffText="目录匹配"></toggle:Toggle>-->
+										
+										<toggle:Toggle IsChecked="{Binding EditIsDirectoryMath,Mode=TwoWay}" TextPosition="Left" OnText="目录匹配" OffText="目录匹配"></toggle:Toggle>
 									</Border>
 									<base:View Condition="True" Value="{Binding EditIsDirectoryMath}">
 										<StackPanel Margin="0,10,0,0">

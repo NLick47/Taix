@@ -24,6 +24,8 @@
 				<ResourceInclude Source="/Themes/Base/ColorSelect.axaml"/>
 				<ResourceInclude Source="/Themes/Base/IconSelect.axaml"/>
 				
+				<ResourceInclude Source="/Themes/Toggle/Toggle.axaml"/>
+				
 				<ResourceInclude Source="/Themes/Select/DateSelect.axaml"/>
 				<ResourceInclude Source="/Themes/Select/Select.axaml"/>
 				<ResourceInclude Source="/Themes/Select/Option.axaml"/>

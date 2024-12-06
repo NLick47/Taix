@@ -1,0 +1,91 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:UI.Controls.Toggle">
+
+ 
+  <ControlTheme x:Key="{x:Type controls:Toggle}" TargetType="controls:Toggle">
+	  <Setter Property="Height" Value="22"/>
+	  <Setter Property="Cursor" Value="Hand"/>
+	  <Setter Property="Background" Value="Transparent"/>
+
+	  <Styles>
+		  <Style Selector="controls|Toggle[IsChecked=True]">
+			  <Style Selector="^ /template/ TextBlock#OnText">
+				  <Setter Property="IsVisible" Value="True"/>
+			  </Style>
+
+			  <Style Selector="^ /template/ TextBlock#OffText">
+				  <Setter Property="IsVisible" Value="False"/>
+			  </Style>
+			  
+			  <Style Selector="^ /template/ Border#Mark">
+				  <Setter Property="RenderTransform" Value="translateX(28px)"/>
+				  <Setter Property="Background" Value="White"/>
+			  </Style>
+
+			  <Style Selector="^ /template/ Border#Button">	
+				  <Setter Property="Background" Value="{DynamicResource ThemeColor}"/>
+			  </Style>
+		  </Style>
+
+		  <Style Selector="controls|Toggle[IsChecked=False]">
+			  <Style Selector="^ /template/ TextBlock#OnText">
+				  <Setter Property="IsVisible" Value="False"/>
+			  </Style>
+
+			  <Style Selector="^ /template/ TextBlock#OffText">
+				  <Setter Property="IsVisible" Value="True"/>
+			  </Style>
+		  </Style>
+
+		  <Style Selector="controls|Toggle[TextPosition=Left]">
+			  <Style Selector="^ /template/ Grid#TextContainer">
+				  <Setter Property="Grid.Column" Value="0"/>
+				  <Setter Property="Margin" Value="0,0,10,0"/>
+			  </Style>
+		  </Style>
+	  </Styles>
+    <Setter Property="Template">
+      <ControlTemplate>
+		  <Border x:Name="Border"  Background="{TemplateBinding Background}" 
+				  Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+				  CornerRadius="4" Margin="{TemplateBinding Margin}">
+
+			  <Grid>
+				  <Grid.ColumnDefinitions>
+					  <ColumnDefinition Width="auto"/>
+					  <ColumnDefinition Width="50"/>
+					  <ColumnDefinition Width="auto"/>
+				  </Grid.ColumnDefinitions>
+
+				  <Border x:Name="Button" Grid.Column="1" Background="#f5f5f5" CornerRadius="10" Padding="5">
+					  <Border.Transitions>
+						  <Transitions>
+							  <BrushTransition Property="Background" Duration="0.2"/>
+						  </Transitions>
+					  </Border.Transitions>
+					  <Border x:Name="Mark" Width="12" Height="12" CornerRadius="15" Background="#5d5d5d" 
+							  VerticalAlignment="Center" HorizontalAlignment="Left">
+						  <Border.RenderTransform>
+							  <TranslateTransform X="0"/>
+						  </Border.RenderTransform>
+						  <Border.Transitions>
+							  <Transitions>
+								  <TransformOperationsTransition Property="RenderTransform" Duration="0.2"/>
+								  <BrushTransition Property="Background" Duration="0.2"/>
+							  </Transitions>
+						  </Border.Transitions>
+					  </Border>
+				  </Border>
+				  
+				  <Grid x:Name="TextContainer" Grid.Column="2" Margin="10,0,0,0">
+					  <TextBlock x:Name="OnText"  VerticalAlignment="Center" Text="{TemplateBinding OnText}"/>
+					  <TextBlock x:Name="OffText" VerticalAlignment="Center" Text="{TemplateBinding OffText}"/>
+				  </Grid>
+				  
+				</Grid>
+			</Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>
