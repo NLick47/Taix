@@ -48,6 +48,16 @@ namespace UI.Controls.Base
             Unloaded -= View_Unloaded;
         }
 
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if(change.Property == ValueProperty)
+            {
+                var control = change.Sender as View;
+                control.Handle();
+            }
+        }
+
         private void Handle()
         {
             try

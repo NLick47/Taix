@@ -15,7 +15,6 @@ using UI.Controls.Base;
 
 namespace UI.Controls.Input
 {
-    [Obsolete]
     public class InputBox : TextBox
     {
         /// <summary>

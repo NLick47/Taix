@@ -1,5 +1,6 @@
 ﻿using Core.Models;
 using Core.Servicers.Interfaces;
+using DynamicData.Binding;
 using Infrastructure.Librarys;
 using Newtonsoft.Json;
 using ReactiveUI;
@@ -14,7 +15,6 @@ using System.Windows.Input;
 using UI.Models;
 using UI.Servicers;
 using UI.Views;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 using CategoryModel = UI.Models.Category.CategoryModel;
 namespace UI.ViewModels
 {

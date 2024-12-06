@@ -60,7 +60,7 @@
 										   Command="{Binding EditCloseCommand}"/>
 					</Grid>
 
-					<ScrollViewer Grid.Row="1">
+					<ScrollViewer VerticalScrollBarVisibility="Hidden" Grid.Row="1" x:Name="viewer">
 						<StackPanel Grid.Row="1" Margin="10">
 							<TextBlock Text="分类名称"/>
 
@@ -77,7 +77,7 @@
 								<input:InputBox Grid.Column="1" Error="{Binding EditErrorText}"
 												IsShowError="{Binding IsEditError,Mode=TwoWay}"
 												Text="{Binding EditName,Mode=TwoWay}"
-												MaxLength="10" Margin="5,10,0,0"
+												MaxLength="15" Margin="5,10,0,0"
 												Placeholder="请输入分类名称"/>
 							</Grid>
 							<TextBlock Text="图标" Margin="0,10,0,0"/>
@@ -87,7 +87,6 @@
 							<base:View Condition="=0" Value="{Binding ShowType.Id}">
 								<StackPanel>
 									<Border Margin="0,10,0,0">
-										
 										<toggle:Toggle IsChecked="{Binding EditIsDirectoryMath,Mode=TwoWay}" TextPosition="Left" OnText="目录匹配" OffText="目录匹配"></toggle:Toggle>
 									</Border>
 									<base:View Condition="True" Value="{Binding EditIsDirectoryMath}">
