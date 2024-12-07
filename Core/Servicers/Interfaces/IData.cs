@@ -104,7 +104,7 @@ namespace Core.Servicers.Interfaces
         /// <param name="start"></param>
         /// <param name="end"></param>
         /// <returns></returns>
-        Task GetDateRangeAppCount(DateTime start, DateTime end);
+        Task<int> GetDateRangeAppCount(DateTime start, DateTime end);
         /// <summary>
         /// 获取指定时间（小时）所有使用app数据
         /// </summary>

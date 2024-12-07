@@ -28,7 +28,7 @@ namespace UI.ViewModels
         public Command GotoPageCommand { get; }
 
         public IndexPageViewModel view { get; }
-        private string[] pages = [ nameof(IndexPage), nameof(DataPage), nameof(CategoryPage)]; /* nameof(ChartPage), nameof(DataPage), nameof(CategoryPage)*/
+        private string[] pages = [ nameof(IndexPage), nameof(DataPage), nameof(ChartPage), nameof(CategoryPage)]; /* nameof(ChartPage), nameof(DataPage), nameof(CategoryPage)*/
         public MainViewModel(
            IServiceProvider serviceProvider,
            IAppConfig appConfig,
@@ -84,6 +84,7 @@ namespace UI.ViewModels
                 UnSelectedIcon = Controls.Base.IconTypes.ZeroBars,
                 SelectedIcon = IconTypes.FourBars,
                 Title = sideStatistics as string,
+                Uri = nameof(ChartPage),
                 ID = 1,
             });
 

@@ -112,9 +112,9 @@ namespace UI
             ////  分类站点
             //services.AddTransient<CategoryWebSiteListPage>();
             //services.AddTransient<CategoryWebSiteListPageVM>();
-            ////  图表
-            //services.AddTransient<ChartPage>();
-            //services.AddTransient<ChartPageVM>();
+            //  图表
+            services.AddTransient<ChartPage>();
+            services.AddTransient<ChartPageViewModel>();
             ////  网站详情
             //services.AddTransient<WebSiteDetailPage>();
             //services.AddTransient<WebSiteDetailPageVM>();

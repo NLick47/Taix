@@ -684,7 +684,7 @@ namespace Core.Servicers.Instances
             }
         }
 
-        public Task GetDateRangeAppCount(DateTime start, DateTime end)
+        public Task<int> GetDateRangeAppCount(DateTime start, DateTime end)
         {
             IEnumerable<AppModel> apps = _appData.GetAllApps();
             using var db = new TaiDbContext();

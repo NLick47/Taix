@@ -166,4 +166,8 @@
   <ItemGroup>
     <UpToDateCheckInput Remove="Themes\Base\IconSelect.axaml" />
   </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Views\ChartPage.axaml" />
+  </ItemGroup>
 </Project>
