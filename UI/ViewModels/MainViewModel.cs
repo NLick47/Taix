@@ -11,12 +11,12 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Windows.Input;
 using UI.Controls.Base;
 using UI.Controls.Navigation.Models;
 using UI.Controls.Window;
 using UI.Models;
 using UI.Views;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace UI.ViewModels
 {
@@ -25,7 +25,7 @@ namespace UI.ViewModels
         private readonly IServiceProvider serviceProvider;
         private readonly IAppConfig appConfig;
         public ReactiveCommand<object, Unit> OnSelectedCommand { get; }
-        public Command GotoPageCommand { get; }
+        public ICommand GotoPageCommand { get; }
 
         public IndexPageViewModel view { get; }
         private string[] pages = [ nameof(IndexPage), nameof(DataPage), nameof(ChartPage), nameof(CategoryPage)]; /* nameof(ChartPage), nameof(DataPage), nameof(CategoryPage)*/
@@ -39,7 +39,7 @@ namespace UI.ViewModels
             this.appConfig = appConfig;
             ServiceProvider = serviceProvider;
             OnSelectedCommand = ReactiveCommand.Create<object>(OnSelectedCommandHandle);
-            //GotoPageCommand = new Command(new Action<object>(OnGotoPageCommand));
+            GotoPageCommand = ReactiveCommand.Create<object>(OnGotoPageCommand);
             Items = new ObservableCollection<NavigationItemModel>();
             PropertyChanged += MainViewModel_PropertyChanged;
             InitNavigation();
@@ -54,6 +54,11 @@ namespace UI.ViewModels
                     Data = null;
                 }
             }
+        }
+
+        private void OnGotoPageCommand(object obj)
+        {
+            Uri = obj.ToString();
         }
         private void InitNavigation()
         {

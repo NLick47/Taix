@@ -29,6 +29,11 @@
 				<ResourceInclude Source="/Themes/Select/DateSelect.axaml"/>
 				<ResourceInclude Source="/Themes/Select/Select.axaml"/>
 				<ResourceInclude Source="/Themes/Select/Option.axaml"/>
+				
+				
+				<ResourceInclude Source="/Themes/SettingPanel/SettingPanel.axaml"/>
+				<ResourceInclude Source="/Themes/SettingPanel/SettingPanelItem.axaml"/>
+				<ResourceInclude Source="/Themes/SettingPanel/SettingPanelMultiItem.axaml"/>
 			
 				
 				<ResourceInclude Source="/Themes/Window/DefaultWIndow.axaml"/>

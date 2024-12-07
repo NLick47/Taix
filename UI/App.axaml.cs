@@ -94,9 +94,9 @@ namespace UI
             services.AddTransient<DataPage>();
             services.AddTransient<DataPageViewModel>();
 
-            ////  ÉèÖÃÒ³
-            //services.AddTransient<SettingPage>();
-            //services.AddTransient<SettingPageVM>();
+            //  ÉèÖÃÒ³
+            services.AddTransient<SettingPage>();
+            services.AddTransient<SettingPageViewModel>();
 
             ////  ÏêÇéÒ³
             services.AddTransient<DetailPage>();

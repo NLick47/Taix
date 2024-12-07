@@ -1,0 +1,32 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+          xmlns:base="using:UI.Controls.Base"
+          xmlns:btn="using:UI.Controls.Button"
+          xmlns:exp="using:UI.Controls.Expander"
+		xmlns:controls="using:UI.Controls.SettingPanel">
+
+
+	<ControlTheme x:Key="{x:Type controls:SettingPanelMultiItem}" TargetType="controls:SettingPanelMultiItem">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border Background="Transparent"  x:Name="Border" CornerRadius="6" >
+					<exp:Expander Header="{TemplateBinding Title}" IsExpanded="True">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="auto"/>
+								<RowDefinition Height="auto"/>
+							</Grid.RowDefinitions>
+							<StackPanel x:Name="Container">
+							</StackPanel>
+
+							<btn:Button Margin="0,10" Grid.Row="1" Content="删除此项" 
+										Icon="Delete" Width="80" Background="#f51837" 
+										Foreground="White" 
+										Command="{TemplateBinding OnRemoveAction}"/>
+						</Grid>
+					</exp:Expander>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
+</ResourceDictionary>

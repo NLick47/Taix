@@ -1,0 +1,22 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+       xmlns:base="using:UI.Controls.Base"
+	    xmlns:controls="using:UI.Controls.SettingPanel">
+
+  
+ 
+  <ControlTheme x:Key="{x:Type controls:SettingPanel}" TargetType="controls:SettingPanel">
+	  <Setter Property="Background" Value="{DynamicResource SettingPanelBgBrush}"/>
+	  <Setter Property="BorderBrush" Value="{DynamicResource SettingPanelBorderBrush}"/>
+	  <Setter Property="SpliteLineBrush" Value="{DynamicResource SettingPanelSpliteLineBrush}"/>
+	  <Setter Property="Template">
+      <ControlTemplate>
+		  <Border CornerRadius="5" x:Name="Border">
+			  <StackPanel x:Name="Container">
+
+			  </StackPanel>
+		  </Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>

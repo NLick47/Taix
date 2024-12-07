@@ -529,7 +529,7 @@
 													<ControlTemplate>
 														<Border>
 															<ScrollViewer>
-																<ItemsPresenter />
+																<ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
 															</ScrollViewer>
 														</Border>
 													</ControlTemplate>
@@ -543,7 +543,9 @@
 															<Border BorderBrush="Transparent" 
 																	BorderThickness="2" x:Name="Border"  
 																	Margin="5" CornerRadius="20">
-																<ContentPresenter/>
+																<ContentPresenter  
+																	ContentTemplate="{TemplateBinding ContentTemplate}"
+																	Content="{TemplateBinding Content}"/>
 															</Border>
 														</Grid>
 													</ControlTemplate>
