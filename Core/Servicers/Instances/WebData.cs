@@ -197,12 +197,12 @@ namespace Core.Servicers.Instances
             var site = await db.WebSites.FirstOrDefaultAsync(m => m.Domain == domain);
             if (site == null)
             {
-                 db.WebSites.Add(new WebSiteModel()
+                db.WebSites.Add(new WebSiteModel()
                 {
                     Title = UrlHelper.GetName(url_),
                     Domain = domain,
                 });
-               await db.SaveChangesAsync();
+                await db.SaveChangesAsync();
             }
             return site;
         }
@@ -257,43 +257,40 @@ namespace Core.Servicers.Instances
             using (var db = new TaiDbContext())
             {
                 var data = db.WebBrowserLogs
-              .Where(m => m.LogTime >= start && m.LogTime <= end && m.SiteId != 0)
-              .GroupBy(m => m.SiteId)
-              .Select(s => new
-              {
-                  Site = s.FirstOrDefault().Site,
-                  Duration = s.Sum(m => m.Duration),
-              });
+                .GroupBy(m => m.SiteId)
+                .Select(s => new
+                {
+                    Site = s.FirstOrDefault().Site,
+                    Duration = s.Sum(m => m.Duration)
+                });
 
-                if (skip > 0 && take > 0)
+                if (skip > 0)
                 {
-                    data = data.OrderByDescending(m => m.Duration).Skip(skip).Take(take);
+                    data = data.Skip(skip);
                 }
-                else if (skip > 0)
-                {
-                    data = data.OrderByDescending(m => m.Duration).Skip(skip);
-                }
-                else if (take > 0)
-                {
-                    data = data.OrderByDescending(m => m.Duration).Take(take);
-                }
-                else
-                {
-                    data = data.OrderByDescending(m => m.Duration);
-                }
-                var list = await data.Select(s => new
-                {
-                    Alias = s.Site.Alias,
-                    Title = s.Site.Title,
-                    Domain = s.Site.Domain,
-                    CategoryID = s.Site.CategoryID,
-                    IconFile = s.Site.IconFile,
-                    ID = s.Site.ID,
-                    Duration = s.Duration,
-                }).ToListAsync();
 
-                var result = JsonConvert.DeserializeObject<List<WebSiteModel>>(JsonConvert.SerializeObject(list));
-                return result?.AsReadOnly();
+                if (take > 0)
+                {
+                    data = data.Take(take);
+                }
+
+                data = data.OrderByDescending(m => m.Duration);
+
+                //var list = await data.Select(s => new
+                //{
+                //    Alias = s.Site.Alias,
+                //    Title = s.Site.Title,
+                //    Domain = s.Site.Domain,
+                //    CategoryID = s.Site.CategoryID,
+                //    IconFile = s.Site.IconFile,
+                //    ID = s.Site.ID,
+                //    Duration = s.Duration,
+                //}).ToListAsync();
+
+                var list = await data.ToListAsync();
+                var result = JsonConvert.DeserializeObject<IReadOnlyList<WebSiteModel>>(JsonConvert.SerializeObject(list));
+                return result;
+
             }
         }
 

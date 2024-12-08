@@ -36,22 +36,18 @@ namespace Win
         private readonly IWindowManager _windowManager;
         private nint _hook;
         private bool _isStart = false;
-        private System.Timers.Timer _delayDetectTimer;
+      
         public WinAppObserver(IAppManager appManager_, IWindowManager windowManager)
         {
             _appManager = appManager_;
             _windowManager = windowManager;
             _foregroundEventDelegate = new WinEventDelegate(ForegroundEventCallback);
-            _delayDetectTimer = new System.Timers.Timer();
-            _delayDetectTimer.Interval = 1000;
-            _delayDetectTimer.Elapsed += DelayDetectTimer_Elapsed;
         }
 
 
 
-        private void ForegroundEventCallback(nint hWinEventHook, uint eventType, nint hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+        private async void ForegroundEventCallback(nint hWinEventHook, uint eventType, nint hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
         {
-            _delayDetectTimer?.Stop();
             DateTime activeTime = DateTime.Now;
             var stopwatch = Stopwatch.StartNew();
             var args = GetAppInfoEventArgs(hwnd, activeTime);
@@ -61,15 +57,10 @@ namespace Win
             OnAppActiveChanged?.Invoke(this, args);
             if (args.App.Type == AppType.SystemComponent)
             {
-                _delayDetectTimer?.Start();
+                await Task.Delay(1000);
+                DelayDetect();
             }
 
-        }
-
-        private void DelayDetectTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            _delayDetectTimer?.Stop();
-            DelayDetect();
         }
 
         private void DelayDetect()

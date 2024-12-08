@@ -35,9 +35,6 @@ namespace UI.ViewModels
             this.appConfig = appConfig;
             _webData = webData;
             ToDetailCommand = ReactiveCommand.Create<object>(OnTodetailCommand);
-            DayDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
-            MonthDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-            YearDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
             Init();
         }
 
@@ -50,8 +47,7 @@ namespace UI.ViewModels
 
         private void Init()
         {
-            //LoadData(DateTime.Now.Date);
-            //PropertyChanged += DataPageVM_PropertyChanged;
+            PropertyChanged += DataPageVM_PropertyChanged;
 
             TabbarData = new System.Collections.ObjectModel.ObservableCollection<string>()
             {
@@ -83,20 +79,20 @@ namespace UI.ViewModels
             }
         }
 
-        private void DataPageVM_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private async void DataPageVM_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
 
             if (e.PropertyName == nameof(DayDate))
             {
-                LoadData(DayDate);
+                await LoadData(DayDate);
             }
             else if (e.PropertyName == nameof(MonthDate))
             {
-                LoadData(MonthDate);
+                await LoadData(MonthDate);
             }
             else if (e.PropertyName == nameof(YearDate))
             {
-                LoadData(YearDate);
+                await LoadData(YearDate);
             }
             else if (e.PropertyName == nameof(TabbarSelectedIndex))
             {
@@ -125,9 +121,9 @@ namespace UI.ViewModels
             }
             else if (e.PropertyName == nameof(ShowType))
             {
-                //LoadData(DayDate, 0);
-                //LoadData(MonthDate, 1);
-                //LoadData(YearDate, 2);
+                await LoadData(DayDate, 0);
+                await LoadData(MonthDate, 1);
+                await LoadData(YearDate, 2);
                 if (ShowType.Id == 0)
                 {
                     //AppContextMenu = appContextMenuServicer.GetContextMenu();
@@ -139,57 +135,54 @@ namespace UI.ViewModels
             }
         }
 
-        private async void LoadData(DateTime date, int dataType_ = -1)
+        private async Task LoadData(DateTime date, int dataType_ = -1)
         {
-            await Task.Run(async () =>
+
+            DateTime dateStart = date, dateEnd = date;
+
+            dataType_ = dataType_ == -1 ? TabbarSelectedIndex : dataType_;
+
+            if (dataType_ == 1)
             {
-                DateTime dateStart = date, dateEnd = date;
+                dateStart = new DateTime(date.Year, date.Month, 1);
+                dateEnd = new DateTime(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month));
+            }
+            else if (dataType_ == 0)
+            {
+                dateStart = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0);
+                dateEnd = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59);
+            }
+            else if (dataType_ == 2)
+            {
+                dateStart = new DateTime(date.Year, 1, 1, 0, 0, 0);
+                dateEnd = new DateTime(date.Year, 12, DateTime.DaysInMonth(date.Year, 12), 23, 59, 59);
+            }
 
-                dataType_ = dataType_ == -1 ? TabbarSelectedIndex : dataType_;
-
-                if (dataType_ == 1)
-                {
-                    dateStart = new DateTime(date.Year, date.Month, 1);
-                    dateEnd = new DateTime(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month));
-                }
-                else if (dataType_ == 0)
-                {
-                    dateStart = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0);
-                    dateEnd = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59);
-                }
-                else if (dataType_ == 2)
-                {
-                    dateStart = new DateTime(date.Year, 1, 1, 0, 0, 0);
-                    dateEnd = new DateTime(date.Year, 12, DateTime.DaysInMonth(date.Year, 12), 23, 59, 59);
-                }
-
-                List<ChartsDataModel> chartData = new List<ChartsDataModel>();
-                if (ShowType.Id == 0)
-                {
-                    var result = await data.GetDateRangelogList(dateStart, dateEnd);
-                    chartData = MapToChartsData(result);
-                }
-                else
-                {
-                    var result = await _webData.GetWebSiteLogList(dateStart, dateEnd);
-                    chartData = MapToChartsWebData(result);
-                }
+            List<ChartsDataModel> chartData = new List<ChartsDataModel>();
+            if (ShowType.Id == 0)
+            {
+                var result = await data.GetDateRangelogList(dateStart, dateEnd);
+                chartData = MapToChartsData(result);
+            }
+            else
+            {
+                var result = await _webData.GetWebSiteLogList(dateStart, dateEnd);
+                chartData = MapToChartsWebData(result);
+            }
 
 
-                if (dataType_ == 0)
-                {
-                    Data = chartData;
-                }
-                else if (dataType_ == 1)
-                {
-                    MonthData = chartData;
-                }
-                else
-                {
-                    YearData = chartData;
-                }
-
-            });
+            if (dataType_ == 0)
+            {
+                Data = chartData;
+            }
+            else if (dataType_ == 1)
+            {
+                MonthData = chartData;
+            }
+            else
+            {
+                YearData = chartData;
+            }
         }
 
         private List<ChartsDataModel> MapToChartsData(IEnumerable<Core.Models.DailyLogModel> list)

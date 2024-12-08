@@ -91,7 +91,6 @@ namespace UI.Controls.Charts
             ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
             //ValueContainer = GetTemplateChild("ValueContainer") as Grid;
             ValueContainer = e.NameScope.Get<StackPanel>("ValueContainer");
-
             IconObj = e.NameScope.Get<Image>("IconObj");
 
             if (!IsAddEvent)

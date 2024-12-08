@@ -2,9 +2,21 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	
         xmlns:controls="using:UI.Controls.Charts">
-
+	
 	<ControlTheme x:Key="{x:Type controls:ChartItemTypeColumn}"
 				  TargetType="controls:ChartItemTypeColumn">
+		<Styles>
+			<Style Selector="controls|ChartItemTypeColumn /template/ Border#ValueContainer">
+				<Setter Property="Transitions">
+					<BrushTransition Property="Background" Duration="0.2"/>
+				</Setter>
+			</Style>
+
+			<Style Selector="controls|ChartItemTypeColumn:pointerover /template/ Border#ValueContainer">
+				<Setter Property="Background" Value="#7FF1F1F1"/>
+			</Style>
+		</Styles>
+		
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Template">
 			<ControlTemplate>

@@ -42,7 +42,6 @@ namespace UI.Controls.Charts
 
         private TextBlock NameTextObj, ValueTextObj;
         private Rectangle ValueBlockObj;
-        private StackPanel ValueContainer;
         private Image IconObj;
         private bool isRendering = false;
         private bool IsAddEvent = false;
@@ -66,8 +65,7 @@ namespace UI.Controls.Charts
 
             NameTextObj = e.NameScope.Get<TextBlock>("NameTextObj");
             ValueTextObj = e.NameScope.Get<TextBlock>("ValueTextObj");
-            ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
-            ValueContainer = e.NameScope.Get<StackPanel>("ValueContainer");
+            ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");        
             IconObj = e.NameScope.Get<Image>("IconObj");
             if (!IsAddEvent)
             {

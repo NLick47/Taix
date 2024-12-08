@@ -11,7 +11,7 @@ namespace Core.Servicers.Interfaces
     {
         TaiDbContext GetReaderContext();
         //void CloseReader();
-        TaiDbContext GetWriterContext();
+       
         void CloseWriter();
     }
 }

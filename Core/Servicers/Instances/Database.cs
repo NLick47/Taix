@@ -56,25 +56,7 @@ namespace Core.Servicers.Instances
         {
         }
 
-        public TaiDbContext GetWriterContext()
-        {
-            lock (_writeLocker)
-            {
-                int duration = 0;
-                while (_isWriting || _isReading)
-                {
-                    Thread.Sleep(1000);
-                    duration++;
-                    if (duration >= _outTime)
-                    {
-                        break;
-                    }
-                }
-                _isWriting = true;
-                _writerContext = new TaiDbContext();
-                return _writerContext;
-            }
-        }
+       
 
         public void CloseWriter()
         {

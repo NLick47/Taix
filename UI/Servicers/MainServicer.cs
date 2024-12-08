@@ -32,11 +32,7 @@ namespace UI.Servicers
         {
             this.isSelfStart = isSelfStart;
             main.OnStarted += Main_OnStarted;
-            //main.Run() 方法有问题，会让ui状态发生异常行为。之后再处理
-            AppState.IsLoading = false;
-            //await main.Run();
-            await _statusBarIconServicer.Init();
-            //await Task.WhenAll(main.Run(), _statusBarIconServicer.Init());
+            await Task.WhenAll(main.Run(), _statusBarIconServicer.Init());
         }
 
         private void Main_OnStarted(object sender, EventArgs e)
@@ -45,10 +41,10 @@ namespace UI.Servicers
             //inputServicer.Start();
             //appContextMenuServicer.Init();
             //_webSiteContext.Init();
-            //if (!isSelfStart && _config.GetConfig().General.IsStartupShowMainWindow)
-            //{
-            //    _statusBarIconServicer.ShowMainWindow();
-            //}
+            if (!isSelfStart && _config.GetConfig().General.IsStartupShowMainWindow)
+            {
+                _statusBarIconServicer.ShowMainWindow();
+            }
         }
     }
 }

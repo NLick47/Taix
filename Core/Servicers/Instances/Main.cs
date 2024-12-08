@@ -143,24 +143,22 @@ namespace Core.Servicers.Instances
 
         public async Task Run()
         {
-            await Task.Run(() =>
-             {
-                 CreateDirectory();
 
-                 //  数据库自检
-                 using (var db = new TaiDbContext())
-                 {
-                     db.SelfCheck();
-                 }
+            CreateDirectory();
 
-                 //  加载app信息
-                 appData.Load();
+            //  数据库自检
+            using (var db = new TaiDbContext())
+            {
+                db.SelfCheck();
+            }
 
-                 // 加载分类信息
-                 categories.Load();
+            //  加载app信息
+            appData.Load();
 
-                 AppState.IsLoading = false;
-             });
+            // 加载分类信息
+            await categories.Load();
+
+            AppState.IsLoading = false;
 
 
 
@@ -185,12 +183,12 @@ namespace Core.Servicers.Instances
             appObserver.Start();
             if (config.General.IsWebEnabled)
             {
-                _webServer.Start();
+                //_webServer.Start();
             }
             if (config.Behavior.IsSleepWatch)
             {
                 //  启动睡眠监测
-                sleepdiscover.Start();
+                //sleepdiscover.Start();
             }
         }
         public void Stop()

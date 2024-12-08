@@ -9,14 +9,45 @@
 		<Setter Property="Margin" Value="5"/>
 
 		<Styles>
-			<Style Selector="controls|ChartsItemTypeCard[IsLoading=True]">
-				<Style Selector="^ /template/ base|Placeholder#Loading">
-					<Setter Property="IsVisible" Value="true"/>
-				</Style>
+			<Style Selector="controls|ChartsItemTypeCard">
 				<Style Selector="^ /template/ Border#Normal">
-					<Setter Property="IsVisible" Value="false"/>
+					<Setter Property="Transitions">
+						<Transitions>
+							<DoubleTransition Property="DropShadowDirectionEffect.Opacity" Duration="0.3"/>
+						</Transitions>
+					</Setter>
+				</Style>
+
+				<Style Selector="^:pointerover /template/ Border#Normal">
+					<Setter Property="DropShadowDirectionEffect.Opacity" Value="0.3">
+					</Setter>
+				</Style>
+
+				<Style Selector="^:pointerover /template/ Border#Border">
+					<Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}"/>
+				</Style>
+
+
+				<Style Selector="^ /template/ Border#Border">
+					<Setter Property="Transitions">
+						<Transitions>
+							<BrushTransition Property="BorderBrush" Duration="0.3" />
+						</Transitions>
+					</Setter>
+				</Style>
+
+				<Style Selector="^[IsLoading=True]">
+					<Style Selector="^ /template/ base|Placeholder#Loading">
+						<Setter Property="IsVisible" Value="true"/>
+					</Style>
+					<Style Selector="^ /template/ Border#Normal">
+						<Setter Property="IsVisible" Value="false"/>
+					</Style>
+
 				</Style>
 			</Style>
+			
+			
 		</Styles>
 		
 		<Setter Property="Template">
@@ -24,27 +55,16 @@
 				<Grid>
 					<Border x:Name="Normal" CornerRadius="12" >
 						<Border.Effect>
-							<DropShadowEffect Color="{DynamicResource ThemeColor}" BlurRadius="17"  Opacity="0">
-							</DropShadowEffect>
+							<DropShadowDirectionEffect
+								BlurRadius="17" Direction="0" ShadowDepth="0"
+								Color="{DynamicResource ThemeColor}"   Opacity="0">
+							</DropShadowDirectionEffect>
 						</Border.Effect>
 						<Border x:Name="Border" 
 						   BorderThickness="2" Margin="0"
 						   Background="{DynamicResource StandardBackgroundBrush}"
 						   CornerRadius="12"  Width="150"
 						   Height="150" >
-							<Border.Styles>
-								<Style>
-									<Setter Property="Transitions">
-										<Transitions>
-											<BrushTransition Property="BorderBrush"/>
-										</Transitions>
-									</Setter>
-								</Style>
-
-								<Style Selector="^:pointerover">
-									<Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}"/>
-								</Style>
-							</Border.Styles>
 							<Border.Clip>
 								<RectangleGeometry Rect="0,0,150,150"/>
 							</Border.Clip>

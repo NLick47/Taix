@@ -102,7 +102,7 @@
 			<TextBlock Text="更多" FontSize="14" VerticalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
 			<select:Select Margin="10,0,0,0" 
 						   VerticalAlignment="Center" Padding="10,5"  IsShowIcon="False" 
-							SelectedItem="{Binding MoreType}"
+							SelectedItem="{Binding MoreType,Mode=TwoWay}"
 							
 						   Options="{Binding MoreTypeOptions}"/>
 		</StackPanel>

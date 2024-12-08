@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using UI.Controls.Base;
 using UI.Controls.Charts.Model;
+using UI.Controls.Input;
 using UI.Extensions;
 
 namespace UI.Controls.Charts
@@ -611,7 +612,8 @@ namespace UI.Controls.Charts
             if (!e.Handled)
             {
                 e.Handled = true;
-                var parent = (sender as Control)?.Parent as IInputElement;
+                e.Source = sender;
+                var parent = (sender as InputElement).Parent as InputElement;
                 parent?.RaiseEvent(e);
             }
         }
@@ -640,7 +642,7 @@ namespace UI.Controls.Charts
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var box = sender as TextBlock;
+            var box = sender as InputBox;
             if (box.Text != searchKey)
             {
                 searchKey = box.Text.ToLower();
@@ -700,7 +702,7 @@ namespace UI.Controls.Charts
                 HandleItemClick(chartsItem, item);
 
                 chartsItem.MaxValue = maxValue;
-                //chartsItem.ToolTip = item.PopupText;
+                ToolTip.SetTip(chartsItem, item.PopupText);
                 CardContainer.Children.Add(chartsItem);
             }
             isRendering = false;
@@ -1008,11 +1010,9 @@ namespace UI.Controls.Charts
                 {
                     var item = list[di];
                     //string colColor = item.Color == null ? UI.Base.Color.Colors.MainColors[di] : item.Color;
-                    string themeColor = Application.Current.Resources["ThemeColor"].ToString();
-                    string colColor = item.Color == null ? themeColor : item.Color;
+                    var themeColor = App.Current.FindResource("ThemeColor");
+                    string colColor = item.Color == null ? themeColor.ToString() : item.Color;
                     double value = item.Values[i];
-
-
                     if (value > 0)
                     {
                         //  绘制列
@@ -1044,7 +1044,7 @@ namespace UI.Controls.Charts
                 }
                 var index = i;
 
-                columnBorder.PointerPressed += (e, c) =>
+                columnBorder.PointerEntered += (e, c) =>
                 {
                     ColumnValuesInfoList = valuesPopupList.OrderByDescending(m => m.Value).ToList();
                     ValuesPopupPlacementTarget = columnBorder;
@@ -1058,7 +1058,7 @@ namespace UI.Controls.Charts
                         columnBorder.Fill = new SolidColorBrush(themeBrush.Color) { Opacity = .05 };
                     }
                 };
-                columnBorder.PointerReleased += (e, c) =>
+                columnBorder.PointerExited += (e, c) =>
                 {
                     IsShowValuesPopup = false;
                     if (ColumnSelectedIndex != index)
@@ -1105,7 +1105,7 @@ namespace UI.Controls.Charts
             topValueText.Text = Maximum;
             topValueText.FontSize = 12;
             topValueText.Foreground = UI.Base.Color.Colors.GetFromString("#ccc");
-            //topValueText.ToolTip = "最高值";
+            ToolTip.SetTip(topValueText, "最高值");
             var topValueTextSize = UIHelper.MeasureString(topValueText);
             topValueText.ZIndex = 1000;
             Canvas.SetRight(topValueText, 0);
@@ -1129,10 +1129,8 @@ namespace UI.Controls.Charts
             midValueText.Text = Median;
             midValueText.FontSize = 12;
             midValueText.Foreground = UI.Base.Color.Colors.GetFromString("#ccc");
-            //midValueText.ToolTip = "中间值";
-
+            ToolTip.SetTip(midValueText,"中间值");
             var midValueTextSize = UIHelper.MeasureString(midValueText);
-            //Panel.SetZIndex(midValueText, 1000);
             midValueText.ZIndex = 1000;
             Canvas.SetRight(midValueText, 0);
             Canvas.SetTop(midValueText, midY - midValueTextSize.Height / 2);
@@ -1158,7 +1156,7 @@ namespace UI.Controls.Charts
             avgValueText.Text = Covervalue(avg);
             avgValueText.FontSize = 12;
             avgValueText.Foreground = UI.Base.Color.Colors.GetFromString(StateData.ThemeColor);
-            //avgValueText.ToolTip = "平均值";
+            ToolTip.SetTip(avgValueText,"平均值");
             var avgValueTextSize = UIHelper.MeasureString(avgValueText);
             avgValueText.ZIndex = 1000;
             Canvas.SetRight(avgValueText, 0);

@@ -26,7 +26,6 @@ namespace UI
         private  readonly ServiceProvider serviceProvider;
         private System.Threading.Mutex mutex;
         private HideWindow keepaliveWindow;
-        private static IClassicDesktopStyleApplicationLifetime? AppLife;
 
 
         public static ServiceProvider ServiceProvider => Instance.serviceProvider;
@@ -155,24 +154,13 @@ namespace UI
 
         public override async void OnFrameworkInitializationCompleted()
         {
-           
+            await OnStartup(this, Environment.GetCommandLineArgs());
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                void ShowMainWindow()
-                {
-                    var window = serviceProvider.GetService<MainWindow>();
-                    window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                    window.WindowState = WindowState.Normal;
-                    window.DataContext = serviceProvider.GetService<MainViewModel>();
-                    desktop.MainWindow = window;
-                }
-                ShowMainWindow();
-                await OnStartup(this, Environment.GetCommandLineArgs());
+            {            
                 desktop.Exit += (e, r) =>
                 {
                     Logger.Save(true);
                 };
-                AppLife = desktop;
             }
           
             base.OnFrameworkInitializationCompleted();
@@ -206,7 +194,8 @@ namespace UI
 
         public static void Exit()
         {
-            AppLife?.Shutdown();
+            var desktop = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+            desktop?.Shutdown();
         }
 
         

@@ -15,6 +15,7 @@ namespace Core.Models
     {
 
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ID { get; set; }
 
         /// <summary>
@@ -24,11 +25,11 @@ namespace Core.Models
         /// <summary>
         /// 别名
         /// </summary>
-        public string Alias { get; set; }
+        public string? Alias { get; set; }
         /// <summary>
         /// 描述
         /// </summary>
-        public string Description { get; set; }
+        public string? Description { get; set; }
         /// <summary>
         /// 文件
         /// </summary>

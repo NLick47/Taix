@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Platform;
 using Avalonia.Threading;
@@ -85,7 +86,7 @@ namespace UI.Servicers
             _contextMenu = new ();
             _trayIcon.Command = ReactiveCommand.Create(() =>
             {
-                ShowMianWindow();
+                Show();
             });
 
             _contextMenu.Items.Add(new NativeMenuItem
@@ -93,7 +94,7 @@ namespace UI.Servicers
                 Header = Application.Current.TryFindResource("Open",out var p) == null ? "打开" : p as string,
                 Command = ReactiveCommand.Create(() =>
                 {
-                    ShowMianWindow();
+                    Show();
                 })
 
             });
@@ -118,7 +119,7 @@ namespace UI.Servicers
             App.Exit();
         }
 
-        private void ShowMianWindow()
+        private void Show()
         {
             if (_mainWindow.IsVisible &&
                     _mainWindow.WindowState != WindowState.Minimized)
@@ -139,10 +140,10 @@ namespace UI.Servicers
         /// <summary>
         /// 等待程序加载
         /// </summary>
-        private  async Task WatchStateAsync()
+        private  Task WatchStateAsync()
         {
             string previousText = string.Empty;
-            await Task.Run(async () =>
+            return Task.Run(async () =>
             {
                 while (AppState.IsLoading)
                 {
@@ -174,7 +175,25 @@ namespace UI.Servicers
             InitMenu();
         }
 
-      
-      
+        public void ShowMainWindow()
+        {
+            var config = _appConfig.GetConfig();
+            if (config == null)
+            {
+                return;
+            }
+            if (config.General.IsSaveWindowSize)
+            {
+                _mainWindow.Width = config.General.WindowWidth;
+                _mainWindow.Height = config.General.WindowHeight;
+            }
+            _mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            _mainWindow.WindowState = WindowState.Normal;
+            _mainWindow.DataContext = _mainVM;
+            var desk = Application.Current.ApplicationLifetime as  IClassicDesktopStyleApplicationLifetime;
+            desk.MainWindow = _mainWindow;
+
+            //_uIServicer.InitWindow(_mainWindow);
+        }
     }
 }

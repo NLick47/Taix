@@ -468,7 +468,7 @@ namespace UI.ViewModels
         {
             if (e.PropertyName == nameof(SelectedAppCategoryItem))
             {
-                //GotoAppList();
+                //  ();
             }
         }
 

@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using UI.Controls.Charts.Model;
 using UI.Controls.Select;
 using UI.Models;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 using System.Reactive;
 using Core.Librarys;
 using UI.Views;
@@ -19,7 +18,7 @@ using Avalonia.Controls;
 
 namespace UI.ViewModels
 {
-    public class IndexPageViewModel :   IndexPageModel
+    public class IndexPageViewModel : IndexPageModel
     {
         public ReactiveCommand<object, Unit> ToDetailCommand { get; }
         public ReactiveCommand<object, Unit> RefreshCommand { get; }
@@ -46,7 +45,7 @@ namespace UI.ViewModels
 
             ToDetailCommand = ReactiveCommand.Create<object>(OnTodetailCommand);
             RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshCommand);
-            
+
             Init();
         }
 
@@ -67,19 +66,19 @@ namespace UI.ViewModels
 
             await LoadData();
 
-            MoreTypeOptions = new List<SelectItemModel>()
-            {
-                new SelectItemModel()
+            MoreTypeOptions =
+            [
+                new ()
                 {
                     Id=0,
                     Name="应用"
                 },
-                new SelectItemModel()
+                new ()
                 {
                     Id=1,
                     Name="网站"
                 }
-            };
+            ];
             MoreType = MoreTypeOptions[0];
         }
 
@@ -128,19 +127,19 @@ namespace UI.ViewModels
                 return;
             }
 
-            FrequentUseNum =1;
-            MoreNum = 1;
+            FrequentUseNum = appConfig.GetConfig().General.IndexPageFrequentUseNum + 1;
+            MoreNum = appConfig.GetConfig().General.IndexPageMoreNum + 1;
 
-            //if (TabbarSelectedIndex == 0)
-            //{
-            //    await LoadTodayData();
-            //    await LoadTodayMoreData();
-            //}
-            //else if (TabbarSelectedIndex == 1)
-            //{
-            //    await LoadThisWeekData();
-            //    LoadThisWeekMoreData();
-            //}
+            if (TabbarSelectedIndex == 0)
+            {
+                await LoadTodayData();
+                await LoadTodayMoreData();
+            }
+            else if (TabbarSelectedIndex == 1)
+            {
+                await LoadThisWeekData();
+                await LoadThisWeekMoreData();
+            }
         }
 
 
@@ -157,7 +156,7 @@ namespace UI.ViewModels
             WebFrequentUseData = MapToChartsData(topWebList);
 
         }
-        private async void LoadThisWeekMoreData()
+        private async Task LoadThisWeekMoreData()
         {
             IsLoading = true;
             var week = Time.GetThisWeekDate();

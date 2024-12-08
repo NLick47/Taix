@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -71,9 +72,8 @@ namespace UI.Controls.Base
             }
 
             string src = path.IndexOf(":") != -1 ? path : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
-            var win = this.GetVisualRoot() as Avalonia.Controls.Window;
-            var storage = win.StorageProvider;
-
+            var desktop = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+            var storage = desktop.MainWindow.StorageProvider;
             var result = await storage.TryGetFileFromPathAsync(src);
             if(result != null)
             {

@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<control:TPage xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -10,6 +10,7 @@
 			  xmlns:control="using:UI.Controls"
 			 xmlns:vm="using:UI.ViewModels"
 			 x:DataType="vm:DataPageViewModel"
+			 IsFillPage="True"
              x:Class="UI.Views.DataPage">
 	<Grid Margin="20">
 		<Grid.RowDefinitions>
@@ -108,4 +109,4 @@
 		</TabControl>
 
 	</Grid>
-</UserControl>
+</control:TPage>

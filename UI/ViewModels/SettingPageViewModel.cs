@@ -13,7 +13,7 @@ using UI.Models;
 using UI.Servicers;
 using UI.Servicers.Dialogs;
 
-
+    
 namespace UI.ViewModels
 {
     public class SettingPageViewModel : SettingPageModel

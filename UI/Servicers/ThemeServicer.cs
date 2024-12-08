@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Core.Servicers.Interfaces;
 using Infrastructure.Librarys;
@@ -83,8 +84,24 @@ namespace UI.Servicers
 
         public void LoadTheme(string themeName, bool isRefresh = false)
         {
-            
+            UpdateThemeColor();
         }
+
+        private void UpdateThemeColor()
+        {
+
+            var config = appConfig.GetConfig();
+            if (string.IsNullOrEmpty(config.General.ThemeColor))
+            {
+                StateData.ThemeColor = Application.Current.Resources["ThemeColor"].ToString();
+                return;
+            }
+
+            StateData.ThemeColor = config.General.ThemeColor;
+            Application.Current.Resources["ThemeColor"] = Color.Parse(config.General.ThemeColor);
+            Application.Current.Resources["ThemeBrush"] = UI.Base.Color.Colors.GetFromString(config.General.ThemeColor);
+        }
+
 
         public void SetMainWindow(MainWindow mainWindow)
         {

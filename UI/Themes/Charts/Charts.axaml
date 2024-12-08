@@ -123,6 +123,8 @@
 							Icon="Search"/>
 						</Grid>
 						<StackPanel x:Name="TypeATempContainer" Grid.Row="1" IsVisible="False"/>
+
+
 						<ListBox x:Name="ListView" Grid.Row="1"
 								  ItemsSource="{TemplateBinding ListViewBindingData}" >
 							<ListBox.ItemsPanel>
@@ -130,6 +132,46 @@
 									<VirtualizingStackPanel/>
 								</ItemsPanelTemplate>
 							</ListBox.ItemsPanel>
+							<ListBox.Styles>
+								<Style Selector="ListBox">
+									<Setter Property="Template">
+										<ControlTemplate >
+											<ScrollViewer VerticalScrollBarVisibility="Hidden" >
+												<ItemsPresenter 
+													ItemsPanel="{TemplateBinding ItemsPanel}" />
+											</ScrollViewer>
+										</ControlTemplate>
+									</Setter>
+								</Style>
+
+								<Style Selector="ListBoxItem">
+									<Style Selector="^:pointerover /template/ ContentPresenter">
+										<Setter Property="Background" Value="Transparent" />
+									</Style>
+
+									<Style Selector="^:selected /template/ ContentPresenter">
+										<Setter Property="Background" Value="Transparent" />
+									</Style>
+
+									<Style Selector="^:selected:focus /template/ ContentPresenter">
+										<Setter Property="Background" Value="Transparent" />
+									</Style>
+
+									<Style Selector="^:selected:pointerover /template/ ContentPresenter">
+										<Setter Property="Background" Value="Transparent" />
+									</Style>
+
+									<Style Selector="^:selected:focus:pointerover /template/ ContentPresenter">
+										<Setter Property="Background" Value="Transparent" />
+									</Style>
+									<Setter Property="Template">
+										<ControlTemplate>
+											<ContentPresenter ContentTemplate="{TemplateBinding ContentTemplate}"
+																		 Content="{TemplateBinding Content}"/>
+										</ControlTemplate>
+									</Setter>
+								</Style>
+							</ListBox.Styles>
 
 							<ListBox.ItemTemplate>
 								<DataTemplate x:DataType="models:ChartsDataModel">
@@ -191,6 +233,31 @@
 														<VirtualizingStackPanel/>
 													</ItemsPanelTemplate>
 												</ListBox.ItemsPanel>
+
+												<ListBox.Styles>
+													<Style Selector="ListBox">
+														<Setter Property="Template">
+															<ControlTemplate>
+																<Border>
+																	<ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}"/>
+																</Border>
+															</ControlTemplate>
+														</Setter>
+													</Style>
+
+													<Style Selector="ListBoxItem">
+														<Setter Property="Template">
+															<ControlTemplate>
+																<Border BorderBrush="Transparent" BorderThickness="2"
+																		x:Name="Border" Margin="0" CornerRadius="10">
+																	<ContentPresenter
+																		ContentTemplate="{TemplateBinding ContentTemplate}"
+																			 Content="{TemplateBinding Content}"/>
+																</Border>
+															</ControlTemplate>
+														</Setter>
+													</Style>
+												</ListBox.Styles>
 
 												<ListBox.ItemTemplate>
 													<DataTemplate x:DataType="models:ChartColumnInfoModel">

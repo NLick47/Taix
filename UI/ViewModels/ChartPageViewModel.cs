@@ -85,9 +85,9 @@ namespace UI.ViewModels
             Date = DateTime.Now;
             YearDate = DateTime.Now;
 
-            //InitializeAsync();
+            InitializeAsync();
 
-            //PropertyChanged +=  ChartPageVM_PropertyChanged;
+            PropertyChanged += ChartPageVM_PropertyChanged;
         }
 
         private async void InitializeAsync()

@@ -56,7 +56,15 @@ namespace UI.Base.Color
                 color = StateData.ThemeColor; 
             }
 
-            return new SolidColorBrush(Avalonia.Media.Color.Parse(color),opacity);
+            try
+            {
+                return new SolidColorBrush(Avalonia.Media.Color.Parse(color), opacity);
+            }
+            catch (Exception e)
+            {
+
+                throw;
+            }
         }
     }
 }

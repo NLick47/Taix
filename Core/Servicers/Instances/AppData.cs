@@ -30,7 +30,7 @@ namespace Core.Servicers.Instances
         public void Load()
         {
             Debug.WriteLine("加载app开始");
-            using (var db = _databse.GetReaderContext())
+            using (var db = new TaiDbContext())
             {
                 _apps = (
                     from app in db.App
@@ -63,7 +63,7 @@ namespace Core.Servicers.Instances
         {
             try
             {
-                using (var db = _databse.GetWriterContext())
+                using (var db = new TaiDbContext())
                 {
                     var app = db.App.FirstOrDefault(c => c.ID.Equals(app_.ID));
                     if (app != null)
@@ -109,7 +109,7 @@ namespace Core.Servicers.Instances
                 }
                 try
                 {
-                    using (var db = _databse.GetWriterContext())
+                    using (var db = new TaiDbContext())
                     {
                         var r = db.App.Add(app);
                         int res = db.SaveChanges();
@@ -118,7 +118,6 @@ namespace Core.Servicers.Instances
 
                             _apps.Add(app);
                         }
-                        _databse.CloseWriter();
                     }
                 }
                 catch (Exception e)
