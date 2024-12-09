@@ -147,7 +147,7 @@ namespace UI.Controls.Window
 
             CloseWindowCommand = ReactiveCommand.Create(() =>
             {
-                App.Exit();
+                Close();
             });
         }
 

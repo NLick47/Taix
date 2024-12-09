@@ -15,7 +15,7 @@
 
 	<UserControl.ContextMenu>
 		<ContextMenu>
-			<MenuItem Header="{DynamicResource Refresh}" />
+			<MenuItem Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}"/>
 		</ContextMenu>
 	</UserControl.ContextMenu>
 	<StackPanel Margin="20">

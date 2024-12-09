@@ -57,7 +57,7 @@ namespace Win
             OnAppActiveChanged?.Invoke(this, args);
             if (args.App.Type == AppType.SystemComponent)
             {
-                await Task.Delay(1000);
+                await Task.Delay(1500);
                 DelayDetect();
             }
 

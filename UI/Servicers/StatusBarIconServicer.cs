@@ -148,7 +148,7 @@ namespace UI.Servicers
                 while (AppState.IsLoading)
                 {
                     await Task.Delay(500); 
-                    var newText = $"[{AppState.ProcessValue}%] Tai [{AppState.ActionText}]";
+                    var newText = $"[{AppState.ProcessValue}%] Taix [{AppState.ActionText}]";
                     if (newText != previousText)
                     {
                         previousText = newText;
@@ -160,7 +160,7 @@ namespace UI.Servicers
                 }
                 await  Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    _trayIcon.ToolTipText = "Tai!";
+                    _trayIcon.ToolTipText = "Taix!";
                 });
 
                 await SetIcon();
@@ -190,6 +190,11 @@ namespace UI.Servicers
             _mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             _mainWindow.WindowState = WindowState.Normal;
             _mainWindow.DataContext = _mainVM;
+            _mainWindow.Closing += (sender, e) =>
+            {
+                e.Cancel = true;
+                _mainWindow.IsVisible = false;
+            };
             var desk = Application.Current.ApplicationLifetime as  IClassicDesktopStyleApplicationLifetime;
             desk.MainWindow = _mainWindow;
 

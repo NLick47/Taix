@@ -17,7 +17,6 @@ using UI.Controls.Base;
 
 namespace UI.Controls.Navigation
 {
-    [PseudoClasses(":pressed")]
     public class NavigationItem : TemplatedControl
     {
         public static readonly StyledProperty<int> IDProperty =
@@ -128,11 +127,9 @@ namespace UI.Controls.Navigation
         public NavigationItem()
         {
             this.PointerPressed += OnPointerPressed;
-            this.WhenPropertyChanged(x => x.IsSelected).Subscribe(x =>
-            {
-                 PseudoClasses.Set(":pressed", x.Value);
-            });
         }
+
+        protected override Type StyleKeyOverride => typeof(NavigationItem);
 
         private void OnPointerPressed(object sender, PointerPressedEventArgs e)
         {

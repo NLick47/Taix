@@ -3,79 +3,83 @@
 		xmlns:base="clr-namespace:UI.Controls.Base"
         xmlns:controls="using:UI.Controls.Navigation">
 
-  <ControlTheme x:Key="{x:Type controls:NavigationItem}" 
-				TargetType="controls:NavigationItem">
-	  <Setter Property="Width" Value="60"/>
-	  <Setter Property="Height" Value="60"/>
-	  <Setter Property="Background" Value="Transparent"/>
-	  <Styles>
-		  <Style Selector="Border:pointerover">
-			  <Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}"/>
-		  </Style>
-		  <Style Selector=":pressed">
-			  <Style Selector="^ TextBlock">
-				  <Setter Property="Foreground" Value="{DynamicResource ThemeBrush}"/>
-				  <Setter Property="IsVisible" Value="False"/>
-			  </Style>
-			  <Style Selector="^ Border">
-				  <Setter Property="Background"
-						  Value="{DynamicResource NavSelectedBrush}"/>
-			  </Style>
-			  <Style Selector="^ base|Icon">
-				  <Style.Animations>
-					  <Animation Duration="0:0:0.5">
-						  <KeyFrame Cue="0%">
-							  <Setter Property="Margin" Value="0,-20,0,0"/>
-						  </KeyFrame>
-						
-						  <KeyFrame Cue="20%">
-							  <Setter Property="Margin" Value="0,-10,0,0"/>
-						  </KeyFrame>
+	<ControlTheme x:Key="{x:Type controls:NavigationItem}"
+				  TargetType="controls:NavigationItem">
+		<Setter Property="Width" Value="60"/>
+		<Setter Property="Height" Value="60"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Styles>
+			<Style Selector="controls|NavigationItem:pointerover Border#Border">
+				<Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}"/>
+			</Style>
 
-						  <KeyFrame Cue="40%">
-							  <Setter Property="Margin" Value="0,10,0,0"/>
-						  </KeyFrame>
-						  
-						  <KeyFrame Cue="100%">
-							  <Setter Property="Margin" Value="0,0,0,0"/>
-						  </KeyFrame>
-					  </Animation>
-				  </Style.Animations>
 
-				  <Setter Property="RenderTransform" Value="translateY(0px)"/>
-			  </Style>
-		  </Style>
-		 
-		 
-	  </Styles>
-    <Setter Property="Template">
-      <ControlTemplate>
-		  <Border Background="Transparent" CornerRadius="10" 
-				  x:Name="Border">
+			<Style Selector="controls|NavigationItem[IsSelected=True]">
+				<Style Selector="^ /template/ TextBlock">
+					<Setter Property="Foreground" Value="{DynamicResource ThemeBrush}"/>
+					<Setter Property="IsVisible" Value="False"/>
+				</Style>
+				<Style Selector="^ /template/ Border">
+					<Setter Property="Background"
+							Value="{DynamicResource NavSelectedBrush}"/>
+				</Style>
 
-			  <Grid x:Name="Content"  Margin="5">
-				  <base:Icon x:Name="Icon" IconType="{TemplateBinding Icon}"
-							Foreground="{Binding ElementName=Title,Path=Foreground}"
-							 VerticalAlignment="Center" Grid.Column="1" 
-							 FontSize="17"
-							 RenderTransformOrigin="0.5,0.5">
-					  <base:Icon.RenderTransform>
-						  <TransformGroup>
-							  <TranslateTransform X="0" Y="-5"/>
-						  </TransformGroup>
-					  </base:Icon.RenderTransform>
-				  </base:Icon>
-				  <TextBlock x:Name="Title"
-							 RenderOptions.EdgeMode="Aliased" 
-							 Text="{TemplateBinding Title}" 
-							 Grid.Column="2" 
-							 VerticalAlignment="Bottom" HorizontalAlignment="Center"  
-							 FontSize="10" 
-							 Foreground="{DynamicResource NavUnselectedTextBrush}" 
-							 Margin="0,5,0,0"/>
-			  </Grid>
-			</Border>
-      </ControlTemplate>
-    </Setter>
-  </ControlTheme>
+				<Style Selector="^ /template/ base|Icon">
+					<Style.Animations>
+						<Animation  Duration="0:0:0.5">
+							<KeyFrame Cue="0%">
+								<Setter Property="Margin" Value="0,-20,0,0"/>
+							</KeyFrame>
+
+							<KeyFrame Cue="35%">
+								<Setter Property="Margin" Value="0,-7,0,0"/>
+							</KeyFrame>
+
+							<KeyFrame Cue="40%">
+								<Setter Property="Margin" Value="0,10,0,0"/>
+							</KeyFrame>
+
+							<KeyFrame Cue="100%">
+								<Setter Property="Margin" Value="0,0,0,0"/>
+							</KeyFrame>
+						</Animation>
+					</Style.Animations>
+					
+					<Setter Property="RenderTransform" Value="translateY(0px)"/>
+				</Style>
+
+			</Style>
+
+
+		</Styles>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border Background="Transparent" CornerRadius="10"
+						x:Name="Border">
+
+					<Grid x:Name="Content"  Margin="5">
+						<base:Icon x:Name="Icon" IconType="{TemplateBinding Icon}"
+								  Foreground="{Binding ElementName=Title,Path=Foreground}"
+								   VerticalAlignment="Center" Grid.Column="1"
+								   FontSize="17"
+								   RenderTransformOrigin="0.5,0.5">
+							<base:Icon.RenderTransform>
+								<TransformGroup>
+									<TranslateTransform X="0" Y="-5"/>
+								</TransformGroup>
+							</base:Icon.RenderTransform>
+						</base:Icon>
+						<TextBlock x:Name="Title"
+								   RenderOptions.EdgeMode="Aliased"
+								   Text="{TemplateBinding Title}"
+								   Grid.Column="2"
+								   VerticalAlignment="Bottom" HorizontalAlignment="Center"
+								   FontSize="10"
+								   Foreground="{DynamicResource NavUnselectedTextBrush}"
+								   Margin="0,5,0,0"/>
+					</Grid>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
 </ResourceDictionary>

@@ -332,7 +332,7 @@ namespace UI.Controls.Charts
             set { SetValue(IsShowCategoryProperty, value); }
         }
         public static readonly StyledProperty<bool> IsShowCategoryProperty =
-              AvaloniaProperty.Register<Charts, bool>(nameof(IsShowCategory));
+              AvaloniaProperty.Register<Charts, bool>(nameof(IsShowCategory),true);
 
         /// <summary>
         /// 图标大小（仅列表样式有效）

@@ -297,7 +297,9 @@
 							</Grid>
 
 							<!--信息-->
-							<Grid Grid.Row="2" Margin="0,5,0,0" x:Name="Category" IsVisible="False">
+							<Grid Grid.Row="2" IsHitTestVisible="False"
+								  Focusable="False"
+								  Margin="0,5,0,0" x:Name="Category" IsVisible="False">
 								<ListBox ItemsSource="{TemplateBinding ColumnInfoList}"
 										 ScrollViewer.HorizontalScrollBarVisibility="Disabled" >
 									<ListBox.ItemsPanel>
@@ -305,6 +307,32 @@
 											<WrapPanel/>
 										</ItemsPanelTemplate>
 									</ListBox.ItemsPanel>
+
+									<ListBox.Styles>
+										<Style Selector="ListBox">
+											<Setter Property="Template">
+												<ControlTemplate>
+													<Border>
+														<ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+													</Border>
+												</ControlTemplate>
+											</Setter>
+										</Style>
+
+										<Style Selector="ListBoxItem">
+											<Setter Property="Template">
+												<ControlTemplate>
+													<Border BorderBrush="Transparent" BorderThickness="2"
+															Background="Transparent" Margin="0" CornerRadius="10"
+															x:Name="Border">
+														<ContentPresenter 
+															ContentTemplate="{TemplateBinding ContentTemplate}"
+																		 Content="{TemplateBinding Content}"/>
+													</Border>
+												</ControlTemplate>
+											</Setter>
+										</Style>
+									</ListBox.Styles>
 
 									<ListBox.ItemTemplate>
 										<DataTemplate x:DataType="models:ChartColumnInfoModel">

@@ -31,6 +31,7 @@ public partial class CategoryPage : ReactiveUserControl<CategoryPageViewModel>
         {
             this.viewer.ScrollToEnd();
         }
+       
     }
 
     private void HandleEditIsDirectoryMatchChange(bool isDirectoryMatch)

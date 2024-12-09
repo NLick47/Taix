@@ -3,6 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
+using Org.BouncyCastle.Crmf;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -98,9 +100,22 @@ namespace UI.Controls.Charts
                 Loaded += ChartsItemTypeList_Loaded;
                 IsAddEvent = true;
             }
-
-            var parent = Parent as Control;
+           
+            var parent = FindParentControl<ListBox>(this.GetVisualParent());
             parent.SizeChanged += Parent_SizeChanged;
+        }
+
+        public Control FindParentControl<T>(Visual control) where T : Control
+        {
+            while (control != null)
+            {
+                if (control is T parentControl)
+                {
+                    return parentControl;
+                }
+                control = control.GetVisualParent();
+            }
+            return null;
         }
 
         private void Parent_SizeChanged(object sender, SizeChangedEventArgs e)

@@ -187,8 +187,8 @@ namespace UI
            await main.Start(isSelfStart);
 
             //  创建保活窗口
-            //keepaliveWindow = new HideWindow();
-            //keepaliveWindow.Hide();
+            keepaliveWindow = new HideWindow();
+            keepaliveWindow.Hide();
         }
 
 

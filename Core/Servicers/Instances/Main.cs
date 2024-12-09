@@ -42,8 +42,9 @@ namespace Core.Servicers.Instances
 
         private readonly ISystemInfrastructure _systemInfrastructure;
         //  忽略的进程
-        private readonly string[] DefaultIgnoreProcess = new string[] {
+        private readonly HashSet<string> DefaultIgnoreProcess = new () {
             "Tai",
+            "Taix",
             "SearchHost",
             "Taskmgr",
             "ApplicationFrameHost",

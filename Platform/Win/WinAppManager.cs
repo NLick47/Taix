@@ -3,6 +3,7 @@ using Infrastructure.Librarys;
 using Infrastructure.Models.AppObserver;
 using Infrastructure.Servicers;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -66,11 +67,15 @@ namespace Win
         #endregion
 
         private Dictionary<string, AppInfo> _apps;
+        private readonly ConcurrentDictionary<int, (string Name, DateTime LastChecked)> _processNameCache;
+
+
         private int _outTime = 5000;
         //private string _windowsVersionName;
         public WinAppManager()
         {
-            _apps = new Dictionary<string, AppInfo>();
+            _apps = new();
+            _processNameCache = new();
             //_windowsVersionName = SystemInfrastructure.GetWindowsVersionName();
         }
 
@@ -79,15 +84,11 @@ namespace Win
             try
             {
                 AppInfo app;
-                var sw = Stopwatch.StartNew();
                 GetWindowThreadProcessId(hwnd_, out int processId);
-                sw = Stopwatch.StartNew();
-                string processName = GetAppProcessName(processId);
-                string executablePath = string.Empty;
-                string description = string.Empty;
+                var processName = GetAppProcessName(processId);
+                var executablePath = string.Empty;
+                var description = string.Empty;
                 AppType appType = AppType.Win32;
-
-                sw = Stopwatch.StartNew();
                 if (string.IsNullOrEmpty(processName))
                 {
                     return AppInfo.Empty;
@@ -169,10 +170,19 @@ namespace Win
             }
         }
 
-        private string GetAppProcessName(int processId_)
+        private string? GetAppProcessName(int processId_)
         {
-            Process process = Process.GetProcessById(processId_);
-            return process.ProcessName;
+            if (!_processNameCache.TryGetValue(processId_, out var val) ||
+                (DateTime.Now - val.LastChecked).TotalSeconds > 600)
+            {
+                var process = Process.GetProcessById(processId_);
+                if (!string.IsNullOrEmpty(process?.ProcessName))
+                {
+                    _processNameCache[processId_] = (process.ProcessName, DateTime.Now);
+                }
+                return process?.ProcessName;
+            }
+            return _processNameCache[processId_].Name;
         }
 
         private string GetAppExecutablePath(int processId_)
@@ -272,54 +282,50 @@ namespace Win
         }
         #endregion
 
+        private static readonly HashSet<string> sysClassNameSet = new()
+        {
+            "Progman",
+            "WorkerW",
+            "Shell_TrayWnd",
+            "XamlExplorerHostIslandWindow",
+            "TopLevelWindowForOverflowXamlIsland",
+            "Shell_InputSwitchTopLevelWindow",
+            "LockScreenControllerProxyWindow",
+            "ForegroundStaging",
+            //  win7
+            "DV2ControlHost",
+            "Button"
+        };
+
+        private static readonly HashSet<string> sysProcessSet = new ()
+        {
+            "ShellExperienceHost",
+            "StartMenuExperienceHost",
+            "SearchHost",
+            "LockApp"
+        };
+
+
         #region 判断应用是否是系统组件
         private bool IsSystemComponent(string processName_, nint windowHandle_)
         {
-            //  系统组件类名
-            string[] sysClassNameArr = {
-                "Progman",
-                "WorkerW",
-                "Shell_TrayWnd",
-                "XamlExplorerHostIslandWindow",
-                "TopLevelWindowForOverflowXamlIsland",
-                "Shell_InputSwitchTopLevelWindow",
-                "LockScreenControllerProxyWindow",
-                //  win7
-                "DV2ControlHost",
-                "Button"
-            };
-            //  系统进程名称
-            string[] sysProcessArr = {
-                "ShellExperienceHost",
-                "StartMenuExperienceHost",
-                "SearchHost",
-                "LockApp"
-            };
-
             //  在windows7下，dllhost进程可能是Windows照片查看器，classname为：Photo_Lightweight_Viewer
             //  需要单独为windows7写一个判定器，然后加一个转换器，dllhost进程->windows照片查看器
             //  explorer，class:CabinetWClass在win7下可能是文件夹、控制面板、我的电脑属性
             bool isSys;
+
             if (processName_ == "explorer")
             {
-                //  先通过类名判定
                 string className = Win32API.GetWindowClassName(windowHandle_);
-                Logger.Info($"IsSystemComponent,process:{processName_},className:{className}");
-                if (!string.IsNullOrEmpty(className))
-                {
-                    isSys = sysClassNameArr.Contains(className);
-                }
-                else
-                {
-                    int titleLength = Win32API.GetWindowTextLength(windowHandle_);
-                    isSys = titleLength <= 0;
-                }
+                Logger.Info($"IsSystemComponent, process: {processName_}, className: {className}");
+
+                isSys = !string.IsNullOrEmpty(className) ? sysClassNameSet.Contains(className) : Win32API.GetWindowTextLength(windowHandle_) <= 0;
             }
             else
             {
-                //  通过进程名称判定
-                isSys = sysProcessArr.Contains(processName_);
+                isSys = sysProcessSet.Contains(processName_);
             }
+
             return isSys;
         }
         #endregion
