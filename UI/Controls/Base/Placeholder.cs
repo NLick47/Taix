@@ -13,14 +13,7 @@ namespace UI.Controls.Base
 {
     public class Placeholder : TemplatedControl
     {
-        public CornerRadius CornerRadius
-        {
-            get { return GetValue(CornerRadiusProperty); }
-            set { SetValue(CornerRadiusProperty, value); }
-        }
-        public static readonly StyledProperty<CornerRadius> CornerRadiusProperty =
-            AvaloniaProperty.Register<Placeholder, CornerRadius>(nameof(CornerRadius));
-
+        
         private Border Flash;
         private bool IsAddEvent = false;
 

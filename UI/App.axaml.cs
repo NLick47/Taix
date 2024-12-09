@@ -105,9 +105,9 @@ namespace UI
             services.AddTransient<CategoryPage>();
             services.AddTransient<CategoryPageViewModel>();
 
-            ////  分类app
-            //services.AddTransient<CategoryAppListPage>();
-            //services.AddTransient<CategoryAppListPageVM>();
+            //  分类app
+            services.AddTransient<CategoryAppListPage>();
+            services.AddTransient<CategoryAppListPageViewModel>();
             ////  分类站点
             //services.AddTransient<CategoryWebSiteListPage>();
             //services.AddTransient<CategoryWebSiteListPageVM>();

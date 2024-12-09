@@ -588,14 +588,14 @@ namespace UI.Controls.Charts
                 _searchBox.TextChanged += SearchBox_TextChanged;
             }
 
-            _listView.PointerPressed += (s, e) =>
+            _listView.PointerReleased += (s, e) =>
             {
-                if (e.GetCurrentPoint(_listView).Properties.IsLeftButtonPressed)
+                if (e.InitialPressMouseButton == MouseButton.Left)
                 {
                     _listView_MouseLeftButtonUp(s, e);
                 }
 
-                if (e.GetCurrentPoint(_listView).Properties.IsRightButtonPressed)
+                if (e.InitialPressMouseButton == MouseButton.Right)
                 {
                     _listView_MouseRightButtonUp(s, e);
                 }
@@ -618,7 +618,7 @@ namespace UI.Controls.Charts
             }
         }
 
-        private void _listView_MouseRightButtonUp(object sender, PointerPressedEventArgs e)
+        private void _listView_MouseRightButtonUp(object sender, PointerReleasedEventArgs e)
         {
             if (_listView.SelectedItem != null)
             {
@@ -630,7 +630,7 @@ namespace UI.Controls.Charts
             }
         }
 
-        private void _listView_MouseLeftButtonUp(object sender, PointerPressedEventArgs e)
+        private void _listView_MouseLeftButtonUp(object sender, PointerReleasedEventArgs e)
         {
             if (_listView.SelectedItem != null)
             {

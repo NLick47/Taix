@@ -1,13 +1,15 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Interactivity;
 using Microsoft.Extensions.DependencyInjection;
+using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Windows.Input;
 using UI.Controls.Models;
 using UI.Models;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace UI.Controls
 {
@@ -22,6 +24,15 @@ namespace UI.Controls
         public static readonly StyledProperty<List<string>> IndexUriListProperty =
            AvaloniaProperty.Register<PageContainer, List<string>>(nameof(IndexUriList));
 
+
+        public ICommand BackCommand
+        {
+            get { return GetValue(BackCommandProperty); }
+            set { SetValue(BackCommandProperty, value); }
+        }
+
+        public static readonly StyledProperty<ICommand> BackCommandProperty =
+         AvaloniaProperty.Register<PageContainer, ICommand>(nameof(BackCommand));
         public string Title
         {
             get { return GetValue(TitleProperty); }
@@ -66,13 +77,78 @@ namespace UI.Controls
         private bool IsBack = false;
         private ScrollViewer ScrollViewer;
 
+        private ContentControl ContentControl;
+
         public PageContainer()
         {
             ProjectName = "UI";
             Historys = new ();
             PageCache = new ();
+            BackCommand = ReactiveCommand.Create<object>(OnBackCommand);
         }
 
+        protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+        {
+            base.OnApplyTemplate(e);
+            ScrollViewer = e.NameScope.Get<ScrollViewer>("ScrollViewer");
+            ContentControl = e.NameScope.Get<ContentControl>("Frame");
+          
+            ContentControl.Loaded += ContentControlLoaded;
+            Loaded += PageContainer_Loaded;
+        }
+
+        private void PageContainer_Loaded(object? sender, RoutedEventArgs e)
+        {
+            Instance = this;
+        }
+
+        private void OnBackCommand(object obj)
+        {
+            Back();
+        }
+
+        public void Back()
+        {
+            if (Index - 1 >= 0)
+            {
+                OldIndex = Index;
+                Index--;
+                string uri = Historys[Index];
+
+                int preIndex = Index + 1;
+
+                //  从缓存中移除上一页
+
+                var pageUri = Historys[preIndex];
+                if (PageCache.ContainsKey(pageUri))
+                {
+                    var page = PageCache[pageUri];
+                    var vm = page.Instance.DataContext as ModelBase;
+                    vm?.Dispose();
+                    page.Instance.Content = null;
+                    page.Instance.DataContext = null;
+
+                    PageCache.Remove(pageUri);
+                }
+                Historys.RemoveRange(preIndex, 1);
+
+                IsBack = true;
+
+                Uri = uri;
+
+            }
+        }
+
+        public void ClearHistorys()
+        {
+            Historys.Clear();
+        }
+
+
+        private void ContentControlLoaded(object? sender, RoutedEventArgs e)
+        {
+           
+        }
 
         protected override Type StyleKeyOverride => typeof(PageContainer);
 

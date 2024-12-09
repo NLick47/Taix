@@ -115,7 +115,7 @@
 							</Popup>
 						</Grid>
 
-						<Grid x:Name="ItemSelect">
+						<Grid x:Name="ItemSelect">		
 							<Border Background="{DynamicResource StandardBackgroundBrush}" 
 									Padding="10" CornerRadius="10" Margin="0,10,0,0">
 								<ScrollViewer x:Name="ScrollViewer" VerticalScrollBarVisibility="Disabled"

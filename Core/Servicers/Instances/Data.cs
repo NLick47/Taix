@@ -515,6 +515,7 @@ namespace Core.Servicers.Instances
                 Time = startDate
             })
             .ToArrayAsync();
+
             List<ColumnDataModel> list = new()
                 {
                    new()
@@ -528,7 +529,9 @@ namespace Core.Servicers.Instances
 
             for (int i = 0; i < item.Values.Length; i++)
             {
-                var log = data.FirstOrDefault(m => m.Time == date);
+                string hours = i < 10 ? "0" + i : i.ToString();
+                var time = date.ToString($"yyyy-MM-dd {hours}:00:00");
+                var log = data.FirstOrDefault(m => m.Time.ToString("yyyy-MM-dd HH:00:00") == time);
                 item.Values[i] = log.Total;
             }
             return list.AsReadOnly();

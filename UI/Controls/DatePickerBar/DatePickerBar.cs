@@ -69,13 +69,10 @@ namespace UI.Controls.DatePickerBar
 
         private int dataCount = 0;
         private int renderIndex = 0;
-        //  选中标记块
-        private Border ActiveBlock;
         //  日期选择弹出层
         private Popup DatePickerPopup;
         private BaseList YearsList, MonthsList;
         private Border Date;
-        private ScrollViewer YearsListScrollViewer;
         private StackPanel MonthSelect;
 
         public DatePickerBar()
@@ -90,13 +87,11 @@ namespace UI.Controls.DatePickerBar
         {
             base.OnApplyTemplate(e);
             Container = e.NameScope.Get<StackPanel>("Container");
-            ActiveBlock = e.NameScope.Get<Border>("ActiveBlock");
             ScrollViewer = e.NameScope.Get<ScrollViewer>("ScrollViewer");
             DatePickerPopup = e.NameScope.Get<Popup>("DatePickerPopup");
             Date = e.NameScope.Get<Border>("Date");
             YearsList = e.NameScope.Get<BaseList>("YearsList");
             MonthsList = e.NameScope.Get<BaseList>("MonthsList");
-            YearsListScrollViewer = e.NameScope.Get<ScrollViewer>("YearsListScrollViewer");
             MonthSelect = e.NameScope.Get<StackPanel>("MonthSelect");
 
             Init();

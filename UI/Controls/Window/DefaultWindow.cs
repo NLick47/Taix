@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -148,6 +149,18 @@ namespace UI.Controls.Window
             CloseWindowCommand = ReactiveCommand.Create(() =>
             {
                 Close();
+            });
+
+            BackCommand = ReactiveCommand.Create(() =>
+            {
+                if (PageContainer != null)
+                {
+                    PageContainer.Back();
+                    if (PageContainer.Index == 0)
+                    {
+                        IsCanBack = false;
+                    }
+                }
             });
         }
 
