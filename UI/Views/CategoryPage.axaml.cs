@@ -7,19 +7,22 @@ using ReactiveUI;
 using System;
 using System.Collections.Specialized;
 using System.Reactive.Linq;
+using UI.Controls;
 using UI.ViewModels;
 
 namespace UI.Views;
 
-public partial class CategoryPage : ReactiveUserControl<CategoryPageViewModel>
+public partial class CategoryPage : TPage
 {
+    private CategoryPageViewModel _model;
     public CategoryPage(CategoryPageViewModel model)
     {
         InitializeComponent();
+        _model = model;
         DataContext = model;
-        this.WhenAnyValue(x => x.ViewModel.EditIsDirectoryMath).Subscribe(HandleEditIsDirectoryMatchChange);
+        this.WhenAnyValue(x => x._model.EditIsDirectoryMath).Subscribe(HandleEditIsDirectoryMatchChange);
 
-        this.WhenAnyValue(x => x.ViewModel.EditDirectories).Subscribe(val =>
+        this.WhenAnyValue(x => x._model.EditDirectories).Subscribe(val =>
         {
             val.CollectionChanged += OnEditDirectoriesCollectionChanged;
         });

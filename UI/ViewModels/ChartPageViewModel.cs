@@ -12,6 +12,7 @@ using UI.Controls.Select;
 using UI.Models;
 using UI.Views;
 using Core.Librarys;
+using ReactiveUI;
 
 namespace UI.ViewModels
 {
@@ -42,8 +43,8 @@ namespace UI.ViewModels
             _webData = webData_;
             //_webSiteContextMenu = webSiteContextMenu_;
 
-            //ToDetailCommand = new Command(new Action<object>(OnTodetailCommand));
-            //RefreshCommand = new Command(new Action<object>(OnRefreshCommand));
+            ToDetailCommand = ReactiveCommand.Create<object>(OnTodetailCommand);
+            RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshCommand);
 
             TabbarData = ["按天", "按周", "按月", "按年"];
             var weekOptions = new List<SelectItemModel>();
@@ -132,9 +133,9 @@ namespace UI.ViewModels
                 }
             }
         }
-        private async Task OnRefreshCommand(object obj)
+        private  Task OnRefreshCommand(object obj)
         {
-            await LoadData();
+            return LoadData();
         }
 
 

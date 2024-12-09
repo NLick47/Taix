@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Windows.Input;
 using UI.Controls.Models;
 using UI.Models;
@@ -171,7 +170,7 @@ namespace UI.Controls
                 if (control.PageCache.ContainsKey(oldUri))
                 {
                     PageModel page = control.PageCache[oldUri];
-                    page.ScrollValue = VerticalOffset;
+                    page.ScrollValue = control.ScrollViewer.Offset.Y;
                 }
                 control.LoadPage();
             }
@@ -239,21 +238,21 @@ namespace UI.Controls
                         PageCache.Add(Uri, page);
                     }
 
-                    ////  滚动条位置处理
-                    //if (IsBack)
-                    //{
-                    //    ScrollViewer.ScrollToVerticalOffset(page.ScrollValue);
-                    //}
-                    //else
-                    //{
-                    //    ScrollViewer?.ScrollToVerticalOffset(0);
-                    //}
+                    //  滚动条位置处理
+                    if (IsBack)
+                    {
+                        ScrollViewer.Offset = new Vector(0, page.ScrollValue);
+                    }
+                    else
+                    {
+                        ScrollViewer?.ScrollToHome();
+                    }
 
                     OnLoadPaged?.Invoke(this, EventArgs.Empty);
                 }
                 else
                 {
-                    Debug.WriteLine("找不到Page：" + Uri + "，请确认已被注入");
+                    System.Diagnostics.Debug.WriteLine("找不到Page：" + Uri + "，请确认已被注入");
                 }
             }
             IsBack = false;
