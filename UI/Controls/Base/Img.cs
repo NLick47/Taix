@@ -32,7 +32,7 @@ namespace UI.Controls.Base
             set { SetValue(ResourceProperty, value); }
         }
         public static readonly StyledProperty<IImage> ResourceProperty =
-         AvaloniaProperty.Register<Img, IImage>(nameof(Resource), new Bitmap(AssetLoader.Open(new Uri("avares://UI/Resources/Icons/defaultIcon.png"))));
+         AvaloniaProperty.Register<Img, IImage>(nameof(Resource), new Bitmap(AssetLoader.Open(new Uri("avares://Taix/Resources/Icons/defaultIcon.png"))));
 
         /// <summary>
         /// 图片链接
@@ -59,7 +59,7 @@ namespace UI.Controls.Base
 
         private async void Handle(string path)
         {
-            string defaultIconFile = "avares://UI/Resources/Icons/defaultIcon.png";
+            string defaultIconFile = "avares://Taix/Resources/Icons/defaultIcon.png";
             if (string.IsNullOrEmpty(path))
             {
                 Resource = new Bitmap(AssetLoader.Open(new Uri(defaultIconFile)));

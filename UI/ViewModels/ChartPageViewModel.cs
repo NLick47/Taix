@@ -230,7 +230,7 @@ namespace UI.ViewModels
             {
                 ID = 0,
                 Name = "未分类",
-                IconFile = "avares://UI/Resources/Icons/tai32.ico"
+                IconFile = "avares://Taix/Resources/Icons/tai32.ico"
             };
             foreach (var item in list)
             {
@@ -307,7 +307,7 @@ namespace UI.ViewModels
             {
                 ID = 0,
                 Name = "未分类",
-                IconFile = "avares://UI/Resources/Icons/tai32.ico"
+                IconFile = "avares://Taix/Resources/Icons/tai32.ico"
 
             };
 
@@ -387,7 +387,7 @@ namespace UI.ViewModels
             {
                 ID = 0,
                 Name = "未分类",
-                IconFile = "avares://UI/Resources/Icons/tai32.ico"
+                IconFile = "avares://Taix/Resources/Icons/tai32.ico"
             };
 
             foreach (var item in list)
@@ -463,7 +463,7 @@ namespace UI.ViewModels
             {
                 ID = 0,
                 Name = "未分类",
-                IconFile = "avares://UI/Resources/Icons/tai32.ico"
+                IconFile = "avares://Taix/Resources/Icons/tai32.ico"
             };
 
             foreach (var item in list)
@@ -791,7 +791,7 @@ namespace UI.ViewModels
             {
                 ID = 0,
                 Name = "未分类",
-                IconFile = "avares://UI/Resources/Icons/tai32.ico"
+                IconFile = "avares://Taix/Resources/Icons/tai32.ico"
             };
 
             string[] colNames = { };

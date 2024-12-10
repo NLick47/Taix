@@ -48,7 +48,7 @@ namespace UI.Controls.Base
             var list = new List<string>();
             for (int i = 1; i < 45; i++)
             {
-                list.Add($"avares://UI/Resources/Emoji/({i}).png");
+                list.Add($"avares://Taix/Resources/Emoji/({i}).png");
             }
             Icons = list;
         }
@@ -69,7 +69,7 @@ namespace UI.Controls.Base
             {
                 HandleWindowEvents(isOpen);
             });
-            URL = "avares://UI/Resources/Emoji/(1).png";
+            URL = "avares://Taix/Resources/Emoji/(1).png";
             ShowSelectCommand = ReactiveCommand.Create<object>(OnShowSelect);
             FileSelectCommand = ReactiveCommand.CreateFromTask<object>(OnFileSelect);
             LoadIcons();

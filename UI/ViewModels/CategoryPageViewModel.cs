@@ -457,7 +457,7 @@ namespace UI.ViewModels
             else
             {
                 EditName = "";
-                EditIconFile = "avares://UI/Resources/Emoji/(1).png";
+                EditIconFile = "avares://Taix/Resources/Emoji/(1).png";
                 EditColor = "#00FFAB";
                 EditIsDirectoryMath = false;
                 EditDirectories = new System.Collections.ObjectModel.ObservableCollection<string>();

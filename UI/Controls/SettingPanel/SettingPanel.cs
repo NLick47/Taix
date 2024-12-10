@@ -64,7 +64,7 @@ namespace UI.Controls.SettingPanel
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-            Container = e.NameScope.Get<StackPanel>("Container");
+            Container = e.NameScope.Find<StackPanel>("Container");
 
             isCanRender = true;
             Render();
@@ -375,7 +375,6 @@ namespace UI.Controls.SettingPanel
 
             var item = new SettingPanelItem();
             item.Init(configAttribute, control);
-
             pi.SetValue(configData, pi.GetValue(Data));
             return item;
         }

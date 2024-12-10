@@ -13,7 +13,7 @@ namespace UI.Librays.Image
 {
     public class Imager
     {
-        public static Bitmap Load(string filePath, string defaultPath = "avares://UI/Resources/Icons/defaultIcon.png")
+        public static Bitmap Load(string filePath, string defaultPath = "avares://Taix/Resources/Icons/defaultIcon.png")
         {
             try
             {

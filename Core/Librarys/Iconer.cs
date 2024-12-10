@@ -48,7 +48,7 @@ namespace Core.Librarys
                          "AppIcons", iconName);
             if (!File.Exists(iconPath))
             {
-                return "avares://UI/Resources/Icons/defaultIcon.png";
+                return "avares://Taix/Resources/Icons/defaultIcon.png";
             }
 
             if (isRelativePath)

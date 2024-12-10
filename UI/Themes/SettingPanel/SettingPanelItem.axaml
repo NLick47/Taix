@@ -8,8 +8,9 @@
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Template">
 			<ControlTemplate>
-				<Border Background="{TemplateBinding Background}" Margin="15,16" x:Name="Border">
-
+				<Border Background="{TemplateBinding Background}" Margin="15,16" 
+						x:Name="Border">
+					
 					<Grid>
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition Width="8*"/>
@@ -49,6 +50,7 @@
 								<ContentPresenter HorizontalAlignment="Center"
 										VerticalAlignment="Center"
 										RecognizesAccessKey="True"
+										ContentTemplate="{TemplateBinding ContentTemplate}"
 									   Content="{TemplateBinding Content}"/>
 							</Border>
 						</Grid>

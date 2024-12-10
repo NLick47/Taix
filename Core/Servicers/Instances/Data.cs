@@ -113,7 +113,6 @@ namespace Core.Servicers.Instances
                 var app = await db.App.FirstOrDefaultAsync(m => m.Name == process_);
                 if (app == null)
                 {
-                    _database.CloseWriter();
                     return;
                 }
 
@@ -175,7 +174,7 @@ namespace Core.Servicers.Instances
             }
             finally
             {
-                _database.CloseWriter();
+                
             }
         }
 
@@ -512,7 +511,7 @@ namespace Core.Servicers.Instances
             {
                 Total = g.Sum(log => log.Time),
                 AppID = appID,
-                Time = startDate
+                Time = g.Key
             })
             .ToArrayAsync();
 
@@ -549,7 +548,7 @@ namespace Core.Servicers.Instances
             {
                 Total = g.Sum(log => log.Time),
                 AppID = appID,
-                Time = g.Key.Date
+                Time = g.Key
             })
             .ToArrayAsync();
             var ts = end - start;

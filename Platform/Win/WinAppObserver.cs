@@ -44,12 +44,13 @@ namespace Win
             _foregroundEventDelegate = new WinEventDelegate(ForegroundEventCallback);
         }
 
-
+        private bool _isProcessing = false;
 
         private async void ForegroundEventCallback(nint hWinEventHook, uint eventType, nint hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
         {
+            if (_isProcessing) return;
+            _isProcessing = true;
             DateTime activeTime = DateTime.Now;
-            var stopwatch = Stopwatch.StartNew();
             var args = GetAppInfoEventArgs(hwnd, activeTime);
             Debug.WriteLine(activeTime);
             Debug.WriteLine(args.App.ToString());
@@ -60,7 +61,7 @@ namespace Win
                 await Task.Delay(1500);
                 DelayDetect();
             }
-
+            _isProcessing = false;
         }
 
         private void DelayDetect()
@@ -101,8 +102,13 @@ namespace Win
 
         public void Stop()
         {
+            if (!_isStart) return;
             _isStart = false;
-            UnhookWinEvent(_hook);
+            if (_hook != nint.Zero)
+            {
+                UnhookWinEvent(_hook);
+                _hook = nint.Zero;
+            }
         }
     }
 }

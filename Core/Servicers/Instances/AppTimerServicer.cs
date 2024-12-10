@@ -97,16 +97,7 @@ namespace Core.Servicers.Instances
                     App = e.App,
                     Window = e.Window,
                 };
-                if (!_appData.ContainsKey(processName))
-                {
-                    //  缓存应用信息
-                    _appData.Add(processName, data);
-                }
-                else
-                {
-                    //  更新缓存
-                    _appData[processName] = data;
-                }
+                _appData[processName] = data;
             }
         }
 

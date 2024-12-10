@@ -1,173 +1,176 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-	 <DefineConstants>WINDOWS</DefineConstants>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+		<DefineConstants>WINDOWS</DefineConstants>
+		<AssemblyName>Taix</AssemblyName>
+		<Version>0.0.99</Version>
+		<ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Resources\Emoji\%281%29.png" />
-    <None Remove="Resources\Emoji\%2810%29.png" />
-    <None Remove="Resources\Emoji\%2811%29.png" />
-    <None Remove="Resources\Emoji\%2812%29.png" />
-    <None Remove="Resources\Emoji\%2813%29.png" />
-    <None Remove="Resources\Emoji\%2814%29.png" />
-    <None Remove="Resources\Emoji\%2815%29.png" />
-    <None Remove="Resources\Emoji\%2816%29.png" />
-    <None Remove="Resources\Emoji\%2817%29.png" />
-    <None Remove="Resources\Emoji\%2818%29.png" />
-    <None Remove="Resources\Emoji\%2819%29.png" />
-    <None Remove="Resources\Emoji\%282%29.png" />
-    <None Remove="Resources\Emoji\%2820%29.png" />
-    <None Remove="Resources\Emoji\%2821%29.png" />
-    <None Remove="Resources\Emoji\%2822%29.png" />
-    <None Remove="Resources\Emoji\%2823%29.png" />
-    <None Remove="Resources\Emoji\%2824%29.png" />
-    <None Remove="Resources\Emoji\%2825%29.png" />
-    <None Remove="Resources\Emoji\%2826%29.png" />
-    <None Remove="Resources\Emoji\%2827%29.png" />
-    <None Remove="Resources\Emoji\%2828%29.png" />
-    <None Remove="Resources\Emoji\%2829%29.png" />
-    <None Remove="Resources\Emoji\%283%29.png" />
-    <None Remove="Resources\Emoji\%2830%29.png" />
-    <None Remove="Resources\Emoji\%2831%29.png" />
-    <None Remove="Resources\Emoji\%2832%29.png" />
-    <None Remove="Resources\Emoji\%2833%29.png" />
-    <None Remove="Resources\Emoji\%2834%29.png" />
-    <None Remove="Resources\Emoji\%2835%29.png" />
-    <None Remove="Resources\Emoji\%2836%29.png" />
-    <None Remove="Resources\Emoji\%2837%29.png" />
-    <None Remove="Resources\Emoji\%2838%29.png" />
-    <None Remove="Resources\Emoji\%2839%29.png" />
-    <None Remove="Resources\Emoji\%284%29.png" />
-    <None Remove="Resources\Emoji\%2840%29.png" />
-    <None Remove="Resources\Emoji\%2841%29.png" />
-    <None Remove="Resources\Emoji\%2842%29.png" />
-    <None Remove="Resources\Emoji\%2843%29.png" />
-    <None Remove="Resources\Emoji\%2844%29.png" />
-    <None Remove="Resources\Emoji\%285%29.png" />
-    <None Remove="Resources\Emoji\%286%29.png" />
-    <None Remove="Resources\Emoji\%287%29.png" />
-    <None Remove="Resources\Emoji\%288%29.png" />
-    <None Remove="Resources\Emoji\%289%29.png" />
-    <None Remove="Resources\Fonts\Segoe Fluent Icons.ttf" />
-    <None Remove="Resources\Icons\defaultIcon.png" />
-    <None Remove="Resources\Icons\tai.ico" />
-    <None Remove="Resources\Icons\tai32.ico" />
-    <None Remove="Resources\Icons\taibusy.ico" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="Resources\Emoji\%281%29.png" />
+		<None Remove="Resources\Emoji\%2810%29.png" />
+		<None Remove="Resources\Emoji\%2811%29.png" />
+		<None Remove="Resources\Emoji\%2812%29.png" />
+		<None Remove="Resources\Emoji\%2813%29.png" />
+		<None Remove="Resources\Emoji\%2814%29.png" />
+		<None Remove="Resources\Emoji\%2815%29.png" />
+		<None Remove="Resources\Emoji\%2816%29.png" />
+		<None Remove="Resources\Emoji\%2817%29.png" />
+		<None Remove="Resources\Emoji\%2818%29.png" />
+		<None Remove="Resources\Emoji\%2819%29.png" />
+		<None Remove="Resources\Emoji\%282%29.png" />
+		<None Remove="Resources\Emoji\%2820%29.png" />
+		<None Remove="Resources\Emoji\%2821%29.png" />
+		<None Remove="Resources\Emoji\%2822%29.png" />
+		<None Remove="Resources\Emoji\%2823%29.png" />
+		<None Remove="Resources\Emoji\%2824%29.png" />
+		<None Remove="Resources\Emoji\%2825%29.png" />
+		<None Remove="Resources\Emoji\%2826%29.png" />
+		<None Remove="Resources\Emoji\%2827%29.png" />
+		<None Remove="Resources\Emoji\%2828%29.png" />
+		<None Remove="Resources\Emoji\%2829%29.png" />
+		<None Remove="Resources\Emoji\%283%29.png" />
+		<None Remove="Resources\Emoji\%2830%29.png" />
+		<None Remove="Resources\Emoji\%2831%29.png" />
+		<None Remove="Resources\Emoji\%2832%29.png" />
+		<None Remove="Resources\Emoji\%2833%29.png" />
+		<None Remove="Resources\Emoji\%2834%29.png" />
+		<None Remove="Resources\Emoji\%2835%29.png" />
+		<None Remove="Resources\Emoji\%2836%29.png" />
+		<None Remove="Resources\Emoji\%2837%29.png" />
+		<None Remove="Resources\Emoji\%2838%29.png" />
+		<None Remove="Resources\Emoji\%2839%29.png" />
+		<None Remove="Resources\Emoji\%284%29.png" />
+		<None Remove="Resources\Emoji\%2840%29.png" />
+		<None Remove="Resources\Emoji\%2841%29.png" />
+		<None Remove="Resources\Emoji\%2842%29.png" />
+		<None Remove="Resources\Emoji\%2843%29.png" />
+		<None Remove="Resources\Emoji\%2844%29.png" />
+		<None Remove="Resources\Emoji\%285%29.png" />
+		<None Remove="Resources\Emoji\%286%29.png" />
+		<None Remove="Resources\Emoji\%287%29.png" />
+		<None Remove="Resources\Emoji\%288%29.png" />
+		<None Remove="Resources\Emoji\%289%29.png" />
+		<None Remove="Resources\Fonts\Segoe Fluent Icons.ttf" />
+		<None Remove="Resources\Icons\defaultIcon.png" />
+		<None Remove="Resources\Icons\tai.ico" />
+		<None Remove="Resources\Icons\tai32.ico" />
+		<None Remove="Resources\Icons\taibusy.ico" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <AvaloniaResource Include="Resources\Emoji\(1).png" />
-    <AvaloniaResource Include="Resources\Emoji\(10).png" />
-    <AvaloniaResource Include="Resources\Emoji\(11).png" />
-    <AvaloniaResource Include="Resources\Emoji\(12).png" />
-    <AvaloniaResource Include="Resources\Emoji\(13).png" />
-    <AvaloniaResource Include="Resources\Emoji\(14).png" />
-    <AvaloniaResource Include="Resources\Emoji\(15).png" />
-    <AvaloniaResource Include="Resources\Emoji\(16).png" />
-    <AvaloniaResource Include="Resources\Emoji\(17).png" />
-    <AvaloniaResource Include="Resources\Emoji\(18).png" />
-    <AvaloniaResource Include="Resources\Emoji\(19).png" />
-    <AvaloniaResource Include="Resources\Emoji\(2).png" />
-    <AvaloniaResource Include="Resources\Emoji\(20).png" />
-    <AvaloniaResource Include="Resources\Emoji\(21).png" />
-    <AvaloniaResource Include="Resources\Emoji\(22).png" />
-    <AvaloniaResource Include="Resources\Emoji\(23).png" />
-    <AvaloniaResource Include="Resources\Emoji\(24).png" />
-    <AvaloniaResource Include="Resources\Emoji\(25).png" />
-    <AvaloniaResource Include="Resources\Emoji\(26).png" />
-    <AvaloniaResource Include="Resources\Emoji\(27).png" />
-    <AvaloniaResource Include="Resources\Emoji\(28).png" />
-    <AvaloniaResource Include="Resources\Emoji\(29).png" />
-    <AvaloniaResource Include="Resources\Emoji\(3).png" />
-    <AvaloniaResource Include="Resources\Emoji\(30).png" />
-    <AvaloniaResource Include="Resources\Emoji\(31).png" />
-    <AvaloniaResource Include="Resources\Emoji\(32).png" />
-    <AvaloniaResource Include="Resources\Emoji\(33).png" />
-    <AvaloniaResource Include="Resources\Emoji\(34).png" />
-    <AvaloniaResource Include="Resources\Emoji\(35).png" />
-    <AvaloniaResource Include="Resources\Emoji\(36).png" />
-    <AvaloniaResource Include="Resources\Emoji\(37).png" />
-    <AvaloniaResource Include="Resources\Emoji\(38).png" />
-    <AvaloniaResource Include="Resources\Emoji\(39).png" />
-    <AvaloniaResource Include="Resources\Emoji\(4).png" />
-    <AvaloniaResource Include="Resources\Emoji\(40).png" />
-    <AvaloniaResource Include="Resources\Emoji\(41).png" />
-    <AvaloniaResource Include="Resources\Emoji\(42).png" />
-    <AvaloniaResource Include="Resources\Emoji\(43).png" />
-    <AvaloniaResource Include="Resources\Emoji\(44).png" />
-    <AvaloniaResource Include="Resources\Emoji\(5).png" />
-    <AvaloniaResource Include="Resources\Emoji\(6).png" />
-    <AvaloniaResource Include="Resources\Emoji\(7).png" />
-    <AvaloniaResource Include="Resources\Emoji\(8).png" />
-    <AvaloniaResource Include="Resources\Emoji\(9).png" />
-    <AvaloniaResource Include="Resources\Fonts\Segoe Fluent Icons.ttf">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </AvaloniaResource>
-    <AvaloniaResource Include="Resources\Icons\defaultIcon.png" />
-    <AvaloniaResource Include="Resources\Icons\tai.ico" />
-    <AvaloniaResource Include="Resources\Icons\tai32.ico" />
-    <AvaloniaResource Include="Resources\Icons\taibusy.ico" />
-  </ItemGroup>
-	
-  <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.2.2" />
-    <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.2.2" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.2.2" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.2" />
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.2" />
-    <PackageReference Include="Avalonia.ReactiveUI" Version="11.2.2" />
-    <PackageReference Include="Avalonia.Themes.Simple" Version="11.2.2" />
-    <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.2.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<AvaloniaResource Include="Resources\Emoji\(1).png" />
+		<AvaloniaResource Include="Resources\Emoji\(10).png" />
+		<AvaloniaResource Include="Resources\Emoji\(11).png" />
+		<AvaloniaResource Include="Resources\Emoji\(12).png" />
+		<AvaloniaResource Include="Resources\Emoji\(13).png" />
+		<AvaloniaResource Include="Resources\Emoji\(14).png" />
+		<AvaloniaResource Include="Resources\Emoji\(15).png" />
+		<AvaloniaResource Include="Resources\Emoji\(16).png" />
+		<AvaloniaResource Include="Resources\Emoji\(17).png" />
+		<AvaloniaResource Include="Resources\Emoji\(18).png" />
+		<AvaloniaResource Include="Resources\Emoji\(19).png" />
+		<AvaloniaResource Include="Resources\Emoji\(2).png" />
+		<AvaloniaResource Include="Resources\Emoji\(20).png" />
+		<AvaloniaResource Include="Resources\Emoji\(21).png" />
+		<AvaloniaResource Include="Resources\Emoji\(22).png" />
+		<AvaloniaResource Include="Resources\Emoji\(23).png" />
+		<AvaloniaResource Include="Resources\Emoji\(24).png" />
+		<AvaloniaResource Include="Resources\Emoji\(25).png" />
+		<AvaloniaResource Include="Resources\Emoji\(26).png" />
+		<AvaloniaResource Include="Resources\Emoji\(27).png" />
+		<AvaloniaResource Include="Resources\Emoji\(28).png" />
+		<AvaloniaResource Include="Resources\Emoji\(29).png" />
+		<AvaloniaResource Include="Resources\Emoji\(3).png" />
+		<AvaloniaResource Include="Resources\Emoji\(30).png" />
+		<AvaloniaResource Include="Resources\Emoji\(31).png" />
+		<AvaloniaResource Include="Resources\Emoji\(32).png" />
+		<AvaloniaResource Include="Resources\Emoji\(33).png" />
+		<AvaloniaResource Include="Resources\Emoji\(34).png" />
+		<AvaloniaResource Include="Resources\Emoji\(35).png" />
+		<AvaloniaResource Include="Resources\Emoji\(36).png" />
+		<AvaloniaResource Include="Resources\Emoji\(37).png" />
+		<AvaloniaResource Include="Resources\Emoji\(38).png" />
+		<AvaloniaResource Include="Resources\Emoji\(39).png" />
+		<AvaloniaResource Include="Resources\Emoji\(4).png" />
+		<AvaloniaResource Include="Resources\Emoji\(40).png" />
+		<AvaloniaResource Include="Resources\Emoji\(41).png" />
+		<AvaloniaResource Include="Resources\Emoji\(42).png" />
+		<AvaloniaResource Include="Resources\Emoji\(43).png" />
+		<AvaloniaResource Include="Resources\Emoji\(44).png" />
+		<AvaloniaResource Include="Resources\Emoji\(5).png" />
+		<AvaloniaResource Include="Resources\Emoji\(6).png" />
+		<AvaloniaResource Include="Resources\Emoji\(7).png" />
+		<AvaloniaResource Include="Resources\Emoji\(8).png" />
+		<AvaloniaResource Include="Resources\Emoji\(9).png" />
+		<AvaloniaResource Include="Resources\Fonts\Segoe Fluent Icons.ttf">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</AvaloniaResource>
+		<AvaloniaResource Include="Resources\Icons\defaultIcon.png" />
+		<AvaloniaResource Include="Resources\Icons\tai.ico" />
+		<AvaloniaResource Include="Resources\Icons\tai32.ico" />
+		<AvaloniaResource Include="Resources\Icons\taibusy.ico" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj" />
-    <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Avalonia" Version="11.2.2" />
+		<PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.2.2" />
+		<PackageReference Include="Avalonia.Desktop" Version="11.2.2" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.2" />
+		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.2" />
+		<PackageReference Include="Avalonia.ReactiveUI" Version="11.2.2" />
+		<PackageReference Include="Avalonia.Themes.Simple" Version="11.2.2" />
+		<PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.2.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Themes\Navigation\NavigationItem.axaml" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Core\Core.csproj" />
+		<ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Views\IndexPage.axaml" />
-  </ItemGroup>
+	<ItemGroup>
+		<UpToDateCheckInput Remove="Themes\Navigation\NavigationItem.axaml" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Views\DetailPage.axaml" />
-  </ItemGroup>
+	<ItemGroup>
+		<UpToDateCheckInput Remove="Views\IndexPage.axaml" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Themes\Base\Img.axaml" />
-  </ItemGroup>
+	<ItemGroup>
+		<UpToDateCheckInput Remove="Views\DetailPage.axaml" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeCard.axaml" />
-  </ItemGroup>
+	<ItemGroup>
+		<UpToDateCheckInput Remove="Themes\Base\Img.axaml" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeMonth.axaml" />
-  </ItemGroup>
+	<ItemGroup>
+		<UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeCard.axaml" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="Views\Dialogs\ColorPickerDialog.axaml.cs">
-      <DependentUpon>ColorPickerDialog.axaml</DependentUpon>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeMonth.axaml" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Themes\Base\IconSelect.axaml" />
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Update="Views\Dialogs\ColorPickerDialog.axaml.cs">
+			<DependentUpon>ColorPickerDialog.axaml</DependentUpon>
+		</Compile>
+	</ItemGroup>
 
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Views\ChartPage.axaml" />
-  </ItemGroup>
+	<ItemGroup>
+		<UpToDateCheckInput Remove="Themes\Base\IconSelect.axaml" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<UpToDateCheckInput Remove="Views\ChartPage.axaml" />
+	</ItemGroup>
 </Project>

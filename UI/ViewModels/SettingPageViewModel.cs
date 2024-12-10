@@ -48,17 +48,11 @@ namespace UI.ViewModels
 
         private void Init()
         {
-    #if DEBUG
-            appConfig.Load();
-    #endif
             config = appConfig.GetConfig();
 
             Data = config.General;
 
-            TabbarData = new System.Collections.ObjectModel.ObservableCollection<string>()
-            {
-                "常规","关联","行为","数据","关于"
-            };
+            TabbarData = ["常规", "关联", "行为", "数据", "关于"];
 
             PropertyChanged += SettingPageVM_PropertyChanged;
 

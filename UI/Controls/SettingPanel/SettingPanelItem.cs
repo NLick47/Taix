@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Core.Models.Config;
 using System;
@@ -9,15 +10,11 @@ using System.Threading.Tasks;
 
 namespace UI.Controls.SettingPanel
 {
-    public class SettingPanelItem  : TemplatedControl
+    public class SettingPanelItem  : ContentControl
     {
         public string Description { get { return GetValue(DescriptionProperty); } set { SetValue(DescriptionProperty, value); } }
         public static readonly StyledProperty<string> DescriptionProperty =
             AvaloniaProperty.Register<SettingPanelItem, string>(nameof(Description));
-
-        public object Content { get { return GetValue(ContentProperty); } set { SetValue(ContentProperty, value); } }
-        public static readonly StyledProperty<object> ContentProperty =
-             AvaloniaProperty.Register<SettingPanelItem, object>(nameof(Content));
 
         /// <summary>
         /// 是否显示beta标识
@@ -26,7 +23,7 @@ namespace UI.Controls.SettingPanel
         public static readonly StyledProperty<bool> IsBetaProperty = 
             AvaloniaProperty.Register<SettingPanelItem, bool>(nameof(IsBetaProperty));
 
-        protected override Type StyleKeyOverride => typeof(SettingPanel);
+        protected override Type StyleKeyOverride => typeof(SettingPanelItem);
 
         public void Init(ConfigAttribute configAttribute_, object content_)
         {

@@ -71,7 +71,7 @@ namespace UI.Servicers
                 await  Dispatcher.UIThread.InvokeAsync(() =>
                 {
 
-                    _trayIcon.Icon = new WindowIcon(AssetLoader.Open(new Uri($"avares://UI/Resources/Icons/{iconName}.ico")));
+                    _trayIcon.Icon = new WindowIcon(AssetLoader.Open(new Uri($"avares://Taix/Resources/Icons/{iconName}.ico")));
                 });
             }
             catch (Exception ex)
