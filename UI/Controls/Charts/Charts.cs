@@ -941,7 +941,7 @@ namespace UI.Controls.Charts
             //  列数
             int columns = Data.FirstOrDefault().Values.Length;
 
-
+            double pa = 0;
             //  间距
             int margin = 5;
 
@@ -952,10 +952,12 @@ namespace UI.Controls.Charts
             else if (columns <= 12)
             {
                 margin = 15;
+                pa = 1;
             }
             else if (columns >= 20)
             {
                 margin = 2;
+                pa = 16;
             }
 
             int columnCount = Data.Count();
@@ -1050,7 +1052,7 @@ namespace UI.Controls.Charts
                     ValuesPopupPlacementTarget = columnBorder;
                     IsShowValuesPopup = valuesPopupList.Count > 0;
 
-                    ValuesPopupHorizontalOffset = -17.5 + (columnBorder.Bounds.Width / 2);
+                    ValuesPopupHorizontalOffset = (columnBorder.Bounds.Width / 2) + (pa * margin);
 
                     if (ColumnSelectedIndex != index)
                     {

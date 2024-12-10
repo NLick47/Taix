@@ -205,9 +205,10 @@
 							</StackPanel>
 							<Grid Grid.Row="1" Margin="0,20,0,0">
 								<Popup IsOpen="{TemplateBinding IsShowValuesPopup}"
-										 PlacementTarget="{TemplateBinding ValuesPopupPlacementTarget}"
+										PlacementMode="Top"
+									   
 										HorizontalOffset="{TemplateBinding ValuesPopupHorizontalOffset}"
-										 Placement="Top">
+										PlacementTarget="{TemplateBinding ValuesPopupPlacementTarget}">
 									<Border
 									   Background="{DynamicResource PopupBackgroundBrush}"
 									   CornerRadius="12"
