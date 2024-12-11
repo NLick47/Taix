@@ -136,7 +136,7 @@
 								<Style Selector="ListBox">
 									<Setter Property="Template">
 										<ControlTemplate >
-											<ScrollViewer VerticalScrollBarVisibility="Hidden" >
+											<ScrollViewer VerticalScrollBarVisibility="Auto" >
 												<ItemsPresenter 
 													ItemsPanel="{TemplateBinding ItemsPanel}" />
 											</ScrollViewer>

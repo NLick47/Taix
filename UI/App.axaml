@@ -5,7 +5,7 @@
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.Styles>
-        <SimpleTheme />
+		<SimpleTheme/>
 		<StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Simple/Simple.xaml" />
 	</Application.Styles>
 	
@@ -13,6 +13,7 @@
 		<ResourceDictionary>
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceInclude Source="/Resources/Themes/Dark.axaml"/>
+				<ResourceInclude Source="/Resources/Themes/Common.axaml"/>
 				<!--<ResourceInclude Source="/Resources/Themes/Light.axaml"/>-->
 				<ResourceInclude Source="/Resources/Localization/StringResources.cn.axaml"/>
 				<ResourceInclude Source="/Themes/Base/Icon.axaml"/>

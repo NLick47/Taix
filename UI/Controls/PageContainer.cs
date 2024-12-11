@@ -91,8 +91,6 @@ namespace UI.Controls
             base.OnApplyTemplate(e);
             ScrollViewer = e.NameScope.Get<ScrollViewer>("ScrollViewer");
             ContentControl = e.NameScope.Get<ContentControl>("Frame");
-          
-            ContentControl.Loaded += ContentControlLoaded;
             Loaded += PageContainer_Loaded;
         }
 
@@ -100,6 +98,8 @@ namespace UI.Controls
         {
             Instance = this;
         }
+
+
 
         private void OnBackCommand(object obj)
         {
@@ -141,12 +141,6 @@ namespace UI.Controls
         public void ClearHistorys()
         {
             Historys.Clear();
-        }
-
-
-        private void ContentControlLoaded(object? sender, RoutedEventArgs e)
-        {
-           
         }
 
         protected override Type StyleKeyOverride => typeof(PageContainer);

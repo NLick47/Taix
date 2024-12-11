@@ -7,10 +7,10 @@ using Avalonia.Threading;
 using Core;
 using Core.Servicers.Interfaces;
 using Infrastructure.Librarys;
-using MathNet.Numerics;
 using ReactiveUI;
 using System;
 using System.Threading.Tasks;
+using UI.Controls.Window;
 using UI.ViewModels;
 using UI.Views;
 
@@ -28,8 +28,8 @@ namespace UI.Servicers
         private readonly IUIServicer _uIServicer;
         private MainWindow _mainWindow;
 
-        public StatusBarIconServicer(IThemeServicer themeServicer_, 
-            MainViewModel mainVM_,MainWindow mainWindow_,
+        public StatusBarIconServicer(IThemeServicer themeServicer_,
+            MainViewModel mainVM_, MainWindow mainWindow_,
             IAppConfig appConfig_, IUIServicer uIServicer_)
         {
             this._themeServicer = themeServicer_;
@@ -53,9 +53,9 @@ namespace UI.Servicers
         }
 
 
-        private  async Task SetIcon(IconType iconType_ = IconType.Normal)
+        private async Task SetIcon(IconType iconType_ = IconType.Normal)
         {
-            
+
             try
             {
                 string iconName = "tai32";
@@ -68,7 +68,7 @@ namespace UI.Servicers
                         iconName = "tai32";
                         break;
                 }
-                await  Dispatcher.UIThread.InvokeAsync(() =>
+                await Dispatcher.UIThread.InvokeAsync(() =>
                 {
 
                     _trayIcon.Icon = new WindowIcon(AssetLoader.Open(new Uri($"avares://Taix/Resources/Icons/{iconName}.ico")));
@@ -81,20 +81,20 @@ namespace UI.Servicers
             }
         }
 
-        private  void InitMenu()
+        private void InitMenu()
         {
-            _contextMenu = new ();
+            _contextMenu = new();
             _trayIcon.Command = ReactiveCommand.Create(() =>
             {
-                Show();
+                ShowMainWindow();
             });
 
             _contextMenu.Items.Add(new NativeMenuItem
             {
-                Header = Application.Current.TryFindResource("Open",out var p) == null ? "打开" : p as string,
+                Header = Application.Current.TryFindResource("Open", out var p) == null ? "打开" : p as string,
                 Command = ReactiveCommand.Create(() =>
                 {
-                    Show();
+                    ShowMainWindow();
                 })
 
             });
@@ -110,7 +110,7 @@ namespace UI.Servicers
             {
                 _trayIcon.Menu = _contextMenu;
             });
-            
+
         }
 
         private void ExitApp()
@@ -118,36 +118,17 @@ namespace UI.Servicers
             _trayIcon.IsVisible = false;
             App.Exit();
         }
-
-        private void Show()
-        {
-            if (_mainWindow.IsVisible &&
-                    _mainWindow.WindowState != WindowState.Minimized)
-            {
-                _mainWindow.Activate();
-                
-            }else
-            {
-                _mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                _mainWindow.WindowState = WindowState.Normal;
-                if (!_mainWindow.IsVisible)
-                {
-                    _mainWindow.Show();
-                }
-            }
-        }
-
         /// <summary>
         /// 等待程序加载
         /// </summary>
-        private  Task WatchStateAsync()
+        private Task WatchStateAsync()
         {
             string previousText = string.Empty;
             return Task.Run(async () =>
             {
                 while (AppState.IsLoading)
                 {
-                    await Task.Delay(500); 
+                    await Task.Delay(500);
                     var newText = $"[{AppState.ProcessValue}%] Taix [{AppState.ActionText}]";
                     if (newText != previousText)
                     {
@@ -158,14 +139,14 @@ namespace UI.Servicers
                         });
                     }
                 }
-                await  Dispatcher.UIThread.InvokeAsync(() =>
+                await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     _trayIcon.ToolTipText = "Taix!";
                 });
 
                 await SetIcon();
             });
-             
+
         }
 
         public async Task Init()
@@ -175,30 +156,68 @@ namespace UI.Servicers
             InitMenu();
         }
 
+        private bool isInit = false;
+
         public void ShowMainWindow()
         {
+            var desk = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
             var config = _appConfig.GetConfig();
-            if (config == null)
+
+            if (!isInit)
             {
+                isInit = true;
+
+                if (config.General.IsStartupShowMainWindow)
+                {
+                    InitializeMainWindow();
+                    desk.MainWindow = _mainWindow;
+                }
                 return;
             }
-            if (config.General.IsSaveWindowSize)
+
+            if (desk.MainWindow == null)
+            {
+                InitializeMainWindow();
+                desk.MainWindow = _mainWindow;
+            }
+            else
+            {
+                ShowExistingWindow(desk.MainWindow);
+            }
+        }
+
+        private void InitializeMainWindow()
+        {
+            var config = _appConfig.GetConfig();
+
+            if (!isInit && config.General.IsSaveWindowSize)
             {
                 _mainWindow.Width = config.General.WindowWidth;
                 _mainWindow.Height = config.General.WindowHeight;
             }
+
             _mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             _mainWindow.WindowState = WindowState.Normal;
             _mainWindow.DataContext = _mainVM;
-            _mainWindow.Closing += (sender, e) =>
+            _mainWindow.IsVisible = true;
+            _mainWindow.Closing += (s, e) =>
             {
-                e.Cancel = true;
-                _mainWindow.IsVisible = false;
+                e.Cancel = true; 
+                _mainWindow.IsVisible = false; 
             };
-            var desk = Application.Current.ApplicationLifetime as  IClassicDesktopStyleApplicationLifetime;
-            desk.MainWindow = _mainWindow;
+        }
 
-            //_uIServicer.InitWindow(_mainWindow);
+        private void ShowExistingWindow(Window existingWindow)
+        {
+            if (!existingWindow.IsVisible)
+            {
+                existingWindow.IsVisible = true;
+            }
+
+            if (existingWindow.WindowState == WindowState.Minimized)
+            {
+                existingWindow.WindowState = WindowState.Normal;
+            }
         }
     }
 }

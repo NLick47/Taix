@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Interactivity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,9 +12,10 @@ namespace UI.Controls.Window
     {
         public HideWindow()
         {
-           
+            
         }
 
+      
         protected override Type StyleKeyOverride => typeof(HideWindow);
     }
 }

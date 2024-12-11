@@ -112,7 +112,7 @@ namespace UI.Controls.Tabbar
         private void GetNewSelectedStyle(Point relativePoint)
         {
             ActiveBlock.RenderTransform = TransformOperations.Parse(
-                $"translateX({relativePoint.X - 5}px)"
+                $"translateX({relativePoint.X}px)"
             );
         }
 

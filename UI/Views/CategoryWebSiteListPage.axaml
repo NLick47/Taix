@@ -1,7 +1,42 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<c:TPage xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 xmlns:base="using:UI.Controls.Base" 
+			 xmlns:select="using:UI.Controls.Select"
+			 xmlns:input="using:UI.Controls.Input"
+			 xmlns:c="using:UI.Controls"
+			xmlns:Button="using:UI.Controls.Button"
+			xmlns:model="using:UI.ViewModels"
+			x:DataType="model:CategoryWebSiteListPageViewModel"
+			 Foreground="{DynamicResource StandardTextBrush}"  IsFillPage="True"
              x:Class="UI.Views.CategoryWebSiteListPage">
-</UserControl>
+	<Grid>
+		<!--选择应用-->
+		<Grid IsVisible="{Binding ChooseVisibility}" ZIndex="2" 
+			  Margin="0" HorizontalAlignment="Stretch" 
+			  VerticalAlignment="Stretch">
+			<Border Background="Black" Opacity=".7"/>
+			<Border Background="{DynamicResource PopupBackgroundBrush}" CornerRadius="10"
+					BorderBrush="{DynamicResource PopupBorderBrush}" BorderThickness="1" 
+					Margin="50" VerticalAlignment="Top">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="40"/>
+						<RowDefinition Height="auto"/>
+						<RowDefinition Height="*"/>
+						<RowDefinition Height="80"/>
+
+					</Grid.RowDefinitions>
+
+					<Grid>
+						<TextBlock Text="选择站点" VerticalAlignment="Center" Margin="10,0,0,0"/>
+						<Button:IconButton Foreground="#ccc" Icon="ChromeClose"
+										   HorizontalAlignment="Right" FontSize="12" Margin="0,0,10,0" Command="{Binding ChooseCloseCommand}"/>
+					</Grid>
+				</Grid>
+			</Border>
+		</Grid>
+	</Grid>
+</c:TPage>

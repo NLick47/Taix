@@ -1,0 +1,186 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<ControlTheme x:Key="{x:Type ContextMenu}" TargetType="ContextMenu">
+		<Setter Property="Background" Value="White"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Grid>
+					<Border Margin="{Binding ElementName=Border,Path=Margin}" Background="{Binding ElementName=Border,Path=Background}" CornerRadius="{Binding ElementName=Border,Path=CornerRadius}">
+						<Border.Effect>
+							<DropShadowEffect BlurRadius="10" Opacity=".1" />
+						</Border.Effect>
+					</Border>
+					<Border x:Name="Border"
+							Background="{DynamicResource PopupBackgroundBrush}"
+							BorderBrush="{DynamicResource ContextBorderBrush}"
+							BorderThickness="1"
+							Padding="5"
+							Margin="10"
+							CornerRadius="8">
+						<ScrollViewer  Focusable="false" Padding="0">
+							<ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}"
+											 KeyboardNavigation.TabNavigation="Continue"
+											Grid.IsSharedSizeScope="True"
+											Name="PART_ItemsPresenter"	/>
+
+						</ScrollViewer>
+					</Border>
+				</Grid>
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
+
+	<ControlTheme x:Key="{x:Type Menu}" TargetType="Menu">
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="BorderThickness" Value="0" />
+
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border BorderThickness="{TemplateBinding BorderThickness}"
+						Background="{TemplateBinding Background}">
+
+					<StackPanel ClipToBounds="True"
+				  Orientation="Horizontal"
+				  IsItemsHost="True" />
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
+
+
+	<!-- ScrollBar-->
+	<ControlTheme x:Key="{x:Type ScrollBar}" TargetType="ScrollBar">
+
+		<Style Selector="^:horizontal">
+			<Setter Property="Height" Value="{DynamicResource ScrollBarThickness}" />
+			<Setter Property="Template">
+				<ControlTemplate>
+					<Border Background="{DynamicResource ThemeControlMidBrush}"
+							UseLayoutRounding="False">
+						<Grid ColumnDefinitions="Auto,*,Auto">
+							<RepeatButton Name="PART_LineUpButton"
+										  Grid.Row="0"
+										  Grid.Column="0"
+										  MinWidth="{DynamicResource ScrollBarThickness}"
+										  VerticalAlignment="Center"
+										  Classes="repeat"
+										  Focusable="False">
+								<Path Data="M 4 0 L 4 8 L 0 4 Z" />
+							</RepeatButton>
+							<Track Grid.Row="1"
+								   Grid.Column="1"
+								   Maximum="{TemplateBinding Maximum}"
+								   Minimum="{TemplateBinding Minimum}"
+								   Orientation="{TemplateBinding Orientation}"
+								   ViewportSize="{TemplateBinding ViewportSize}"
+								   DeferThumbDrag="{TemplateBinding ScrollViewer.IsDeferredScrollingEnabled}"
+								   Value="{TemplateBinding Value,
+                                             Mode=TwoWay}">
+								<Track.DecreaseButton>
+									<RepeatButton Name="PART_PageUpButton"
+												  Classes="repeattrack"
+												  Focusable="False" />
+								</Track.DecreaseButton>
+								<Track.IncreaseButton>
+									<RepeatButton Name="PART_PageDownButton"
+												  Classes="repeattrack"
+												  Focusable="False" />
+								</Track.IncreaseButton>
+								<Thumb Name="thumb" />
+							</Track>
+							<RepeatButton Name="PART_LineDownButton"
+										  Grid.Row="2"
+										  Grid.Column="2"
+										  MinWidth="{DynamicResource ScrollBarThickness}"
+										  VerticalAlignment="Center"
+										  Classes="repeat"
+										  Focusable="False">
+								<Path Data="M 0 0 L 4 4 L 0 8 Z" />
+							</RepeatButton>
+						</Grid>
+					</Border>
+				</ControlTemplate>
+			</Setter>
+		</Style>
+		<Style Selector="^:vertical">
+			<Setter Property="Width" Value="{DynamicResource ScrollBarThickness}" />
+			<Setter Property="Template">
+				<ControlTemplate>
+					<Grid>
+						<Track
+							   IsDirectionReversed="True"
+							   Maximum="{TemplateBinding Maximum}"
+							   Minimum="{TemplateBinding Minimum}"
+							   Orientation="{TemplateBinding Orientation}"
+				
+							   ViewportSize="{TemplateBinding ViewportSize}"
+							   DeferThumbDrag="{TemplateBinding ScrollViewer.IsDeferredScrollingEnabled}"
+							   Value="{TemplateBinding Value,
+                                             Mode=TwoWay}">
+							<Track.DecreaseButton>
+								<RepeatButton Name="PART_PageUpButton"
+											Theme="{StaticResource FluentScrollBarPageButton}"
+											  Focusable="False" />
+							</Track.DecreaseButton>
+							<Track.IncreaseButton>
+								<RepeatButton Name="PART_PageDownButton"
+											Theme="{StaticResource FluentScrollBarPageButton}"
+											  Focusable="False" />
+							</Track.IncreaseButton>
+							<Thumb  Width="4"
+									MinHeight="{DynamicResource ScrollBarSize}"
+									RenderTransform="{DynamicResource VerticalSmallScrollThumbScaleTransform}"
+									RenderTransformOrigin="100%,50%"
+									Theme="{StaticResource FluentScrollBarThumb}"
+									Name="thumb" >
+								<Thumb.Transitions>
+									<Transitions>
+										<DoubleTransition Property="Width" Duration="0.1"/>
+									</Transitions>
+								</Thumb.Transitions>
+							</Thumb>
+						</Track>
+					</Grid>
+				</ControlTemplate>
+			</Setter>
+		</Style>
+
+		<Style Selector="^ /template/ Thumb#thumb:pointerover">
+			<Setter Property="Width" Value="8" />
+			<Setter Property="Background" Value="{DynamicResource ThemeColor}" />
+		</Style>
+
+	</ControlTheme>
+
+	<ControlTheme x:Key="FluentScrollBarPageButton" TargetType="RepeatButton">
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="VerticalAlignment" Value="Stretch" />
+		<Setter Property="HorizontalAlignment" Value="Stretch" />
+		<Setter Property="Opacity" Value="0" />
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border Background="{TemplateBinding Background}" />
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
+
+	<ControlTheme x:Key="FluentScrollBarThumb" TargetType="Thumb">
+		<Setter Property="Background" Value="{DynamicResource ThemeControlMidHighBrush}"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate>
+					<Border Background="{TemplateBinding Background}"
+							 CornerRadius="25,12.5,25,12.5"/>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="Transitions">
+			<Transitions>
+				<CornerRadiusTransition Property="CornerRadius" Duration="0:0:0.1" />
+				<!--<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />-->
+				<BrushTransition Property="Background" Duration="0:0:0.1" />
+			</Transitions>
+		</Setter>
+	</ControlTheme>
+</ResourceDictionary>

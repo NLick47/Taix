@@ -9,6 +9,7 @@ using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
+using MathNet.Numerics;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using System;
@@ -85,6 +86,20 @@ namespace UI.Controls.Base
             SelectionChangedCommand = ReactiveCommand.Create<string>(OnSelectionChanged);
 
             LoadColors();
+        }
+
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if(change.Property == ColorProperty)
+            {
+                var control = change.Sender as ColorSelect;
+                if (string.IsNullOrEmpty(control.Color))
+                {
+                    control.Color = control.Colors[0];
+                }   
+                control.OnSelected?.Invoke(control, EventArgs.Empty);
+            }
         }
 
         private void HandleWindowEvents(bool isOpen)

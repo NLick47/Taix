@@ -41,10 +41,11 @@ namespace UI.Servicers
             //inputServicer.Start();
             //appContextMenuServicer.Init();
             //_webSiteContext.Init();
-            if (!isSelfStart && _config.GetConfig().General.IsStartupShowMainWindow)
+            if (!isSelfStart)
             {
                 _statusBarIconServicer.ShowMainWindow();
             }
+          
         }
     }
 }

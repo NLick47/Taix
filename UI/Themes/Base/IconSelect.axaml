@@ -52,7 +52,7 @@
 
 									<TextBlock Text="选择图标" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource DefaultTextBrush}"/>
 
-									<ScrollViewer  Grid.Row="1" VerticalScrollBarVisibility="Hidden">
+									<ScrollViewer  Grid.Row="1" VerticalScrollBarVisibility="Auto">
 										<ListBox Grid.Row="1"
 												 ItemsSource="{TemplateBinding Icons}"
 												 SelectedItem="{TemplateBinding URL,Mode=TwoWay}"

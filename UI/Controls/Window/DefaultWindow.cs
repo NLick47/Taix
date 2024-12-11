@@ -63,6 +63,8 @@ namespace UI.Controls.Window
             }
         }
 
+        private Grid titleBar;
+
         /// <summary>
         /// 是否可以返回
         /// </summary>
@@ -102,8 +104,16 @@ namespace UI.Controls.Window
                         that.IsCanBack = pc?.Index >= 1;
                     };
                 }
+               
             }
         }
+
+        protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+        {
+            base.OnApplyTemplate(e);
+            titleBar = e.NameScope.Find<Grid>("TitleBar");
+        }
+
 
 
         private bool IsWindowClosed_ = false;
@@ -172,11 +182,13 @@ namespace UI.Controls.Window
         protected override void OnPointerPressed(PointerPressedEventArgs e)
         {
             base.OnPointerPressed(e);
-            if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            if (titleBar.Bounds.Contains(e.GetCurrentPoint(null).Position)
+                && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             {
                 this.BeginMoveDrag(e);
             }
         }
+
 
         protected override void OnLoaded(RoutedEventArgs e)
         {

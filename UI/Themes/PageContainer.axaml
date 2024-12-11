@@ -7,7 +7,7 @@
     <Setter Property="Template">
       <ControlTemplate>
 		  <ScrollViewer  x:Name="ScrollViewer" 
-						 VerticalScrollBarVisibility="Hidden">
+						 VerticalScrollBarVisibility="Auto">
 			  <ContentControl x:Name="Frame" Grid.Row="1" 
 					 Content="{TemplateBinding Content}" />
 		  </ScrollViewer>

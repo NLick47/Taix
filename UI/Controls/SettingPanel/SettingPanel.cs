@@ -16,7 +16,8 @@ using UI.Controls.List;
 using Avalonia.Media;
 using System.Collections;
 using UI.Controls.Select;
-using Newtonsoft.Json;
+using System.IO;
+using System.Text.Json;
 
 namespace UI.Controls.SettingPanel
 {
@@ -29,8 +30,8 @@ namespace UI.Controls.SettingPanel
         }
 
         public object Data { get { return GetValue(DataProperty); } set { SetValue(DataProperty, value); } }
-        public static readonly StyledProperty<object> DataProperty = 
-            AvaloniaProperty.Register<SettingPanel,object>(nameof(Data));
+        public static readonly StyledProperty<object> DataProperty =
+            AvaloniaProperty.Register<SettingPanel, object>(nameof(Data));
 
         public SolidColorBrush SpliteLineBrush { get { return GetValue(SpliteLineBrushProperty); } set { SetValue(SpliteLineBrushProperty, value); } }
         public static readonly StyledProperty<SolidColorBrush> SpliteLineBrushProperty =
@@ -39,7 +40,7 @@ namespace UI.Controls.SettingPanel
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if(change.Property == DataProperty || 
+            if (change.Property == DataProperty ||
                 change.Property == SpliteLineBrushProperty)
             {
                 var control = change.Sender as SettingPanel;
@@ -327,6 +328,17 @@ namespace UI.Controls.SettingPanel
             return uIElement;
         }
 
+        public static object DeepCopy(object obj, Type type)
+        {
+            if (obj == null)
+            {
+                return null;
+            }
+
+            string json = JsonSerializer.Serialize(obj);
+            return JsonSerializer.Deserialize(json, type);
+        }
+
         private Control RenderColorConfigControl(ConfigAttribute configAttribute, PropertyInfo pi)
         {
             var control = new Base.ColorSelect();
@@ -335,7 +347,7 @@ namespace UI.Controls.SettingPanel
             {
                 pi.SetValue(configData, control.Color);
                 isCanRender = false;
-                Data = configData;
+                Data = DeepCopy(configData, configData.GetType());
             };
 
             var item = new SettingPanelItem();
@@ -369,9 +381,9 @@ namespace UI.Controls.SettingPanel
                 pi.SetValue(configData, control.SelectedItem.Data);
 
                 isCanRender = false;
-                Data = configData;
+                Data = DeepCopy(configData, configData.GetType());
             };
-          
+
 
             var item = new SettingPanelItem();
             item.Init(configAttribute, control);
@@ -387,7 +399,7 @@ namespace UI.Controls.SettingPanel
                 pi.SetValue(configData, inputControl.IsChecked);
 
                 isCanRender = false;
-                Data = configData;
+                Data = DeepCopy(configData, configData.GetType());
             };
 
             inputControl.IsChecked = (bool)pi.GetValue(Data);
@@ -416,7 +428,7 @@ namespace UI.Controls.SettingPanel
                     pi.SetValue(configData, newData);
 
                     isCanRender = false;
-                    Data = configData;
+                    Data = DeepCopy(configData, configData.GetType());
                 };
             };
             listControl.Margin = new Thickness(15, 0, 15, 10);
@@ -513,32 +525,32 @@ namespace UI.Controls.SettingPanel
                     //bool? result = ofd.ShowDialog();
                     //if (result == true)
                     //{
-                        //try
-                        //{
-                        //    List<string> data = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(ofd.FileName));
-                        //    if (data == null)
-                        //    {
-                        //        MessageBox.Show("文件格式有误或者数据为空，请选择有效的导出文件。");
-                        //    }
-                        //    else
-                        //    {
-                        //        if (MessageBox.Show("导入将覆盖现有配置，确定吗？", "注意", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                        //        {
-                        //            pi.SetValue(configData, data);
-                        //            listControl.Items.Clear();
-                        //            foreach (string item in data)
-                        //            {
-                        //                listControl.Items.Add(item);
-                        //            }
-                        //            MessageBox.Show("导入完成！", "提示");
-                        //        }
-                        //    }
-                        //}
-                        //catch (Exception ex)
-                        //{
-                        //    Logger.Error($"导入配置“{configAttribute.Name}”时失败：{ex.Message}");
-                        //    MessageBox.Show("导入失败！", "提示");
-                        //}
+                    //try
+                    //{
+                    //    List<string> data = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(ofd.FileName));
+                    //    if (data == null)
+                    //    {
+                    //        MessageBox.Show("文件格式有误或者数据为空，请选择有效的导出文件。");
+                    //    }
+                    //    else
+                    //    {
+                    //        if (MessageBox.Show("导入将覆盖现有配置，确定吗？", "注意", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                    //        {
+                    //            pi.SetValue(configData, data);
+                    //            listControl.Items.Clear();
+                    //            foreach (string item in data)
+                    //            {
+                    //                listControl.Items.Add(item);
+                    //            }
+                    //            MessageBox.Show("导入完成！", "提示");
+                    //        }
+                    //    }
+                    //}
+                    //catch (Exception ex)
+                    //{
+                    //    Logger.Error($"导入配置“{configAttribute.Name}”时失败：{ex.Message}");
+                    //    MessageBox.Show("导入失败！", "提示");
+                    //}
                     //}
 
                 };
