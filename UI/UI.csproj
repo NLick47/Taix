@@ -12,6 +12,10 @@
 		<ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+	</PropertyGroup>
+	
 	<ItemGroup>
 		<None Remove="Resources\Emoji\%281%29.png" />
 		<None Remove="Resources\Emoji\%2810%29.png" />
@@ -134,6 +138,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Core\Core.csproj" />
 		<ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+		<ProjectReference Include="..\Platform\Win\Win.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

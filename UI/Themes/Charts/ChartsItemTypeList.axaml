@@ -26,7 +26,7 @@
 
 				<Style Selector="^[IsShowBadge=True]">
 					<Style Selector="^ /template/ ListBox#BadgeListView">
-						<Setter Property="IsVisible" Value="False"/>
+						<Setter Property="IsVisible" Value="True"/>
 					</Style>
 				</Style>
 
@@ -83,13 +83,13 @@
 								</Grid.ColumnDefinitions>
 
 								<TextBlock  x:Name="NameTextObj"
-											Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:ChartsItemTypeList}}, Path=Data.Name}"
+											Text="{Binding Data.Name,RelativeSource={RelativeSource TemplatedParent}}"
 											Foreground="{DynamicResource DefaultTextBrush}"
 											HorizontalAlignment="Left"
 											VerticalAlignment="Center" />
 
 								<ListBox  x:Name="BadgeListView" IsVisible="False" Grid.Column="1"
-										  ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:ChartsItemTypeList}}, Path=Data.BadgeList}"
+										  ItemsSource="{Binding Data.BadgeList,RelativeSource={RelativeSource TemplatedParent}}"
 										  Margin="0,0,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" >
 									
 									<ListBox.Styles>

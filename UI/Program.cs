@@ -17,9 +17,9 @@ namespace UI
         [STAThread]
         public static void Main(string[] args)
         {
-#if DEBUG
-            DebugMovePlatfromDll();
-#endif
+//#if DEBUG
+//            DebugMovePlatfromDll();
+//#endif
             BuildAvaloniaApp()
            .StartWithClassicDesktopLifetime(args);
         }
@@ -32,29 +32,29 @@ namespace UI
                 .LogToTrace()
                 .UseReactiveUI();
 
-#if DEBUG
-        private static void DebugMovePlatfromDll()
-        {
-            var platformName = PlatformInfo.GetPlatformName();
-            string directory = AppContext.BaseDirectory;
-            while (!string.IsNullOrEmpty(directory))
-            {
-                if (Directory.Exists(Path.Combine(directory, "Platform")))
-                {
-                    directory = Path.Combine(directory, "Platform");
-                    break;
-                }
-                directory = Directory.GetParent(directory)?.FullName;
-            }
-            if (string.IsNullOrEmpty(directory))
-            {
-                throw new DirectoryNotFoundException(directory);
-            }
-            var dll = string.Concat(platformName, ".dll");
-            var targetFilePath = Path.Combine(directory, platformName, "bin", "Debug", "net8.0", dll);
-            if (!File.Exists(targetFilePath)) throw new FileNotFoundException(targetFilePath);
-            File.Copy(targetFilePath, Path.Combine(AppContext.BaseDirectory, dll), true);
-        }
-#endif
+//#if DEBUG
+//        private static void DebugMovePlatfromDll()
+//        {
+//            var platformName = PlatformInfo.GetPlatformName();
+//            string directory = AppContext.BaseDirectory;
+//            while (!string.IsNullOrEmpty(directory))
+//            {
+//                if (Directory.Exists(Path.Combine(directory, "Platform")))
+//                {
+//                    directory = Path.Combine(directory, "Platform");
+//                    break;
+//                }
+//                directory = Directory.GetParent(directory)?.FullName;
+//            }
+//            if (string.IsNullOrEmpty(directory))
+//            {
+//                throw new DirectoryNotFoundException(directory);
+//            }
+//            var dll = string.Concat(platformName, ".dll");
+//            var targetFilePath = Path.Combine(directory, platformName, "bin", "Debug", "net8.0", dll);
+//            if (!File.Exists(targetFilePath)) throw new FileNotFoundException(targetFilePath);
+//            File.Copy(targetFilePath, Path.Combine(AppContext.BaseDirectory, dll), true);
+//        }
+//#endif
     }
 }

@@ -18,6 +18,9 @@ using UI.Controls.Window;
 using Platform;
 using Avalonia.Controls;
 using System.Threading.Tasks;
+#if WINDOWS
+using Win;
+#endif
 
 namespace UI
 {
@@ -47,13 +50,18 @@ namespace UI
 
         private void CreatePlatformInitializer(IServiceCollection services)
         {
-            string platfromName = PlatformInfo.GetPlatformName();
-            string dllPath = Path.Combine(AppContext.BaseDirectory, $"{platfromName}.dll");
-            var assembly = Assembly.LoadFile(dllPath);
-            var classType = assembly.GetType($"{platfromName}.WinPlatformInitializer");
-            var Instance = Activator.CreateInstance(classType!);
-            var methodInfo = classType!.GetMethod("Initialize");
-            methodInfo!.Invoke(Instance, new object[] { services });
+            //string platfromName = PlatformInfo.GetPlatformName();
+            //string dllPath = Path.Combine(AppContext.BaseDirectory, $"{platfromName}.dll");
+            //var assembly = Assembly.LoadFile(dllPath);
+            //var classType = assembly.GetType($"{platfromName}.WinPlatformInitializer");
+            //var Instance = Activator.CreateInstance(classType!);
+            //var methodInfo = classType!.GetMethod("Initialize");
+            //methodInfo!.Invoke(Instance, new object[] { services });
+            IPlatformInitializer platformInitializer = null;
+#if WINDOWS
+            platformInitializer = new WinPlatformInitializer();
+#endif
+            platformInitializer.Initialize(services);
         }
 
         
@@ -184,11 +192,7 @@ namespace UI
                     isSelfStart = true;
                 }
             }
-           await main.Start(isSelfStart);
-
-            ////  创建保活窗口
-            //keepaliveWindow = new HideWindow();
-            //keepaliveWindow.Hide();
+           await main.Start(isSelfStart).ConfigureAwait(false);
         }
 
 

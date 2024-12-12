@@ -79,7 +79,7 @@
 								<input:InputBox Grid.Column="1" Error="{Binding EditErrorText}"
 												IsShowError="{Binding IsEditError,Mode=TwoWay}"
 												Text="{Binding EditName,Mode=TwoWay}"
-												MaxLength="15" Margin="5,10,0,0"
+												MaxLength="10" Margin="5,10,0,0"
 												Placeholder="请输入分类名称"/>
 							</Grid>
 							<TextBlock Text="图标" Margin="0,10,0,0"/>
