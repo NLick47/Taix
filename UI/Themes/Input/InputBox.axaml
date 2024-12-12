@@ -90,7 +90,7 @@
 												   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
 												   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
 												   Opacity="0.5"
-												   Text="{TemplateBinding Watermark}"
+												   Text="{TemplateBinding Placeholder}"
 												   TextAlignment="{TemplateBinding TextAlignment}"
 												   TextWrapping="{TemplateBinding TextWrapping}">
 											<TextBlock.IsVisible>

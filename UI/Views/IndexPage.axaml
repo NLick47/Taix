@@ -15,7 +15,10 @@
 
 	<UserControl.ContextMenu>
 		<ContextMenu>
-			<MenuItem Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}"/>
+			<MenuItem 
+				HotKey="F5"
+				InputGesture="F5"
+				Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}"/>
 		</ContextMenu>
 	</UserControl.ContextMenu>
 	<StackPanel Margin="20">
@@ -119,9 +122,17 @@
 					<Setter Property="Template">
 						<ControlTemplate/>
 					</Setter>
+					
 				</Style>
 			</TabControl.Styles>
-				
+			<TabControl.ContextMenu>
+				<ContextMenu>
+					<MenuItem
+						HotKey="F5"
+						InputGesture="F5"
+						Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}"/>
+				</ContextMenu>
+			</TabControl.ContextMenu>
 			<TabItem>
 				<Charts:Charts Data="{Binding AppMoreData}"  ItemMenu="{Binding AppContextMenu}" ChartsType="Card" ShowLimit="{Binding MoreNum}" IsLoading="{Binding IsLoading,Mode=TwoWay}" ClickCommand="{Binding ToDetailCommand}"/>
 			</TabItem>

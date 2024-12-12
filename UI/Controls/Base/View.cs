@@ -3,7 +3,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,8 +28,8 @@ namespace UI.Controls.Base
             get { return GetValue(ValueProperty); }
             set { SetValue(ValueProperty, value); }
         }
-        public static readonly StyledProperty<string> ValueProperty =
-           AvaloniaProperty.Register<View, string>(nameof(Value));
+        public static readonly StyledProperty<object> ValueProperty =
+           AvaloniaProperty.Register<View, object>(nameof(Value));
 
         protected override Type StyleKeyOverride => typeof(View);
 
@@ -51,7 +53,7 @@ namespace UI.Controls.Base
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if(change.Property == ValueProperty)
+            if (change.Property == ValueProperty)
             {
                 var control = change.Sender as View;
                 control.Handle();
@@ -95,41 +97,16 @@ namespace UI.Controls.Base
                     }
                     else if (Condition.IndexOf("not empty") != -1)
                     {
-                        if (Value == null)
-                        {
-                            isShow = false;
-                        }
-                        else
-                        {
-                            var data = Value as IEnumerable<object>;
-                            if (data != null)
-                            {
-                                isShow = data.Count() > 0;
-                            }
-                            else
-                            {
-                                isShow = !string.IsNullOrEmpty(Value.ToString());
-                            }
-                        }
+                        isShow = Value != null &&
+                         (Value is IEnumerable data && data.Cast<object>().Any() ||
+                          !string.IsNullOrEmpty(Value.ToString()));
                     }
                     else if (Condition.IndexOf("empty") != -1)
                     {
-                        if (Value == null)
-                        {
-                            isShow = true;
-                        }
-                        else
-                        {
-                            var data = Value as IEnumerable<object>;
-                            if (data != null)
-                            {
-                                isShow = data.Count() == 0;
-                            }
-                            else
-                            {
-                                isShow = string.IsNullOrEmpty(Value.ToString());
-                            }
-                        }
+                        isShow = (Value == null) ||
+                              (Value is IList<object> c && c.Count == 0) ||
+                              (Value is IList data && data.Count == 0) ||
+                              string.IsNullOrEmpty(Value?.ToString());
                     }
                     else
                     {

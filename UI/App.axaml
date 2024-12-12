@@ -15,59 +15,7 @@
 				<ResourceInclude Source="/Resources/Themes/Dark.axaml"/>
 				<ResourceInclude Source="/Resources/Themes/Common.axaml"/>
 				<!--<ResourceInclude Source="/Resources/Themes/Light.axaml"/>-->
-				<ResourceInclude Source="/Resources/Localization/StringResources.cn.axaml"/>
-				<ResourceInclude Source="/Themes/Base/Icon.axaml"/>
-				<ResourceInclude Source="/Themes/Base/Img.axaml"/>
-				<ResourceInclude Source="/Themes/Base/View.axaml"/>
-				<ResourceInclude Source="/Themes/Base/Placeholder.axaml"/>
-				<ResourceInclude Source="/Themes/Base/EmptyData.axaml"/>
-				<ResourceInclude Source="/Themes/Base/Text.axaml"/>
-				<ResourceInclude Source="/Themes/Base/ColorSelect.axaml"/>
-				<ResourceInclude Source="/Themes/Base/IconSelect.axaml"/>
-				
-				<ResourceInclude Source="/Themes/Toggle/Toggle.axaml"/>
-				
-				<ResourceInclude Source="/Themes/Select/DateSelect.axaml"/>
-				<ResourceInclude Source="/Themes/Select/Select.axaml"/>
-				<ResourceInclude Source="/Themes/Select/Option.axaml"/>
-				
-				
-				<ResourceInclude Source="/Themes/SettingPanel/SettingPanel.axaml"/>
-				<ResourceInclude Source="/Themes/SettingPanel/SettingPanelItem.axaml"/>
-				<ResourceInclude Source="/Themes/SettingPanel/SettingPanelMultiItem.axaml"/>
-			
-				
-				<ResourceInclude Source="/Themes/Window/DefaultWIndow.axaml"/>
-				<ResourceInclude Source="/Themes/Window/HideWindow.axaml"/>
-				
-				<ResourceInclude Source="/Themes/Navigation/Navigation.axaml"/>
-				<ResourceInclude Source="/Themes/Navigation/NavigationItem.axaml"/>
-				
-				<ResourceInclude Source="/Themes/Button/IconButton.axaml"/>
-				<ResourceInclude Source="/Themes/Button/Button.axaml"/>
-				
-				<ResourceInclude Source="/Themes/Input/InputBox.axaml"/>
-				
-				<ResourceInclude Source="/Themes/List/BaseList.axaml"/>
-				<ResourceInclude Source="/Themes/List/BaseListItem.axaml"/>
-				
-				<ResourceInclude Source="/Themes/DatePickerBar/DatePickerBar.axaml"/>
-				<ResourceInclude Source="/Themes/DatePickerBar/DatePickerBarItem.axaml"/>
-				
-
-				<ResourceInclude Source="/Themes/Charts/Charts.axaml"/>
-				<ResourceInclude Source="/Themes/Charts/ChartsItemTypeCard.axaml"/>
-				<ResourceInclude Source="/Themes/Charts/ChartsItemTypeList.axaml"/>
-				<ResourceInclude Source="/Themes/Charts/ChartsItemTypeMonth.axaml"/>
-				<ResourceInclude Source="/Themes/Charts/ChartsItemTypeRadar.axaml"/>
-				<ResourceInclude Source="/Themes/Charts/ChartsItemTypeColumn.axaml"/>
-				
-				<ResourceInclude Source="/Themes/ColorPicker/ColorPicker.axaml"/>
-			
-				
-				<ResourceInclude Source="/Themes/Tabbar/Tabbar.axaml"/>
-				<ResourceInclude Source="/Themes/PageContainer.axaml"/>
-				<ResourceInclude Source="/Themes/TPage.axaml"/>
+				<ResourceInclude Source="/Themes/Generic.axaml"/>
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>	
 	</Application.Resources>

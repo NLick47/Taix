@@ -4,16 +4,16 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
 			 xmlns:list="using:UI.Controls.List"
-			  xmlns:converter="using:UI.Controls.Converters"
-			  xmlns:Button="using:UI.Controls.Button"
-			  xmlns:input="using:UI.Controls.Input"
-			  xmlns:select="using:UI.Controls.Select"
+			 xmlns:converter="using:UI.Controls.Converters"
+			 xmlns:Button="using:UI.Controls.Button"
+			 xmlns:input="using:UI.Controls.Input"
+			 xmlns:select="using:UI.Controls.Select"
 			 xmlns:base="using:UI.Controls.Base"
 			 xmlns:toggle="using:UI.Controls.Toggle"
 			 xmlns:vm ="using:UI.ViewModels"
 			 xmlns:c="using:UI.Controls"
 			 x:DataType="vm:CategoryPageViewModel"
-		 IsFillPage="True"
+		     IsFillPage="True"
              x:Class="UI.Views.CategoryPage">
 	<Grid>
 		<Grid
@@ -200,6 +200,29 @@
 								</Style>
 
 								<Style Selector="ListBoxItem">
+									<Style Selector="^:pointerover Border#Border">
+										<Setter  Property="BorderBrush" Value="{DynamicResource ThemeBrush}"/>
+									</Style>
+
+									<Style Selector="^:pointerover /template/ ContentPresenter">
+										<Setter Property="Background" Value="{TemplateBinding Background}" />
+									</Style>
+
+									<Style Selector="^:selected /template/ ContentPresenter">
+										<Setter Property="Background" Value="{TemplateBinding Background}" />
+									</Style>
+
+									<Style Selector="^:selected:focus /template/ ContentPresenter">
+										<Setter Property="Background" Value="{TemplateBinding Background}" />
+									</Style>
+
+									<Style Selector="^:selected:pointerover /template/ ContentPresenter">
+										<Setter Property="Background" Value="{TemplateBinding Background}" />
+									</Style>
+
+									<Style Selector="^:selected:focus:pointerover /template/ ContentPresenter">
+										<Setter Property="Background" Value="{TemplateBinding Background}" />
+									</Style>
 									<Setter Property="Template">
 										<ControlTemplate>
 											<Grid>
@@ -247,10 +270,10 @@
 
 												</Grid.RowDefinitions>
 
-												<Rectangle HorizontalAlignment="Left"
+												<Ellipse  HorizontalAlignment="Left"
 														   Margin="10"
 														   VerticalAlignment="Top"
-														   RadiusX="20" RadiusY="20"
+														  
 														   Width="15"
 														   Height="15"
 														   Fill="{Binding Data.Color,Converter={StaticResource HextoColorConverter}}"/>
@@ -324,7 +347,7 @@
 									<Setter Property="Template">
 										<ControlTemplate>
 											<Border>
-												<ItemsPresenter 
+												<ItemsPresenter
 													ItemsPanel="{TemplateBinding ItemsPanel}"/>
 											</Border>
 										</ControlTemplate>
@@ -332,6 +355,29 @@
 								</Style>
 
 								<Style Selector="ListBoxItem">
+									<Style Selector="^:pointerover Border#Border">
+										<Setter  Property="BorderBrush" Value="{DynamicResource ThemeBrush}"/>
+									</Style>
+
+									<Style Selector="^:pointerover /template/ ContentPresenter">
+										<Setter Property="Background" Value="{TemplateBinding Background}" />
+									</Style>
+
+									<Style Selector="^:selected /template/ ContentPresenter">
+										<Setter Property="Background" Value="{TemplateBinding Background}" />
+									</Style>
+
+									<Style Selector="^:selected:focus /template/ ContentPresenter">
+										<Setter Property="Background" Value="{TemplateBinding Background}" />
+									</Style>
+
+									<Style Selector="^:selected:pointerover /template/ ContentPresenter">
+										<Setter Property="Background" Value="{TemplateBinding Background}" />
+									</Style>
+
+									<Style Selector="^:selected:focus:pointerover /template/ ContentPresenter">
+										<Setter Property="Background" Value="{TemplateBinding Background}" />
+									</Style>
 									<Setter Property="Template">
 										<ControlTemplate>
 											<Grid>
@@ -377,22 +423,24 @@
 
 												</Grid.RowDefinitions>
 
-												<Rectangle HorizontalAlignment="Left" Margin="10,0,0,0" 
-														   VerticalAlignment="Center"  
-														   RadiusX="20" RadiusY="20" Width="15" Height="15" 
+												<Ellipse  HorizontalAlignment="Left"
+														   Margin="10"
+														   VerticalAlignment="Top"
+														   Width="15"
+														   Height="15"
 														   Fill="{Binding Data.Color,Converter={StaticResource HextoColorConverter}}"/>
-												
+
 												<Grid Grid.Row="1">
 													<base:Img Radius="8" Width="40" Height="40" URL="{Binding Data.IconFile}"/>
 												</Grid>
 
-												<TextBlock Foreground="{DynamicResource StandardTextBrush}" 
-														   HorizontalAlignment="Center" 
+												<TextBlock Foreground="{DynamicResource StandardTextBrush}"
+														   HorizontalAlignment="Center"
 														   VerticalAlignment="Center" Grid.Row="2" Text="{Binding Data.Name}"  FontSize="14"/>
 
 												<Border Grid.Row="3" >
-													<Border Margin="10,0,10,0" CornerRadius="10" Background="{DynamicResource CategoryAppNumBgBrush}" 
-															HorizontalAlignment="Right" VerticalAlignment="Center" 
+													<Border Margin="10,0,10,0" CornerRadius="10" Background="{DynamicResource CategoryAppNumBgBrush}"
+															HorizontalAlignment="Right" VerticalAlignment="Center"
 															Padding="10,5">
 														<TextBlock Foreground="{DynamicResource DefaultTextBrush}">
 															<Run Text="×"/>

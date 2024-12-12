@@ -76,11 +76,11 @@ namespace UI
 
             //  UI服务
             services.AddSingleton<IUIServicer, UIServicer>();
-            //services.AddSingleton<IAppContextMenuServicer, AppContextMenuServicer>();
+            services.AddSingleton<IAppContextMenuServicer, AppContextMenuServicer>();
             services.AddSingleton<IThemeServicer, ThemeServicer>();
             services.AddSingleton<IMainServicer, MainServicer>();
             //services.AddSingleton<IInputServicer, InputServicer>();
-            //services.AddSingleton<IWebSiteContextMenuServicer, WebSiteContextMenuServicer>();
+            services.AddSingleton<IWebSiteContextMenuServicer, WebSiteContextMenuServicer>();
             services.AddSingleton<IStatusBarIconServicer, StatusBarIconServicer>();
 
             services.AddSingleton<MainViewModel>();
@@ -108,15 +108,15 @@ namespace UI
             //  分类app
             services.AddTransient<CategoryAppListPage>();
             services.AddTransient<CategoryAppListPageViewModel>();
-            ////  分类站点
-            //services.AddTransient<CategoryWebSiteListPage>();
-            //services.AddTransient<CategoryWebSiteListPageVM>();
+            //  分类站点
+            services.AddTransient<CategoryWebSiteListPage>();
+            services.AddTransient<CategoryWebSiteListPageViewModel>();
             //  图表
             services.AddTransient<ChartPage>();
             services.AddTransient<ChartPageViewModel>();
-            ////  网站详情
+            //////  网站详情
             //services.AddTransient<WebSiteDetailPage>();
-            //services.AddTransient<WebSiteDetailPageVM>();
+            //services.AddTransient<WebS>();
         }
 
 

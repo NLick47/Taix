@@ -13,6 +13,7 @@ using UI.Models;
 using UI.Views;
 using Core.Librarys;
 using ReactiveUI;
+using UI.Servicers;
 
 namespace UI.ViewModels
 {
@@ -21,10 +22,9 @@ namespace UI.ViewModels
         private readonly ICategorys categorys;
         private readonly IData data;
         private readonly MainViewModel mainVM;
-        //private readonly IAppContextMenuServicer appContextMenuServicer;
-        //private readonly IInputServicer inputServicer;
+        private readonly IAppContextMenuServicer appContextMenuServicer;
         private readonly IWebData _webData;
-        //private readonly IWebSiteContextMenuServicer _webSiteContextMenu;
+        private readonly IWebSiteContextMenuServicer _webSiteContextMenu;
 
         private double totalTime_ = 0;
         private int appCount_ = 0;
@@ -33,15 +33,14 @@ namespace UI.ViewModels
         public List<SelectItemModel> ChartDataModeOptions { get; set; }
 
         public ChartPageViewModel(IData data, ICategorys categorys, MainViewModel mainVM, 
-            IWebData webData_)
+            IWebData webData_, IWebSiteContextMenuServicer webSiteContextMenu_, IAppContextMenuServicer appContextMenuServicer)
         {
             this.data = data;
             this.categorys = categorys;
             this.mainVM = mainVM;
-            //this.appContextMenuServicer = appContextMenuServicer;
-            //this.inputServicer = inputServicer;
+            this.appContextMenuServicer = appContextMenuServicer;
             _webData = webData_;
-            //_webSiteContextMenu = webSiteContextMenu_;
+            _webSiteContextMenu = webSiteContextMenu_;
 
             ToDetailCommand = ReactiveCommand.Create<object>(OnTodetailCommand);
             RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshCommand);
@@ -89,6 +88,8 @@ namespace UI.ViewModels
             InitializeAsync();
 
             PropertyChanged += ChartPageVM_PropertyChanged;
+            AppContextMenu = appContextMenuServicer.GetContextMenu();
+            WebSiteContextMenu = _webSiteContextMenu.GetContextMenu();
         }
 
         private async void InitializeAsync()

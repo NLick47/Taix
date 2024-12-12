@@ -15,6 +15,7 @@ using Core.Librarys;
 using UI.Views;
 using Avalonia;
 using Avalonia.Controls;
+using UI.Servicers;
 
 namespace UI.ViewModels
 {
@@ -27,6 +28,8 @@ namespace UI.ViewModels
         private readonly IMain mainServicer;
         private readonly IAppConfig appConfig;
         private readonly IWebData _webData;
+        private readonly IWebSiteContextMenuServicer _webSiteContextMenu;
+        private readonly IAppContextMenuServicer appContextMenuServicer;
 
         public List<SelectItemModel> MoreTypeOptions { get; private set; }
 
@@ -35,6 +38,8 @@ namespace UI.ViewModels
           MainViewModel main,
           IMain mainServicer,
           IAppConfig appConfig,
+          IWebSiteContextMenuServicer webSiteContext_,
+           IAppContextMenuServicer appContextMenuServicer,
           IWebData webData_)
         {
             this.data = data;
@@ -42,7 +47,8 @@ namespace UI.ViewModels
             this.mainServicer = mainServicer;
             this.appConfig = appConfig;
             _webData = webData_;
-
+            _webSiteContextMenu = webSiteContext_;
+            this.appContextMenuServicer = appContextMenuServicer;
             ToDetailCommand = ReactiveCommand.Create<object>(OnTodetailCommand);
             RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshCommand);
 
@@ -59,10 +65,9 @@ namespace UI.ViewModels
                 w as string
             };
             TabbarSelectedIndex = 0;
-            //AppContextMenu = appContextMenuServicer.GetContextMenu();
-            //WebSiteContextMenu = _webSiteContextMenu.GetContextMenu();
+            AppContextMenu = appContextMenuServicer.GetContextMenu();
+            WebSiteContextMenu = _webSiteContextMenu.GetContextMenu();
             PropertyChanged += IndexPageVM_PropertyChanged;
-            //inputServicer.OnKeyUpInput += InputServicer_OnKeyUpInput;
 
             await LoadData();
 
@@ -115,9 +120,9 @@ namespace UI.ViewModels
             }
         }
 
-        private async Task OnRefreshCommand(object obj)
+        private Task OnRefreshCommand(object obj)
         {
-            await LoadData();
+            return LoadData();
         }
 
         private async Task LoadData()

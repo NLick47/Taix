@@ -16,6 +16,7 @@ using System.Windows.Input;
 using UI.Models;
 using UI.Servicers;
 using UI.Views;
+using UI.Models.Category;
 using CategoryModel = UI.Models.Category.CategoryModel;
 namespace UI.ViewModels
 {
@@ -66,31 +67,31 @@ namespace UI.ViewModels
             this._uiServicer = uIServicer_;
             GotoListCommand = ReactiveCommand.Create<object>(OnGotoList);
             EditCommand = ReactiveCommand.Create<object>(OnEdit);
-            EditDoneCommand = ReactiveCommand.Create<object>(OnEditDone);
+            EditDoneCommand = ReactiveCommand.CreateFromTask<object>(OnEditDone);
             EditCloseCommand = ReactiveCommand.Create<object>(OnEditClose);
-            DelCommand = ReactiveCommand.Create<object>(OnDel);
-            RefreshCommand = ReactiveCommand.Create<object>(OnRefresh);
+            DelCommand = ReactiveCommand.CreateFromTask<object>(OnDel);
+            RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefresh);
             AddDirectoryCommand = ReactiveCommand.CreateFromTask<object>(OnAddDirectory);
             DirectoriesCommand = ReactiveCommand.Create<object>(OnDirectoriesCommand);
-            //LoadData();
-        }
-        private void OnRefresh(object obj)
-        {
             LoadData();
         }
+        private Task OnRefresh(object obj)
+        {
+           return LoadData();
+        }
 
 
-        private void OnDel(object obj)
+        private Task OnDel(object obj)
         {
             if (ShowType.Id == 0)
             {
-                DelAppCategory();
+                return DelAppCategory();
             }
             else if (ShowType.Id == 1)
             {
-                DelWebSiteCategory();
+                return DelWebSiteCategory();
             }
-
+            return Task.CompletedTask;
         }
 
         private void OnEditClose(object obj)
@@ -98,19 +99,20 @@ namespace UI.ViewModels
             EditVisibility = false;
         }
 
-        private void OnEditDone(object obj)
+        private  Task OnEditDone(object obj)
         {
             if (ShowType.Id == 0)
             {
-                EditAppCategoryAction();
+                return EditAppCategoryAction();
             }
             else if (ShowType.Id == 1)
             {
-                EditWebSiteCategoryAction();
+                return EditWebSiteCategoryAction();
             }
+            return Task.CompletedTask;
         }
 
-        private async void DelWebSiteCategory()
+        private async Task DelWebSiteCategory()
         {
             if (SelectedWebCategoryItem == null)
             {
@@ -119,7 +121,7 @@ namespace UI.ViewModels
             bool isConfirm = await _uiServicer.ShowConfirmDialogAsync("删除分类", "是否确认删除该分类？");
             if (isConfirm)
             {
-                _webData.DeleteWebSiteCategory(SelectedWebCategoryItem.Data);
+                await _webData.DeleteWebSiteCategory(SelectedWebCategoryItem.Data);
 
                 //  从界面移除
                 WebCategoryData.Remove(SelectedWebCategoryItem);
@@ -187,7 +189,7 @@ namespace UI.ViewModels
                 mainVM.Toast("请设置一个分类颜色", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                 return false;
             }
-            if (EditIconFile.IndexOf("pack://") == -1 && new FileInfo(EditIconFile).Length > 1000000)
+            if (EditIconFile.IndexOf("avares://") == -1 && new FileInfo(EditIconFile).Length > 1000000)
             {
                 mainVM.Toast("图标文件不能超过1MB", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                 return false;
@@ -195,7 +197,7 @@ namespace UI.ViewModels
             return true;
         }
 
-        private async void EditAppCategoryAction()
+        private async Task EditAppCategoryAction()
         {
             try
             {
@@ -295,7 +297,7 @@ namespace UI.ViewModels
             }
         }
 
-        private async void DelAppCategory()
+        private async Task DelAppCategory()
         {
             if (SelectedAppCategoryItem == null)
             {
@@ -329,7 +331,7 @@ namespace UI.ViewModels
             }
         }
 
-        private async void EditWebSiteCategoryAction()
+        private async Task EditWebSiteCategoryAction()
         {
             if (!IsEditVerify()) return;
 
@@ -415,7 +417,7 @@ namespace UI.ViewModels
                 category.IconFile = EditIconFile;
                 category.Color = EditColor;
 
-                _webData.UpdateWebSiteCategory(category);
+                await _webData.UpdateWebSiteCategory(category);
 
                 var item = WebCategoryData.Where(m => m.Data.ID == category.ID).FirstOrDefault();
                 var index = WebCategoryData.IndexOf(item);
@@ -464,25 +466,17 @@ namespace UI.ViewModels
             }
         }
 
-        private void CategoryPageVM_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(SelectedAppCategoryItem))
-            {
-                //  ();
-            }
-        }
-
         private void OnGotoList(object obj)
         {
             GotoList();
         }
 
-        private async void LoadData()
+        private async Task LoadData()
         {
-            Data = new ObservableCollection<CategoryModel>();
+            Data = new ();
             foreach (var item in categorys.GetCategories())
             {
-                Data.Add(new CategoryModel()
+                Data.Add(new ()
                 {
                     Count = appData.GetAppsByCategoryID(item.ID).Count,
                     Data = item
@@ -494,13 +488,13 @@ namespace UI.ViewModels
 
             foreach (var item in webCategories)
             {
-                webCategoryData.Add(new WebCategoryModel()
+                webCategoryData.Add(new ()
                 {
                     Data = item,
                     Count = await _webData.GetWebSitesCount(item.ID)
                 });
             }
-            WebCategoryData = new ObservableCollection<WebCategoryModel>(webCategoryData);
+            WebCategoryData = new (webCategoryData);
         }
 
         private void GotoList()
@@ -522,7 +516,6 @@ namespace UI.ViewModels
         public override void Dispose()
         {
             base.Dispose();
-            PropertyChanged -= CategoryPageVM_PropertyChanged;
             Data = null;
         }
 

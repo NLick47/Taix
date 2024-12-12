@@ -5,12 +5,15 @@ using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Core.Librarys;
 using Core.Servicers.Instances;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -332,7 +335,7 @@ namespace UI.Controls.Charts
             set { SetValue(IsShowCategoryProperty, value); }
         }
         public static readonly StyledProperty<bool> IsShowCategoryProperty =
-              AvaloniaProperty.Register<Charts, bool>(nameof(IsShowCategory),true);
+              AvaloniaProperty.Register<Charts, bool>(nameof(IsShowCategory), true);
 
         /// <summary>
         /// 图标大小（仅列表样式有效）
@@ -361,7 +364,7 @@ namespace UI.Controls.Charts
             {
                 charts.SetColBorderActiveBg((int)change.OldValue, (int)change.NewValue);
             }
-            
+
         }
 
         /// <summary>
@@ -427,7 +430,7 @@ namespace UI.Controls.Charts
             _searchBox = e.NameScope.Get<TextBox>("ASearchBox");
             if (ChartsType == ChartsType.Column)
             {
-                _typeColumnCanvas = e.NameScope.Get<Canvas>("TypeColumnCanvas") ;
+                _typeColumnCanvas = e.NameScope.Get<Canvas>("TypeColumnCanvas");
                 _typeColumnCanvas.SizeChanged += _typeColumnCanvas_SizeChanged;
             }
             if (ChartsType == ChartsType.Pie)
@@ -581,53 +584,72 @@ namespace UI.Controls.Charts
             }
 
             isRendering = false;
-          
+
             if (_searchBox != null)
             {
-                
                 _searchBox.TextChanged += SearchBox_TextChanged;
             }
 
-            _listView.PointerReleased += (s, e) =>
+            if (ItemMenu != null)
             {
-                if (e.InitialPressMouseButton == MouseButton.Left)
-                {
-                    _listView_MouseLeftButtonUp(s, e);
-                }
-
-                if (e.InitialPressMouseButton == MouseButton.Right)
-                {
-                    _listView_MouseRightButtonUp(s, e);
-                }
-            };
-
-
-            if (!IsCanScroll)
-            {
-                _listView.PointerWheelChanged += _listView_PreviewMouseWheel;
+                _listView.ContextMenu = ItemMenu;
+                ItemMenu.Opening += OnContextMenuOpening;
+                _listView.SelectionChanged += _listView_SelectionChanged;
             }
+
+
+            _listView.PointerReleased += OnListViewPointerReleased;
+
+
         }
-        private void _listView_PreviewMouseWheel(object sender, PointerWheelEventArgs e)
+
+        private void _listView_SelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
-            if (!e.Handled)
+            var list = sender as ListBox;
+            if (list != null && e.AddedItems.Count != 0)
             {
-                e.Handled = true;
-                e.Source = sender;
-                var parent = (sender as InputElement).Parent as InputElement;
-                parent?.RaiseEvent(e);
+                list.ContextMenu.Tag = e.AddedItems[0];
             }
         }
 
-        private void _listView_MouseRightButtonUp(object sender, PointerReleasedEventArgs e)
+        private void OnContextMenuOpening(object? sender, CancelEventArgs e)
         {
-            if (_listView.SelectedItem != null)
+            var menu = sender as ContextMenu;
+            if (string.IsNullOrEmpty(menu?.Tag?.ToString()))
             {
-                if (ItemMenu != null)
-                {
-                    //ItemMenu.IsOpen = true;
-                    ItemMenu.Tag = _listView.SelectedItem;
-                }
+                e.Cancel = true;
             }
+        }
+
+        private void OnListViewPointerReleased(object sender, PointerReleasedEventArgs e)
+        {
+            if (e.InitialPressMouseButton == MouseButton.Left)
+            {
+                _listView_MouseLeftButtonUp(sender, e);
+            }
+        }
+
+        protected override void OnUnloaded(RoutedEventArgs e)
+        {
+            base.OnUnloaded(e);
+
+            // 取消订阅事件
+            if (ItemMenu != null)
+            {
+                _listView.SelectionChanged -= _listView_SelectionChanged;
+                ItemMenu.Opening -= OnContextMenuOpening;
+            }
+            if (ChartsType == ChartsType.Column)
+            {
+                _typeColumnCanvas.SizeChanged -= _typeColumnCanvas_SizeChanged;
+            }
+            if (ChartsType == ChartsType.Pie)
+            {
+                _commonCanvas.SizeChanged -= _commonCanvas_SizeChanged;
+            }
+
+            _listView.PointerReleased -= OnListViewPointerReleased;
+            _searchBox.TextChanged -= SearchBox_TextChanged;
         }
 
         private void _listView_MouseLeftButtonUp(object sender, PointerReleasedEventArgs e)
@@ -1117,7 +1139,7 @@ namespace UI.Controls.Charts
             var topValueLine = new Line
             {
                 Stroke = new SolidColorBrush(Color.Parse("#ccc")),
-                StrokeDashArray = [ 2, 5 ],
+                StrokeDashArray = [2, 5],
                 StartPoint = new Point(colNameBottomMargin, colNameBottomMargin),
                 EndPoint = new Point(canvasWidth - colNameBottomMargin - topValueTextSize.Width, colNameBottomMargin),
                 StrokeThickness = 1
@@ -1131,7 +1153,7 @@ namespace UI.Controls.Charts
             midValueText.Text = Median;
             midValueText.FontSize = 12;
             midValueText.Foreground = UI.Base.Color.Colors.GetFromString("#ccc");
-            ToolTip.SetTip(midValueText,"中间值");
+            ToolTip.SetTip(midValueText, "中间值");
             var midValueTextSize = UIHelper.MeasureString(midValueText);
             midValueText.ZIndex = 1000;
             Canvas.SetRight(midValueText, 0);
@@ -1141,7 +1163,7 @@ namespace UI.Controls.Charts
             var midValueLine = new Line
             {
                 Stroke = UI.Base.Color.Colors.GetFromString("#ccc"),
-                StrokeDashArray = [2,5],
+                StrokeDashArray = [2, 5],
                 StrokeThickness = 1,
                 StartPoint = new Point(colNameBottomMargin, midY),
                 EndPoint = new Point(canvasWidth - colNameBottomMargin - midValueTextSize.Width, midY),
@@ -1158,7 +1180,7 @@ namespace UI.Controls.Charts
             avgValueText.Text = Covervalue(avg);
             avgValueText.FontSize = 12;
             avgValueText.Foreground = UI.Base.Color.Colors.GetFromString(StateData.ThemeColor);
-            ToolTip.SetTip(avgValueText,"平均值");
+            ToolTip.SetTip(avgValueText, "平均值");
             var avgValueTextSize = UIHelper.MeasureString(avgValueText);
             avgValueText.ZIndex = 1000;
             Canvas.SetRight(avgValueText, 0);
@@ -1168,11 +1190,11 @@ namespace UI.Controls.Charts
             var avgValueLine = new Line
             {
                 Stroke = UI.Base.Color.Colors.GetFromString(StateData.ThemeColor),
-                StrokeDashArray = [2,5],
+                StrokeDashArray = [2, 5],
                 StrokeThickness = 1,
             };
             avgValueLine.StartPoint = new Point(colNameBottomMargin, canvasHeight - avgY + colNameBottomMargin + avgValueLine.StrokeThickness);
-            avgValueLine.EndPoint = new Point(canvasWidth - colNameBottomMargin - avgValueTextSize.Width, 
+            avgValueLine.EndPoint = new Point(canvasWidth - colNameBottomMargin - avgValueTextSize.Width,
                 canvasHeight - avgY + colNameBottomMargin + avgValueLine.StrokeThickness);
             _typeColumnCanvas.Children.Add(avgValueLine);
 
@@ -1192,6 +1214,7 @@ namespace UI.Controls.Charts
             ColumnInfoList = infoList;
             isRendering = false;
         }
+
         #endregion
 
         #region 渲染雷达图
@@ -1253,6 +1276,8 @@ namespace UI.Controls.Charts
             isRendering = false;
         }
         #endregion
+
+
 
         private string Covervalue(double value)
         {

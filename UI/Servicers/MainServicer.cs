@@ -12,8 +12,8 @@ namespace UI.Servicers
     {
         private readonly IMain main;
         private readonly IThemeServicer themeServicer;
-        //private readonly IAppContextMenuServicer appContextMenuServicer;
-        //private readonly IWebSiteContextMenuServicer _webSiteContext;
+        private readonly IAppContextMenuServicer appContextMenuServicer;
+        private readonly IWebSiteContextMenuServicer _webSiteContext;
         private readonly IStatusBarIconServicer _statusBarIconServicer;
         private readonly IAppConfig _config;
         private bool isSelfStart = false;
@@ -21,10 +21,14 @@ namespace UI.Servicers
         public MainServicer(IMain main,
            IThemeServicer themeServicer,
             IStatusBarIconServicer statusBarIconServicer_,
+             IAppContextMenuServicer appContextMenuServicer,
+            IWebSiteContextMenuServicer webSiteContext_,
             IAppConfig config_)
         {
             this.main = main;
             this.themeServicer = themeServicer;
+            this.appContextMenuServicer = appContextMenuServicer;
+            _webSiteContext = webSiteContext_;
             _statusBarIconServicer = statusBarIconServicer_;
             _config = config_;
         }
@@ -38,9 +42,8 @@ namespace UI.Servicers
         private void Main_OnStarted(object sender, EventArgs e)
         {
             themeServicer.Init();
-            //inputServicer.Start();
-            //appContextMenuServicer.Init();
-            //_webSiteContext.Init();
+            appContextMenuServicer.Init();
+            _webSiteContext.Init();
             if (!isSelfStart)
             {
                 _statusBarIconServicer.ShowMainWindow();
