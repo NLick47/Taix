@@ -173,7 +173,10 @@ namespace UI.Controls
         private PageModel GetPage()
         {
             UserControl page = null;
-
+            if(PageCache.ContainsKey(Uri) && !IndexUriList.Contains(Uri))
+            {
+                return PageCache[Uri];
+            }
             Type pageType = Type.GetType(ProjectName + ".Views." + Uri);
             if (pageType != null)
             {

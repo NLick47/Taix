@@ -158,6 +158,7 @@
 											<TranslateTransform Y="-150"/>
 										</TransformGroup>
 									</Border.RenderTransform>
+									
 									<Border.Effect>
 										<DropShadowEffect BlurRadius="10" Color="Black" Opacity=".1"/>
 									</Border.Effect>
@@ -238,7 +239,9 @@
 								</Border>
 
 								<!--遮罩层-->
-								<Border x:Name="Masklayer" Background="Black" Opacity="0"></Border>
+								<Border x:Name="Masklayer" Background="Black" Opacity="0">
+
+								</Border>
 							</Grid>
 						</Grid>
 					</Border>

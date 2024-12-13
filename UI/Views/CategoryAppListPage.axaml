@@ -70,6 +70,22 @@
 
 									</ControlTemplate>
 								</Setter>
+
+								<Style Selector="^:pointerover /template/ Border">
+									<Setter Property="Background" Value="Transparent" />
+								</Style>
+
+								<Style Selector="^:selected /template/ Border">
+									<Setter Property="Background" Value="Transparent" />
+								</Style>
+								
+								<Style Selector="^:pointerover /template/ Border ContentPresenter">
+									<Setter Property="Background" Value="Transparent" />
+								</Style>
+
+								<Style Selector="^:selected /template/ Border ContentPresenter">
+									<Setter Property="Background" Value="Transparent" />
+								</Style>
 							</Style>
 						</ListBox.Styles>
 
@@ -123,7 +139,7 @@
 
 			<ListBox  Grid.Row="2" ItemsSource="{Binding Data}"
 					   SelectedItem="{Binding SelectedItem,Mode=TwoWay}"
-					   Margin="0,20,0,0">
+					   Margin="0,20,0,0" >
 				<ListBox.ContextMenu>
 					<ContextMenu>
 						<MenuItem Header="从分类中移除" Command="{Binding DelCommand}"
@@ -131,6 +147,12 @@
 					</ContextMenu>
 				</ListBox.ContextMenu>
 
+				<Interaction.Behaviors>
+					<EventTriggerBehavior EventName="PointerReleased">
+						<InvokeCommandAction Command="{Binding GotoDetailCommand}"
+											   CommandParameter="{Binding SelectedItem}" />
+					</EventTriggerBehavior>
+				</Interaction.Behaviors>
 				<!--<Interaction.Behaviors>
 							<EventTriggerBehavior EventName="PointerPressed">
 								<InvokeCommandAction Command="{Binding GotoDetailCommand}"
@@ -150,6 +172,17 @@
 					</Style>
 
 					<Style Selector="ListBoxItem">
+						<Style Selector="^:pointerover /template/ Grid Border ContentPresenter">
+							<Setter Property="Background" Value="Transparent" />
+						</Style>
+
+						<Style Selector="^:pointerover /template/ Grid Border">
+							<Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
+						</Style>
+						<Style Selector="^:selected /template/ Grid Border ContentPresenter">
+							<Setter Property="Background" Value="Transparent" />
+						</Style>
+
 						<Setter Property="Template">
 							<ControlTemplate>
 								<Grid>

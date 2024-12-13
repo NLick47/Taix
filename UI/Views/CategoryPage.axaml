@@ -170,10 +170,16 @@
 							<base:EmptyData/>
 						</base:View>
 
-						<ListBox Margin="10,20,10,0" ItemsSource="{Binding Data}"
-								 
+						<ListBox Margin="10,20,10,0"  ItemsSource="{Binding Data}"
+							
 								 SelectedItem="{Binding SelectedAppCategoryItem,Mode=TwoWay}"
 								  ScrollViewer.HorizontalScrollBarVisibility="Disabled" >
+							<Interaction.Behaviors>
+								<EventTriggerBehavior EventName="PointerReleased">
+									<InvokeCommandAction Command="{Binding GotoListCommand}"
+														   CommandParameter="{Binding SelectedAppCategoryItem}"/>
+								</EventTriggerBehavior>
+							</Interaction.Behaviors>
 
 							<ListBox.ContextMenu>
 								<ContextMenu>

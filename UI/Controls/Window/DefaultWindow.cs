@@ -1,16 +1,20 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data.Core;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Media.Transformation;
 using Avalonia.Threading;
 using ReactiveUI;
 using System;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using UI.Controls.Input;
 
 namespace UI.Controls.Window
@@ -133,7 +137,7 @@ namespace UI.Controls.Window
             }
             if (change.Property == IsShowToastProperty)
             {
-                //OnIsShowToastChanged(change);
+                OnIsShowToastChanged(change);
             }
         }
 
@@ -162,9 +166,22 @@ namespace UI.Controls.Window
         private InputBox InputModalInputBox;
         private string InputValue;
         private Func<string, bool> InputModalValidFnc;
-
-        private void ShowToast()
+        private CancellationTokenSource _toastCancellationTokenSource;
+        private async void ShowToast()
         {
+            if (_toastCancellationTokenSource != null)
+            {
+                if (!_toastCancellationTokenSource.TryReset())
+                {
+                    _toastCancellationTokenSource.Dispose();
+                    _toastCancellationTokenSource = new CancellationTokenSource();
+                }
+            }
+            else
+            {
+                _toastCancellationTokenSource = new CancellationTokenSource();
+            }
+
             ToastGrid.IsVisible = true;
             DialogBorder.IsVisible = false;
             if (!IsShowInputModal)
@@ -172,11 +189,92 @@ namespace UI.Controls.Window
                 InputModalBorder.IsVisible = false;
             }
             ToastBorder.IsVisible = true;
+            ToastBorder.RenderTransform = TransformOperations.Parse("translateY(0px)");
+            Masklayer.Opacity = 0.6;
+            ToastGrid.PointerPressed += ToastGrid_MouseLeftButtonDown;
+
+            try
+            {
+                await Task.Delay(3000, _toastCancellationTokenSource.Token);
+            }
+            catch (TaskCanceledException )
+            {
+            }
+            IsShowToast = false;
+        }
+
+        public Task<bool> ShowConfirmDialogAsync(string title_, string message_)
+        {
+            IsShowConfirmDialog = true;
+            ToastGrid.IsVisible = true;
+            ToastBorder.IsVisible = false;
+            DialogBorder.IsVisible = true;
+            InputModalBorder.IsVisible = false;
+
+            DialogMessage = message_;
+            DialogTitle = title_;
+            DialogBorder.RenderTransform = TransformOperations.Parse("translateY(0px)");
+            Masklayer.Opacity = 0;
+
+            return Task.Run(async () =>
+            {
+                while (IsShowConfirmDialog)
+                {
+                    await Task.Delay(10);
+                }
+
+                return IsDialogConfirm;
+            });
+        }
+
+        private void ToastGrid_MouseLeftButtonDown(object sender, PointerPressedEventArgs e)
+        {
+            IsShowToast = false;
+            _toastCancellationTokenSource?.Cancel();
+            ToastGrid.PointerPressed -= ToastGrid_MouseLeftButtonDown;
+        }
+
+        public Task<string> ShowInputModalAsync(string title_, string message_, string value_, Func<string, bool> validFnc_)
+        {
+            IsShowInputModal = true;
+            ToastGrid.IsVisible = true;
+            ToastBorder.IsVisible = false;
+            DialogBorder.IsVisible = false;
+            InputModalBorder.IsVisible = true;
+
+            DialogMessage = message_;
+            DialogTitle = title_;
+            InputModalValue = value_;
+            InputModalValidFnc = validFnc_;
+
+            InputModalInputBox.Text = InputModalValue;
+            InputModalBorder.RenderTransform = TransformOperations.Parse("translateY(10px)");
+
+            Masklayer.Opacity = 0.6;
+
+            return Task.Run(async () =>
+            {
+                while (IsShowInputModal)
+                {
+                    await Task.Delay(10);
+                }
+
+                if (IsDialogConfirm)
+                {
+                    return InputValue;
+                }
+                else
+                {
+                    throw new Exception("Input cancel");
+                }
+            });
         }
 
 
         private void HideToast()
         {
+            ToastBorder.RenderTransform = TransformOperations.Parse("translateY(-150px)");
+            Masklayer.Opacity = 0;
             ToastGrid.IsVisible = false;
         }
 
@@ -240,6 +338,71 @@ namespace UI.Controls.Window
             InputModalCancelBtn = e.NameScope.Find<Button.Button>("InputModalCancelBtn");
             InputModalConfirmBtn = e.NameScope.Find<Button.Button>("InputModalConfirmBtn");
             InputModalInputBox = e.NameScope.Find<InputBox>("InputModalInputBox");
+
+            if (CancelBtn != null)
+            {
+                CancelBtn.Click += (e, c) =>
+                {
+                    IsDialogConfirm = false;
+                    HideDialog();
+                };
+            }
+
+            if (ConfirmBtn != null)
+            {
+                ConfirmBtn.Click += (e, c) =>
+                {
+                    IsDialogConfirm = true;
+                    HideDialog();
+                };
+            }
+
+            if (InputModalCancelBtn != null)
+            {
+                InputModalCancelBtn.Click += (e, c) =>
+                {
+                    IsDialogConfirm = false;
+                    HideInputModal();
+                };
+            }
+
+            if (InputModalConfirmBtn != null)
+            {
+                InputModalConfirmBtn.Click += (e, c) =>
+                {
+                    if (InputModalValidFnc != null && !InputModalValidFnc(InputValue))
+                    {
+                        return;
+                    }
+                    IsDialogConfirm = true;
+                    HideInputModal();
+                };
+            }
+
+            if (InputModalInputBox != null)
+            {
+                InputModalInputBox.TextChanged += (e, c) =>
+                {
+                    InputValue = InputModalInputBox.Text;
+                };
+            }
+        }
+
+        private void HideDialog()
+        {
+            InputModalBorder.RenderTransform = TransformOperations.Parse("translateY(-150px)");
+            Masklayer.Opacity = 0;
+            ToastGrid.IsVisible = false;
+            IsShowConfirmDialog = false;
+        }
+
+        private void HideInputModal()
+        {
+
+            InputModalBorder.RenderTransform = TransformOperations.Parse("translateY(-150px)");
+            Masklayer.Opacity = 0;
+            ToastGrid.IsVisible = false;
+            IsShowInputModal = false;
         }
 
 

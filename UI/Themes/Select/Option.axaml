@@ -42,7 +42,6 @@
 		</Styles>
 		<Setter Property="Template">
 			<ControlTemplate>
-				<Border  HorizontalAlignment="Left" >
 					<Border CornerRadius="10" Background="{TemplateBinding Background}" Padding="10,8">
 						<Border>
 							<Grid>
@@ -99,7 +98,6 @@
 							</Grid>
 						</Border>
 					</Border>
-				</Border>
 			</ControlTemplate>
 		</Setter>
 	</ControlTheme>
