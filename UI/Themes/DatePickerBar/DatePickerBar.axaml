@@ -11,6 +11,15 @@
 					<Setter Property="IsVisible" Value="False"/>
 				</Style>
 			</Style>
+
+			<Style Selector="controls|DatePickerBar:pointerover  /template/ Border#Date">
+				<Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}"/>
+			</Style>
+
+			<Style Selector="controls|DatePickerBar[IsShowDatePickerPopup=True]  /template/ base|Icon#PopupIcon">
+				<Setter Property="RenderTransform" Value="rotate(-180deg)"/>
+				<Setter Property="Foreground" Value="{DynamicResource ThemeColor}"/>
+			</Style>
 		</Styles>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Template">
@@ -61,8 +70,25 @@
 										<base:Icon.RenderTransform>
 											<RotateTransform Angle="0" CenterX="12.5" CenterY="12.5"/>
 										</base:Icon.RenderTransform>
+
+										<base:Icon.Transitions>
+											<Transitions>
+												<TransformOperationsTransition 
+													Property="RenderTransform"
+													Duration="0.18"/>
+
+												<BrushTransition Property="Foreground" Duration="0.18"/>
+											</Transitions>
+										</base:Icon.Transitions>
 									</base:Icon>
 								</StackPanel>
+
+								<Border.Transitions>
+									<Transitions>
+										<BrushTransition Property="Background" Duration="0.18"/>
+									
+									</Transitions>
+								</Border.Transitions>
 							</Border>
 
 							<Popup

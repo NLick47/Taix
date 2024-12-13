@@ -1,6 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using DynamicData;
 using System;
 using System.Collections.Generic;
@@ -105,7 +107,7 @@ namespace UI.Controls.DatePickerBar
             //  填充年份数据
             YearsList.SelectedItem = DateTime.Now.Year.ToString();
             //YearsList.SelectedItem = "2073";
-
+            Date.PointerPressed += OnDatePointerPressed;
             for (int i = 2021; i <= DateTime.Now.Year; i++)
             {
                 YearsList.Items.Add(i.ToString());
@@ -128,6 +130,19 @@ namespace UI.Controls.DatePickerBar
                 MonthsList.SelectedItemChanged += DateChanged;
 
             }
+        }
+
+        private void OnDatePointerPressed(object? sender, PointerPressedEventArgs e)
+        {
+            IsShowDatePickerPopup = !IsShowDatePickerPopup;
+        }
+
+        protected override void OnUnloaded(RoutedEventArgs e)
+        {
+            base.OnUnloaded(e);
+            Date.PointerPressed -= OnDatePointerPressed;
+            MonthsList.SelectedItemChanged -= DateChanged;
+            YearsList.SelectedItemChanged -= DateChanged;
         }
 
         private void DateChanged(object sender, EventArgs e)
