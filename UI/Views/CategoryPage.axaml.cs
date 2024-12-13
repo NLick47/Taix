@@ -15,14 +15,16 @@ namespace UI.Views;
 public partial class CategoryPage : TPage
 {
     private CategoryPageViewModel _model;
+    private IDisposable _editIsDirectoryMatchSubscription;
+    private IDisposable _editDirectoriesSubscription;
     public CategoryPage(CategoryPageViewModel model)
     {
         InitializeComponent();
         _model = model;
         DataContext = model;
-        this.WhenAnyValue(x => x._model.EditIsDirectoryMath).Subscribe(HandleEditIsDirectoryMatchChange);
+        _editIsDirectoryMatchSubscription = this.WhenAnyValue(x => x._model.EditIsDirectoryMath).Subscribe(HandleEditIsDirectoryMatchChange);
 
-        this.WhenAnyValue(x => x._model.EditDirectories).Subscribe(val =>
+        _editDirectoriesSubscription = this.WhenAnyValue(x => x._model.EditDirectories).Subscribe(val =>
         {
             val.CollectionChanged += OnEditDirectoriesCollectionChanged;
         });
@@ -35,6 +37,17 @@ public partial class CategoryPage : TPage
             this.viewer.ScrollToEnd();
         }
        
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        _editIsDirectoryMatchSubscription.Dispose();
+        _editDirectoriesSubscription.Dispose();
+        if (_model?.EditDirectories != null)
+        {
+            _model.EditDirectories.CollectionChanged -= OnEditDirectoriesCollectionChanged;
+        }
     }
 
     private void HandleEditIsDirectoryMatchChange(bool isDirectoryMatch)

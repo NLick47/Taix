@@ -148,7 +148,7 @@ namespace UI.Servicers
             var site = data.Data as WebSiteModel;
             if (!string.IsNullOrEmpty(site.Domain))
             {
-                Process.Start($"http://{site.Domain}");
+                 Process.Start($"http://{site.Domain}");
                 _main.Info("操作已执行");
             }
         }

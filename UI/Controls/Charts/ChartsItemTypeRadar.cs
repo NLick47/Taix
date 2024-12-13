@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Core.Librarys;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -71,6 +72,7 @@ namespace UI.Controls.Charts
             {
                 return;
             }
+            canvas.Children.Clear();
             double size = Bounds.Width != double.NaN ? Bounds.Width : 200;
             //size -= 50;
             int count = Data.Count;
@@ -83,7 +85,7 @@ namespace UI.Controls.Charts
 
             var r = lineWidth / count;
 
-            //  多边形边框
+            //多边形边框
             for (int i = 0; i < 3; i++)
             {
                 var points = new List<Point>();
@@ -134,7 +136,7 @@ namespace UI.Controls.Charts
                 font.Text = Data[i].Name.Length > 4 ? Data[i].Name.Substring(0, 4) : Data[i].Name;
                 font.Foreground = UI.Base.Color.Colors.GetFromString("#7f7f7f");
                 font.FontSize = 12;
-                //font.ToolTip = $"{Data[i].Name} {Time.ToString((int)Data[i].Values.Sum())}";
+                ToolTip.SetTip(font, $"{Data[i].Name} {Time.ToString((int)Data[i].Values.Sum())}");
 
                 var textSize = MeasureString(font);
                 Debug.WriteLine(font.Text + " -> " + angle * i);

@@ -175,7 +175,7 @@ namespace Win
             if (!_processNameCache.TryGetValue(processId_, out var val) ||
                 (DateTime.Now - val.LastChecked).TotalSeconds > 600)
             {
-                var process = Process.GetProcessById(processId_);
+                using var process = Process.GetProcessById(processId_);
                 if (!string.IsNullOrEmpty(process?.ProcessName))
                 {
                     _processNameCache[processId_] = (process.ProcessName, DateTime.Now);

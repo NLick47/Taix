@@ -355,6 +355,7 @@ namespace UI.Controls.Charts
             if (change.Property == DataProperty && change.OldValue != change.NewValue)
             {
                 charts.Render();
+            
             }
             if (change.Property == IsLoadingProperty)
             {
@@ -587,12 +588,16 @@ namespace UI.Controls.Charts
 
             if (_searchBox != null)
             {
+                _searchBox.TextChanged -= SearchBox_TextChanged;
                 _searchBox.TextChanged += SearchBox_TextChanged;
             }
 
             if (ItemMenu != null)
             {
                 _listView.ContextMenu = ItemMenu;
+                ItemMenu.Opening -= OnContextMenuOpening;
+                _listView.SelectionChanged -= _listView_SelectionChanged;
+
                 ItemMenu.Opening += OnContextMenuOpening;
                 _listView.SelectionChanged += _listView_SelectionChanged;
             }
@@ -633,7 +638,6 @@ namespace UI.Controls.Charts
         {
             base.OnUnloaded(e);
 
-            // 取消订阅事件
             if (ItemMenu != null)
             {
                 _listView.SelectionChanged -= _listView_SelectionChanged;
@@ -647,7 +651,6 @@ namespace UI.Controls.Charts
             {
                 _commonCanvas.SizeChanged -= _commonCanvas_SizeChanged;
             }
-
             _listView.PointerReleased -= OnListViewPointerReleased;
             _searchBox.TextChanged -= SearchBox_TextChanged;
         }

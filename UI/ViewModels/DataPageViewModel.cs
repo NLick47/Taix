@@ -14,7 +14,6 @@ using System.Windows.Input;
 using UI.Controls.Charts.Model;
 using UI.Models;
 using UI.Views;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace UI.ViewModels
 {

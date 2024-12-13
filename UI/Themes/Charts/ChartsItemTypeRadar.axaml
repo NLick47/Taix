@@ -10,10 +10,10 @@
 		<Styles>
 			<Style Selector="controls|ChartsItemTypeRadar">
 				<Style Selector="^[IsLoading=True]">
-					<Style Selector="^#Loading">
+					<Style Selector="^ /template/ Grid#Loading">
 						<Setter Property="IsVisible" Value="True"/>
 					</Style>
-					<Style Selector="^#Normal">
+					<Style Selector="^ /template/ Grid#Normal">
 						<Setter Property="IsVisible" Value="False"/>
 					</Style>
 				</Style>
@@ -23,8 +23,8 @@
 		<Setter Property="Template">
 			<ControlTemplate>
 				<Grid Background="{TemplateBinding Background}">
-					<Grid x:Name="Normal">
-						<Canvas x:Name="Canvas" RenderTransformOrigin=".5,.5">
+					<Grid x:Name="Normal" UseLayoutRounding="True">
+						<Canvas x:Name="Canvas" UseLayoutRounding="True">
 							<Canvas.RenderTransform>
 								<RotateTransform Angle="-90"></RotateTransform>
 							</Canvas.RenderTransform>
@@ -34,14 +34,13 @@
 						<Rectangle x:Name="ValueBlockObj" Width="20"
                                 Height="20"   HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
-                                           Margin="0"
-                                            RenderTransformOrigin="0.5,0.5">
+                                           Margin="0" >
 							<Rectangle.Effect>
 								<BlurEffect   Radius="35" />
 							</Rectangle.Effect>
 
 							<Rectangle.Fill>
-								<LinearGradientBrush  EndPoint="2,1" StartPoint="-2,0">
+								<LinearGradientBrush  EndPoint="2,1" StartPoint="1,1">
 									<GradientStop Color="White"/>
 									<GradientStop Color="#ff305b" Offset="1"/>
 								</LinearGradientBrush>

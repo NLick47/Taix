@@ -1,29 +1,23 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Avalonia.Styling;
-using DynamicData.Binding;
+using Avalonia.Threading;
 using ReactiveUI;
-using SixLabors.ImageSharp.Processing;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UI.Controls.Button;
+using UI.Controls.Input;
 
 namespace UI.Controls.Window
 {
     public class DefaultWindow : Avalonia.Controls.Window
     {
-        public  static readonly StyledProperty<IImage?> IconSourceProperty =
+        public static readonly StyledProperty<IImage?> IconSourceProperty =
     AvaloniaProperty.Register<DefaultWindow, IImage?>(nameof(IconSource));
 
         public static readonly StyledProperty<bool> MaximizeVisibleProperty =
@@ -32,14 +26,88 @@ namespace UI.Controls.Window
         public static readonly StyledProperty<bool> RestoreVisibleProperty =
             AvaloniaProperty.Register<DefaultWindow, bool>(nameof(RestoreVisible));
 
-        public bool MaximizeVisible { get => GetValue(MaximizeVisibleProperty); set => SetValue(MaximizeVisibleProperty,value); }
-       
+        public bool MaximizeVisible { get => GetValue(MaximizeVisibleProperty); set => SetValue(MaximizeVisibleProperty, value); }
+
 
         public bool RestoreVisible { get => GetValue(RestoreVisibleProperty); set => SetValue(RestoreVisibleProperty, value); }
 
-        public static readonly StyledProperty<PageContainer> PageContainerProperty = 
+        public static readonly StyledProperty<PageContainer> PageContainerProperty =
             AvaloniaProperty.Register<DefaultWindow, PageContainer>(nameof(PageContainer));
         public PageContainer PageContainer { get { return GetValue(PageContainerProperty); } set { SetValue(PageContainerProperty, value); } }
+
+        public static readonly StyledProperty<ToastType> ToastTypeProperty =
+             AvaloniaProperty.Register<DefaultWindow, ToastType>(nameof(ToastType));
+        /// <summary>
+        /// toast type
+        /// </summary>
+        public ToastType ToastType
+        {
+            get { return GetValue(ToastTypeProperty); }
+            set { SetValue(ToastTypeProperty, value); }
+        }
+
+
+        public static readonly StyledProperty<string> DialogTitleProperty =
+            AvaloniaProperty.Register<DefaultWindow, string>(nameof(DialogTitle));
+
+        public static readonly StyledProperty<Base.IconTypes> ToastIconProperty =
+             AvaloniaProperty.Register<DefaultWindow, Base.IconTypes>(nameof(ToastIcon));
+
+        public static readonly StyledProperty<string> ToastContentProperty =
+              AvaloniaProperty.Register<DefaultWindow, string>(nameof(ToastContent));
+        /// <summary>
+        /// toast content
+        /// </summary>
+        public string ToastContent
+        {
+            get { return (string)GetValue(ToastContentProperty); }
+            set { SetValue(ToastContentProperty, value); }
+        }
+        public Base.IconTypes ToastIcon
+        {
+            get
+            {
+                return (Base.IconTypes)GetValue(ToastIconProperty);
+            }
+            set { SetValue(ToastIconProperty, value); }
+        }
+        /// <summary>
+        /// Dialog title
+        /// </summary>
+        public string DialogTitle
+        {
+            get { return (string)GetValue(DialogTitleProperty); }
+            set { SetValue(DialogTitleProperty, value); }
+        }
+
+
+        public static readonly StyledProperty<string> DialogMessageProperty =
+             AvaloniaProperty.Register<DefaultWindow, string>(nameof(DialogMessage));
+
+
+        public static readonly StyledProperty<string> InputModalValueProperty =
+             AvaloniaProperty.Register<DefaultWindow, string>(nameof(InputModalValue));
+        /// <summary>
+        /// Dialog title
+        /// </summary>
+        public string InputModalValue
+        {
+            get { return (string)GetValue(InputModalValueProperty); }
+            set { SetValue(InputModalValueProperty, value); }
+        }
+        /// <summary>
+        /// Dialog message
+        /// </summary>
+        public string DialogMessage
+        {
+            get { return (string)GetValue(DialogMessageProperty); }
+            set { SetValue(DialogMessageProperty, value); }
+        }
+
+        public static readonly StyledProperty<bool> IsShowToastProperty =
+             AvaloniaProperty.Register<DefaultWindow, bool>(nameof(IsShowToast));
+        public bool IsShowToast { get { return (bool)GetValue(IsShowToastProperty); } set { SetValue(IsShowToastProperty, value); } }
+
         #region sys command
         public static ReactiveCommand<Unit, Unit> MinimizeWindowCommand { get; private set; }
         public static ReactiveCommand<Unit, Unit> RestoreWindowCommand { get; private set; }
@@ -50,10 +118,12 @@ namespace UI.Controls.Window
         #endregion
 
 
+
+
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if(change.Property == PageContainerProperty)
+            if (change.Property == PageContainerProperty)
             {
                 OnPageContainerChanged(change);
             }
@@ -61,7 +131,55 @@ namespace UI.Controls.Window
             {
                 OnIsCanBackChanged(change);
             }
+            if (change.Property == IsShowToastProperty)
+            {
+                //OnIsShowToastChanged(change);
+            }
         }
+
+        private static void OnIsShowToastChanged(AvaloniaPropertyChangedEventArgs e)
+        {
+            var that = e.Sender as DefaultWindow;
+            if (that != null)
+            {
+                if (that.IsShowToast)
+                {
+                    that.ShowToast();
+                }
+                else
+                {
+                    that.HideToast();
+                }
+            }
+        }
+
+        private Border ToastBorder, Masklayer, DialogBorder, InputModalBorder;
+        private Grid ToastGrid;
+        private DispatcherTimer toastTimer;
+        private bool IsDialogConfirm;
+        private bool IsShowConfirmDialog, IsShowInputModal;
+        private Button.Button CancelBtn, ConfirmBtn, InputModalCancelBtn, InputModalConfirmBtn;
+        private InputBox InputModalInputBox;
+        private string InputValue;
+        private Func<string, bool> InputModalValidFnc;
+
+        private void ShowToast()
+        {
+            ToastGrid.IsVisible = true;
+            DialogBorder.IsVisible = false;
+            if (!IsShowInputModal)
+            {
+                InputModalBorder.IsVisible = false;
+            }
+            ToastBorder.IsVisible = true;
+        }
+
+
+        private void HideToast()
+        {
+            ToastGrid.IsVisible = false;
+        }
+
 
         private Grid titleBar;
 
@@ -71,7 +189,7 @@ namespace UI.Controls.Window
         public bool IsCanBack { get { return GetValue(IsCanBackProperty); } set { SetValue(IsCanBackProperty, value); } }
 
         public static readonly StyledProperty<bool> IsCanBackProperty =
-            AvaloniaProperty.Register<DefaultWindow,bool>(nameof(IsCanBack));
+            AvaloniaProperty.Register<DefaultWindow, bool>(nameof(IsCanBack));
 
         private static void OnIsCanBackChanged(AvaloniaPropertyChangedEventArgs e)
         {
@@ -104,7 +222,7 @@ namespace UI.Controls.Window
                         that.IsCanBack = pc?.Index >= 1;
                     };
                 }
-               
+
             }
         }
 
@@ -112,6 +230,16 @@ namespace UI.Controls.Window
         {
             base.OnApplyTemplate(e);
             titleBar = e.NameScope.Find<Grid>("TitleBar");
+            ToastBorder = e.NameScope.Find<Border>("ToastBorder");
+            Masklayer = e.NameScope.Find<Border>("Masklayer");
+            ToastGrid = e.NameScope.Find<Grid>("ToastGrid");
+            DialogBorder = e.NameScope.Find<Border>("DialogBorder");
+            CancelBtn = e.NameScope.Find<Button.Button>("CancelBtn");
+            ConfirmBtn = e.NameScope.Find<Button.Button>("ConfirmBtn");
+            InputModalBorder = e.NameScope.Find<Border>("InputModalBorder");
+            InputModalCancelBtn = e.NameScope.Find<Button.Button>("InputModalCancelBtn");
+            InputModalConfirmBtn = e.NameScope.Find<Button.Button>("InputModalConfirmBtn");
+            InputModalInputBox = e.NameScope.Find<InputBox>("InputModalInputBox");
         }
 
 
@@ -123,7 +251,8 @@ namespace UI.Controls.Window
             get => GetValue(IconSourceProperty);
             set => SetValue(IconSourceProperty, value);
         }
-        public DefaultWindow() {
+        public DefaultWindow()
+        {
             this.WhenAnyValue(x => x.MaximizeVisible, x => x.WindowState)
              .Subscribe(values =>
              {

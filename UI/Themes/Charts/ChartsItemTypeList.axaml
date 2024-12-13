@@ -111,7 +111,7 @@
 												<ControlTemplate>
 													<Border BorderBrush="Transparent"
 															BorderThickness="2" x:Name="Border"
-															x:DataType="model:ChartsDataModel"
+															x:DataType="model:ChartBadgeModel"
 															Background="{Binding Color,Converter={StaticResource HextoColorConverter}}"
 															Margin="5,0,0,0" Padding="6,4"
 															CornerRadius="6">

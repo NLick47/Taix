@@ -13,7 +13,8 @@
 		xmlns:control="using:UI.Controls"
 		PageContainer="{Binding PageContainer}"
 		xmlns:i="using:Avalonia.Xaml.Interactivity"
-		xmlns:ia="using:Avalonia.Xaml.Interactions.Core"	
+		xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
+		IsShowToast="{Binding IsShowToast,Mode=TwoWay}"
 		Height="553" Width="815" MinHeight="553" MinWidth="814"
         Title="Taix">
 	<Grid>

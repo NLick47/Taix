@@ -70,7 +70,6 @@ namespace UI
         private void ConfigureServices(IServiceCollection services)
         {
             //  ºËÐÄ·þÎñ
-            services.AddSingleton<IDatabase, Database>();
             services.AddSingleton<IAppTimerServicer, AppTimerServicer>();
             services.AddSingleton<IWebServer, WebServer>();
             services.AddSingleton<IMain, Main>();

@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace Core.Servicers.Instances
 {
@@ -16,12 +17,8 @@ namespace Core.Servicers.Instances
     {
         private List<AppModel> _apps;
 
-        private readonly IDatabase _databse;
         private readonly object _locker = new object();
-        public AppData(IDatabase databse)
-        {
-            _databse = databse;
-        }
+
         public List<AppModel> GetAllApps()
         {
             return _apps;
@@ -32,26 +29,22 @@ namespace Core.Servicers.Instances
             Debug.WriteLine("加载app开始");
             using (var db = new TaiDbContext())
             {
-                _apps = (
-                    from app in db.App
-                    join c in db.Categorys
-                    on app.CategoryID equals c.ID into itdata
-                    from n in itdata.DefaultIfEmpty()
-                    select app
-                    ).ToList()
-                    .Select(m => new AppModel
-                    {
-                        ID = m.ID,
-                        Category = m.Category != null ? m.Category : null,
-                        CategoryID = m.CategoryID,
-                        Description = m.Description,
-                        File = m.File,
-                        IconFile = m.IconFile,
-                        Name = m.Name,
-                        Alias = m.Alias,
-                        TotalTime = m.TotalTime
-                    })
-                    .ToList();
+                _apps = (from app in db.App
+                         join category in db.Categorys
+                         on app.CategoryID equals category.ID into categoryGroup
+                         from n in categoryGroup.DefaultIfEmpty()
+                         select new AppModel
+                         {
+                             ID = app.ID,
+                             Category = n,
+                             CategoryID = app.CategoryID,
+                             Description = app.Description,
+                             File = app.File,
+                             IconFile = app.IconFile,
+                             Name = app.Name,
+                             Alias = app.Alias,
+                             TotalTime = app.TotalTime
+                         }).ToList();
             }
         }
 
@@ -77,7 +70,6 @@ namespace Core.Servicers.Instances
                         app.Alias = app_.Alias;
                         db.SaveChanges();
                     }
-                    _databse.CloseWriter();
                 }
             }
             catch (Exception e)

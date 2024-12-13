@@ -126,7 +126,6 @@ namespace UI.Controls
                     vm?.Dispose();
                     page.Instance.Content = null;
                     page.Instance.DataContext = null;
-
                     PageCache.Remove(pageUri);
                 }
                 Historys.RemoveRange(preIndex, 1);
@@ -174,10 +173,7 @@ namespace UI.Controls
         private PageModel GetPage()
         {
             UserControl page = null;
-            if (PageCache.ContainsKey(Uri))
-            {
-                return PageCache[Uri];
-            }
+
             Type pageType = Type.GetType(ProjectName + ".Views." + Uri);
             if (pageType != null)
             {
@@ -226,7 +222,6 @@ namespace UI.Controls
                 {
                     Content = page.Instance;
 
-                    //  加入缓存
                     if (!PageCache.ContainsKey(Uri))
                     {
                         PageCache.Add(Uri, page);
@@ -235,7 +230,7 @@ namespace UI.Controls
                     //  滚动条位置处理
                     if (IsBack)
                     {
-                        ScrollViewer.Offset = new Vector(0, page.ScrollValue);
+                        ScrollViewer.Offset = new Vector(0, PageCache[Uri].ScrollValue);
                     }
                     else
                     {
@@ -263,6 +258,7 @@ namespace UI.Controls
                     vm?.Dispose();
                     page.Instance.Content = null;
                     page.Instance.DataContext = null;
+                    page.Instance = null;
                 }
                 PageCache.Clear();
             }

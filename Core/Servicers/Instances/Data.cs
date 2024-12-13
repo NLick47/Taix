@@ -24,12 +24,10 @@ namespace Core.Servicers.Instances
     public class Data : IData
     {
         private readonly IAppData _appData;
-        private readonly IDatabase _database;
         private readonly object setLock = new object();
-        public Data(IAppData appData_, IDatabase database_)
+        public Data(IAppData appData_)
         {
             _appData = appData_;
-            _database = database_;
         }
 
         public async Task UpdateAppDuration(string process_, int duration_, DateTime startTime_)
@@ -395,7 +393,7 @@ namespace Core.Servicers.Instances
             var data = await (from log in db.DailyLog
                               join app in db.App on log.AppModelID equals app.ID
                               where log.Date >= start.Date && log.Date <= end.Date
-                              group log by new { app.CategoryID, log.Date.Date } into g
+                              group log by new { app.CategoryID, log.Date } into g
                               select new CategoryHoursDataModel
                               {
                                   Total = g.Sum(log => log.Time),

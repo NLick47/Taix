@@ -24,12 +24,7 @@ namespace Core.Servicers.Instances
 {
     public class WebData : IWebData
     {
-        private readonly IDatabase _database;
         private readonly object _createUrlLocker = new object();
-        public WebData(IDatabase database)
-        {
-            _database = database;
-        }
 
         #region AddUrlBrowseTime
         public async Task AddUrlBrowseTime(Site site_, int duration_, DateTime? dateTime_ = null)
@@ -138,10 +133,6 @@ namespace Core.Servicers.Instances
             catch (Exception ex)
             {
                 Logger.Error($"在更新链接[{site_.Url}]时长[{duration_}]时异常，{ex}");
-            }
-            finally
-            {
-                _database.CloseWriter();
             }
 
         }

@@ -32,7 +32,7 @@ namespace UI.ViewModels
         public ICommand RefreshCommand { get; set; }
         public List<SelectItemModel> ChartDataModeOptions { get; set; }
 
-        public ChartPageViewModel(IData data, ICategorys categorys, MainViewModel mainVM, 
+        public ChartPageViewModel(IData data, ICategorys categorys, MainViewModel mainVM,
             IWebData webData_, IWebSiteContextMenuServicer webSiteContextMenu_, IAppContextMenuServicer appContextMenuServicer)
         {
             this.data = data;
@@ -134,7 +134,7 @@ namespace UI.ViewModels
                 }
             }
         }
-        private  Task OnRefreshCommand(object obj)
+        private Task OnRefreshCommand(object obj)
         {
             return LoadData();
         }
@@ -165,7 +165,7 @@ namespace UI.ViewModels
             }
             if (e.PropertyName == nameof(ColumnSelectedIndex))
             {
-               await  LoadSelectedColData();
+                await LoadSelectedColData();
             }
             if (e.PropertyName == nameof(ChartDataMode))
             {
@@ -181,35 +181,35 @@ namespace UI.ViewModels
             }
             if (e.PropertyName == nameof(WebColSelectedIndex))
             {
-               await LoadWebSitesColSelectedData();
+                await LoadWebSitesColSelectedData();
             }
         }
 
 
-        private async Task LoadData()
+        private Task LoadData()
         {
             if (TabbarSelectedIndex == 0)
             {
                 NameIndexStart = 0;
 
-               await LoadDayData();
+                return LoadDayData();
             }
             else if (TabbarSelectedIndex == 1)
             {
-               await LoadWeekData();
+                return LoadWeekData();
             }
             else if (TabbarSelectedIndex == 2)
             {
                 NameIndexStart = 1;
 
-               await LoadMonthlyData();
+                return LoadMonthlyData();
             }
             else if (TabbarSelectedIndex == 3)
             {
-              await  LoadYearData();
+                return LoadYearData();
             }
 
-            await LoadSelectedColData();
+            return LoadSelectedColData();
         }
 
         /// <summary>

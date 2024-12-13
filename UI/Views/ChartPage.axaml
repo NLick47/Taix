@@ -15,7 +15,10 @@
              x:Class="UI.Views.ChartPage">
 	<UserControl.ContextMenu>
 		<ContextMenu>
-			<MenuItem Header="刷新" Command="{Binding RefreshCommand}"/>
+			<MenuItem
+				HotKey="F5"
+				InputGesture="F5"
+				Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}"/>
 		</ContextMenu>
 	</UserControl.ContextMenu>
 

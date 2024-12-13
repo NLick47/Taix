@@ -83,7 +83,8 @@ namespace UI.Controls.Base
             {
                 Resource = new Bitmap(AssetLoader.Open(new Uri(defaultIconFile)));
             }
-           
+
+
         }
 
         protected override Type StyleKeyOverride => typeof(Img);
