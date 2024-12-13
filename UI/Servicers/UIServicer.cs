@@ -4,15 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UI.Controls.Window;
+using UI.Views;
 
 namespace UI.Servicers
 {
     public class UIServicer : IUIServicer
     {
-        private DefaultWindow _window;
-        public void InitWindow(DefaultWindow window_)
+        private readonly MainWindow _window;
+
+        public UIServicer(MainWindow window)
         {
-            _window = window_;
+            this._window = window;
         }
 
         public Task<bool> ShowConfirmDialogAsync(string title_, string message_)

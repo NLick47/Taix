@@ -179,7 +179,7 @@
 									Padding="15,15"
 									CornerRadius="10"
 									Width="300"
-									x:Name="DialogBorder" Background="White"
+									x:Name="DialogBorder" Background="{DynamicResource WindowContentBackground}"
 									HorizontalAlignment="Center"
 									VerticalAlignment="Top"  ZIndex="1000">
 									<Border.RenderTransform>
@@ -210,8 +210,9 @@
 									 Padding="15,15"
 									 CornerRadius="10"
 									 Width="350"
-									 x:Name="InputModalBorder" 
-									 Background="White" HorizontalAlignment="Center"
+									 x:Name="InputModalBorder"
+									 Background="{DynamicResource WindowContentBackground}"
+									 HorizontalAlignment="Center"
 									 VerticalAlignment="Top" ZIndex="1000">
 									<Border.RenderTransform>
 										<TransformGroup>
