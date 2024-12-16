@@ -130,21 +130,7 @@ namespace UI.Controls.Select
           
         }
 
-        protected override void OnLoaded(RoutedEventArgs e)
-        {
-            base.OnLoaded(e);
-            var root = this.GetVisualRoot() as Control;
-            root.PointerPressed += OnWindowPointerPressed;
-        }
-
-        private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
-        {
-            if(IsOpen && !SelectContainer.Bounds.Contains(e.GetPosition(sender as Control)) )
-            {
-                IsOpen = false;
-            }
-        }
-
+    
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
