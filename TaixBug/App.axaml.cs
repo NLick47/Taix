@@ -18,24 +18,13 @@ namespace TaixBug
             AvaloniaXamlLoader.Load(this);
         }
 
-        private bool IsRuned()
-        {
-            bool ret;
-            _mutex = new System.Threading.Mutex(true, System.Reflection.Assembly.GetEntryAssembly().ManifestModule.Name, out ret);
-            if (!ret)
-            {
-                return true;
-            }
-            return false;
-        }
-
         private void OnStartup(object sender, ControlledApplicationLifetimeStartupEventArgs e)
         {
             bool createdNew;
-            var mutexName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "TauxBug.exe" : "TauxBug";
-            _mutex = new Mutex(true, "mutexName", out createdNew);
+            var mutexName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "TaixBug.exe" : "TaixBug";
+            _mutex = new Mutex(true, mutexName, out createdNew);
             var desk = ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-            if (e.Args.Length == 0 || IsRuned())
+            if (e.Args.Length == 0 || !createdNew)
             {
                 desk.Shutdown();
             }

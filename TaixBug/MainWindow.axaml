@@ -41,7 +41,7 @@
 					<TextBlock Foreground="Gray" Text="Taix 发生了一个预料之外的错误！" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,0"/>
 					<TextBlock Foreground="Gray" TextWrapping="WrapWithOverflow"  FontSize="14" HorizontalAlignment="Center" Margin="0,10,0,0">
 						<Run Text="对此非常抱歉！本次崩溃的"/>
-						<HyperlinkButton ToolTip.Tip ="在资源文件管理器中定位到该日志文件" Click="LogHyperlinkClick">日志</HyperlinkButton>
+						<HyperlinkButton ToolTip.Tip ="在资源文件管理器中定位到该日志文件" Click="LogHyperlinkClick" Foreground="Blue">日志</HyperlinkButton>
 						<Run Text="已经保存，如果方便请将它提交给开发者处理，非常谢谢。"/>
 					</TextBlock>
 					<TextBlock Foreground="Gray" Text="如何给开发者提交日志？" FontSize="14" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,10,0,0"/>

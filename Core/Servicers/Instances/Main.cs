@@ -149,6 +149,7 @@ namespace Core.Servicers.Instances
 
             try
             {
+                CreateDirectory();
                 using TaiDbContext taiDb = new TaiDbContext();
                 var tableExists = taiDb.Database
                     .ExecuteSqlRaw("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'") == 1;
@@ -158,7 +159,6 @@ namespace Core.Servicers.Instances
                 {
                     await taiDb.Database.MigrateAsync();
                 }
-                CreateDirectory();
                 //  加载app信息
                 await appData.LoadAsync();
 

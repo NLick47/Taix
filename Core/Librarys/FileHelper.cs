@@ -18,7 +18,7 @@ namespace Core.Librarys
         /// <returns></returns>
         public static string GetRootDirectory()
         {
-            return Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            return AppContext.BaseDirectory;
         }
     }
 }

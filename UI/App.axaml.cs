@@ -128,7 +128,7 @@ namespace UI
         }
 
 
-        private void App_DispatcherUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private  void App_DispatcherUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             Logger.Error("[Program crash]" + e.ExceptionObject.ToString());
             Logger.Save(true);
