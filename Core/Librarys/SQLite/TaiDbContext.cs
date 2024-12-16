@@ -60,11 +60,6 @@ namespace Core.Librarys.SQLite
 
         }
 
-        public string ToTraceString<T>(IQueryable<T> query)
-        {
-            return ((System.Linq.IQueryable)query).Provider.ToString();
-        }
-
 
     }
 }

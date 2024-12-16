@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Styling;
 using Core.Servicers.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace UI.Servicers
     public interface IThemeServicer
     {
         void Init();
-        void LoadTheme(string themeName, bool isRefresh = false);
+        void LoadTheme(ThemeVariant theme, bool isRefresh = false);
         void SetMainWindow(MainWindow mainWindow);
 
         /// <summary>

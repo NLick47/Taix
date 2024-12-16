@@ -24,6 +24,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using Microsoft.EntityFrameworkCore;
+using Core.Models.Data;
 
 namespace Core.Servicers.Instances
 {
@@ -147,6 +149,15 @@ namespace Core.Servicers.Instances
 
             try
             {
+                using TaiDbContext taiDb = new TaiDbContext();
+                var tableExists = taiDb.Database
+                    .ExecuteSqlRaw("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'") == 1;
+                string _dbFilePath = Path.Combine(FileHelper.GetRootDirectory(), "Data", "data.db");
+                bool fileExistsOrEmpty = File.Exists(_dbFilePath) && new FileInfo(_dbFilePath).Length == 0;
+                if (fileExistsOrEmpty || tableExists)
+                {
+                    await taiDb.Database.MigrateAsync();
+                }
                 CreateDirectory();
                 //  加载app信息
                 await appData.LoadAsync();

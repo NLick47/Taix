@@ -190,7 +190,7 @@ namespace UI.Servicers
         {
             var config = _appConfig.GetConfig();
 
-            if (!isInit && config.General.IsSaveWindowSize)
+            if (isInit && config.General.IsSaveWindowSize)
             {
                 _mainWindow.Width = config.General.WindowWidth;
                 _mainWindow.Height = config.General.WindowHeight;

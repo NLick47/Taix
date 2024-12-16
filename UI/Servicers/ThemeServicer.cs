@@ -22,16 +22,18 @@ namespace UI.Servicers
         private string themeName;
         private MainWindow mainWindow;
         private IReadOnlyList<IResourceProvider> MergedDictionaries;
-        private readonly string[] themeOptions = { "Light", "Dark" };
+        private readonly ThemeVariant[] themeOptions = { ThemeVariant.Default,ThemeVariant.Light,ThemeVariant.Dark};
         private readonly IAppConfig appConfig;
 
         public event EventHandler OnThemeChanged;
 
 
-        public ThemeServicer(IAppConfig appConfig)
+        public ThemeServicer(IAppConfig appConfig,MainWindow main)
         {
             this.appConfig = appConfig;
+            this.mainWindow = main;
             appConfig.ConfigChanged += AppConfig_ConfigChanged;
+            
         }
 
         private void AppConfig_ConfigChanged(Core.Models.Config.ConfigModel oldConfig, Core.Models.Config.ConfigModel newConfig)
@@ -79,11 +81,14 @@ namespace UI.Servicers
 
         public void Init()
         {
+            var config = appConfig.GetConfig();
             LoadTheme(themeOptions[appConfig.GetConfig().General.Theme]);
+            HandleWindowSizeChangedEvent();
         }
 
-        public void LoadTheme(string themeName, bool isRefresh = false)
+        public void LoadTheme(ThemeVariant theme, bool isRefresh = false)
         {
+            mainWindow.RequestedThemeVariant = theme;
             UpdateThemeColor();
         }
 
@@ -105,7 +110,6 @@ namespace UI.Servicers
 
         public void SetMainWindow(MainWindow mainWindow)
         {
-            
            
         }
     }

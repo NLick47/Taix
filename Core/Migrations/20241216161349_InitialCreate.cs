@@ -12,103 +12,91 @@ namespace Core.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Categorys",
+                name: "CategoryModels",
                 columns: table => new
                 {
                     ID = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    IconFile = table.Column<string>(type: "TEXT", nullable: false),
-                    Color = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    IconFile = table.Column<string>(type: "TEXT", nullable: true),
+                    Color = table.Column<string>(type: "TEXT", nullable: true),
                     IsDirectoryMath = table.Column<bool>(type: "INTEGER", nullable: false),
-                    Directories = table.Column<string>(type: "TEXT", nullable: false)
+                    Directories = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Categorys", x => x.ID);
+                    table.PrimaryKey("PK_CategoryModels", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
-                name: "WebSiteCategories",
+                name: "WebSiteCategoryModels",
                 columns: table => new
                 {
                     ID = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    IconFile = table.Column<string>(type: "TEXT", nullable: false),
-                    Color = table.Column<string>(type: "TEXT", nullable: false)
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    IconFile = table.Column<string>(type: "TEXT", nullable: true),
+                    Color = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_WebSiteCategories", x => x.ID);
+                    table.PrimaryKey("PK_WebSiteCategoryModels", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
-                name: "WebUrls",
+                name: "WebUrlModels",
                 columns: table => new
                 {
                     ID = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Title = table.Column<string>(type: "TEXT", nullable: false),
-                    Url = table.Column<string>(type: "TEXT", nullable: false),
-                    IconFile = table.Column<string>(type: "TEXT", nullable: false)
+                    Title = table.Column<string>(type: "TEXT", nullable: true),
+                    Url = table.Column<string>(type: "TEXT", nullable: true),
+                    IconFile = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_WebUrls", x => x.ID);
+                    table.PrimaryKey("PK_WebUrlModels", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
-                name: "App",
+                name: "AppModels",
                 columns: table => new
                 {
                     ID = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Alias = table.Column<string>(type: "TEXT", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: false),
-                    File = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Alias = table.Column<string>(type: "TEXT", nullable: true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    File = table.Column<string>(type: "TEXT", nullable: true),
                     CategoryID = table.Column<int>(type: "INTEGER", nullable: false),
-                    IconFile = table.Column<string>(type: "TEXT", nullable: false),
+                    IconFile = table.Column<string>(type: "TEXT", nullable: true),
                     TotalTime = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_App", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_App_Categorys_CategoryID",
-                        column: x => x.CategoryID,
-                        principalTable: "Categorys",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                    table.PrimaryKey("PK_AppModels", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
-                name: "WebSites",
+                name: "WebSiteModels",
                 columns: table => new
                 {
                     ID = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Title = table.Column<string>(type: "TEXT", nullable: false),
-                    Domain = table.Column<string>(type: "TEXT", nullable: false),
-                    Alias = table.Column<string>(type: "TEXT", nullable: false),
+                    Title = table.Column<string>(type: "TEXT", nullable: true),
+                    Domain = table.Column<string>(type: "TEXT", nullable: true),
+                    Alias = table.Column<string>(type: "TEXT", nullable: true),
                     CategoryID = table.Column<int>(type: "INTEGER", nullable: false),
-                    IconFile = table.Column<string>(type: "TEXT", nullable: false),
+                    IconFile = table.Column<string>(type: "TEXT", nullable: true),
                     Duration = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_WebSites", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_WebSites_WebSiteCategories_CategoryID",
-                        column: x => x.CategoryID,
-                        principalTable: "WebSiteCategories",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                    table.PrimaryKey("PK_WebSiteModels", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
-                name: "DailyLog",
+                name: "DailyLogModels",
                 columns: table => new
                 {
                     ID = table.Column<int>(type: "INTEGER", nullable: false)
@@ -119,17 +107,11 @@ namespace Core.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DailyLog", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_DailyLog_App_AppModelID",
-                        column: x => x.AppModelID,
-                        principalTable: "App",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                    table.PrimaryKey("PK_DailyLogModels", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
-                name: "HoursLog",
+                name: "HoursLogModels",
                 columns: table => new
                 {
                     ID = table.Column<int>(type: "INTEGER", nullable: false)
@@ -140,17 +122,11 @@ namespace Core.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_HoursLog", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_HoursLog_App_AppModelID",
-                        column: x => x.AppModelID,
-                        principalTable: "App",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                    table.PrimaryKey("PK_HoursLogModels", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
-                name: "WebBrowserLogs",
+                name: "WebBrowseLogModels",
                 columns: table => new
                 {
                     ID = table.Column<int>(type: "INTEGER", nullable: false)
@@ -162,49 +138,37 @@ namespace Core.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_WebBrowserLogs", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_WebBrowserLogs_WebSites_SiteId",
-                        column: x => x.SiteId,
-                        principalTable: "WebSites",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_WebBrowserLogs_WebUrls_UrlId",
-                        column: x => x.UrlId,
-                        principalTable: "WebUrls",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                    table.PrimaryKey("PK_WebBrowseLogModels", x => x.ID);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_App_CategoryID",
-                table: "App",
+                name: "IX_AppModels_CategoryID",
+                table: "AppModels",
                 column: "CategoryID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DailyLog_AppModelID",
-                table: "DailyLog",
+                name: "IX_DailyLogModels_AppModelID",
+                table: "DailyLogModels",
                 column: "AppModelID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_HoursLog_AppModelID",
-                table: "HoursLog",
+                name: "IX_HoursLogModels_AppModelID",
+                table: "HoursLogModels",
                 column: "AppModelID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_WebBrowserLogs_SiteId",
-                table: "WebBrowserLogs",
+                name: "IX_WebBrowseLogModels_SiteId",
+                table: "WebBrowseLogModels",
                 column: "SiteId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_WebBrowserLogs_UrlId",
-                table: "WebBrowserLogs",
+                name: "IX_WebBrowseLogModels_UrlId",
+                table: "WebBrowseLogModels",
                 column: "UrlId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_WebSites_CategoryID",
-                table: "WebSites",
+                name: "IX_WebSiteModels_CategoryID",
+                table: "WebSiteModels",
                 column: "CategoryID");
         }
 
@@ -212,28 +176,28 @@ namespace Core.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "DailyLog");
+                name: "DailyLogModels");
 
             migrationBuilder.DropTable(
-                name: "HoursLog");
+                name: "HoursLogModels");
 
             migrationBuilder.DropTable(
-                name: "WebBrowserLogs");
+                name: "WebBrowseLogModels");
 
             migrationBuilder.DropTable(
-                name: "App");
+                name: "AppModels");
 
             migrationBuilder.DropTable(
-                name: "WebSites");
+                name: "WebSiteModels");
 
             migrationBuilder.DropTable(
-                name: "WebUrls");
+                name: "WebUrlModels");
 
             migrationBuilder.DropTable(
-                name: "Categorys");
+                name: "CategoryModels");
 
             migrationBuilder.DropTable(
-                name: "WebSiteCategories");
+                name: "WebSiteCategoryModels");
         }
     }
 }

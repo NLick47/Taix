@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Core.Migrations
 {
     [DbContext(typeof(TaiDbContext))]
-    [Migration("20241113032236_InitialCreate")]
+    [Migration("20241216161349_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -27,26 +27,21 @@ namespace Core.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Alias")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("CategoryID")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("File")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("IconFile")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("TotalTime")
@@ -56,7 +51,7 @@ namespace Core.Migrations
 
                     b.HasIndex("CategoryID");
 
-                    b.ToTable("App");
+                    b.ToTable("AppModels");
                 });
 
             modelBuilder.Entity("Core.Models.CategoryModel", b =>
@@ -66,27 +61,23 @@ namespace Core.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Color")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Directories")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("IconFile")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDirectoryMath")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("ID");
 
-                    b.ToTable("Categorys");
+                    b.ToTable("CategoryModels");
                 });
 
             modelBuilder.Entity("Core.Models.DailyLogModel", b =>
@@ -108,7 +99,7 @@ namespace Core.Migrations
 
                     b.HasIndex("AppModelID");
 
-                    b.ToTable("DailyLog");
+                    b.ToTable("DailyLogModels");
                 });
 
             modelBuilder.Entity("Core.Models.Db.WebBrowseLogModel", b =>
@@ -135,7 +126,7 @@ namespace Core.Migrations
 
                     b.HasIndex("UrlId");
 
-                    b.ToTable("WebBrowserLogs");
+                    b.ToTable("WebBrowseLogModels");
                 });
 
             modelBuilder.Entity("Core.Models.Db.WebSiteCategoryModel", b =>
@@ -145,20 +136,17 @@ namespace Core.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Color")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("IconFile")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("ID");
 
-                    b.ToTable("WebSiteCategories");
+                    b.ToTable("WebSiteCategoryModels");
                 });
 
             modelBuilder.Entity("Core.Models.Db.WebSiteModel", b =>
@@ -168,32 +156,28 @@ namespace Core.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Alias")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("CategoryID")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Domain")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Duration")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("IconFile")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("ID");
 
                     b.HasIndex("CategoryID");
 
-                    b.ToTable("WebSites");
+                    b.ToTable("WebSiteModels");
                 });
 
             modelBuilder.Entity("Core.Models.Db.WebUrlModel", b =>
@@ -203,20 +187,17 @@ namespace Core.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("IconFile")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Url")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("ID");
 
-                    b.ToTable("WebUrls");
+                    b.ToTable("WebUrlModels");
                 });
 
             modelBuilder.Entity("Core.Models.HoursLogModel", b =>
@@ -238,7 +219,7 @@ namespace Core.Migrations
 
                     b.HasIndex("AppModelID");
 
-                    b.ToTable("HoursLog");
+                    b.ToTable("HoursLogModels");
                 });
 
             modelBuilder.Entity("Core.Models.AppModel", b =>

@@ -394,6 +394,8 @@ namespace UI.Controls.SettingPanel
         private Control RenderBooleanConfigControl(ConfigAttribute configAttribute, PropertyInfo pi)
         {
             var inputControl = new Toggle.Toggle();
+            inputControl.OnText = "开";
+            inputControl.OffText = "关";
             inputControl.ToggleChanged += (e, c) =>
             {
                 pi.SetValue(configData, inputControl.IsChecked);

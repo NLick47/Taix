@@ -7,6 +7,7 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Media.Transformation;
 using Avalonia.Threading;
 using Core.Librarys;
 using Core.Servicers.Instances;
@@ -1283,6 +1284,18 @@ namespace UI.Controls.Charts
                 return;
             }
             _commonCanvas.Children.Clear();
+            if(Data?.Count() == 0)
+            {
+                _commonCanvas.Children.Add(new EmptyData() { RenderTransform = new TransformGroup 
+                { 
+                    Children = 
+                    [
+                        new TranslateTransform(-15, 0),
+                        new ScaleTransform(0.8, 0.8)
+                    ]
+                } });
+                return;
+            }
             var item = new ChartsItemTypePie();
             item.Width = _commonCanvas.Bounds.Width;
             item.Height = _commonCanvas.Bounds.Height;
