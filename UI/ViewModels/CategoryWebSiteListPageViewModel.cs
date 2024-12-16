@@ -47,7 +47,7 @@ namespace UI.ViewModels
                 return;
             }
 
-            var list = await _webData.GetWebSites(Category.ID);
+            var list = await _webData.GetWebSitesAsync(Category.ID);
             CategoryWebSiteList = new System.Collections.ObjectModel.ObservableCollection<Core.Models.Db.WebSiteModel>(list);
 
             await LoadWebSiteOptionList();
@@ -59,7 +59,7 @@ namespace UI.ViewModels
         /// </summary>
         private async Task LoadWebSiteOptionList()
         {
-            var list = await _webData.GetUnSetCategoryWebSites();
+            var list = await _webData.GetUnSetCategoryWebSitesAsync();
             list = list.Concat(CategoryWebSiteList).OrderBy(m => m.Title).ToList();
 
             var optionList = new List<OptionModel>();
@@ -80,20 +80,19 @@ namespace UI.ViewModels
             _webSiteOptionsTemp = new List<OptionModel>(WebSiteOptionList);
         }
 
-        private Task OnDel(object obj)
+        private async Task OnDel(object obj)
         {
             if (SelectedItem != null)
             {
-                _webData.UpdateWebSitesCategory(new int[] { SelectedItem.ID }, 0);
+                await _webData.UpdateWebSitesCategoryAsync(new int[] { SelectedItem.ID }, 0);
                 CategoryWebSiteList.Remove(SelectedItem);
                 if (CategoryWebSiteList.Count == 0)
                 {
                     CategoryWebSiteList = new System.Collections.ObjectModel.ObservableCollection<WebSiteModel>();
                 }
 
-               return LoadWebSiteOptionList();
+               await LoadWebSiteOptionList();
             }
-            return Task.CompletedTask;
         }
 
         private void OnChooseClose(object obj)
@@ -132,7 +131,7 @@ namespace UI.ViewModels
             UpdateCategory();
         }
 
-        private void UpdateCategory()
+        private async void UpdateCategory()
         {
             var removeSiteList = WebSiteOptionList.Where(m => m.IsChecked == false && CategoryWebSiteList.Where(s => s.ID == m.WebSite.ID).Any()).Select(m => m.WebSite.ID).ToList();
             var addSiteList = WebSiteOptionList.Where(m => m.IsChecked == true && !CategoryWebSiteList.Where(s => s.ID == m.WebSite.ID).Any()).Select(m => m.WebSite).ToList();
@@ -160,13 +159,13 @@ namespace UI.ViewModels
             //  从分类中移除
             if (removeSiteList.Count > 0)
             {
-                _webData.UpdateWebSitesCategory(removeSiteList.ToArray(), 0);
+                await _webData.UpdateWebSitesCategoryAsync(removeSiteList.ToArray(), 0);
             }
 
             //  添加到分类
             if (addSiteList.Count > 0)
             {
-                _webData.UpdateWebSitesCategory(addSiteList.Select(m => m.ID).ToArray(), Category.ID);
+               await  _webData.UpdateWebSitesCategoryAsync(addSiteList.Select(m => m.ID).ToArray(), Category.ID);
             }
         }
 

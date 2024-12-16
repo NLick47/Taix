@@ -30,7 +30,7 @@ namespace Core.Servicers.Instances
             _appData = appData_;
         }
 
-        public async Task UpdateAppDuration(string process_, int duration_, DateTime startTime_)
+        public async Task UpdateAppDurationAsync(string process_, int duration_, DateTime startTime_)
         {
             //  过滤无效值
             if (string.IsNullOrEmpty(process_) || duration_ <= 0 || startTime_ == DateTime.MinValue) return;
@@ -176,7 +176,7 @@ namespace Core.Servicers.Instances
             }
         }
 
-        public async Task<IReadOnlyList<DailyLogModel>> GetTodaylogList()
+        public async Task<IReadOnlyList<DailyLogModel>> GetTodaylogListAsync()
         {
             using var db = new TaiDbContext();
             var today = DateTime.Now.Date;
@@ -184,7 +184,7 @@ namespace Core.Servicers.Instances
             return (await res.ToListAsync()).AsReadOnly();
         }
 
-        public async Task<IEnumerable<DailyLogModel>> GetDateRangelogList(DateTime start, DateTime end, int take = -1, int skip = -1)
+        public async Task<IEnumerable<DailyLogModel>> GetDateRangelogListAsync(DateTime start, DateTime end, int take = -1, int skip = -1)
         {
             IEnumerable<AppModel> apps = _appData.GetAllApps();
             using var db = new TaiDbContext();
@@ -225,7 +225,7 @@ namespace Core.Servicers.Instances
             return res;
         }
 
-        public Task<IEnumerable<DailyLogModel>> GetThisWeeklogList()
+        public Task<IEnumerable<DailyLogModel>> GetThisWeeklogListAsync()
         {
             DateTime weekStartDate = DateTime.Now, weekEndDate = DateTime.Now;
             if (DateTime.Now.DayOfWeek == DayOfWeek.Monday)
@@ -245,10 +245,10 @@ namespace Core.Servicers.Instances
                 weekEndDate = weekStartDate.Date.AddDays(6);
             }
 
-            return GetDateRangelogList(weekStartDate, weekEndDate);
+            return GetDateRangelogListAsync(weekStartDate, weekEndDate);
         }
 
-        public Task<IEnumerable<DailyLogModel>> GetLastWeeklogList()
+        public Task<IEnumerable<DailyLogModel>> GetLastWeeklogListAsync()
         {
             DateTime weekStartDate = DateTime.Now, weekEndDate = DateTime.Now;
 
@@ -260,10 +260,10 @@ namespace Core.Servicers.Instances
             weekStartDate = DateTime.Now.Date.AddDays(-6 - weekNum);
             weekEndDate = weekStartDate.AddDays(6);
 
-            return GetDateRangelogList(weekStartDate, weekEndDate);
+            return GetDateRangelogListAsync(weekStartDate, weekEndDate);
         }
 
-        public async Task<IReadOnlyList<DailyLogModel>> GetProcessMonthLogList(int appID, DateTime month)
+        public async Task<IReadOnlyList<DailyLogModel>> GetProcessMonthLogListAsync(int appID, DateTime month)
         {
             using var db = new TaiDbContext();
             var res = db.DailyLog.Include(m => m.AppModel).Where(
@@ -280,7 +280,7 @@ namespace Core.Servicers.Instances
         }
 
 
-        public async Task Clear(int appID, DateTime month)
+        public async Task ClearAsync(int appID, DateTime month)
         {
 
             using var db = new TaiDbContext();
@@ -297,7 +297,7 @@ namespace Core.Servicers.Instances
             await db.SaveChangesAsync();
         }
 
-        public Task<DailyLogModel> GetProcess(int appID, DateTime day)
+        public Task<DailyLogModel> GetProcessAsync(int appID, DateTime day)
         {
             var db = new TaiDbContext();
             var res = db.DailyLog.Where(m =>
@@ -320,7 +320,7 @@ namespace Core.Servicers.Instances
 
         }
 
-        public async Task<IReadOnlyList<ColumnDataModel>> GetCategoryHoursData(DateTime date)
+        public async Task<IReadOnlyList<ColumnDataModel>> GetCategoryHoursDataAsync(DateTime date)
         {
             var db = new TaiDbContext();
             //  查出有数据的分类
@@ -374,7 +374,7 @@ namespace Core.Servicers.Instances
             return list.AsReadOnly();
         }
 
-        public async Task<IReadOnlyList<ColumnDataModel>> GetCategoryRangeData(DateTime start, DateTime end)
+        public async Task<IReadOnlyList<ColumnDataModel>> GetCategoryRangeDataAsync(DateTime start, DateTime end)
         {
             using var db = new TaiDbContext();
             var categorys = await (from log in db.DailyLog
@@ -429,7 +429,7 @@ namespace Core.Servicers.Instances
             return list.AsReadOnly();
         }
 
-        public async Task<IReadOnlyList<ColumnDataModel>> GetCategoryYearData(DateTime date)
+        public async Task<IReadOnlyList<ColumnDataModel>> GetCategoryYearDataAsync(DateTime date)
         {
             using var db = new TaiDbContext();
 
@@ -495,7 +495,7 @@ namespace Core.Servicers.Instances
 
         }
 
-        public async Task<IReadOnlyList<ColumnDataModel>> GetAppDayData(int appID, DateTime date)
+        public async Task<IReadOnlyList<ColumnDataModel>> GetAppDayDataAsync(int appID, DateTime date)
         {
             using var db = new TaiDbContext();
             var endDate = date.Date.AddDays(1).AddSeconds(-1);
@@ -534,7 +534,7 @@ namespace Core.Servicers.Instances
             return list.AsReadOnly();
         }
 
-        public async Task<IReadOnlyList<ColumnDataModel>> GetAppRangeData(int appID, DateTime start, DateTime end)
+        public async Task<IReadOnlyList<ColumnDataModel>> GetAppRangeDataAsync(int appID, DateTime start, DateTime end)
         {
             using var db = new TaiDbContext();
             var data = await db.DailyLog
@@ -568,7 +568,7 @@ namespace Core.Servicers.Instances
             return list.AsReadOnly();
         }
 
-        public async Task<IReadOnlyList<ColumnDataModel>> GetAppYearData(int appID, DateTime date)
+        public async Task<IReadOnlyList<ColumnDataModel>> GetAppYearDataAsync(int appID, DateTime date)
         {
             using var db = new TaiDbContext();
             //  查出有数据的分类
@@ -609,7 +609,7 @@ namespace Core.Servicers.Instances
             return list.AsReadOnly();
         }
 
-        public async Task ClearRange(DateTime start, DateTime end)
+        public async Task ClearRangeAsync(DateTime start, DateTime end)
         {
             end = new DateTime(end.Year, end.Month, DateTime.DaysInMonth(end.Year, end.Month));
             var startDate = start.Date.ToString("yyyy-MM-01 00:00:00");
@@ -633,7 +633,7 @@ namespace Core.Servicers.Instances
             await db.SaveChangesAsync();
         }
 
-        public async Task ExportToExcel(string dir, DateTime start, DateTime end)
+        public async Task ExportToExcelAsync(string dir, DateTime start, DateTime end)
         {
             start = new DateTime(start.Year, start.Month, 1, 0, 0, 0);
             end = new DateTime(end.Year, end.Month, DateTime.DaysInMonth(end.Year, end.Month), 23, 59, 59);
@@ -684,7 +684,7 @@ namespace Core.Servicers.Instances
             }
         }
 
-        public Task<int> GetDateRangeAppCount(DateTime start, DateTime end)
+        public Task<int> GetDateRangeAppCountAsync(DateTime start, DateTime end)
         {
             IEnumerable<AppModel> apps = _appData.GetAllApps();
             using var db = new TaiDbContext();
@@ -695,7 +695,7 @@ namespace Core.Servicers.Instances
             return res;
         }
 
-        public async Task<IEnumerable<HoursLogModel>> GetTimeRangelogList(DateTime time)
+        public async Task<IEnumerable<HoursLogModel>> GetTimeRangelogListAsync(DateTime time)
         {
             time = new DateTime(time.Year, time.Month, time.Day, time.Hour, 0, 0);
             using var db = new TaiDbContext();
@@ -712,7 +712,7 @@ namespace Core.Servicers.Instances
             public int Total { get; set; }
             public DateTime Time { get; set; }
         }
-        public async Task<double[]> GetRangeTotalData(DateTime start, DateTime end)
+        public async Task<double[]> GetRangeTotalDataAsync(DateTime start, DateTime end)
         {
             var endTime = start.AddDays(1).AddSeconds(-1);
             using var db = new TaiDbContext();
@@ -764,7 +764,7 @@ namespace Core.Servicers.Instances
             }
         }
 
-        public async Task<double[]> GetMonthTotalData(DateTime date)
+        public async Task<double[]> GetMonthTotalDataAsync(DateTime date)
         {
             using var db = new TaiDbContext();
 
@@ -790,7 +790,7 @@ namespace Core.Servicers.Instances
             return result;
         }
 
-        public async Task Clear(int appID_)
+        public async Task ClearAsync(int appID_)
         {
             using var db = new TaiDbContext();
             var delDaily = await db.DailyLog.FirstAsync(x => x.AppModelID == appID_);

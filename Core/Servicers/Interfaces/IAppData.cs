@@ -33,7 +33,7 @@ namespace Core.Servicers.Interfaces
         /// <summary>
         /// 加载已存储的app列表，仅建议在启动时调用一次，无必要请勿再次调用
         /// </summary>
-        void Load();
+        Task LoadAsync();
         /// <summary>
         /// 获取app列表通过分类ID
         /// </summary>

@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using UI.Controls.Charts.Model;
 using UI.Models;
+using UI.Servicers;
 using UI.Views;
 
 namespace UI.ViewModels
@@ -22,16 +23,20 @@ namespace UI.ViewModels
         public ICommand ToDetailCommand { get; set; }
         private readonly IData data;
         private readonly MainViewModel main;
-        //private readonly IAppContextMenuServicer appContextMenuServicer;
+        private readonly IAppContextMenuServicer appContextMenuServicer;
         private readonly IAppConfig appConfig;
         private readonly IWebData _webData;
-        //private readonly IWebSiteContextMenuServicer _webSiteContextMenu;
+        private readonly IWebSiteContextMenuServicer _webSiteContextMenu;
 
-        public DataPageViewModel(IData data, MainViewModel main, IAppConfig appConfig, IWebData webData)
+        public DataPageViewModel(IData data, MainViewModel main, IAppConfig appConfig,
+            IWebSiteContextMenuServicer webSiteContextMenu,
+            IAppContextMenuServicer contextMenuServicer,IWebData webData)
         {
             this.data = data;
             this.main = main;
             this.appConfig = appConfig;
+            this.appContextMenuServicer = contextMenuServicer;
+            this._webSiteContextMenu = webSiteContextMenu;
             _webData = webData;
             ToDetailCommand = ReactiveCommand.Create<object>(OnTodetailCommand);
             Init();
@@ -55,7 +60,7 @@ namespace UI.ViewModels
 
             TabbarSelectedIndex = 0;
 
-            //AppContextMenu = appContextMenuServicer.GetContextMenu();
+            AppContextMenu = appContextMenuServicer.GetContextMenu();
         }
 
         private void OnTodetailCommand(object obj)
@@ -125,11 +130,11 @@ namespace UI.ViewModels
                 await LoadData(YearDate, 2);
                 if (ShowType.Id == 0)
                 {
-                    //AppContextMenu = appContextMenuServicer.GetContextMenu();
+                    AppContextMenu = appContextMenuServicer.GetContextMenu();
                 }
                 else
                 {
-                    //AppContextMenu = _webSiteContextMenu.GetContextMenu();
+                    AppContextMenu = _webSiteContextMenu.GetContextMenu();
                 }
             }
         }
@@ -160,12 +165,12 @@ namespace UI.ViewModels
             List<ChartsDataModel> chartData = new List<ChartsDataModel>();
             if (ShowType.Id == 0)
             {
-                var result = await data.GetDateRangelogList(dateStart, dateEnd);
+                var result = await data.GetDateRangelogListAsync(dateStart, dateEnd);
                 chartData = MapToChartsData(result);
             }
             else
             {
-                var result = await _webData.GetWebSiteLogList(dateStart, dateEnd);
+                var result = await _webData.GetWebSiteLogListAsync(dateStart, dateEnd);
                 chartData = MapToChartsWebData(result);
             }
 

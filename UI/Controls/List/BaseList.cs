@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using DynamicData;
 using MathNet.Numerics;
 using System;
@@ -44,12 +45,57 @@ namespace UI.Controls.List
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if(change.Property == ItemsProperty)
+            if (change.Property == ItemsProperty)
             {
+                (var oldVal, var newVal) = change.GetOldAndNewValue<ObservableCollection<string>>();
+                if (oldVal != null)
+                {
+                    oldVal.CollectionChanged -= Items_CollectionChanged;
+                }
                 var control = change.Sender as BaseList;
                 control.Render();
-                control.AddCollectionChangedHandler();  
+                control.AddCollectionChangedHandler();
             }
+        }
+
+        protected override void OnUnloaded(RoutedEventArgs e)
+        {
+            base.OnUnloaded(e);
+            UnsubscribeEvents();
+            if (Items != null) Items.CollectionChanged -= Items_CollectionChanged;
+        }
+
+        public void UnsubscribeEvents()
+        {
+            if (ItemsMap != null)
+            {
+                foreach (var item in ItemsMap)
+                {
+                    if (item != null)
+                    {
+                        item.PointerPressed -= ItemClick;
+                        item.Loaded -= HandleLoaded;
+                    }
+                }
+                ItemsMap.Clear();
+            }
+
+
+            if (Container?.Children != null)
+            {
+                foreach (var item in Container.Children)
+                {
+                    if (item != null)
+                    {
+                        item.PointerPressed -= ItemClick;
+                        item.Loaded -= HandleLoaded;
+                    }
+                }
+                Container.Children.Clear();
+            }
+
+            ItemsMap?.Clear();
+            Container?.Children?.Clear();
         }
 
         protected override Type StyleKeyOverride => typeof(BaseList);
@@ -79,6 +125,10 @@ namespace UI.Controls.List
                     RemoveItem(item as string);
                 }
             }
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+            {
+                UnsubscribeEvents();
+            }
         }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -93,9 +143,7 @@ namespace UI.Controls.List
         {
             if (Container != null)
             {
-                Container.Children.Clear();
-                ItemsMap.Clear();
-
+                UnsubscribeEvents();
                 if (Items == null)
                 {
                     return;
@@ -123,23 +171,38 @@ namespace UI.Controls.List
             {
                 itemControl.IsSelected = true;
 
-                itemControl.Loaded += (e, c) =>
-                {
-                    if (isHandleSelected)
-                    {
-                        return;
-                    }
-                    isHandleSelected = true;
-                    var pointInScrollViewer = itemControl.TranslatePoint(new Point(0, 0), ScrollViewer);
-                    if (pointInScrollViewer.HasValue)
-                    {
-                        ScrollViewer.Offset = new Vector(ScrollViewer.Offset.X, pointInScrollViewer.Value.Y);
-                    }
-                };
+                itemControl.Loaded += HandleLoaded;
             }
 
             ItemsMap.Add(itemControl);
             Container.Children.Add(itemControl);
+        }
+
+        void HandleLoaded(object sender, RoutedEventArgs e)
+        {
+            var control = sender as BaseListItem;
+            if (control != null)
+            {
+                var pointInScrollViewer = control.TranslatePoint(new Point(0, 0), ScrollViewer);
+                if (pointInScrollViewer.HasValue)
+                {
+                    ScrollViewer.Offset = new Vector(ScrollViewer.Offset.X, pointInScrollViewer.Value.Y);
+                }
+            }
+        }
+
+        private void OnItemControlLoaded(object sender, RoutedEventArgs e)
+        {
+            var itemControl = sender as BaseListItem;
+            if (itemControl != null)
+            {
+                bool isHandleSelected = false;
+                var pointInScrollViewer = itemControl.TranslatePoint(new Point(0, 0), ScrollViewer);
+                if (pointInScrollViewer.HasValue)
+                {
+                    ScrollViewer.Offset = new Vector(ScrollViewer.Offset.X, pointInScrollViewer.Value.Y);
+                }
+            }
         }
         private void RemoveItem(string item)
         {

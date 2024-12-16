@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,6 +10,8 @@ namespace Core.Models
     /// <summary>
     /// 每小时的使用数据
     /// </summary>
+    /// 
+    [Table("HoursLogModels")]
     public class HoursLogModel
     {
         public int ID { get; set; }

@@ -44,14 +44,25 @@ namespace UI.Controls.Charts
 
         protected override Type StyleKeyOverride => typeof(ChartsItemTypePie);
 
-        public ChartsItemTypePie()
+        protected override void OnLoaded(RoutedEventArgs e)
         {
-            Loaded += ChartsItemTypePie_Loaded;
+            base.OnLoaded(e);
+            Render();
         }
 
-        private void ChartsItemTypePie_Loaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded(RoutedEventArgs e)
         {
-            Render();
+            base.OnUnloaded(e);
+            foreach(var item in _paths)
+            {
+                item.PointerEntered -= Path_PointerEntered;
+                item.PointerExited -= Path_PointerExited;
+            }
+            foreach (var item in Children)
+            {
+                item.PointerEntered -= Path_PointerEntered;
+                item.PointerExited -= Path_PointerExited;
+            }
         }
 
         private void Render()

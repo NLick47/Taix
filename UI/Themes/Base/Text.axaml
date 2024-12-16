@@ -8,7 +8,7 @@
       <ControlTemplate>
 		  <Border  Background="{TemplateBinding Background}">
 			  <TextBlock 
-				  Text="{Binding Content_, RelativeSource={RelativeSource TemplatedParent}}"/>
+				  Text="{Binding TextValue, RelativeSource={RelativeSource TemplatedParent}}"/>
 		  </Border>
       </ControlTemplate>
     </Setter>

@@ -18,6 +18,10 @@ using UI.Controls.Window;
 using Platform;
 using Avalonia.Controls;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using System.Threading;
+
+
 #if WINDOWS
 using Win;
 #endif
@@ -38,10 +42,7 @@ namespace UI
         {
             Instance = this;
             AppDomain.CurrentDomain.UnhandledException += App_DispatcherUnhandledException;
-#if DEBUG
-            AppDomain.CurrentDomain.UnhandledException -= App_DispatcherUnhandledException;
 
-#endif
             var serviceCollection = new ServiceCollection();
             CreatePlatformInitializer(serviceCollection);
             ConfigureServices(serviceCollection);
@@ -121,9 +122,9 @@ namespace UI
             //  图表
             services.AddTransient<ChartPage>();
             services.AddTransient<ChartPageViewModel>();
-            //////  网站详情
-            //services.AddTransient<WebSiteDetailPage>();
-            //services.AddTransient<WebS>();
+            //  网站详情
+            services.AddTransient<WebSiteDetailPage>();
+            services.AddTransient<WebSiteDetailPageViewModel>();
         }
 
 
@@ -131,19 +132,33 @@ namespace UI
         {
             Logger.Error("[Program crash]" + e.ExceptionObject.ToString());
             Logger.Save(true);
-            string taiBugPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                "TaiBug.exe");
-            ProcessHelper.Run(taiBugPath, new string[] { string.Empty });
-
+            string taiBugPath = GetTaiBugPath();
+            if (File.Exists(taiBugPath))
+            {
+                ProcessHelper.Run(taiBugPath, new string[] { string.Empty });
+            }
+            else
+            {
+                Logger.Error("TaiBug executable not found at: " + taiBugPath);
+            }
         }
 
-        
-        
+        private static string GetTaiBugPath()
+        {
+            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string fileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "TaixBug.exe" : "TaixBug";
+            return Path.Combine(baseDirectory, fileName);
+        }
+
+
+
 
         private bool IsRuned()
         {
             bool ret;
-            mutex = new System.Threading.Mutex(true, System.Reflection.Assembly.GetEntryAssembly().ManifestModule.Name, out ret);
+            var b = System.Reflection.Assembly.GetEntryAssembly().ManifestModule.Name;
+            var mutexName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Taix.exe" : "Taix";
+            mutex = new System.Threading.Mutex(true, mutexName, out ret);
             if (!ret)
             {
 #if !DEBUG
@@ -159,9 +174,9 @@ namespace UI
             AvaloniaXamlLoader.Load(this);
         }
 
-        public override async void OnFrameworkInitializationCompleted()
+        public override  async void OnFrameworkInitializationCompleted()
         {
-            await OnStartup(this, Environment.GetCommandLineArgs());
+            await OnStartup(this, Environment.GetCommandLineArgs()).ConfigureAwait(false);
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {            
                 desktop.Exit += (e, r) =>
@@ -174,7 +189,7 @@ namespace UI
         }
 
 
-        private async Task OnStartup(object sender, string[] args)
+        private   async Task OnStartup(object sender, string[] args)
         {
             //  阻止多开进程
             if (IsRuned())
@@ -191,7 +206,15 @@ namespace UI
                     isSelfStart = true;
                 }
             }
-           await main.Start(isSelfStart).ConfigureAwait(false);
+            try
+            {
+                await main.Start(isSelfStart);
+            }
+            catch (Exception e)
+            {
+
+                throw;
+            }
         }
 
 

@@ -18,6 +18,7 @@ using UI.Servicers;
 using UI.Views;
 using UI.Models.Category;
 using CategoryModel = UI.Models.Category.CategoryModel;
+using DynamicData;
 namespace UI.ViewModels
 {
     public class CategoryPageViewModel : CategoryPageModel
@@ -57,7 +58,7 @@ namespace UI.ViewModels
         /// 目录菜单命令
         /// </summary>
         public ICommand DirectoriesCommand { get; private set; }
-        public CategoryPageViewModel(ICategorys categorys, MainViewModel mainVM, 
+        public CategoryPageViewModel(ICategorys categorys, MainViewModel mainVM,
             IAppData appData, IWebData webData_, IUIServicer uIServicer_)
         {
             this.categorys = categorys;
@@ -73,11 +74,11 @@ namespace UI.ViewModels
             RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefresh);
             AddDirectoryCommand = ReactiveCommand.CreateFromTask<object>(OnAddDirectory);
             DirectoriesCommand = ReactiveCommand.Create<object>(OnDirectoriesCommand);
-            LoadData();
+            LoadData().ConfigureAwait(false).GetAwaiter();
         }
         private Task OnRefresh(object obj)
         {
-           return LoadData();
+            return LoadData();
         }
 
 
@@ -99,7 +100,7 @@ namespace UI.ViewModels
             EditVisibility = false;
         }
 
-        private  Task OnEditDone(object obj)
+        private Task OnEditDone(object obj)
         {
             if (ShowType.Id == 0)
             {
@@ -121,7 +122,7 @@ namespace UI.ViewModels
             bool isConfirm = await _uiServicer.ShowConfirmDialogAsync("删除分类", "是否确认删除该分类？");
             if (isConfirm)
             {
-                await _webData.DeleteWebSiteCategory(SelectedWebCategoryItem.Data);
+                await _webData.DeleteWebSiteCategoryAsync(SelectedWebCategoryItem.Data);
 
                 //  从界面移除
                 WebCategoryData.Remove(SelectedWebCategoryItem);
@@ -138,8 +139,8 @@ namespace UI.ViewModels
             try
             {
                 var desk = App.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-                var result = await desk.MainWindow.StorageProvider.OpenFolderPickerAsync(new() { AllowMultiple = false});
-                if(result?.Count > 0)
+                var result = await desk.MainWindow.StorageProvider.OpenFolderPickerAsync(new() { AllowMultiple = false });
+                if (result?.Count > 0)
                 {
                     var path = result[0].Path.LocalPath;
                     if (EditDirectories.Contains(path))
@@ -216,7 +217,7 @@ namespace UI.ViewModels
 
                     EditVisibility = false;
 
-                    var res = await categorys.Create(new Core.Models.CategoryModel()
+                    var res = await categorys.CreateAsync(new Core.Models.CategoryModel()
                     {
                         Name = EditName,
                         IconFile = EditIconFile,
@@ -262,7 +263,7 @@ namespace UI.ViewModels
                         category.IsDirectoryMath = EditIsDirectoryMath;
                         category.Directories = directoriesStr;
 
-                        await categorys.Update(category);
+                        await categorys.UpdateAsync(category);
                     }
 
                     var item = Data.Where(m => m.Data.ID == SelectedAppCategoryItem.Data.ID).FirstOrDefault();
@@ -309,7 +310,7 @@ namespace UI.ViewModels
                 var category = categorys.GetCategory(SelectedAppCategoryItem.Data.ID);
                 if (category != null)
                 {
-                    await categorys.Delete(category);
+                    await categorys.DeleteAsync(category);
                     var apps = appData.GetAppsByCategoryID(category.ID);
                     foreach (var app in apps)
                     {
@@ -321,10 +322,6 @@ namespace UI.ViewModels
                     //  从界面移除
 
                     Data.Remove(SelectedAppCategoryItem);
-                    if (Data.Count == 0)
-                    {
-                        Data = new System.Collections.ObjectModel.ObservableCollection<CategoryModel>();
-                    }
                     mainVM.Toast("分类已删除", Controls.Window.ToastType.Success);
 
                 }
@@ -351,7 +348,7 @@ namespace UI.ViewModels
                     return;
                 }
 
-                var category = await _webData.CreateWebSiteCategory(new Core.Models.Db.WebSiteCategoryModel()
+                var category = await _webData.CreateWebSiteCategoryAsync(new Core.Models.Db.WebSiteCategoryModel()
                 {
                     Color = EditColor,
                     IconFile = EditIconFile,
@@ -417,7 +414,7 @@ namespace UI.ViewModels
                 category.IconFile = EditIconFile;
                 category.Color = EditColor;
 
-                await _webData.UpdateWebSiteCategory(category);
+                await _webData.UpdateWebSiteCategoryAsync(category);
 
                 var item = WebCategoryData.Where(m => m.Data.ID == category.ID).FirstOrDefault();
                 var index = WebCategoryData.IndexOf(item);
@@ -434,7 +431,10 @@ namespace UI.ViewModels
         {
             EditVisibility = true;
             IsCreate = obj == null;
-
+            if(EditDirectories.Count != 0)
+            {
+                EditDirectories.Clear();
+            }
             if (obj != null)
             {
                 var appCategory = obj as CategoryModel;
@@ -448,11 +448,8 @@ namespace UI.ViewModels
                     EditIsDirectoryMath = appCategory.Data.IsDirectoryMath;
                     if (appCategory.Data.Directories != null)
                     {
-                        EditDirectories = new System.Collections.ObjectModel.ObservableCollection<string>(appCategory.Data.DirectoryList);
-                    }
-                    else
-                    {
-                        EditDirectories = new System.Collections.ObjectModel.ObservableCollection<string>();
+                       
+                        EditDirectories.AddRange(appCategory.Data.DirectoryList);
                     }
                 }
             }
@@ -462,7 +459,7 @@ namespace UI.ViewModels
                 EditIconFile = "avares://Taix/Resources/Emoji/(1).png";
                 EditColor = "#00FFAB";
                 EditIsDirectoryMath = false;
-                EditDirectories = new System.Collections.ObjectModel.ObservableCollection<string>();
+              
             }
         }
 
@@ -473,28 +470,29 @@ namespace UI.ViewModels
 
         private async Task LoadData()
         {
-            Data = new ();
+            Data ??= new();
+            Data.Clear();
             foreach (var item in categorys.GetCategories())
             {
-                Data.Add(new ()
+                Data.Add(new()
                 {
                     Count = appData.GetAppsByCategoryID(item.ID).Count,
                     Data = item
                 });
             }
 
-            var webCategories = await _webData.GetWebSiteCategories();
+            var webCategories = await _webData.GetWebSiteCategoriesAsync();
             var webCategoryData = new List<WebCategoryModel>();
 
             foreach (var item in webCategories)
             {
-                webCategoryData.Add(new ()
+                webCategoryData.Add(new()
                 {
                     Data = item,
-                    Count = await _webData.GetWebSitesCount(item.ID)
+                    Count = await _webData.GetWebSitesCountAsync(item.ID)
                 });
             }
-            WebCategoryData = new (webCategoryData);
+            WebCategoryData = new(webCategoryData);
         }
 
         private void GotoList()

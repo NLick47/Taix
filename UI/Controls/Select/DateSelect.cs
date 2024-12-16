@@ -1,7 +1,9 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
@@ -125,20 +127,34 @@ namespace UI.Controls.Select
             Year = Date.Year;
             Month = Date.Month;
             SelectedDay = Date.Date;
+          
         }
 
-      
+        protected override void OnLoaded(RoutedEventArgs e)
+        {
+            base.OnLoaded(e);
+            var root = this.GetVisualRoot() as Control;
+            root.PointerPressed += OnWindowPointerPressed;
+        }
+
+        private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
+        {
+            if(IsOpen && !SelectContainer.Bounds.Contains(e.GetPosition(sender as Control)) )
+            {
+                IsOpen = false;
+            }
+        }
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
             if(change.Property == DateProperty)
             {
-                onDateChanged(change);
+                OnDateChanged(change);
             }
         }
 
-        private static void onDateChanged(AvaloniaPropertyChangedEventArgs e)
+        private static void OnDateChanged(AvaloniaPropertyChangedEventArgs e)
         {
             var control = e.Sender as DateSelect;
             control.Year = control.Date.Year;
@@ -161,6 +177,7 @@ namespace UI.Controls.Select
             IsOpen = false;
         }
 
+       
         private void OnSetMonth(object obj)
         {
             int newMonth = Month + int.Parse(obj.ToString());

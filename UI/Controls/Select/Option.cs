@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,6 +45,12 @@ namespace UI.Controls.Select
         public Option()
         {
             this.PointerPressed += OnPointerPressed;
+        }
+
+        protected override void OnUnloaded(RoutedEventArgs e)
+        {
+            base.OnUnloaded(e);
+            this.PointerPressed -= OnPointerPressed;
         }
 
         private void OnPointerPressed(object? sender, PointerPressedEventArgs e)

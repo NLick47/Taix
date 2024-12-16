@@ -19,6 +19,10 @@ using System.Linq.Expressions;
 
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using Microsoft.EntityFrameworkCore.Internal;
+using SkiaSharp;
+using NPOI.SS.Formula.Functions;
 
 namespace Core.Servicers.Instances
 {
@@ -27,7 +31,7 @@ namespace Core.Servicers.Instances
         private readonly object _createUrlLocker = new object();
 
         #region AddUrlBrowseTime
-        public async Task AddUrlBrowseTime(Site site_, int duration_, DateTime? dateTime_ = null)
+        public async Task AddUrlBrowseTimeAsync(Site site_, int duration_, DateTime? dateTime_ = null)
         {
             Debug.WriteLine("AddUrlBrowseTime");
             try
@@ -41,7 +45,7 @@ namespace Core.Servicers.Instances
                 var logTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, 0, 0);
                 if (dateTime.Minute == 59 && dateTime.Second == 59)
                 {
-                    AddUrlBrowseTime(site_, duration_, logTime.AddHours(1));
+                    await AddUrlBrowseTimeAsync(site_, duration_, logTime.AddHours(1));
                     return;
                 }
                 //  当前时段时长
@@ -127,7 +131,7 @@ namespace Core.Servicers.Instances
                 }
                 if (nextTimeDuration > 0)
                 {
-                    AddUrlBrowseTime(site_, nextTimeDuration, logTime.AddHours(1));
+                    await AddUrlBrowseTimeAsync(site_, nextTimeDuration, logTime.AddHours(1));
                 }
             }
             catch (Exception ex)
@@ -139,7 +143,7 @@ namespace Core.Servicers.Instances
         #endregion
 
         #region UpdateUrlFavicon
-        public async Task UpdateUrlFavicon(Site site_, string iconFile_)
+        public async Task UpdateUrlFaviconAsync(Site site_, string iconFile_)
         {
             if (string.IsNullOrEmpty(iconFile_) || string.IsNullOrEmpty(site_.Url))
             {
@@ -155,7 +159,7 @@ namespace Core.Servicers.Instances
             using (var db = new TaiDbContext())
             {
                 //  更新站点图标
-                var site = await GetCreateWebSite(db, site_.Url);
+                var site = await GetCreateWebSiteAsync(db, site_.Url);
                 Debug.WriteLine("UpdateUrlFavicon 获取站点数据");
                 if (site != null && (string.IsNullOrEmpty(site.IconFile) || (isIndex && site.IconFile != iconFile_)))
                 {
@@ -181,7 +185,7 @@ namespace Core.Servicers.Instances
         /// </summary>
         /// <param name="url_">URL</param>
         /// <returns></returns>
-        private async Task<WebSiteModel> GetCreateWebSite(TaiDbContext db, string url_)
+        private async Task<WebSiteModel> GetCreateWebSiteAsync(TaiDbContext db, string url_)
         {
             //  获取主域名
             string domain = UrlHelper.GetDomain(url_);
@@ -233,7 +237,7 @@ namespace Core.Servicers.Instances
         #endregion
 
         #region GetDateRangeWebSiteList
-        public async Task<IReadOnlyList<WebSiteModel>> GetDateRangeWebSiteList(DateTime start, DateTime end, int take = 0, int skip = -1, bool isTime_ = false)
+        public async Task<IReadOnlyList<WebSiteModel>> GetDateRangeWebSiteListAsync(DateTime start, DateTime end, int take = 0, int skip = -1, bool isTime_ = false)
         {
             if (isTime_)
             {
@@ -248,12 +252,13 @@ namespace Core.Servicers.Instances
             using (var db = new TaiDbContext())
             {
                 var data = db.WebBrowserLogs
-                .GroupBy(m => m.SiteId)
-                .Select(s => new
-                {
-                    Site = s.FirstOrDefault().Site,
-                    Duration = s.Sum(m => m.Duration)
-                });
+                    .Where(m => m.LogTime >= start && m.LogTime <= end && m.SiteId != 0)
+                    .GroupBy(m => m.SiteId)
+                    .Select(s => new
+                    {
+                        Site = s.FirstOrDefault().Site,
+                        Duration = s.Sum(m => m.Duration)
+                    });
 
                 if (skip > 0)
                 {
@@ -266,22 +271,19 @@ namespace Core.Servicers.Instances
                 }
 
                 data = data.OrderByDescending(m => m.Duration);
+                var list = (await data.ToListAsync()).Select(s => new WebSiteModel
+                {
+                    Alias = s.Site.Alias,
+                    Title = s.Site.Title,
+                    Domain = s.Site.Domain,
+                    CategoryID = s.Site.CategoryID,
+                    IconFile = s.Site.IconFile,
+                    ID = s.Site.ID,
+                    Duration = s.Duration,
+                });
 
-                //var list = await data.Select(s => new
-                //{
-                //    Alias = s.Site.Alias,
-                //    Title = s.Site.Title,
-                //    Domain = s.Site.Domain,
-                //    CategoryID = s.Site.CategoryID,
-                //    IconFile = s.Site.IconFile,
-                //    ID = s.Site.ID,
-                //    Duration = s.Duration,
-                //}).ToListAsync();
-
-                var list = await data.ToListAsync();
                 var result = JsonConvert.DeserializeObject<IReadOnlyList<WebSiteModel>>(JsonConvert.SerializeObject(list));
                 return result;
-
             }
         }
 
@@ -289,7 +291,7 @@ namespace Core.Servicers.Instances
         #endregion
 
         #region GetWebSiteCategories
-        public async Task<IReadOnlyList<WebSiteCategoryModel>> GetWebSiteCategories()
+        public async Task<IReadOnlyList<WebSiteCategoryModel>> GetWebSiteCategoriesAsync()
         {
             using (var db = new TaiDbContext())
             {
@@ -300,7 +302,7 @@ namespace Core.Servicers.Instances
         #endregion
 
         #region CreateWebSiteCategory
-        public async Task<WebSiteCategoryModel> CreateWebSiteCategory(WebSiteCategoryModel data_)
+        public async Task<WebSiteCategoryModel> CreateWebSiteCategoryAsync(WebSiteCategoryModel data_)
         {
             using (var db = new TaiDbContext())
             {
@@ -312,7 +314,7 @@ namespace Core.Servicers.Instances
         #endregion
 
         #region UpdateWebSiteCategory
-        public async Task UpdateWebSiteCategory(WebSiteCategoryModel data_)
+        public async Task UpdateWebSiteCategoryAsync(WebSiteCategoryModel data_)
         {
             using (var db = new TaiDbContext())
             {
@@ -323,7 +325,7 @@ namespace Core.Servicers.Instances
         #endregion
 
         #region DeleteWebSiteCategory
-        public async Task DeleteWebSiteCategory(WebSiteCategoryModel data_)
+        public async Task DeleteWebSiteCategoryAsync(WebSiteCategoryModel data_)
         {
             using (var db = new TaiDbContext())
             {
@@ -340,7 +342,7 @@ namespace Core.Servicers.Instances
         }
         #endregion
         #region GetWebSites
-        public async Task<IReadOnlyList<WebSiteModel>> GetWebSites(int categoryId_)
+        public async Task<IReadOnlyList<WebSiteModel>> GetWebSitesAsync(int categoryId_)
         {
             using (var db = new TaiDbContext())
             {
@@ -350,7 +352,7 @@ namespace Core.Servicers.Instances
         }
         #endregion
         #region GetWebSitesCount
-        public Task<int> GetWebSitesCount(int categoryId_)
+        public Task<int> GetWebSitesCountAsync(int categoryId_)
         {
             using (var db = new TaiDbContext())
             {
@@ -361,7 +363,7 @@ namespace Core.Servicers.Instances
 
         #endregion
         #region GetUnSetCategoryWebSites
-        public async Task<IReadOnlyList<WebSiteModel>> GetUnSetCategoryWebSites()
+        public async Task<IReadOnlyList<WebSiteModel>> GetUnSetCategoryWebSitesAsync()
         {
             using (var db = new TaiDbContext())
             {
@@ -373,7 +375,7 @@ namespace Core.Servicers.Instances
 
         #endregion
 
-        public async Task UpdateWebSitesCategory(int[] siteIds_, int categoryId_)
+        public async Task UpdateWebSitesCategoryAsync(int[] siteIds_, int categoryId_)
         {
             using var db = new TaiDbContext();
             var sitesToUpdate = await db.WebSites.Where(w => siteIds_.Contains(w.ID)).ToListAsync();
@@ -385,79 +387,58 @@ namespace Core.Servicers.Instances
 
         }
 
-        public async Task<IReadOnlyList<InfrastructureDataModel>> GetCategoriesStatistics(DateTime start_, DateTime end_)
+        public async Task<IReadOnlyList<InfrastructureDataModel>> GetCategoriesStatisticsAsync(DateTime start_, DateTime end_)
         {
             using (var db = new TaiDbContext())
             {
                 var data = await db.WebBrowserLogs
-                .Where(log => log.LogTime >= start_ && log.LogTime <= end_.AddDays(1).AddTicks(-1)) // 筛选 LogTime
-                .Join(db.WebSites,
-                      log => log.SiteId,
-                      site => site.ID,
-                      (log, site) => new { log, site }) // 内连接并创建匿名对象
-                .Join(db.WebSiteCategories,
-                      combined => combined.site.CategoryID,
-                      category => category.ID,
-                      (combined, category) => new
-                      {
-                          combined.log.Duration,
-                          CategoryID = category.ID,
-                          CategoryName = category.Name
-                      })
-                .GroupBy(x => new
-                {
-                    x.CategoryID,
-                    x.CategoryName
-                })
-                .Select(group => new InfrastructureDataModel
-                {
-                    Value = group.Sum(x => x.Duration),
-                    ID = group.Key.CategoryID,
-                    Name = group.Key.CategoryName
-                })
-                .ToListAsync();
-                //  未分类
-
-
+                 .Join(db.WebSites,
+                       wbl => wbl.SiteId,
+                       ws => ws.ID,
+                       (wbl, ws) => new { wbl, ws })
+                 .Join(db.WebSiteCategories,
+                       x => x.ws.CategoryID,
+                       wsc => wsc.ID,
+                       (x, wsc) => new { x.wbl, x.ws, wsc })
+                 .Where(y => y.wbl.LogTime >= start_.Date && y.wbl.LogTime <= end_)
+                 .GroupBy(y => new { y.wsc.ID, y.wsc.Name })
+                 .Select(g => new InfrastructureDataModel
+                 {
+                     Value = g.Sum(y => y.wbl.Duration),
+                     ID = g.Key.ID,
+                     Name = g.Key.Name
+                 })
+                 .ToListAsync();
                 var noCategoryData = await db.WebBrowserLogs
-                .Where(log => log.LogTime >= start_ && log.LogTime <= end_.AddDays(1).AddTicks(-1))
-                .GroupJoin(db.WebSites,
-                           log => log.SiteId,
-                           site => site.ID,
-                           (log, siteGroup) => new { log, siteGroup })
-                .SelectMany(
-                    combined => combined.siteGroup.DefaultIfEmpty(),
-                    (combined, site) => new
-                    {
-                        combined.log.Duration,
-                        Site = site
-                    })
-                .Where(x => x.Site != null && x.Site.CategoryID == 0)
-                .GroupBy(x => new
-                {
-                    x.Site.CategoryID,
-                    x.Site.Title
-                })
-                .Select(group => new InfrastructureDataModel
-                {
-                    Value = group.Sum(x => x.Duration),
-                    ID = group.Key.CategoryID,
-                    Name = group.Key.Title
-                })
-                .ToListAsync();
+                     .Join(db.WebSites,
+                       wbl => wbl.SiteId,
+                       ws => ws.ID,
+                       (wbl, ws) => new { wbl, ws })
+                 .Where(x => x.ws.CategoryID == 0 &&
+                             x.wbl.LogTime >= start_.Date &&
+                             x.wbl.LogTime <= end_)
+                 .GroupBy(x => new { x.ws.CategoryID })
+                 .Select(g => new InfrastructureDataModel
+                 {
+                     Value = g.Sum(x => x.wbl.Duration),
+                     ID = g.Key.CategoryID,
+                     Name = g.FirstOrDefault(x => x.ws.CategoryID == g.Key.CategoryID).ws.Title
+                 })
+                 .ToListAsync();
+
                 var result = data.Concat(noCategoryData).ToList();
-                return result.AsReadOnly();
+                return result?.AsReadOnly();
             }
         }
 
-        public Task<WebSiteCategoryModel> GetWebSiteCategory(int categoryId_)
+        public Task<WebSiteCategoryModel> GetWebSiteCategoryAsync(int categoryId_)
         {
             using var db = new TaiDbContext();
             var result = db.WebSiteCategories.FirstOrDefaultAsync(m => m.ID == categoryId_);
             return result;
         }
 
-        public async Task<IReadOnlyList<InfrastructureDataModel>> GetBrowseDataStatistics(DateTime start_, DateTime end_, int siteId_ = 0)
+        public async Task<IReadOnlyList<InfrastructureDataModel>> GetBrowseDataStatisticsAsync(DateTime start_, DateTime end_, int siteId_ = 0)
         {
             using var db = new TaiDbContext();
             var start = new DateTime(start_.Year, start_.Month, start_.Day, 0, 0, 0);
@@ -545,46 +526,47 @@ namespace Core.Servicers.Instances
             public DateTime LogTime { get; set; }
             public int CategoryID { get; set; }
         }
-        public async Task<IReadOnlyList<ColumnDataModel>> GetBrowseDataByCategoryStatistics(DateTime start_, DateTime end_)
+        public async Task<IReadOnlyList<ColumnDataModel>> GetBrowseDataByCategoryStatisticsAsync(DateTime start_, DateTime end_)
         {
             using var db = new TaiDbContext();
             var start = new DateTime(start_.Year, start_.Month, start_.Day, 0, 0, 0);
             var end = new DateTime(end_.Year, end_.Month, end_.Day, 23, 59, 59);
 
             //  查询分类
-            var categories = await (from log in db.WebBrowserLogs
-                                    join site in db.WebSites on log.SiteId equals site.ID into siteGroup
-                                    from site in siteGroup.DefaultIfEmpty()
-                                    join category in db.WebSiteCategories on site.CategoryID equals category.ID into categoryGroup
-                                    from category in categoryGroup.DefaultIfEmpty()
-                                    where log.LogTime >= start && log.LogTime <= end.AddDays(1).AddTicks(-1)
-                                    group log by new
+            var categories = await (from b in db.WebBrowserLogs
+                                    join p in db.WebSites
+                                    on b.SiteId equals p.ID into siteGrouping
+                                    from p in siteGrouping.DefaultIfEmpty()
+                                    join c in db.WebSiteCategories
+                                    on p.CategoryID equals c.ID into categoryGrouping
+                                    from c in categoryGrouping.DefaultIfEmpty()
+                                    where b.LogTime >= start && b.LogTime <= end
+                                    group new { b, c }
+                                    by new {CategoryID = p.CategoryID }
+                         into grouped
+                                    select new CategoryStatisticModel
                                     {
-                                        CategoryID = site.CategoryID,
-                                        LogTime = log.LogTime
-                                    } into g
-                                    select new
-                                    {
-                                        Duration = g.Sum(x => x.Duration),
-                                        LogTime = g.Key.LogTime,
-                                        CategoryID = g.Key.CategoryID
-                                    }).ToListAsync();
+                                        Duration = grouped.Sum(g => g.b.Duration),
+                                        CategoryID = grouped.Key.CategoryID
+                                    })
+                         .ToListAsync();
 
 
-            var data = await db.WebBrowserLogs
-            .Where(log => log.LogTime >= start && log.LogTime <= end.AddDays(1).AddTicks(-1)) // 筛选 LogTime
-            .GroupBy(log => new
-            {
-                log.LogTime,
-                CategoryID = log.Site.CategoryID
-            })
-            .Select(group => new
-            {
-                Duration = group.Sum(log => log.Duration),
-                LogTime = group.Key.LogTime,
-                CategoryID = group.Key.CategoryID
-            })
-            .ToListAsync();
+
+            var data = await ( from wbl in db.WebBrowserLogs
+               join ws in db.WebSites on wbl.SiteId equals ws.ID into websiteGroup
+               from ws in websiteGroup.DefaultIfEmpty()
+               join wsc in db.WebSiteCategories on ws.CategoryID equals wsc.ID into websiteCategoryGroup
+               from wsc in websiteCategoryGroup.DefaultIfEmpty()
+               where wbl.LogTime >= start && wbl.LogTime <= end
+               group wbl by new { wbl.LogTime, ws.CategoryID } into g
+               select new CategoryStatisticModel
+               {
+                   Duration = g.Sum(w => w.Duration),
+                   LogTime = g.Key.LogTime,
+                   CategoryID = g.Key.CategoryID
+               }).ToListAsync();
+
             var result = new List<ColumnDataModel>();
 
             if (start_ == end_)
@@ -674,7 +656,7 @@ namespace Core.Servicers.Instances
 
         }
 
-        public async Task<int> GetBrowseDurationTotal(DateTime start_, DateTime end_)
+        public async Task<int> GetBrowseDurationTotalAsync(DateTime start_, DateTime end_)
         {
             start_ = new DateTime(start_.Year, start_.Month, start_.Day, 0, 0, 0);
             end_ = new DateTime(end_.Year, end_.Month, end_.Day, 23, 59, 59);
@@ -685,7 +667,7 @@ namespace Core.Servicers.Instances
             return result;
         }
 
-        public Task<int> GetBrowseSitesTotal(DateTime start_, DateTime end_)
+        public Task<int> GetBrowseSitesTotalAsync(DateTime start_, DateTime end_)
         {
             start_ = new DateTime(start_.Year, start_.Month, start_.Day, 0, 0, 0);
             end_ = new DateTime(end_.Year, end_.Month, end_.Day, 23, 59, 59);
@@ -694,7 +676,7 @@ namespace Core.Servicers.Instances
             return result;
         }
 
-        public Task<int> GetBrowsePagesTotal(DateTime start_, DateTime end_)
+        public Task<int> GetBrowsePagesTotalAsync(DateTime start_, DateTime end_)
         {
             start_ = new DateTime(start_.Year, start_.Month, start_.Day, 0, 0, 0);
             end_ = new DateTime(end_.Year, end_.Month, end_.Day, 23, 59, 59);
@@ -703,7 +685,7 @@ namespace Core.Servicers.Instances
             return result;
         }
 
-        public async Task<IReadOnlyList<WebBrowseLogModel>> GetBrowseLogList(DateTime start_, DateTime end_, int siteId_ = 0)
+        public async Task<IReadOnlyList<WebBrowseLogModel>> GetBrowseLogListAsync(DateTime start_, DateTime end_, int siteId_ = 0)
         {
             start_ = new DateTime(start_.Year, start_.Month, start_.Day, 0, 0, 0);
             end_ = new DateTime(end_.Year, end_.Month, end_.Day, 23, 59, 59);
@@ -739,20 +721,20 @@ namespace Core.Servicers.Instances
             return result;
         }
 
-        public Task<WebSiteModel> GetWebSite(int id_)
+        public Task<WebSiteModel> GetWebSiteAsync(int id_)
         {
             using var db = new TaiDbContext();
             return db.WebSites.FirstOrDefaultAsync(m => m.ID == id_);
         }
 
-        public Task<WebSiteModel> GetWebSite(string domain)
+        public Task<WebSiteModel> GetWebSiteAsync(string domain)
         {
             using var db = new TaiDbContext();
             return db.WebSites.FirstOrDefaultAsync(m => m.Domain.ToLower() == domain.ToLower());
 
         }
 
-        public async Task Clear(DateTime start_, DateTime end_)
+        public async Task ClearAsync(DateTime start_, DateTime end_)
         {
             end_ = new DateTime(end_.Year, end_.Month, DateTime.DaysInMonth(end_.Year, end_.Month));
 
@@ -765,7 +747,7 @@ namespace Core.Servicers.Instances
             await db.SaveChangesAsync();
         }
 
-        public async Task<IReadOnlyList<WebSiteModel>> GetWebSiteLogList(DateTime start_, DateTime end_)
+        public async Task<IReadOnlyList<WebSiteModel>> GetWebSiteLogListAsync(DateTime start_, DateTime end_)
         {
             start_ = new DateTime(start_.Year, start_.Month, start_.Day, 0, 0, 0);
             end_ = new DateTime(end_.Year, end_.Month, end_.Day, 23, 59, 59);
@@ -800,7 +782,7 @@ namespace Core.Servicers.Instances
             return result;
         }
 
-        public async Task Clear(int siteId_)
+        public async Task ClearAsync(int siteId_)
         {
             using var db = new TaiDbContext();
 
@@ -815,7 +797,7 @@ namespace Core.Servicers.Instances
             await db.SaveChangesAsync();
         }
 
-        public async Task Export(string dir_, DateTime start_, DateTime end_)
+        public async Task ExportAsync(string dir_, DateTime start_, DateTime end_)
         {
             start_ = new DateTime(start_.Year, start_.Month, 1, 0, 0, 0);
             end_ = new DateTime(end_.Year, end_.Month, DateTime.DaysInMonth(end_.Year, end_.Month), 23, 59, 59);
@@ -827,8 +809,8 @@ namespace Core.Servicers.Instances
                 .Select(m => new
                 {
                     时间 = m.LogTime,
-                    标题 = m.Url.Title,
-                    网址 = m.Url.Url,
+                    标题 = m.Url?.Title,
+                    网址 = m.Url?.Url,
                     时长 = m.Duration,
                 });
 
@@ -850,7 +832,7 @@ namespace Core.Servicers.Instances
             }
         }
 
-        public async Task<WebSiteModel> Update(WebSiteModel website_)
+        public async Task<WebSiteModel> UpdateAsync(WebSiteModel website_)
         {
             using var db = new TaiDbContext();
             var website = await db.WebSites.FirstOrDefaultAsync(m => m.ID == website_.ID);

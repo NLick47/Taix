@@ -16,8 +16,6 @@
 	<UserControl.ContextMenu>
 		<ContextMenu>
 			<MenuItem
-				HotKey="F5"
-				InputGesture="F5"
 				Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}"/>
 		</ContextMenu>
 	</UserControl.ContextMenu>
@@ -522,6 +520,7 @@
 												   HorizontalAlignment="Left"/>
 
 									<ListBox MaxHeight="200"
+											 IsHitTestVisible="False"
 											  Margin="20,0,0,0" VerticalAlignment="Center"
 											  Grid.Column="1"
 											  ItemsSource="{Binding WebCategoriesPieData}"

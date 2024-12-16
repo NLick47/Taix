@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace UI.Servicers
@@ -32,11 +33,11 @@ namespace UI.Servicers
             _statusBarIconServicer = statusBarIconServicer_;
             _config = config_;
         }
-        public async Task Start(bool isSelfStart)
+        public  Task Start(bool isSelfStart)
         {
             this.isSelfStart = isSelfStart;
             main.OnStarted += Main_OnStarted;
-            await Task.WhenAll(main.Run(), _statusBarIconServicer.Init());
+            return Task.WhenAll(main.Run(), _statusBarIconServicer.Init());
         }
 
         private void Main_OnStarted(object sender, EventArgs e)
@@ -48,7 +49,7 @@ namespace UI.Servicers
             {
                 _statusBarIconServicer.ShowMainWindow();
             }
-          
+
         }
     }
 }

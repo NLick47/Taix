@@ -1,6 +1,10 @@
-﻿using Core.Models.Config;
+﻿using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Core.Models.Config;
 using Core.Models.Config.Link;
 using Core.Servicers.Interfaces;
+using Infrastructure.Librarys;
+using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,7 +41,9 @@ namespace UI.ViewModels
             _webData = webData;
             _uiServicer = uiServicer_;
 
-            //OpenURL = new Command(new Action<object>(OnOpenURL));
+            OpenURL =ReactiveCommand.Create<object>(OnOpenURL);
+            DelDataCommand = ReactiveCommand.CreateFromTask<object>(OnDelData);
+            ExportDataCommand = ReactiveCommand.CreateFromTask<object>(OnExportData);
             //CheckUpdate = new Command(new Action<object>(OnCheckUpdate));
             //DelDataCommand = new Command(new Action<object>(OnDelData));
             //ExportDataCommand = new Command(new Action<object>(OnExportData));
@@ -46,6 +52,7 @@ namespace UI.ViewModels
            
         }
 
+       
         private void Init()
         {
             config = appConfig.GetConfig();
@@ -76,17 +83,41 @@ namespace UI.ViewModels
             bool isConfirm = await _uiServicer.ShowConfirmDialogAsync("删除确认", "是否执行此操作？");
             if (isConfirm)
             {
-                await data.ClearRange(DelDataStartMonthDate, DelDataEndMonthDate);
-                await _webData.Clear(DelDataStartMonthDate, DelDataEndMonthDate);
+                await data.ClearRangeAsync(DelDataStartMonthDate, DelDataEndMonthDate);
+                await _webData.ClearAsync(DelDataStartMonthDate, DelDataEndMonthDate);
                 mainVM.Toast("操作已完成", Controls.Window.ToastType.Success);
             }
         }
 
-        private void OnExportData(object obj)
+        private async Task OnExportData(object obj)
         {
-          
+            try
+            {
+                var desktop = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                var storage  = desktop.MainWindow.StorageProvider;
+                var result = await storage.OpenFolderPickerAsync(new ()
+                {
+
+                });
+                if(result?.Count != 0)
+                {
+                    var folder = result[0];
+                    await data.ExportToExcelAsync(folder.Path.LocalPath, ExportDataStartMonthDate, ExportDataEndMonthDate);
+                    await _webData.ExportAsync(folder.Path.LocalPath, ExportDataStartMonthDate, ExportDataEndMonthDate);
+                    mainVM.Toast("导出数据完成", Controls.Window.ToastType.Success);
+                }
+            }
+            catch (Exception ec)
+            {
+                Logger.Error(ec.ToString());
+                mainVM.Toast("导出数据失败", Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
+            }
         }
 
+        private void OnOpenURL(object obj)
+        {
+            Process.Start(new ProcessStartInfo(obj.ToString()) { UseShellExecute = true});
+        }
 
         private void SettingPageVM_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {

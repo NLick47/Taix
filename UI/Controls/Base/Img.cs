@@ -59,10 +59,8 @@ namespace UI.Controls.Base
 
         private async void Handle(string path)
         {
-            string defaultIconFile = "avares://Taix/Resources/Icons/defaultIcon.png";
             if (string.IsNullOrEmpty(path))
             {
-                Resource = new Bitmap(AssetLoader.Open(new Uri(defaultIconFile)));
                 return;
             }
             if (path.IndexOf("avares:") != -1)
@@ -79,12 +77,6 @@ namespace UI.Controls.Base
             {
                 Resource = new Bitmap( await result.OpenReadAsync());
             }
-            else
-            {
-                Resource = new Bitmap(AssetLoader.Open(new Uri(defaultIconFile)));
-            }
-
-
         }
 
         protected override Type StyleKeyOverride => typeof(Img);

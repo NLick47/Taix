@@ -2,6 +2,7 @@
 using Avalonia.Controls.Primitives;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,7 +17,7 @@ namespace UI.Controls.Base
             set { SetValue(ContentProperty, value); }
         }
         public static readonly StyledProperty<string> ContentProperty =
-            AvaloniaProperty.Register<Text, string>(nameof(Text));  
+            AvaloniaProperty.Register<Text, string>(nameof(Content));  
         public bool Value
         {
             get { return GetValue(ValueProperty); }
@@ -28,7 +29,7 @@ namespace UI.Controls.Base
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if(change.Property == ContentProperty)
+            if(change.Property == ValueProperty)
             {
                 var c = change.Sender as Text;
                 c.SetContent();
@@ -37,13 +38,20 @@ namespace UI.Controls.Base
 
         protected override Type StyleKeyOverride => typeof(Text);
 
+
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
             SetContent();
         }
 
-        public string Content_ { get; set; }
+        public string TextValue
+        {
+            get { return GetValue(TextValueProperty); }
+            set { SetValue(TextValueProperty, value); }
+        }
+        public static readonly StyledProperty<string> TextValueProperty =
+            AvaloniaProperty.Register<Text, string>(nameof(TextValue));
 
         private void SetContent()
         {
@@ -54,7 +62,7 @@ namespace UI.Controls.Base
 
             string yes = Content.Substring(Content.IndexOf('?') + 1, Content.IndexOf(':') - 1);
             string no = Content.Substring(Content.IndexOf(':') + 1);
-            Content_ = Value ? yes : no;
+            TextValue = Value ? yes : no;
         }
     }
 }

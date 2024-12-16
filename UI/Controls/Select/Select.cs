@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -73,6 +74,21 @@ namespace UI.Controls.Select
         public Select()
         {
             this.PointerPressed += OnPointerPressed;
+        }
+
+        protected override void OnUnloaded(RoutedEventArgs e)
+        {
+            base.OnUnloaded(e);
+            this.PointerPressed -= OnPointerPressed;
+            if (_optionsContainer?.Children != null)
+            {
+                foreach (var item in _optionsContainer.Children)
+                {
+                    item.PointerPressed -= Option_MouseLeftButtonUp;
+                }
+                _optionsContainer?.Children?.Clear();
+            }
+            
         }
 
         private void OnPointerPressed(object? sender, PointerPressedEventArgs e)

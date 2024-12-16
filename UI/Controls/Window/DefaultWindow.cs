@@ -482,12 +482,6 @@ namespace UI.Controls.Window
         }
 
 
-        protected override void OnLoaded(RoutedEventArgs e)
-        {
-            base.OnLoaded(e);
-            Icon = IconSource is Bitmap bitmap ? new WindowIcon(bitmap) : default;
-        }
-
         protected override Type StyleKeyOverride => typeof(DefaultWindow);
 
     }

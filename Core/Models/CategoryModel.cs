@@ -12,6 +12,8 @@ namespace Core.Models
     /// <summary>
     /// 分类模型
     /// </summary>
+    /// 
+    [Table("CategoryModels")]
     public class CategoryModel
     {
         [Key]
@@ -20,16 +22,16 @@ namespace Core.Models
         /// <summary>
         /// 分类名称
         /// </summary>
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// 分类图标路径
         /// </summary>
-        public string IconFile { get; set; }
+        public string? IconFile { get; set; }
         /// <summary>
         /// 颜色
         /// </summary>
-        public string Color { get; set; }
+        public string? Color { get; set; }
         /// <summary>
         /// 是否启用目录匹配
         /// </summary>
@@ -37,7 +39,7 @@ namespace Core.Models
         /// <summary>
         /// 匹配目录（Json List string）
         /// </summary>
-        public string Directories { get; set; }
+        public string? Directories { get; set; }
 
         /// <summary>
         /// 匹配目录集合（已解析）

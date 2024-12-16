@@ -13,11 +13,10 @@
 			 xmlns:select="using:UI.Controls.Select"
              x:Class="UI.Views.IndexPage">
 
+	<!--https://github.com/AvaloniaUI/Avalonia/issues/2441-->
 	<UserControl.ContextMenu>
 		<ContextMenu>
-			<MenuItem 
-				HotKey="F5"
-				InputGesture="F5"
+			<MenuItem
 				Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}"/>
 		</ContextMenu>
 	</UserControl.ContextMenu>
@@ -128,8 +127,6 @@
 			<TabControl.ContextMenu>
 				<ContextMenu>
 					<MenuItem
-						HotKey="F5"
-						InputGesture="F5"
 						Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}"/>
 				</ContextMenu>
 			</TabControl.ContextMenu>

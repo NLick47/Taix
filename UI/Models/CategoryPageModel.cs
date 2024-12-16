@@ -51,11 +51,11 @@ namespace UI.Models
         /// 是否启用目录匹配
         /// </summary>
         public bool EditIsDirectoryMath { get { return EditIsDirectoryMath_; } set { EditIsDirectoryMath_ = value; OnPropertyChanged(); } }
-        private ObservableCollection<string> EditDirectories_ = new ObservableCollection<string>();
+
         /// <summary>
         /// 匹配目录
         /// </summary>
-        public ObservableCollection<string> EditDirectories { get { return EditDirectories_; } set { EditDirectories_ = value; OnPropertyChanged(); } }
+        public ObservableCollection<string> EditDirectories { get; set; } = new();
         private string EditSelectedDirectory_;
         /// <summary>
         /// 当前列表选择目录

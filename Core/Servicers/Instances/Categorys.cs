@@ -19,7 +19,7 @@ namespace Core.Servicers.Instances
             this._categories = new List<CategoryModel>();
         }
 
-        public async Task<CategoryModel> Create(CategoryModel category)
+        public async Task<CategoryModel> CreateAsync(CategoryModel category)
         {
             using var db = new TaiDbContext();
             db.Categorys.Add(category);
@@ -28,7 +28,7 @@ namespace Core.Servicers.Instances
             return category;
         }
 
-        public async Task Delete(CategoryModel category)
+        public async Task DeleteAsync(CategoryModel category)
         {
             using var db = new TaiDbContext();
 
@@ -51,7 +51,7 @@ namespace Core.Servicers.Instances
             return _categories.Where(m => m.ID == id).FirstOrDefault();
         }
 
-        public async Task Load()
+        public async Task LoadAsync()
         {
             Debug.WriteLine("加载分类");
             using var db = new TaiDbContext();
@@ -61,7 +61,7 @@ namespace Core.Servicers.Instances
         }
 
 
-        public async Task Update(CategoryModel category)
+        public async Task UpdateAsync(CategoryModel category)
         {
             using var db = new TaiDbContext();
             db.Categorys.Update(category);

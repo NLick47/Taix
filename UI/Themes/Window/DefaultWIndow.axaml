@@ -150,7 +150,8 @@
 									Padding="15,15"
 									CornerRadius="12"
 									MaxWidth="320"
-									x:Name="ToastBorder" Background="White"
+									x:Name="ToastBorder" 
+									Background="{DynamicResource WindowContentBackground}"
 									HorizontalAlignment="Center"
 									VerticalAlignment="Top" ZIndex="99999">
 									<Border.RenderTransform>
@@ -211,8 +212,7 @@
 									 CornerRadius="10"
 									 Width="350"
 									 x:Name="InputModalBorder"
-									 Background="{DynamicResource WindowContentBackground}"
-									 HorizontalAlignment="Center"
+									 Background="{DynamicResource WindowContentBackground}" HorizontalAlignment="Center"
 									 VerticalAlignment="Top" ZIndex="1000">
 									<Border.RenderTransform>
 										<TransformGroup>

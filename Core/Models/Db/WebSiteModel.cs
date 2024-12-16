@@ -11,6 +11,8 @@ namespace Core.Models.Db
     /// <summary>
     /// 网页站点数据库模型
     /// </summary>
+    /// 
+    [Table("WebSiteModels")]
     public class WebSiteModel
     {
         [Key]
@@ -19,15 +21,15 @@ namespace Core.Models.Db
         /// <summary>
         /// 名称
         /// </summary>
-        public string Title { get; set; }
+        public string? Title { get; set; }
         /// <summary>
         /// 域名
         /// </summary>
-        public string Domain { get; set; }
+        public string? Domain { get; set; }
         /// <summary>
         /// 别名
         /// </summary>
-        public string Alias { get; set; }
+        public string? Alias { get; set; }
         /// <summary>
         /// 分类ID
         /// </summary>
@@ -36,7 +38,7 @@ namespace Core.Models.Db
         /// <summary>
         /// 图标路径
         /// </summary>
-        public string IconFile { get; set; }
+        public string? IconFile { get; set; }
         /// <summary>
         /// 累计使用时长
         /// </summary>

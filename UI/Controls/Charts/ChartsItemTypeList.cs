@@ -67,22 +67,19 @@ namespace UI.Controls.Charts
         private TextBlock NameTextObj, ValueTextObj;
         private Rectangle ValueBlockObj;
         private StackPanel ValueContainer;
-        //private Grid ValueContainer;
         private Image IconObj;
         private bool isRendering = false;
         private bool IsAddEvent = false;
 
         protected override Type StyleKeyOverride => typeof(ChartsItemTypeList);
 
-        public ChartsItemTypeList()
-        {
-            Unloaded += ChartsItemTypeList_Unloaded;
-        }
 
-        private void ChartsItemTypeList_Unloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded(RoutedEventArgs e)
         {
-            Unloaded -= ChartsItemTypeList_Unloaded;
+            base.OnUnloaded(e);
             Loaded -= ChartsItemTypeList_Loaded;
+            var parent = this.Parent as Control;
+            parent.SizeChanged -= Parent_SizeChanged;
         }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -91,7 +88,6 @@ namespace UI.Controls.Charts
             NameTextObj = e.NameScope.Get<TextBlock>("NameTextObj");
             ValueTextObj = e.NameScope.Get<TextBlock>("ValueTextObj");
             ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
-            //ValueContainer = GetTemplateChild("ValueContainer") as Grid;
             ValueContainer = e.NameScope.Get<StackPanel>("ValueContainer");
             IconObj = e.NameScope.Get<Image>("IconObj");
 
@@ -100,23 +96,12 @@ namespace UI.Controls.Charts
                 Loaded += ChartsItemTypeList_Loaded;
                 IsAddEvent = true;
             }
-           
-            var parent = FindParentControl<ListBox>(this.GetVisualParent());
+
+            var parent = this.Parent as Control;
             parent.SizeChanged += Parent_SizeChanged;
         }
 
-        public Control FindParentControl<T>(Visual control) where T : Control
-        {
-            while (control != null)
-            {
-                if (control is T parentControl)
-                {
-                    return parentControl;
-                }
-                control = control.GetVisualParent();
-            }
-            return null;
-        }
+    
 
         private void Parent_SizeChanged(object sender, SizeChangedEventArgs e)
         {
@@ -135,18 +120,7 @@ namespace UI.Controls.Charts
                 return;
             }
             isRendering = true;
-            //NameTextObj.Text = Data.Name;
-            //对部分程序未获取程序名的程序使用路径中名字作为程序名
-            //if (Data.Name.Trim() == "" && Data.PopupText.Trim() != "")
-            //{
-            //    FileInfo fi = new FileInfo(Data.PopupText);
-            //    NameTextObj.Text = fi.Name.Replace(fi.Extension, "");
-            //}
-
-            ValueTextObj.Text = Data.Tag;
-            IconObj.Source = Imager.Load(Data.Icon);
-
-            ValueTextObj.SizeChanged += (e, c) =>
+            ValueTextObj.LayoutUpdated += (e, c) =>
             {
                 if (MaxValue <= 0)
                 {
@@ -154,6 +128,11 @@ namespace UI.Controls.Charts
                 }
                 UpdateValueBlockWidth();
             };
+
+            ValueTextObj.Text = Data.Tag;
+            IconObj.Source = Imager.Load(Data.Icon);
+
+          
         }
 
         public void UpdateValueBlockWidth()

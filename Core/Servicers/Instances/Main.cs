@@ -42,7 +42,7 @@ namespace Core.Servicers.Instances
 
         private readonly ISystemInfrastructure _systemInfrastructure;
         //  忽略的进程
-        private readonly HashSet<string> DefaultIgnoreProcess = new () {
+        private readonly HashSet<string> DefaultIgnoreProcess = new() {
             "Tai",
             "Taix",
             "SearchHost",
@@ -145,37 +145,38 @@ namespace Core.Servicers.Instances
         public async Task Run()
         {
 
-            CreateDirectory();
-
-            //  数据库自检
-            using (var db = new TaiDbContext())
+            try
             {
-                db.SelfCheck();
+                CreateDirectory();
+                //  加载app信息
+                await appData.LoadAsync();
+
+                // 加载分类信息
+                await categories.LoadAsync();
+
+                AppState.IsLoading = false;
+
+
+
+                //  加载应用配置（确保配置文件最先加载
+                appConfig.Load();
+                config = appConfig.GetConfig();
+                UpdateConfigIgnoreProcess();
+                UpdateConfigProcessWhiteList();
+
+                //  初始化过滤器
+                _webFilter.Init();
+
+                //  启动主服务
+                Start();
+
+                OnStarted?.Invoke(this, EventArgs.Empty);
             }
-
-            //  加载app信息
-            appData.Load();
-
-            // 加载分类信息
-            await categories.Load();
-
-            AppState.IsLoading = false;
-
-
-
-            //  加载应用配置（确保配置文件最先加载
-            appConfig.Load();
-            config = appConfig.GetConfig();
-            UpdateConfigIgnoreProcess();
-            UpdateConfigProcessWhiteList();
-
-            //  初始化过滤器
-            _webFilter.Init();
-
-            //  启动主服务
-            Start();
-
-            OnStarted?.Invoke(this, EventArgs.Empty);
+            catch (Exception)
+            {
+                AppState.IsLoading = false;
+                throw;
+            }
         }
         public void Start()
         {
@@ -184,12 +185,12 @@ namespace Core.Servicers.Instances
             appObserver.Start();
             if (config.General.IsWebEnabled)
             {
-                //_webServer.Start();
+                _webServer.Start();
             }
             if (config.Behavior.IsSleepWatch)
             {
                 //  启动睡眠监测
-                //sleepdiscover.Start();
+                sleepdiscover.Start();
             }
         }
         public void Stop()
@@ -377,7 +378,7 @@ namespace Core.Servicers.Instances
 
         private void HandleLinks(string processName, int seconds, DateTime time)
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 try
                 {
@@ -396,7 +397,7 @@ namespace Core.Servicers.Instances
                                     if (IsProcessRuning(linkProcess))
                                     {
                                         //  同步更新
-                                        data.UpdateAppDuration(linkProcess, seconds, time);
+                                        await data.UpdateAppDurationAsync(linkProcess, seconds, time);
                                     }
 
                                 }
@@ -457,7 +458,7 @@ namespace Core.Servicers.Instances
         {
             UpdateAppDuration(_appTimer.GetAppDuration());
         }
-        private void UpdateAppDuration(AppDurationUpdatedEventArgs e)
+        private async void UpdateAppDuration(AppDurationUpdatedEventArgs e)
         {
             if (e == null) return;
 
@@ -471,7 +472,7 @@ namespace Core.Servicers.Instances
                 if (isCheck)
                 {
                     //  更新统计时长
-                    data.UpdateAppDuration(app.Process, duration, startTime);
+                    await data.UpdateAppDurationAsync(app.Process, duration, startTime);
                     //  关联进程更新
                     HandleLinks(app.Process, duration, startTime);
                     OnUpdateTime?.Invoke(this, null);
@@ -503,14 +504,13 @@ namespace Core.Servicers.Instances
                     Title = args.Title
                 };
 
-                _webData.AddUrlBrowseTime(site, args.Duration, args.ActiveDateTime);
-
                 //  处理图标
                 Task.Run(async () =>
                 {
+                    await _webData.AddUrlBrowseTimeAsync(site, args.Duration, args.ActiveDateTime);
                     string saveName = UrlHelper.GetName(args.Url) + DateTime.Now.ToString("yyyyMM") + ".ico";
                     string path = await FaviconDownloader.DownloadAsync(args.Icon, saveName);
-                    _webData.UpdateUrlFavicon(site, path);
+                    await _webData.UpdateUrlFaviconAsync(site, path);
                 });
             }
             catch (Exception ex)

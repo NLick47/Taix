@@ -17,13 +17,13 @@ namespace Core.Servicers.Interfaces
         /// </summary>
         /// <param name="site_">链接</param>
         /// <param name="time_">时长（秒）</param>
-        Task AddUrlBrowseTime(Site site_, int duration_, DateTime? dateTime_ = null);
+        Task AddUrlBrowseTimeAsync(Site site_, int duration_, DateTime? dateTime_ = null);
         /// <summary>
         /// 更新链接的图标
         /// </summary>
         /// <param name="site_"></param>
         /// <param name="iconFile_">本地图标相对路径</param>
-        Task UpdateUrlFavicon(Site site_, string iconFile_);
+        Task UpdateUrlFaviconAsync(Site site_, string iconFile_);
 
         /// <summary>
         /// 获取日期范围的站点浏览数据(浏览时长降序排序)
@@ -33,72 +33,72 @@ namespace Core.Servicers.Interfaces
         /// <param name="take">读取条数</param>
         /// <param name="isTime">是否精确到时间</param>
         /// <returns></returns>
-        Task<IReadOnlyList<WebSiteModel>> GetDateRangeWebSiteList(DateTime start, DateTime end, int take = 0, int skip = -1, bool isTime_ = false);
+        Task<IReadOnlyList<WebSiteModel>> GetDateRangeWebSiteListAsync(DateTime start, DateTime end, int take = 0, int skip = -1, bool isTime_ = false);
         /// <summary>
         /// 获取网站所有分类
         /// </summary>
         /// <returns></returns>
-        Task<IReadOnlyList<WebSiteCategoryModel>> GetWebSiteCategories();
+        Task<IReadOnlyList<WebSiteCategoryModel>> GetWebSiteCategoriesAsync();
         /// <summary>
         /// 创建网站分类
         /// </summary>
         /// <param name="data_"></param>
         /// <returns></returns>
-        Task<WebSiteCategoryModel> CreateWebSiteCategory(WebSiteCategoryModel data_);
+        Task<WebSiteCategoryModel> CreateWebSiteCategoryAsync(WebSiteCategoryModel data_);
         /// <summary>
         /// 更新网站分类
         /// </summary>
         /// <param name="data_"></param>
         /// <returns></returns>
-        Task UpdateWebSiteCategory(WebSiteCategoryModel data_);
+        Task UpdateWebSiteCategoryAsync(WebSiteCategoryModel data_);
         /// <summary>
         /// 删除网站分类
         /// </summary>
         /// <param name="data_"></param>
-        Task DeleteWebSiteCategory(WebSiteCategoryModel data_);
+        Task DeleteWebSiteCategoryAsync(WebSiteCategoryModel data_);
         /// <summary>
         /// 通过分类ID获取网站列表
         /// </summary>
         /// <param name="categoryId_"></param>
         /// <returns></returns>
-        Task<IReadOnlyList<WebSiteModel>> GetWebSites(int categoryId_);
+        Task<IReadOnlyList<WebSiteModel>> GetWebSitesAsync(int categoryId_);
         /// <summary>
         /// 通过分类ID获取网站总数
         /// </summary>
         /// <param name="categoryId_"></param>
         /// <returns></returns>
-        Task<int> GetWebSitesCount(int categoryId_);
+        Task<int> GetWebSitesCountAsync(int categoryId_);
         /// <summary>
         /// 获取未设置分类的站点列表
         /// </summary>
         /// <returns></returns>
-        Task<IReadOnlyList<WebSiteModel>> GetUnSetCategoryWebSites();
+        Task<IReadOnlyList<WebSiteModel>> GetUnSetCategoryWebSitesAsync();
         /// <summary>
         /// 批量更新站点分类
         /// </summary>
         /// <param name="siteIds_"></param>
         /// <param name="categoryId_"></param>
-        Task UpdateWebSitesCategory(int[] siteIds_, int categoryId_);
+        Task UpdateWebSitesCategoryAsync(int[] siteIds_, int categoryId_);
         /// <summary>
         /// 获取指定时间段分类统计数据
         /// </summary>
         /// <param name="start_"></param>
         /// <param name="end_"></param>
         /// <returns></returns>
-        Task<IReadOnlyList<InfrastructureDataModel>> GetCategoriesStatistics(DateTime start_, DateTime end_);
+        Task<IReadOnlyList<InfrastructureDataModel>> GetCategoriesStatisticsAsync(DateTime start_, DateTime end_);
         /// <summary>
         /// 通过分类ID获取分类数据
         /// </summary>
         /// <param name="categoryId_"></param>
         /// <returns></returns>
-        Task<WebSiteCategoryModel> GetWebSiteCategory(int categoryId_);
+        Task<WebSiteCategoryModel> GetWebSiteCategoryAsync(int categoryId_);
         /// <summary>
         /// 获取指定时间段的浏览时长统计数据
         /// </summary>
         /// <param name="start_"></param>
         /// <param name="end_"></param>
         /// <returns></returns>
-        Task<IReadOnlyList<InfrastructureDataModel>> GetBrowseDataStatistics(DateTime start_, DateTime end_, int siteId_ = 0);
+        Task<IReadOnlyList<InfrastructureDataModel>> GetBrowseDataStatisticsAsync(DateTime start_, DateTime end_, int siteId_ = 0);
         //List<WebSiteModel> GetWebSites(Expression<Func<WebSiteModel, bool>> predicate_);
         /// <summary>
         /// 获取指定时间段按照分类统计的浏览时长数据
@@ -106,28 +106,28 @@ namespace Core.Servicers.Interfaces
         /// <param name="start_"></param>
         /// <param name="end_"></param>
         /// <returns></returns>
-        Task<IReadOnlyList<ColumnDataModel>> GetBrowseDataByCategoryStatistics(DateTime start_, DateTime end_);
+        Task<IReadOnlyList<ColumnDataModel>> GetBrowseDataByCategoryStatisticsAsync(DateTime start_, DateTime end_);
         /// <summary>
         /// 统计指定时间段的浏览时长
         /// </summary>
         /// <param name="start_"></param>
         /// <param name="end_"></param>
         /// <returns></returns>
-        Task<int> GetBrowseDurationTotal(DateTime start_, DateTime end_);
+        Task<int> GetBrowseDurationTotalAsync(DateTime start_, DateTime end_);
         /// <summary>
         /// 统计指定时间段的站点浏览数量
         /// </summary>
         /// <param name="start_"></param>
         /// <param name="end_"></param>
         /// <returns></returns>
-        Task<int> GetBrowseSitesTotal(DateTime start_, DateTime end_);
+        Task<int> GetBrowseSitesTotalAsync(DateTime start_, DateTime end_);
         /// <summary>
         /// 统计指定时间段的网页浏览数量
         /// </summary>
         /// <param name="start_"></param>
         /// <param name="end_"></param>
         /// <returns></returns>
-        Task<int> GetBrowsePagesTotal(DateTime start_, DateTime end_);
+        Task<int> GetBrowsePagesTotalAsync(DateTime start_, DateTime end_);
         /// <summary>
         /// 获取指定时间段的网页浏览记录
         /// </summary>
@@ -135,43 +135,43 @@ namespace Core.Servicers.Interfaces
         /// <param name="end_"></param>
         /// <param name="siteId_"></param>
         /// <returns></returns>
-        Task<IReadOnlyList<WebBrowseLogModel>> GetBrowseLogList(DateTime start_, DateTime end_, int siteId_ = 0);
+        Task<IReadOnlyList<WebBrowseLogModel>> GetBrowseLogListAsync(DateTime start_, DateTime end_, int siteId_ = 0);
         /// <summary>
         /// 获取网站数据
         /// </summary>
         /// <param name="id_"></param>
         /// <returns></returns>
-        Task<WebSiteModel> GetWebSite(int id_);
+        Task<WebSiteModel> GetWebSiteAsync(int id_);
         /// <summary>
         /// 通过域名获取站点数据
         /// </summary>
         /// <param name="domain_"></param>
         /// <returns></returns>
-        Task<WebSiteModel> GetWebSite(string domain_);
+        Task<WebSiteModel> GetWebSiteAsync(string domain_);
         /// <summary>
         /// 清空指定日期范围数据
         /// </summary>
         /// <param name="start_"></param>
         /// <param name="end_"></param>
-        Task Clear(DateTime start_, DateTime end_);
+        Task ClearAsync(DateTime start_, DateTime end_);
 
-        Task<IReadOnlyList<WebSiteModel>> GetWebSiteLogList(DateTime start_, DateTime end_);
+        Task<IReadOnlyList<WebSiteModel>> GetWebSiteLogListAsync(DateTime start_, DateTime end_);
         /// <summary>
         /// 清空所有统计数据
         /// </summary>
         /// <param name="siteId_">站点ID</param>
-        Task Clear(int siteId_);
+        Task ClearAsync(int siteId_);
         /// <summary>
         /// 导出数据
         /// </summary>
         /// <param name="dir_">导出目录</param>
         /// <param name="start_">开始时间</param>
         /// <param name="end_">结束时间</param>
-        Task Export(string dir_, DateTime start_, DateTime end_);
+        Task ExportAsync(string dir_, DateTime start_, DateTime end_);
         /// <summary>
         /// 更新站点数据
         /// </summary>
         /// <param name="website_"></param>
-        Task<WebSiteModel> Update(WebSiteModel website_);
+        Task<WebSiteModel> UpdateAsync(WebSiteModel website_);
     }
 }

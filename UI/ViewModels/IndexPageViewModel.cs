@@ -152,10 +152,10 @@ namespace UI.ViewModels
         private async Task LoadThisWeekData()
         {
             IsLoading = true;
-            var list = await data.GetThisWeeklogList();
+            var list = await data.GetThisWeeklogListAsync();
             var res = MapToChartsData(list);
             var week = Time.GetThisWeekDate();
-            var topWebList = await _webData.GetDateRangeWebSiteList(week[0], week[1], FrequentUseNum);
+            var topWebList = await _webData.GetDateRangeWebSiteListAsync(week[0], week[1], FrequentUseNum);
             IsLoading = false;
             WeekData = res;
             WebFrequentUseData = MapToChartsData(topWebList);
@@ -165,8 +165,8 @@ namespace UI.ViewModels
         {
             IsLoading = true;
             var week = Time.GetThisWeekDate();
-            var appMoreData = await data.GetDateRangelogList(week[0], week[1], MoreNum, FrequentUseNum);
-            var webMoreData = await _webData.GetDateRangeWebSiteList(week[0], week[1], MoreNum, FrequentUseNum);
+            var appMoreData = await data.GetDateRangelogListAsync(week[0], week[1], MoreNum, FrequentUseNum);
+            var webMoreData = await _webData.GetDateRangeWebSiteListAsync(week[0], week[1], MoreNum, FrequentUseNum);
             IsLoading = false;
             AppMoreData = MapToChartsData(appMoreData);
             WebMoreData = MapToChartsData(webMoreData);
@@ -179,9 +179,9 @@ namespace UI.ViewModels
         private async Task LoadTodayData()
         {
             IsLoading = true;
-            var list = await data.GetDateRangelogList(DateTime.Now.Date, DateTime.Now.Date);
+            var list = await data.GetDateRangelogListAsync(DateTime.Now.Date, DateTime.Now.Date);
             var res = MapToChartsData(list);
-            var topWebList = await _webData.GetDateRangeWebSiteList(DateTime.Now, DateTime.Now, FrequentUseNum);
+            var topWebList = await _webData.GetDateRangeWebSiteListAsync(DateTime.Now, DateTime.Now, FrequentUseNum);
 
             IsLoading = false;
             WeekData = res;
@@ -191,8 +191,8 @@ namespace UI.ViewModels
         private async Task LoadTodayMoreData()
         {
             IsLoading = true;
-            var appMoreData = await data.GetDateRangelogList(DateTime.Now.Date, DateTime.Now.Date, MoreNum, FrequentUseNum);
-            var webMoreData = await _webData.GetDateRangeWebSiteList(DateTime.Now.Date, DateTime.Now.Date, MoreNum, FrequentUseNum);
+            var appMoreData = await data.GetDateRangelogListAsync(DateTime.Now.Date, DateTime.Now.Date, MoreNum, FrequentUseNum);
+            var webMoreData = await _webData.GetDateRangeWebSiteListAsync(DateTime.Now.Date, DateTime.Now.Date, MoreNum, FrequentUseNum);
             IsLoading = false;
             AppMoreData = MapToChartsData(appMoreData);
             WebMoreData = MapToChartsData(webMoreData);

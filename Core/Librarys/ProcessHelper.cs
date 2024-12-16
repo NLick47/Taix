@@ -20,7 +20,7 @@ namespace Core.Librarys
                     arguments += $"\"{arg}\" ";
                 }
                 arguments = arguments.Trim();
-                Process process = new Process();
+                using Process process = new Process();
                 ProcessStartInfo startInfo = new ProcessStartInfo(filename, arguments);
                 process.StartInfo = startInfo;
                 process.Start();

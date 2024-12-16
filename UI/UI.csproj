@@ -10,6 +10,7 @@
 		<AssemblyName>Taix</AssemblyName>
 		<Version>0.0.0.99</Version>
 		<ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
+		<TrimMode>full</TrimMode>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(OS)' == 'Windows_NT'">

@@ -62,7 +62,7 @@ namespace UI.Controls.SettingPanel
         {
             base.OnApplyTemplate(e);
             Container = e.NameScope.Get<StackPanel>("Container");
-            FoldBtn = e.NameScope.Get<IconButton>("FoldBtn");
+            FoldBtn = e.NameScope.Find<IconButton>("FoldBtn");
 
             OnFoldAction = ReactiveCommand.Create<object>(FoldAction);
             Render();
@@ -147,23 +147,16 @@ namespace UI.Controls.SettingPanel
                     var newData = new List<string>();
                     foreach (var item in listControl.Items)
                     {
-                        newData.Add(item.ToString());
+                        if(!string.IsNullOrEmpty(item))
+                        {
+                            newData.Add(item.ToString());
+                        }
+                        
                     }
                     pi.SetValue(configData, newData);
                     Data = configData;
                     DataChanged?.Invoke(this, EventArgs.Empty);
                 };
-                //((INotifyCollectionChanged)listControl.Items).CollectionChanged += (sender2, e) =>
-                //{
-                //    var newData = new List<string>();
-                //    foreach (var item in listControl.Items)
-                //    {
-                //        newData.Add(item.ToString());
-                //    }
-                //    pi.SetValue(configData, newData);
-                //    Data = configData;
-                //    DataChanged?.Invoke(this, EventArgs.Empty);
-                //};
             };
             listControl.Margin = new Thickness(15, 0, 15, 10);
 
@@ -272,7 +265,7 @@ namespace UI.Controls.SettingPanel
 
                 if (!attribute.IsCanRepeat)
                 {
-                    if (SettingData[pi.Name].Contains(textBox.Text) && textBox.Tag.ToString() != textBox.Text)
+                    if (SettingData[pi.Name].Contains(textBox.Text) && textBox.Tag?.ToString() != textBox.Text)
                     {
                         textBox.ShowError();
                         return;

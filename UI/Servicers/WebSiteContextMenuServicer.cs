@@ -3,11 +3,13 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Core.Models.Db;
 using Core.Servicers.Interfaces;
+using Infrastructure.Librarys;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using UI.Controls.Charts.Model;
@@ -108,7 +110,7 @@ namespace UI.Servicers
                 data.Name = string.IsNullOrEmpty(input) ? site.Title : input;
                 site.Alias = input;
 
-                _webData.Update(site);
+                await _webData.UpdateAsync(site);
 
                 _main.Success("别名已更新");
                 Debug.WriteLine("输入内容：" + input);
@@ -148,8 +150,20 @@ namespace UI.Servicers
             var site = data.Data as WebSiteModel;
             if (!string.IsNullOrEmpty(site.Domain))
             {
-                 Process.Start($"http://{site.Domain}");
                 _main.Info("操作已执行");
+                try
+                {
+                    ProcessStartInfo psi = new ProcessStartInfo
+                    {
+                        FileName = $"http://{site.Domain}",
+                        UseShellExecute = true
+                    };
+                    Process.Start(psi);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("打开网址链接"+ex);
+                }
             }
         }
 
@@ -192,7 +206,7 @@ namespace UI.Servicers
 
             var data = _menu.Tag as ChartsDataModel;
             var site = data.Data as WebSiteModel;
-            var categories = await _webData.GetWebSiteCategories();
+            var categories = await _webData.GetWebSiteCategoriesAsync();
             foreach (var category in categories)
             {
                 var categoryMenu = new MenuItem();
@@ -211,11 +225,11 @@ namespace UI.Servicers
         private async void UpdateSiteCategory(ChartsDataModel data, int categoryId_)
         {
 
-            var category = await _webData.GetWebSiteCategory(categoryId_);
+            var category = await _webData.GetWebSiteCategoryAsync(categoryId_);
             if (category != null)
             {
                 WebSiteModel site_ = data.Data as WebSiteModel;
-                _webData.UpdateWebSitesCategory(new int[] { site_.ID }, categoryId_);
+                await _webData.UpdateWebSitesCategoryAsync(new int[] { site_.ID }, categoryId_);
                 site_.CategoryID = categoryId_;
                 site_.Category = category;
 

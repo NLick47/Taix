@@ -50,6 +50,9 @@ namespace Core.Librarys.SQLite
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlite($"Data Source={_dbFilePath}");
+#if DEBUG
+            optionsBuilder.LogTo(message => Debug.WriteLine(message));
+#endif
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -57,9 +60,11 @@ namespace Core.Librarys.SQLite
 
         }
 
-        public void SelfCheck()
+        public string ToTraceString<T>(IQueryable<T> query)
         {
-            Database.ExecuteSqlInterpolated($"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='tai'");
-        } 
+            return ((System.Linq.IQueryable)query).Provider.ToString();
+        }
+
+
     }
 }

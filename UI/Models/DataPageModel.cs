@@ -96,6 +96,7 @@ namespace UI.Models
         }
 
         private ContextMenu AppContextMenu_;
-        public ContextMenu AppContextMenu { get { return AppContextMenu_; } set { AppContextMenu_ = value; OnPropertyChanged(); } }
+        public ContextMenu AppContextMenu { get { return AppContextMenu_; } 
+            set { AppContextMenu_ = value; OnPropertyChanged(); } }
     }
 }

@@ -24,12 +24,12 @@ namespace Core.Servicers.Instances
             return _apps;
         }
 
-        public void Load()
+        public async Task LoadAsync()
         {
             Debug.WriteLine("加载app开始");
             using (var db = new TaiDbContext())
             {
-                _apps = (from app in db.App
+                _apps = await (from app in db.App
                          join category in db.Categorys
                          on app.CategoryID equals category.ID into categoryGroup
                          from n in categoryGroup.DefaultIfEmpty()
@@ -44,7 +44,7 @@ namespace Core.Servicers.Instances
                              Name = app.Name,
                              Alias = app.Alias,
                              TotalTime = app.TotalTime
-                         }).ToList();
+                         }).ToListAsync();
             }
         }
 

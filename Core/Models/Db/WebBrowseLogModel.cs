@@ -11,6 +11,8 @@ namespace Core.Models.Db
     /// <summary>
     /// 网页浏览记录
     /// </summary>
+    /// 
+    [Table("WebBrowseLogModels")]
     public class WebBrowseLogModel
     {
         [Key]

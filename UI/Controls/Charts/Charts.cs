@@ -10,6 +10,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Core.Librarys;
 using Core.Servicers.Instances;
+using DynamicData;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -352,19 +353,37 @@ namespace UI.Controls.Charts
         {
             base.OnPropertyChanged(change);
             var charts = (change.Sender as Charts);
-            if (change.Property == DataProperty && change.OldValue != change.NewValue)
+            if (change.Property == DataProperty)
             {
                 charts.Render();
-            
+
             }
             if (change.Property == IsLoadingProperty)
             {
                 charts.Render();
             }
-            if (change.Property == ColumnSelectedIndexProperty && change.OldValue != change.NewValue)
+            if (change.Property == ColumnSelectedIndexProperty)
             {
                 charts.SetColBorderActiveBg((int)change.OldValue, (int)change.NewValue);
             }
+            if (change.Property == ItemMenuProperty)
+            {
+                (var oldVal, var newVal) = change.GetOldAndNewValue<ContextMenu>();
+                if (oldVal != null && _listView != null)
+                {
+                    oldVal.Opening -= OnContextMenuOpening;
+                    _listView.SelectionChanged -= _listView_SelectionChanged;
+
+                }
+                if (newVal != null && _listView != null)
+                {
+                    _listView.ContextMenu = newVal;
+                    newVal.Opening += OnContextMenuOpening;
+                    _listView.SelectionChanged += _listView_SelectionChanged;
+                }
+
+            }
+
 
         }
 
@@ -585,23 +604,19 @@ namespace UI.Controls.Charts
             }
 
             isRendering = false;
-
+            if (ItemMenu != null)
+            {
+                ItemMenu.Opening -= OnContextMenuOpening;
+                _listView.SelectionChanged -= _listView_SelectionChanged;
+                _listView.ContextMenu = ItemMenu;
+                ItemMenu.Opening += OnContextMenuOpening;
+                _listView.SelectionChanged += _listView_SelectionChanged;
+            }
             if (_searchBox != null)
             {
                 _searchBox.TextChanged -= SearchBox_TextChanged;
                 _searchBox.TextChanged += SearchBox_TextChanged;
             }
-
-            if (ItemMenu != null)
-            {
-                _listView.ContextMenu = ItemMenu;
-                ItemMenu.Opening -= OnContextMenuOpening;
-                _listView.SelectionChanged -= _listView_SelectionChanged;
-
-                ItemMenu.Opening += OnContextMenuOpening;
-                _listView.SelectionChanged += _listView_SelectionChanged;
-            }
-
 
             _listView.PointerReleased += OnListViewPointerReleased;
 

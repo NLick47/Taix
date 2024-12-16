@@ -44,6 +44,8 @@ namespace Win
             _foregroundEventDelegate = new WinEventDelegate(ForegroundEventCallback);
         }
 
+        const int delayDuration = 1000;
+
         private bool _isProcessing = false;
 
         private async void ForegroundEventCallback(nint hWinEventHook, uint eventType, nint hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
@@ -58,7 +60,7 @@ namespace Win
             OnAppActiveChanged?.Invoke(this, args);
             if (args.App.Type == AppType.SystemComponent)
             {
-                await Task.Delay(1500);
+                await Task.Delay(delayDuration);
                 DelayDetect();
             }
             _isProcessing = false;

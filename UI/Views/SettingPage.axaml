@@ -82,7 +82,7 @@
 						<Image Width="25" Source="/Resources/Icons/tai.ico" HorizontalAlignment="Left"/>
 						<StackPanel Orientation="Horizontal" Margin="0,10,0,0">
 							<TextBlock VerticalAlignment="Center">
-								<Run Text="Tai 版本号 "/>
+								<Run Text="Taix 版本号 "/>
 								<Run Text="{Binding Version}"/>
 							</TextBlock>
 							<Btn:Button IsVisible="{Binding CheckUpdateBtnVisibility}" 
@@ -98,11 +98,11 @@
 						</TextBlock>
 						<TextBlock Margin="0,15,0,0">
 							<Run Text="开源 "/>
-							<HyperlinkButton Command="{Binding OpenURL}" CommandParameter="https://github.com/Planshit/Tai">https://github.com/Planshit/Tai</HyperlinkButton>
+							<HyperlinkButton Command="{Binding OpenURL}" CommandParameter="https://github.com/NLick47/Taix">https://github.com/NLick47/Taix</HyperlinkButton>
 						</TextBlock>
 						<TextBlock Margin="0,5,0,0">
 							<Run Text="讨论 "/>
-							<HyperlinkButton Command="{Binding OpenURL}" CommandParameter="https://github.com/Planshit/Tai/discussions">https://github.com/Planshit/Tai/discussions</HyperlinkButton>
+							<HyperlinkButton Command="{Binding OpenURL}" CommandParameter="https://github.com/NLick47/Taix/discussions">https://github.com/NLick47/Taix/discussions</HyperlinkButton>
 						</TextBlock>
 
 						<TextBlock Margin="0,10,0,0">

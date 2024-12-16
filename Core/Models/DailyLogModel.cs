@@ -10,6 +10,8 @@ namespace Core.Models
     /// <summary>
     /// 每日使用数据
     /// </summary>
+    /// 
+    [Table("DailyLogModels")]
     public class DailyLogModel
     {
         public int ID { get; set; }

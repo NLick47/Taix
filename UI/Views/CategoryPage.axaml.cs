@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.ReactiveUI;
@@ -39,6 +40,15 @@ public partial class CategoryPage : TPage
        
     }
 
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+        if(_model != null)
+        {
+            _model.IsEditError = false;
+        }
+    }
+
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
@@ -47,6 +57,7 @@ public partial class CategoryPage : TPage
         if (_model?.EditDirectories != null)
         {
             _model.EditDirectories.CollectionChanged -= OnEditDirectoriesCollectionChanged;
+            _model = null;
         }
     }
 

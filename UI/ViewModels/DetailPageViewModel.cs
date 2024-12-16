@@ -231,7 +231,7 @@ namespace UI.ViewModels
             bool isConfirm = await _uIServicer.ShowConfirmDialogAsync("清空确认", "是否确定清空此应用的所有统计数据？");
             if (isConfirm)
             {
-                await data.Clear(App.ID);
+                await data.ClearAsync(App.ID);
                 await LoadChartData();
                 await LoadData();
                 main.Toast("操作已执行", Controls.Window.ToastType.Success, Controls.Base.IconTypes.Accept);
@@ -480,13 +480,13 @@ namespace UI.ViewModels
         {
             if (App != null)
             {
-                var monthData = await data.GetProcessMonthLogList(App.ID, Date);
+                var monthData = await data.GetProcessMonthLogListAsync(App.ID, Date);
                 int monthTotal = monthData.Sum(m => m.Time);
                 Total = Time.ToString(monthTotal);
 
                 DateTime start = new DateTime(Date.Year, Date.Month, 1);
                 DateTime end = new DateTime(Date.Year, Date.Month, DateTime.DaysInMonth(Date.Year, Date.Month));
-                var monthAllData = await data.GetDateRangelogList(start, end);
+                var monthAllData = await data.GetDateRangelogListAsync(start, end);
 
                 LongDay = "暂无数据";
                 if (monthData.Count > 0)
@@ -524,7 +524,7 @@ namespace UI.ViewModels
                 if (App != null)
                 {
                     main.Toast("正在处理");
-                    await data.Clear(App.ID, Date);
+                    await data.ClearAsync(App.ID, Date);
 
                     await LoadData();
                     await LoadInfo();
@@ -563,7 +563,7 @@ namespace UI.ViewModels
         {
             DataMaximum = 3600;
 
-            var list = await data.GetAppDayData(App.ID, ChartDate);
+            var list = await data.GetAppDayDataAsync(App.ID, ChartDate);
 
             var chartData = new List<ChartsDataModel>();
 
@@ -591,7 +591,7 @@ namespace UI.ViewModels
 
             WeekDateStr = weekDateArr[0].ToString("yyyy年MM月dd日") + " 到 " + weekDateArr[1].ToString("yyyy年MM月dd日");
 
-            var list = await data.GetAppRangeData(App.ID, weekDateArr[0], weekDateArr[1]);
+            var list = await data.GetAppRangeDataAsync(App.ID, weekDateArr[0], weekDateArr[1]);
 
             var chartData = new List<ChartsDataModel>();
 
@@ -620,7 +620,7 @@ namespace UI.ViewModels
             DataMaximum = 0;
             var dateArr = Time.GetMonthDate(MonthDate);
 
-            var list = await data.GetAppRangeData(App.ID, dateArr[0], dateArr[1]);
+            var list = await data.GetAppRangeDataAsync(App.ID, dateArr[0], dateArr[1]);
 
             var chartData = new List<ChartsDataModel>();
 
@@ -646,7 +646,7 @@ namespace UI.ViewModels
         {
             DataMaximum = 0;
 
-            var list = await data.GetAppYearData(App.ID, YearDate);
+            var list = await data.GetAppYearDataAsync(App.ID, YearDate);
 
             var chartData = new List<ChartsDataModel>();
 

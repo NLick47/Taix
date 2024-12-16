@@ -11,11 +11,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "Core\Core.csproj", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Platform", "Platform", "{E9416DE9-ED0C-4721-8E64-94AA8C736B15}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Win", "Platform\Win\Win.csproj", "{B081807C-B03C-484A-A887-2CE1EE7323D1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Win", "Platform\Win\Win.csproj", "{B081807C-B03C-484A-A887-2CE1EE7323D1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linux", "Platform\Linux\Linux.csproj", "{6E46D332-DC44-4951-A2BC-5299BDDDCAC2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Linux", "Platform\Linux\Linux.csproj", "{6E46D332-DC44-4951-A2BC-5299BDDDCAC2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mac", "Platform\Mac\Mac.csproj", "{0A8B7E8F-2141-4E6D-A19C-8EDAA36C8AE7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mac", "Platform\Mac\Mac.csproj", "{0A8B7E8F-2141-4E6D-A19C-8EDAA36C8AE7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaixBug", "TaixBug\TaixBug.csproj", "{645C09E3-DD5C-4FE9-9173-6FC1D6021CFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +49,10 @@ Global
 		{0A8B7E8F-2141-4E6D-A19C-8EDAA36C8AE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0A8B7E8F-2141-4E6D-A19C-8EDAA36C8AE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0A8B7E8F-2141-4E6D-A19C-8EDAA36C8AE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{645C09E3-DD5C-4FE9-9173-6FC1D6021CFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{645C09E3-DD5C-4FE9-9173-6FC1D6021CFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{645C09E3-DD5C-4FE9-9173-6FC1D6021CFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{645C09E3-DD5C-4FE9-9173-6FC1D6021CFB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

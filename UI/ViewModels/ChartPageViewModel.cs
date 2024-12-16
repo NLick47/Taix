@@ -32,6 +32,8 @@ namespace UI.ViewModels
         public ICommand RefreshCommand { get; set; }
         public List<SelectItemModel> ChartDataModeOptions { get; set; }
 
+       
+
         public ChartPageViewModel(IData data, ICategorys categorys, MainViewModel mainVM,
             IWebData webData_, IWebSiteContextMenuServicer webSiteContextMenu_, IAppContextMenuServicer appContextMenuServicer)
         {
@@ -77,7 +79,7 @@ namespace UI.ViewModels
 
             ChartDataModeOptions = chartDataModeOptions;
             ChartDataMode = chartDataModeOptions[0];
-            //ShowType = ShowTypeOptions[0];
+            ShowType = ShowTypeOptions[0];
             WeekOptions = weekOptions;
             SelectedWeek = weekOptions[0];
             MonthDate = DateTime.Now;
@@ -226,7 +228,7 @@ namespace UI.ViewModels
             var chartData = new List<ChartsDataModel>();
             var sumData = new List<ChartsDataModel>();
 
-            var list = await data.GetCategoryHoursData(Date);
+            var list = await data.GetCategoryHoursDataAsync(Date);
             var nullCategory = new CategoryModel()
             {
                 ID = 0,
@@ -264,7 +266,7 @@ namespace UI.ViewModels
             else
             {
                 //  汇总
-                var values = await data.GetRangeTotalData(Date, Date);
+                var values = await data.GetRangeTotalDataAsync(Date, Date);
 
 
                 var dataItem = new ChartsDataModel()
@@ -303,7 +305,7 @@ namespace UI.ViewModels
             var chartData = new List<ChartsDataModel>();
             var sumData = new List<ChartsDataModel>();
 
-            var list = await data.GetCategoryRangeData(weekDateArr[0], weekDateArr[1]);
+            var list = await data.GetCategoryRangeDataAsync(weekDateArr[0], weekDateArr[1]);
             var nullCategory = new CategoryModel()
             {
                 ID = 0,
@@ -345,7 +347,7 @@ namespace UI.ViewModels
             else
             {
                 //  汇总
-                var values = await data.GetRangeTotalData(weekDateArr[0], weekDateArr[1]);
+                var values = await data.GetRangeTotalDataAsync(weekDateArr[0], weekDateArr[1]);
 
 
                 var dataItem = new ChartsDataModel()
@@ -382,7 +384,7 @@ namespace UI.ViewModels
             var sumData = new List<ChartsDataModel>();
             var dateArr = Time.GetMonthDate(MonthDate);
 
-            var list = await data.GetCategoryRangeData(dateArr[0], dateArr[1]);
+            var list = await data.GetCategoryRangeDataAsync(dateArr[0], dateArr[1]);
 
             var nullCategory = new CategoryModel()
             {
@@ -422,7 +424,7 @@ namespace UI.ViewModels
             else
             {
                 //  汇总
-                var values = await data.GetRangeTotalData(dateArr[0], dateArr[1]);
+                var values = await data.GetRangeTotalDataAsync(dateArr[0], dateArr[1]);
 
                 var dataItem = new ChartsDataModel()
                 {
@@ -459,7 +461,7 @@ namespace UI.ViewModels
                 names[i] = (i + 1) + "月";
             }
 
-            var list = await data.GetCategoryYearData(YearDate);
+            var list = await data.GetCategoryYearDataAsync(YearDate);
             var nullCategory = new CategoryModel()
             {
                 ID = 0,
@@ -500,7 +502,7 @@ namespace UI.ViewModels
             else
             {
                 //  汇总
-                var values = await data.GetMonthTotalData(YearDate);
+                var values = await data.GetMonthTotalDataAsync(YearDate);
                 var dataItem = new ChartsDataModel()
                 {
                     Values = values,
@@ -551,14 +553,13 @@ namespace UI.ViewModels
                 dateStart = dateArr[0];
                 dateEnd = dateArr[1];
             }
-            var list = await data.GetDateRangelogList(dateStart, dateEnd, 5);
+            var list = await data.GetDateRangelogListAsync(dateStart, dateEnd, 5);
             TopData = MapToChartsData(list);
 
             TopHours = TopData.Count > 0 ? Time.ToHoursString(TopData[0].Value) : "0";
 
-            appCount_ = await data.GetDateRangeAppCount(dateStart, dateEnd);
+            appCount_ = await data.GetDateRangeAppCountAsync(dateStart, dateEnd);
             AppCount = appCount_.ToString();
-
             Top1App = null;
 
             if (TopData.Count > 0)
@@ -597,9 +598,9 @@ namespace UI.ViewModels
             }
 
             //  应用量
-            int lastAppCount = await data.GetDateRangeAppCount(dateStart, dateEnd);
+            int lastAppCount = await data.GetDateRangeAppCountAsync(dateStart, dateEnd);
             //  使用总时长
-            var lastTotalTime = (await data.GetRangeTotalData(dateStart, dateEnd)).Sum();
+            var lastTotalTime = (await data.GetRangeTotalDataAsync(dateStart, dateEnd)).Sum();
 
             double diffTotalTime = ((totalTime_ - lastTotalTime) / lastTotalTime) * 100;
             if (totalTime_ > 0 && lastTotalTime == 0)
@@ -639,9 +640,9 @@ namespace UI.ViewModels
             }
             DiffAppCountValue = DiffAppCountType == "0" ? string.Empty : Math.Abs(diffAppCount).ToString();
 
-            LastWebTotalTime = await _webData.GetBrowseDurationTotal(dateStart, dateEnd);
-            LastWebSiteCount = await _webData.GetBrowseSitesTotal(dateStart, dateEnd);
-            LastWebPageCount = await _webData.GetBrowsePagesTotal(dateStart, dateEnd);
+            LastWebTotalTime = await _webData.GetBrowseDurationTotalAsync(dateStart, dateEnd);
+            LastWebSiteCount = await _webData.GetBrowseSitesTotalAsync(dateStart, dateEnd);
+            LastWebPageCount = await _webData.GetBrowsePagesTotalAsync(dateStart, dateEnd);
         }
 
         private List<ChartsDataModel> MapToChartsData(IEnumerable<Core.Models.DailyLogModel> list)
@@ -681,7 +682,7 @@ namespace UI.ViewModels
                 //  天
                 var time = new DateTime(Date.Year, Date.Month, Date.Day, ColumnSelectedIndex, 0, 0);
                 DayHoursSelectedTime = time.ToString("yyyy年MM月dd日 HH点");
-                hoursModelList = await data.GetTimeRangelogList(time);
+                hoursModelList = await data.GetTimeRangelogListAsync(time);
             }
             else if (TabbarSelectedIndex == 1)
             {
@@ -689,7 +690,7 @@ namespace UI.ViewModels
                 var weekDateArr = SelectedWeek.Name == "本周" ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
                 var time = weekDateArr[0].AddDays(ColumnSelectedIndex);
                 DayHoursSelectedTime = time.ToString("yyyy年MM月dd日");
-                daysModelList = await data.GetDateRangelogList(time, time);
+                daysModelList = await data.GetDateRangelogListAsync(time, time);
             }
             else if (TabbarSelectedIndex == 2)
             {
@@ -697,7 +698,7 @@ namespace UI.ViewModels
                 var dateArr = Time.GetMonthDate(MonthDate);
                 var time = dateArr[0].AddDays(ColumnSelectedIndex);
                 DayHoursSelectedTime = time.ToString("yyyy年MM月dd日");
-                daysModelList = await data.GetDateRangelogList(time, time);
+                daysModelList = await data.GetDateRangelogListAsync(time, time);
             }
             else if (TabbarSelectedIndex == 3)
             {
@@ -706,7 +707,7 @@ namespace UI.ViewModels
                 var dateEnd = new DateTime(dateStart.Year, dateStart.Month, DateTime.DaysInMonth(dateStart.Year, dateStart.Month), 23, 59, 59);
 
                 DayHoursSelectedTime = dateStart.ToString("yyyy年MM月");
-                daysModelList = await data.GetDateRangelogList(dateStart, dateEnd);
+                daysModelList = await data.GetDateRangelogListAsync(dateStart, dateEnd);
             }
 
             if (TabbarSelectedIndex == 0)
@@ -746,12 +747,11 @@ namespace UI.ViewModels
         #region 网页数据
         private async Task LoadWebData(DateTime start_, DateTime end_)
         {
-            await LoadCategoriesStatistics(start_, end_);
-            await LoadWebBrowseDataStatistics(start_, end_);
-            await LoadWebSitesTopData(start_, end_);
-            WebTotalTime = await _webData.GetBrowseDurationTotal(start_, end_);
-            WebSiteCount = await _webData.GetBrowseSitesTotal(start_, end_);
-            WebPageCount = await _webData.GetBrowsePagesTotal(start_, end_);
+            await Task.WhenAll(LoadCategoriesStatistics(start_, end_), LoadWebSitesTopData(start_, end_), 
+                LoadWebBrowseDataStatistics(start_, end_)).ConfigureAwait(false);
+            WebTotalTime = await _webData.GetBrowseDurationTotalAsync(start_, end_);
+            WebSiteCount = await _webData.GetBrowseSitesTotalAsync(start_, end_);
+            WebPageCount = await _webData.GetBrowsePagesTotalAsync(start_, end_);
             WebTotalTimeText = Time.ToHoursString(WebTotalTime);
         }
 
@@ -764,10 +764,10 @@ namespace UI.ViewModels
         {
 
             var chartsDatas = new List<ChartsDataModel>();
-            var data = await _webData.GetCategoriesStatistics(start_, end_);
+            var data = await _webData.GetCategoriesStatisticsAsync(start_, end_);
             foreach (var item in data)
             {
-                var category = await _webData.GetWebSiteCategory(item.ID);
+                var category = await _webData.GetWebSiteCategoryAsync(item.ID);
                 var bindModel = new ChartsDataModel();
                 bindModel.Name = item.ID == 0 ? "未分类" : item.Name;
                 bindModel.Value = item.Value;
@@ -786,7 +786,7 @@ namespace UI.ViewModels
         {
 
             var chartData = new List<ChartsDataModel>();
-            var data = await _webData.GetBrowseDataByCategoryStatistics(start_, end_);
+            var data = await _webData.GetBrowseDataByCategoryStatisticsAsync(start_, end_);
             //  转换为图表格式数据
             var emptyCategory = new WebSiteCategoryModel()
             {
@@ -812,7 +812,7 @@ namespace UI.ViewModels
 
             foreach (var item in data)
             {
-                var category = await _webData.GetWebSiteCategory(item.CategoryID);
+                var category = await _webData.GetWebSiteCategoryAsync(item.CategoryID);
                 if (item.CategoryID == 0)
                 {
                     category = emptyCategory;
@@ -842,7 +842,7 @@ namespace UI.ViewModels
 
         private async Task LoadWebSitesTopData(DateTime start_, DateTime end_)
         {
-            var data = await _webData.GetDateRangeWebSiteList(start_, end_, 10);
+            var data = await _webData.GetDateRangeWebSiteListAsync(start_, end_, 10);
             WebSitesTopData = MapToChartData(data);
         }
         private async Task LoadWebSitesColSelectedData()
@@ -893,7 +893,7 @@ namespace UI.ViewModels
                 endTime = dateEnd;
 
             }
-            chartData = MapToChartData(await _webData.GetDateRangeWebSiteList(startTime, endTime, 0, -1, isTime));
+            chartData = MapToChartData(await _webData.GetDateRangeWebSiteListAsync(startTime, endTime, 0, -1, isTime));
 
             WebSitesColSelectedData = chartData;
         }

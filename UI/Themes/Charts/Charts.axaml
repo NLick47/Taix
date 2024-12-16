@@ -227,7 +227,7 @@
                                         HorizontalAlignment="Left"
                                         Margin="0,0,0,-22" />
 
-											<ListBox ItemsSource="{TemplateBinding ColumnValuesInfoList}"
+											<ListBox  ItemsSource="{TemplateBinding ColumnValuesInfoList}"
 													 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 												<ListBox.ItemsPanel>
 													<ItemsPanelTemplate>

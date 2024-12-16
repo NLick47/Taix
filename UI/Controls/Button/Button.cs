@@ -30,7 +30,7 @@ namespace UI.Controls.Button
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if(change.Property == ContentProperty)
+            if(change.Property == ValueProperty)
             {
                 var button = change.Sender as Button;
                 button?.SetContent();
