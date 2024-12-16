@@ -12,11 +12,11 @@ Taix是[Tai](https://github.com/Planshit/Tai)对一次技术迁移。由wpf ,.ne
 
 #### 数据迁移
 
-如果你已经在使用Tai了想尝试这个应用，可以直接将Tai目录下的Data/data.db文件直接复制到Taix Data/目录下。并且可以将AppIcons目录一同替换
+如果你已经在使用Tai了想尝试这个应用，可以直接将Tai目录下的Data/data.db文件直接复制到Taix Data/目录下。并且可以将AppIcons目录一同替换。
 
 #### 使用
 
-1. 在 [releases](https://github.com/Planshit/Tai/releases) 中可以下载已经编译好的 exe 可执行文件压缩包。建议优选选择标记有 `Latest` 的版本，划到下方的 `Assets` 找到 `Taix.x.x.x.zip` 点击下载；
+1. 在 [releases](https://github.com/NLick47/Taix/releases) 中可以下载已经编译好的 exe 可执行文件压缩包。建议优选选择标记有 `Latest` 的版本，划到下方的 `Assets` 找到 `Taix.x.x.x.zip` 点击下载；
 2. 下载压缩包后解压到合适的位置（建议不要解压到桌面、系统盘），进入解压后的文件夹内，找到 `👻Tai.exe` ，启动程序，成功启动后你将在状态栏看到 👻 图标；
 3. 使用 `网站浏览统计` 功能需要安装相应的浏览器拓展并且在 设置 > 常规 > 功能中启用。[下载安装浏览器插件说明](https://github.com/Planshit/Tai/discussions/279);
 4. 请以管理员身份运行 Tai ，否则无法统计部分软件。
@@ -82,7 +82,7 @@ Tai 能够一定程度地发现用户离开电脑从而停止统计，也可以�
 
 
 
-## 之后的任务
+## Taix之后的任务
 
 1. 完成多语言切换
 2. Aot发布
