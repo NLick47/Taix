@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Core.Servicers.Instances;
 using Core.Servicers.Interfaces;
-using NPOI.OpenXmlFormats.Dml.Diagram;
+using System.Reactive.Concurrency;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
@@ -111,7 +111,7 @@ namespace UI.ViewModels
                 ID = 3,
             });
 
-            LoadDefaultPage();
+          
         }
 
         public void Toast(string content, ToastType type = ToastType.Info, IconTypes icon = IconTypes.Accept)
@@ -127,11 +127,17 @@ namespace UI.ViewModels
 
         public void LoadDefaultPage()
         {
-            //int startPageIndex = appConfig.GetConfig().General.StartPage;
-            //NavSelectedItem = Items[startPageIndex];
-            //Uri = NavSelectedItem.Uri;
-            NavSelectedItem = Items.First();
-            Uri = NavSelectedItem.Uri;
+            int startPageIndex = appConfig.GetConfig().General.StartPage;
+            NavSelectedItem = Items[startPageIndex];
+            if(NavSelectedItem != Items[startPageIndex])
+            {
+                NavSelectedItem = Items[startPageIndex];
+            }
+            Uri = Items[startPageIndex].Uri;
+            if(Uri != Items[startPageIndex].Uri)
+            {
+                Uri = Items[startPageIndex].Uri;
+            }
         }
 
         private void SubscribeToResource(string key)

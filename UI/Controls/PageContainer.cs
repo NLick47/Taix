@@ -57,7 +57,7 @@ namespace UI.Controls
         }
 
         public static readonly StyledProperty<string> UriProperty =
-          AvaloniaProperty.Register<PageContainer, string>(nameof(Uri),string.Empty);
+          AvaloniaProperty.Register<PageContainer, string>(nameof(Uri), string.Empty);
 
 
         public PageContainer Instance { get { return GetValue(InstanceProperty); } set { SetValue(InstanceProperty, value); } }
@@ -81,8 +81,8 @@ namespace UI.Controls
         public PageContainer()
         {
             ProjectName = "UI";
-            Historys = new ();
-            PageCache = new ();
+            Historys = new();
+            PageCache = new();
             BackCommand = ReactiveCommand.Create<object>(OnBackCommand);
         }
 
@@ -157,23 +157,21 @@ namespace UI.Controls
         private void OnUriChanged(AvaloniaPropertyChangedEventArgs e)
         {
             var control = e.Sender as PageContainer;
-            if (e.NewValue != e.OldValue)
+            if (string.IsNullOrEmpty(e.NewValue?.ToString())) return;
+            var oldUri = e.OldValue?.ToString();
+            if (control.PageCache.ContainsKey(oldUri))
             {
-                var oldUri = e.OldValue?.ToString();
-                if (control.PageCache.ContainsKey(oldUri))
-                {
-                    PageModel page = control.PageCache[oldUri];
-                    page.ScrollValue = control.ScrollViewer.Offset.Y;
-                }
-                control.LoadPage();
+                PageModel page = control.PageCache[oldUri];
+                page.ScrollValue = control.ScrollViewer.Offset.Y;
             }
+            control.LoadPage();
         }
 
 
         private PageModel GetPage()
         {
             UserControl page = null;
-            if(PageCache.ContainsKey(Uri) && !IndexUriList.Contains(Uri))
+            if (PageCache.ContainsKey(Uri) && !IndexUriList.Contains(Uri))
             {
                 return PageCache[Uri];
             }

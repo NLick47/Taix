@@ -20,6 +20,13 @@
         ToastType="{Binding ToastType}"
 		Height="553" Width="815" MinHeight="553" MinWidth="814"
         Title="Taix">
+	<Interaction.Behaviors>
+		<EventTriggerBehavior EventName="Loaded">
+			<InvokeCommandAction
+				Command="{Binding LoadDefaultPage}" />
+		</EventTriggerBehavior>
+	</Interaction.Behaviors>
+	
 	<Grid>
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Width="Auto"/>
