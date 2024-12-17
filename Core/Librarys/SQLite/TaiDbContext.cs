@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 
 namespace Core.Librarys.SQLite
 {
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+
     public class TaiDbContext : DbContext
     {
         /// <summary>
