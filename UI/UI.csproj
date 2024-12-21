@@ -22,14 +22,8 @@
 	<ItemGroup>
 		<TrimmerRootAssembly Include="Microsoft.Data.Sqlite" />
 		<TrimmerRootAssembly Include="Microsoft.CSharp" />
-		<!--<TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore.Diagnostics" />-->
-		<!--<TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore.Utilities" />-->
 		<TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore.Abstractions" />
-		<!--<TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore.Query.Internal" />-->
-		<!--<TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore.Infrastructure" />-->
-		<!--<TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore.Diagnostics;" />-->
-		<!--<TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore.Migrations" />-->
-		<!--<TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore.Metadata" />-->
+	
 		<TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore" />
 		<TrimmerRootAssembly Include="MicroCom.Runtime" />
 		<TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore.Relational" />
@@ -44,14 +38,12 @@
 		<TrimmerRootAssembly Include="Microsoft.Extensions.Logging" />
 		<TrimmerRootAssembly Include="Microsoft.Extensions.Options" />
 		<TrimmerRootAssembly Include="Microsoft.Extensions.Primitives" />
-		<TrimmerRootAssembly Include="Avalonia.Xaml.Interactions.Custom" />
-		<TrimmerRootAssembly Include="Avalonia.Xaml.Interactions.DragAndDrop" />
-		<TrimmerRootAssembly Include="Avalonia.Xaml.Interactions.Draggable" />
-		<TrimmerRootAssembly Include="Avalonia.Xaml.Interactions.Events" />
-		<TrimmerRootAssembly Include="Avalonia.Xaml.Interactions.Responsive" />
-		<TrimmerRootAssembly Include="Avalonia.Xaml.Interactivity" />
 		<TrimmerRootAssembly Include="Taix" />
 		<TrimmerRootAssembly Include="Core" />
+		<TrimmerRootAssembly Include="Avalonia.Controls" />
+		<TrimmerRootAssembly Include="Microsoft.Win32.SystemEvents" />
+		<TrimmerRootAssembly Include="Microsoft.Win32.TaskScheduler" />
+
 	</ItemGroup>
 
 	<ItemGroup>

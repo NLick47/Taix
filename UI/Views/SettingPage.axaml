@@ -36,10 +36,6 @@
 			</TabItem>
 			
 			<TabItem Foreground="{DynamicResource StandardTextBrush}">
-				<SettingPanel:SettingPanel Data="{Binding Data,Mode=TwoWay}" Margin="0,0,0,10"/>
-			</TabItem>
-
-			<TabItem Foreground="{DynamicResource StandardTextBrush}">
 				<SettingPanel:SettingPanel Data="{Binding Data,Mode=TwoWay}" Margin="0,0,0,0"/>
 			</TabItem>
 

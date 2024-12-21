@@ -48,7 +48,7 @@ namespace UI.Controls.SettingPanel
         private object configData;
         private IconButton FoldBtn;
 
-        protected override Type StyleKeyOverride => typeof(SettingPanel);
+        protected override Type StyleKeyOverride => typeof(SettingPanelMultiItem);
 
         public SettingPanelMultiItem()
         {
@@ -193,9 +193,9 @@ namespace UI.Controls.SettingPanel
 
             addBtn.Click += (e, c) =>
             {
-                addInputBox.Error = attribute.Name + (addInputBox.Text == String.Empty ? "不能为空" : "已存在");
+                addInputBox.Error = attribute.Name + (string.IsNullOrEmpty(addInputBox.Text) ? "不能为空" : "已存在");
 
-                if (addInputBox.Text == String.Empty || list.Contains(addInputBox.Text))
+                if ((string.IsNullOrEmpty(addInputBox?.Text) || list.Contains(addInputBox.Text)))
                 {
                     addInputBox.ShowError();
                     return;

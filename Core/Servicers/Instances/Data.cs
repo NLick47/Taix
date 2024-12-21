@@ -624,12 +624,12 @@ namespace Core.Servicers.Instances
                            .Where(log => log.Date >= startDateTime && log.Date <= endDateTime)
                            .ToListAsync();
 
-            db.Remove(logsToDelete);
+            db.DailyLog.RemoveRange(logsToDelete);
 
             var hoursToDelete = await db.HoursLog
                            .Where(log => log.DataTime >= startDateTime && log.DataTime <= endDateTime)
                            .ToListAsync();
-            db.Remove(hoursToDelete);
+            db.HoursLog.RemoveRange(hoursToDelete);
             await db.SaveChangesAsync();
         }
 

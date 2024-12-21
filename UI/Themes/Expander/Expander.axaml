@@ -1,0 +1,71 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:btn="using:UI.Controls.Button"
+		xmlns:base="using:UI.Controls.Base"
+        xmlns:controls="using:UI.Controls.Expander">
+
+
+	<ControlTheme x:Key="{x:Type controls:Expander}" TargetType="controls:Expander">
+		<Setter Property="Background" Value="{DynamicResource ExpanderBgBrush}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource SettingPanelBorderBrush}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="6"/>
+		<Setter Property="Padding" Value="15"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border ClipToBounds="True" Background="Transparent">
+					<Grid Background="Transparent">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto" />
+							<RowDefinition Height="{Binding Height,ElementName=ContentHeight}" />
+						</Grid.RowDefinitions>
+
+						<Canvas x:Name="ContentHeight" IsVisible="False"  Height="0"/>
+
+						<Border x:Name="HeaderBorder"
+							   Grid.Row="0"
+							   Padding="{TemplateBinding Padding}"
+						Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="{TemplateBinding CornerRadius}" ZIndex="2">
+
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="40" />
+
+								</Grid.ColumnDefinitions>
+
+								<ContentPresenter
+								Margin="4"
+								RecognizesAccessKey="True" TextElement.FontSize="14" VerticalAlignment="Center"/>
+								<btn:IconButton x:Name="ExpBtn" Grid.Column="1" Command="{Binding ExpanderCommand,RelativeSource={RelativeSource TemplatedParent} }">
+									<base:Icon x:Name="Icon" IconType="ChevronDownMed" FontSize="12" RenderTransformOrigin=".5,.5">
+										<base:Icon.RenderTransform>
+											<RotateTransform Angle="0"/>
+										</base:Icon.RenderTransform>
+									</base:Icon>
+								</btn:IconButton>
+
+								<Border x:Name="Content"
+								Grid.Row="1"
+								BorderThickness="1,0,1,1"
+								BorderBrush="{TemplateBinding BorderBrush}"
+								Background="{DynamicResource ExpanderContentBgBrush}"
+								CornerRadius="0,0,6,6">
+									<Border.RenderTransform>
+										<TranslateTransform X="0" Y="0"/>
+									</Border.RenderTransform>
+									<StackPanel x:Name="ContentStackPanel">
+										<ContentPresenter Content="{TemplateBinding Content}"
+														  ContentTemplate="{TemplateBinding ContentTemplate}"/>
+									</StackPanel>
+								</Border>
+							</Grid>
+						</Border>
+					</Grid>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</ControlTheme>
+</ResourceDictionary>

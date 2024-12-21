@@ -17,7 +17,7 @@ using Avalonia.Media;
 using System.Collections;
 using UI.Controls.Select;
 using System.IO;
-using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace UI.Controls.SettingPanel
 {
@@ -335,8 +335,8 @@ namespace UI.Controls.SettingPanel
                 return null;
             }
 
-            string json = JsonSerializer.Serialize(obj);
-            return JsonSerializer.Deserialize(json, type);
+            string json = JsonConvert.SerializeObject(obj); ;
+            return JsonConvert.DeserializeObject(json, type);
         }
 
         private Control RenderColorConfigControl(ConfigAttribute configAttribute, PropertyInfo pi)

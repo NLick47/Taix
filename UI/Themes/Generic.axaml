@@ -37,6 +37,8 @@
 
 		<ResourceInclude Source="/Themes/List/BaseList.axaml"/>
 		<ResourceInclude Source="/Themes/List/BaseListItem.axaml"/>
+		
+		<ResourceInclude Source="/Themes/Expander/Expander.axaml"/>
 
 		<ResourceInclude Source="/Themes/DatePickerBar/DatePickerBar.axaml"/>
 		<ResourceInclude Source="/Themes/DatePickerBar/DatePickerBarItem.axaml"/>

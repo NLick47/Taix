@@ -17,7 +17,7 @@ using UI.Models;
 using UI.Servicers;
 using UI.Servicers.Dialogs;
 
-    
+
 namespace UI.ViewModels
 {
     public class SettingPageViewModel : SettingPageModel
@@ -41,25 +41,21 @@ namespace UI.ViewModels
             _webData = webData;
             _uiServicer = uiServicer_;
 
-            OpenURL =ReactiveCommand.Create<object>(OnOpenURL);
+            OpenURL = ReactiveCommand.Create<object>(OnOpenURL);
             DelDataCommand = ReactiveCommand.CreateFromTask<object>(OnDelData);
             ExportDataCommand = ReactiveCommand.CreateFromTask<object>(OnExportData);
-            //CheckUpdate = new Command(new Action<object>(OnCheckUpdate));
-            //DelDataCommand = new Command(new Action<object>(OnDelData));
-            //ExportDataCommand = new Command(new Action<object>(OnExportData));
-
             Init();
-           
+
         }
 
-       
+
         private void Init()
         {
             config = appConfig.GetConfig();
 
             Data = config.General;
 
-            TabbarData = ["常规", "关联", "行为", "数据", "关于"];
+            TabbarData = ["常规", "行为", "数据", "关于"];
 
             PropertyChanged += SettingPageVM_PropertyChanged;
 
@@ -94,12 +90,12 @@ namespace UI.ViewModels
             try
             {
                 var desktop = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-                var storage  = desktop.MainWindow.StorageProvider;
-                var result = await storage.OpenFolderPickerAsync(new ()
+                var storage = desktop.MainWindow.StorageProvider;
+                var result = await storage.OpenFolderPickerAsync(new()
                 {
 
                 });
-                if(result?.Count != 0)
+                if (result?.Count != 0)
                 {
                     var folder = result[0];
                     await data.ExportToExcelAsync(folder.Path.LocalPath, ExportDataStartMonthDate, ExportDataEndMonthDate);
@@ -116,37 +112,23 @@ namespace UI.ViewModels
 
         private void OnOpenURL(object obj)
         {
-            Process.Start(new ProcessStartInfo(obj.ToString()) { UseShellExecute = true});
+            Process.Start(new ProcessStartInfo(obj.ToString()) { UseShellExecute = true });
         }
 
         private void SettingPageVM_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(Data))
             {
-                if (TabbarSelectedIndex == 0)
+                if (TabbarSelectedIndex == 0 && Data is GeneralModel general)
                 {
-                    config.General = Data as GeneralModel;
+                    config.General = general;
+                    appConfig.Save();
                 }
-                else if (TabbarSelectedIndex == 1)
+                else if (TabbarSelectedIndex == 1 && Data is BehaviorModel behavior)
                 {
-                    if (Data != null)
-                    {
-                        var newData = new List<LinkModel>();
-                        foreach (var item in Data as IEnumerable<object>)
-                        {
-                            newData.Add(item as LinkModel);
-                            Debug.WriteLine(item.ToString());
-                        }
-                        config.Links = newData;
-                    }
-
+                    config.Behavior = behavior;
+                    appConfig.Save();
                 }
-                else if (TabbarSelectedIndex == 2)
-                {
-                    config.Behavior = Data as BehaviorModel;
-                }
-
-                appConfig.Save();
             }
 
             if (e.PropertyName == nameof(TabbarSelectedIndex))
@@ -157,11 +139,6 @@ namespace UI.ViewModels
                     Data = config.General;
                 }
                 else if (TabbarSelectedIndex == 1)
-                {
-                    //  关联
-                    Data = config.Links;
-                }
-                else if (TabbarSelectedIndex == 2)
                 {
                     //  行为
                     Data = config.Behavior;

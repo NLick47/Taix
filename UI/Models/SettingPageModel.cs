@@ -10,7 +10,8 @@ namespace UI.Models
     public class SettingPageModel : UINotifyPropertyChanged
     {
         private object data;
-        public object Data { get { return data; } set { data = value; OnPropertyChanged(); } }
+        public object Data { get { return data; }
+            set { data = value; OnPropertyChanged(); } }
 
         private ObservableCollection<string> TabbarData_;
         /// <summary>
