@@ -11,7 +11,7 @@
 		
 		<DefineConstants>WINDOWS</DefineConstants>
 		<AssemblyName>Taix</AssemblyName>
-		<Version>0.0.0.99</Version>
+		<Version>1.0.0.0</Version>
 		<ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
