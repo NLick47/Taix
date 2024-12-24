@@ -3,8 +3,10 @@ using Core.Servicers.Interfaces;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using UI.Models;
@@ -14,6 +16,22 @@ namespace UI.ViewModels
 {
     public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
     {
+
+        private bool _isRegexSearch;
+
+        public bool IsRegexSearch
+        {
+            get => _isRegexSearch;
+            set
+            {
+                if (_isRegexSearch != value)
+                {
+                    _isRegexSearch = value;
+                    OnPropertyChanged(nameof(IsRegexSearch));
+                    OnSearch(SearchInput);
+                }
+            }
+        }
         private readonly MainViewModel _mainVM;
         private readonly IWebData _webData;
         public ICommand ShowChooseCommand { get; set; }
@@ -91,7 +109,7 @@ namespace UI.ViewModels
                     CategoryWebSiteList = new System.Collections.ObjectModel.ObservableCollection<WebSiteModel>();
                 }
 
-               await LoadWebSiteOptionList();
+                await LoadWebSiteOptionList();
             }
         }
 
@@ -103,14 +121,31 @@ namespace UI.ViewModels
 
         private void OnSearch(object obj)
         {
-            string keyword = obj.ToString();
+            var keyword = obj?.ToString();
             if (string.IsNullOrEmpty(keyword))
             {
                 WebSiteOptionList = new List<OptionModel>(_webSiteOptionsTemp);
             }
             else
             {
-                WebSiteOptionList = _webSiteOptionsTemp.Where(m => m.WebSite.Title.Contains(keyword) || m.WebSite.Domain.Contains(keyword)).ToList();
+                if (IsRegexSearch)
+                {
+                    try
+                    {
+                        var regex = new Regex(keyword, RegexOptions.IgnoreCase);
+                        WebSiteOptionList = _webSiteOptionsTemp.Where(m => regex.IsMatch(m.WebSite.Title) || regex.IsMatch(m.WebSite.Domain)).ToList();
+                    }
+                    catch (ArgumentException)
+                    {
+
+                        WebSiteOptionList = new List<OptionModel>(_webSiteOptionsTemp);
+                    }
+                }
+                else
+                {
+                    WebSiteOptionList = _webSiteOptionsTemp.Where(m => m.WebSite.Title.Contains(keyword) || m.WebSite.Domain.Contains(keyword)).ToList();
+                }
+              
             }
         }
 
@@ -165,7 +200,7 @@ namespace UI.ViewModels
             //  添加到分类
             if (addSiteList.Count > 0)
             {
-               await  _webData.UpdateWebSitesCategoryAsync(addSiteList.Select(m => m.ID).ToArray(), Category.ID);
+                await _webData.UpdateWebSitesCategoryAsync(addSiteList.Select(m => m.ID).ToArray(), Category.ID);
             }
         }
 

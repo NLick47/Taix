@@ -36,16 +36,24 @@
 										   HorizontalAlignment="Right" FontSize="12" Margin="0,0,10,0" Command="{Binding ChooseCloseCommand}"/>
 					</Grid>
 					<Border Grid.Row="1">
-						<input:InputBox Placeholder="搜索" Margin="10" x:Name="SearchBox" Text="{Binding SearchInput,Mode=TwoWay}">
-							<Interaction.Behaviors>
-								<EventTriggerBehavior EventName="KeyUp">
-									<InvokeCommandAction Command="{Binding SearchCommand}"
-														   CommandParameter="{Binding #SearchBox.Text}" />
-								</EventTriggerBehavior>
-							</Interaction.Behaviors>
-						</input:InputBox>
+						<Grid RowDefinitions="Auto,Auto">
+							<input:InputBox Placeholder="搜索" Margin="10" x:Name="SearchBox" Text="{Binding SearchInput,Mode=TwoWay}">
+								<Interaction.Behaviors>
+									<EventTriggerBehavior EventName="KeyUp">
+										<InvokeCommandAction Command="{Binding SearchCommand}"
+															   CommandParameter="{Binding #SearchBox.Text}" />
+									</EventTriggerBehavior>
+								</Interaction.Behaviors>
+							</input:InputBox>
+							<CheckBox HorizontalAlignment="Right" 
+									  Margin="0,0,10,0"
+									  Grid.Row="1"
+									  Foreground="Gray"
+									  Content="使用正则表达式" IsChecked="{Binding IsRegexSearch, Mode=TwoWay}" />
+						</Grid>
+						
 					</Border>
-					<ListBox ItemsSource="{Binding WebSiteOptionList}"
+					<ListBox  ItemsSource="{Binding WebSiteOptionList}"
 							 Margin="20,0" Grid.Row="2">
 						<ListBox.Styles>
 							<Style Selector="ListBox">
