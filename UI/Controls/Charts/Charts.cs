@@ -697,34 +697,27 @@ namespace UI.Controls.Charts
         {
             Task.Run(() =>
             {
-                Dispatcher.UIThread.Invoke(() =>
-                {
-                    var newListData = new List<ChartsDataModel>();
-
-                    foreach (var data in Data)
+                string searchKeyLower = searchKey.ToLower();
+                var newListData = Data
+                    .Where(data =>
                     {
                         string content = (data.Name + data.PopupText).ToLower();
-                        bool show = content.IndexOf(searchKey) != -1;
+                        bool show = content.Contains(searchKeyLower);
 
                         if (!show)
                         {
-                            show = searchKey == "忽略" && data.BadgeList.Where(m => m.Type == ChartBadgeType.Ignore).Any();
-                            if (data.BadgeList.Any())
+                            show = searchKeyLower == "忽略" && data.BadgeList.Any(m => m.Type == ChartBadgeType.Ignore);
+                            if (!show && data.BadgeList.Any())
                             {
-                                //  搜索徽章名（分类名）
-                                show = data.BadgeList.Where(m => m.Name.ToLower().Contains(searchKey)).Any();
+                                show = data.BadgeList.Any(m => m.Name.ToLower().Contains(searchKeyLower));
                             }
                         }
 
-                        if (show)
-                        {
-                            newListData.Add(data);
-                        }
-                    }
+                        return show;
+                    })
+                    .ToList();
 
-                    ListViewBindingData = newListData;
-                });
-
+                Dispatcher.UIThread.Invoke(() => ListViewBindingData = newListData);
             });
         }
         #endregion
