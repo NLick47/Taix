@@ -69,7 +69,7 @@ namespace UI.ViewModels
             WebSiteContextMenu = _webSiteContextMenu.GetContextMenu();
             PropertyChanged += IndexPageVM_PropertyChanged;
 
-            await LoadData();
+            await LoadDataAsync();
 
             MoreTypeOptions =
             [
@@ -91,45 +91,38 @@ namespace UI.ViewModels
         {
             if (e.PropertyName == nameof(TabbarSelectedIndex))
             {
-                await LoadData();
+                await LoadDataAsync();
             }
         }
 
 
         private void OnTodetailCommand(object obj)
         {
-            var data = obj as ChartsDataModel;
-
-            if (data != null)
+            if (obj is ChartsDataModel data)
             {
-                if (data.Data is DailyLogModel)
+                if (data.Data is DailyLogModel dailyModel && dailyModel.AppModel != null)
                 {
-                    var model = data.Data as DailyLogModel;
-                    if (model != null && model.AppModel != null)
-                    {
-                        main.Data = model.AppModel;
-                        main.Uri = nameof(DetailPage);
-                    }
+                    main.Data = dailyModel.AppModel;
+                    main.Uri = nameof(DetailPage);
                 }
-                else if (data.Data is WebSiteModel)
+                else if (data.Data is WebSiteModel webSiteModel)
                 {
-                    main.Data = data.Data;
+                    main.Data = webSiteModel;
                     main.Uri = nameof(WebSiteDetailPage);
                 }
-
             }
         }
 
         private Task OnRefreshCommand(object obj)
         {
-            return LoadData();
+            return LoadDataAsync();
         }
 
-        private async Task LoadData()
+        private Task LoadDataAsync()
         {
             if (IsLoading)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             FrequentUseNum = appConfig.GetConfig().General.IndexPageFrequentUseNum + 1;
@@ -137,14 +130,13 @@ namespace UI.ViewModels
 
             if (TabbarSelectedIndex == 0)
             {
-                await LoadTodayData();
-                await LoadTodayMoreData();
+                return Task.WhenAll(LoadTodayData(), LoadTodayMoreData());
             }
             else if (TabbarSelectedIndex == 1)
             {
-                await LoadThisWeekData();
-                await LoadThisWeekMoreData();
+                return Task.WhenAll(LoadThisWeekData(), LoadThisWeekMoreData());
             }
+            return Task.CompletedTask;
         }
 
 
@@ -202,40 +194,34 @@ namespace UI.ViewModels
         #region 处理数据
         private List<ChartsDataModel> MapToChartsData(IEnumerable<Core.Models.DailyLogModel> list)
         {
-            var resData = new List<ChartsDataModel>();
-
-            foreach (var item in list)
+#pragma warning disable CS8601 
+            return list.Select(v => new ChartsDataModel
             {
-                var bindModel = new ChartsDataModel();
-                bindModel.Data = item;
-                bindModel.Name = !string.IsNullOrEmpty(item.AppModel?.Alias) ? item.AppModel.Alias : string.IsNullOrEmpty(item.AppModel?.Description) ? item.AppModel.Name : item.AppModel.Description;
-                bindModel.Value = item.Time;
-                bindModel.Tag = Time.ToString(item.Time);
-                bindModel.PopupText = item.AppModel?.File;
-                bindModel.Icon = item.AppModel?.IconFile;
-                bindModel.DateTime = item.Date;
-                resData.Add(bindModel);
-            }
+                Data = v,
+                Name = !string.IsNullOrEmpty(v.AppModel?.Alias) ? v.AppModel.Alias :
+                string.IsNullOrEmpty(v.AppModel?.Description) ? v.AppModel.Name : v.AppModel?.Description,
+                Value = v.Time,
+                Tag = Time.ToString(v.Time),
+                PopupText = v.AppModel?.File,
+                Icon = v.AppModel?.IconFile,
+                DateTime = v.Date,
 
-            return resData;
+            }).OrderByDescending(x => x.Value).ToList();
+#pragma warning restore CS8601
         }
         private List<ChartsDataModel> MapToChartsData(IEnumerable<Core.Models.Db.WebSiteModel> list)
         {
-            var resData = new List<ChartsDataModel>();
-
-            foreach (var item in list)
+#pragma warning disable CS8601
+            return list.Select(v => new ChartsDataModel
             {
-                var bindModel = new ChartsDataModel();
-                bindModel.Data = item;
-                bindModel.Name = !string.IsNullOrEmpty(item.Alias) ? item.Alias : item.Title;
-                bindModel.Value = item.Duration;
-                bindModel.Tag = Time.ToString(item.Duration);
-                bindModel.PopupText = item.Domain;
-                bindModel.Icon = item.IconFile;
-                resData.Add(bindModel);
-            }
-
-            return resData;
+                Data = v,
+                Name = !string.IsNullOrEmpty(v.Alias) ? v.Alias : v.Title,
+                Value = v.Duration,
+                Tag = Time.ToString(v.Duration),
+                PopupText = v.Domain,
+                Icon = v.IconFile,
+            }).OrderByDescending(x => x.Value).ToList();
+#pragma warning restore CS8601
         }
         #endregion
     }

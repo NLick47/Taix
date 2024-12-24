@@ -12,6 +12,7 @@ using Avalonia.Threading;
 using Core.Librarys;
 using Core.Servicers.Instances;
 using DynamicData;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -547,7 +548,7 @@ namespace UI.Controls.Charts
 
 
             Calculate();
-            CardContainer.Children.Clear();
+
             MonthContainer.Children.Clear();
             _typeATempContainer.Children.Clear();
             _commonCanvas.Children.Clear();
@@ -557,6 +558,7 @@ namespace UI.Controls.Charts
 
             if (Data == null || Data.Count() <= 0)
             {
+                CardContainer.Children.Clear();
                 CardContainer.Children.Add(new EmptyData());
                 RadarContainer.Child = new EmptyData();
                 _typeATempContainer.Children.Add(new EmptyData());
@@ -730,21 +732,52 @@ namespace UI.Controls.Charts
         #region 渲染卡片样式Card
         private void RenderCardStyle()
         {
-            var data = Data.OrderByDescending(x => x.Value).Take(ShowLimit).ToList();
+            var data = Data.Take(ShowLimit).ToList();
+            var chatItemTypeCards = CardContainer.Children
+             .Where(control => control is ChartsItemTypeCard)
+             .Cast<ChartsItemTypeCard>()
+             .ToList();
 
-            data.Shuffle();
-
-            foreach (var item in data)
+            var existingCardsDict = chatItemTypeCards.ToDictionary(card => card.Data.Name, card => card);
+            var controlsToRemove = chatItemTypeCards
+                .Where(card => !data.Any(item => item.Name == card.Data.Name && item.Value == card.Data.Value))
+                .ToList();
+            foreach (var control in controlsToRemove)
             {
-                var chartsItem = new ChartsItemTypeCard();
-                chartsItem.Data = item;
+                CardContainer.Children.Remove(control);
+                existingCardsDict.Remove(control.Data.Name);
+            }
 
-                //  处理点击事件
-                HandleItemClick(chartsItem, item);
+            for (int i = 0; i < data.Count; i++)
+            {
+                var item = data[i];
+                if (existingCardsDict.TryGetValue(item.Name, out var chartsItem))
+                {
+                    if (chartsItem.Data.Value != item.Value)
+                    {
+                        chartsItem.Data = item;
+                        HandleItemClick(chartsItem, item);
+                        chartsItem.MaxValue = maxValue;
+                        ToolTip.SetTip(chartsItem, item.PopupText);
+                    }
+                }
+                else
+                {
+                    chartsItem = new ChartsItemTypeCard();
+                    chartsItem.Data = item;
+                    HandleItemClick(chartsItem, item);
+                    chartsItem.MaxValue = maxValue;
+                    ToolTip.SetTip(chartsItem, item.PopupText);
 
-                chartsItem.MaxValue = maxValue;
-                ToolTip.SetTip(chartsItem, item.PopupText);
-                CardContainer.Children.Add(chartsItem);
+                    if (i < CardContainer.Children.Count)
+                    {
+                        CardContainer.Children.Insert(i, chartsItem);
+                    }
+                    else
+                    {
+                        CardContainer.Children.Add(chartsItem);
+                    }
+                }
             }
             isRendering = false;
 
@@ -1284,16 +1317,19 @@ namespace UI.Controls.Charts
                 return;
             }
             _commonCanvas.Children.Clear();
-            if(Data?.Count() == 0)
+            if (Data?.Count() == 0)
             {
-                _commonCanvas.Children.Add(new EmptyData() { RenderTransform = new TransformGroup 
-                { 
-                    Children = 
+                _commonCanvas.Children.Add(new EmptyData()
+                {
+                    RenderTransform = new TransformGroup
+                    {
+                        Children =
                     [
                         new TranslateTransform(-15, 0),
                         new ScaleTransform(0.8, 0.8)
                     ]
-                } });
+                    }
+                });
                 return;
             }
             var item = new ChartsItemTypePie();
