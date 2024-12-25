@@ -75,6 +75,22 @@
 										</Border>
 									</ControlTemplate>
 								</Setter>
+
+								<Style Selector="^:pointerover /template/ Border">
+									<Setter Property="Background" Value="Transparent" />
+								</Style>
+
+								<Style Selector="^:selected /template/ Border">
+									<Setter Property="Background" Value="Transparent" />
+								</Style>
+
+								<Style Selector="^:pointerover /template/ Border ContentPresenter">
+									<Setter Property="Background" Value="Transparent" />
+								</Style>
+
+								<Style Selector="^:selected /template/ Border ContentPresenter">
+									<Setter Property="Background" Value="Transparent" />
+								</Style>
 							</Style>
 
 						</ListBox.Styles>
@@ -171,9 +187,27 @@
 							</ControlTemplate>
 						</Setter>
 
-						<Style Selector="^:selected /template/ Border#Border">
-							<Setter Property="BorderBrush" Value="#2b20d9"/>
+						<Style Selector="^:pointerover /template/ Grid Border ContentPresenter">
+							<Setter Property="Background" Value="Transparent" />
 						</Style>
+
+						<Style Selector="^:pointerover /template/ Grid Border">
+							<Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
+						</Style>
+						<Style Selector="^:selected /template/ Grid Border ContentPresenter">
+							<Setter Property="Background" Value="Transparent" />
+						</Style>
+						<Style Selector="^:pointerover /template/ Grid Border ContentPresenter">
+							<Setter Property="Background" Value="Transparent" />
+						</Style>
+
+						<Style Selector="^:pointerover /template/ Grid Border">
+							<Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
+						</Style>
+						<Style Selector="^:selected /template/ Grid Border ContentPresenter">
+							<Setter Property="Background" Value="Transparent" />
+						</Style>
+					
 					</Style>
 				</ListBox.Styles>
 
