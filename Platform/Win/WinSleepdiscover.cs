@@ -300,7 +300,7 @@ namespace Win
         {
             bool result = false;
 
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 //  持续30秒
                 int time = 30;
@@ -317,7 +317,7 @@ namespace Win
                     {
                         time--;
                         Debug.WriteLine(time);
-                        Thread.Sleep(1000);
+                        await Task.Delay(1000);
                     }
                 }
             });
@@ -332,7 +332,7 @@ namespace Win
         {
             bool result = false;
 
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 //  持续30秒
                 int time = 30;
@@ -353,7 +353,7 @@ namespace Win
                     {
                         time--;
                         Debug.WriteLine(time);
-                        Thread.Sleep(1000);
+                        await Task.Delay(1000);
                     }
                 }
             });
