@@ -492,7 +492,7 @@ namespace UI.ViewModels
                 if (monthData.Count > 0)
                 {
                     var longDayData = monthData.OrderByDescending(m => m.Time).FirstOrDefault();
-                    LongDay = longDayData.Date.ToString("最长一天是在 dd 号，使用了 " + Time.ToString(longDayData.Time));
+                    LongDay = "最长一天是在 dd 号，使用了" + Time.ToString(longDayData.Time);
 
                 }
 

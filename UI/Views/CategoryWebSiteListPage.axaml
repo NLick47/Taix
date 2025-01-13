@@ -31,13 +31,13 @@
 					</Grid.RowDefinitions>
 
 					<Grid>
-						<TextBlock Text="选择站点" VerticalAlignment="Center" Margin="10,0,0,0"/>
+						<TextBlock Text="{DynamicResource SelectSite}" VerticalAlignment="Center" Margin="10,0,0,0"/>
 						<Button:IconButton Foreground="#ccc" Icon="ChromeClose"
 										   HorizontalAlignment="Right" FontSize="12" Margin="0,0,10,0" Command="{Binding ChooseCloseCommand}"/>
 					</Grid>
 					<Border Grid.Row="1">
 						<Grid RowDefinitions="Auto,Auto">
-							<input:InputBox Placeholder="搜索" Margin="10" x:Name="SearchBox" Text="{Binding SearchInput,Mode=TwoWay}">
+							<input:InputBox Placeholder="{DynamicResource Search}" Margin="10" x:Name="SearchBox" Text="{Binding SearchInput,Mode=TwoWay}">
 								<Interaction.Behaviors>
 									<EventTriggerBehavior EventName="KeyUp">
 										<InvokeCommandAction Command="{Binding SearchCommand}"
@@ -49,7 +49,7 @@
 									  Margin="0,0,10,0"
 									  Grid.Row="1"
 									  Foreground="Gray"
-									  Content="使用正则表达式" IsChecked="{Binding IsRegexSearch, Mode=TwoWay}" />
+									  Content="{DynamicResource UseRegularExpressions}" IsChecked="{Binding IsRegexSearch, Mode=TwoWay}" />
 						</Grid>
 						
 					</Border>
@@ -109,7 +109,7 @@
 						</ListBox.ItemTemplate>
 					</ListBox>
 					<Button:Button Grid.Row="3" HorizontalAlignment="Right"
-								   Content="完成"
+								   Content="{DynamicResource Complete}"
 								   Width="120" Margin="0,0,10,0" VerticalAlignment="Center"
 								   Command="{Binding ChoosedCommand}"/>
 				</Grid>
@@ -126,13 +126,13 @@
 			</Grid.RowDefinitions>
 
 			<StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-				<TextBlock FontSize="18"  Text="网站分类"/>
+				<TextBlock FontSize="18"  Text="{DynamicResource WebSiteClassification}"/>
 				<base:Icon IconType="ChevronRightMed" Margin="10,0" FontSize="12" Foreground="#ccc"/>
 				<TextBlock FontSize="18"  Text="{Binding Category.Name}"/>
 			</StackPanel>
 
-			<TextBlock Grid.Row="1" Text="站点列表"/>
-			<Button:Button Grid.Row="1" Content="选择"
+			<TextBlock Grid.Row="1" Text="{DynamicResource Sitelist}"/>
+			<Button:Button Grid.Row="1" Content="{DynamicResource Select}"
 						   HorizontalAlignment="Right" Width="150"
 						   Command="{Binding ShowChooseCommand}"/>
 			<base:View Grid.Row="2" Condition="empty"
@@ -145,7 +145,7 @@
 				<ListBox.ContextMenu>
 					<ContextMenu>
 
-						<MenuItem Header="从分类中移除" Command="{Binding DelCommand}" CommandParameter="{Binding SelectedItem}"/>
+						<MenuItem Header="{DynamicResource RemoveFromCategory}" Command="{Binding DelCommand}" CommandParameter="{Binding SelectedItem}"/>
 					</ContextMenu>
 				</ListBox.ContextMenu>
 				<Interaction.Behaviors>

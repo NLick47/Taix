@@ -2,30 +2,49 @@
 					xmlns:system="clr-namespace:System;assembly=netstandard"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+	<system:String x:Key="Webpage">网页</system:String>
+	<system:String x:Key="Complete">完成</system:String>
+	<system:String x:Key="Piece">个</system:String>
+	<system:String x:Key="Site">站点</system:String>
+	
+	
 	<system:String x:Key="SideOverview">概览</system:String>
 	<system:String x:Key="SideStatistics">统计</system:String>
 	<system:String x:Key="SideDetails">详细</system:String>
 	<system:String x:Key="SideSort">分类</system:String>
 	<system:String x:Key="SideSetting">设置</system:String>
-
-	<system:String x:Key="Refresh">刷新</system:String>
-	<system:String x:Key="MostFrequent">最为频繁</system:String>
+	<system:String x:Key="Website">网站</system:String>
 	<system:String x:Key="App">应用</system:String>
+	<system:String x:Key="Refresh">刷新</system:String>
+	<system:String x:Key="Browse">浏览</system:String>
+
+	
+	<system:String x:Key="MostFrequent">最为频繁</system:String>
+	<system:String x:Key="ClassificationProportion">分类占比</system:String>
+
 	<system:String x:Key="Today">今日</system:String>
 	<system:String x:Key="Thisweek">本周</system:String>
+	<system:String x:Key="More">更多</system:String>
 
 
 	<!--base-->
 	<system:String x:Key="NoData">暂时没有数据</system:String>
-	
-	
+
+
 	<!--window button Tip-->
 	<system:String x:Key="Back">返回</system:String>
 	<system:String x:Key="Minimization">最小化</system:String>
 	<system:String x:Key="Maximize">最大化</system:String>
 	<system:String x:Key="Restore">向下还原</system:String>
 	<system:String x:Key="Close">关闭</system:String>
-
+	
+	
+	
+	<system:String x:Key="Hour">小时</system:String>
+	<system:String x:Key="Total">总计</system:String>
+	<system:String x:Key="Usage">应用量</system:String>
+	<system:String x:Key="LongestUsageTime">最长使用时间</system:String>
+	
 
 	<system:String x:Key="LongerTip">该应用将不再统计使用时长</system:String>
 	<system:String x:Key="IgnoredText">已被忽略</system:String>
@@ -35,6 +54,65 @@
 	<system:String x:Key="ApplicationDescription">应用描述</system:String>
 	<system:String x:Key="ApplicationFilePath">应用文件路径</system:String>
 	<system:String x:Key="Classification">分类</system:String>
+	
+	<system:String x:Key="LongerWebSiteTip">该站点数据将不会被统计</system:String>
+	<system:String x:Key="WebSiteTitle">网站名称</system:String>
+	<system:String x:Key="Domain">网站名称</system:String>
+	<system:String x:Key="WebSiteClassification">网站分类</system:String>
+	<system:String x:Key="DurationStatistics">时长统计</system:String>
+	<system:String x:Key="ViewDetails">浏览详情</system:String>
+	<system:String x:Key="MultipleWebsites">个网站</system:String>
+	<system:String x:Key="OpenWebPage">打开网页</system:String>
+	<system:String x:Key="CopyURL">复制链接</system:String>
+	<system:String x:Key="CopyTitle">复制标题</system:String>
+	<system:String x:Key="LogTime">访问时间</system:String>
+	<system:String x:Key="Duration">浏览时长</system:String>
+	
+	
+	
+	<system:String x:Key="IgnoreThisApplication">忽略此应用</system:String>
+	<system:String x:Key="Unignore">取消忽略</system:String>
+	<system:String x:Key="Relevance">关联</system:String>
+	<system:String x:Key="MonthlyOverview">月度总览</system:String>
+	<system:String x:Key="ClearAppTheMonthData">清空此应用在该月的统计数据</system:String>
+	<system:String x:Key="ClearTheMonth">清空该月统计</system:String>
+	<system:String x:Key="AccumulatedUsageDuringTheMonth">该月累计使用</system:String>
+	<system:String x:Key="ProportionDurationInTheMonth">在当月所有使用应用时长中占比</system:String>
+	
+	
+	<system:String x:Key="Settings">设置</system:String>
+	<system:String x:Key="DeleteData">删除数据</system:String>
+	<system:String x:Key="From">从</system:String>
+	<system:String x:Key="To">到</system:String>
+	<system:String x:Key="Execute">执行</system:String>
+	<system:String x:Key="OpenSource">开源</system:String>
+	<system:String x:Key="DeletedAndUnrecoverable">删除且不可恢复</system:String>
+	<system:String x:Key="ExportData">导出数据</system:String>
+	<system:String x:Key="Export">导出</system:String>
+	<system:String x:Key="Version">版本号</system:String>
+	<system:String x:Key="ExportTo">导出为xlsx和csv格式</system:String>
+	<system:String x:Key="CheckUpdate">检查更新</system:String>
+	<system:String x:Key="Discuss">讨论</system:String>
+	<system:String x:Key="PlugIn">浏览器统计插件</system:String>
+	<system:String x:Key="ExternalDeclaration">外部资源声明</system:String>
+	<system:String x:Key="FromMicrosoft">来自微软</system:String>
+	
+	<system:String x:Key="SelectiveApplication">选择应用</system:String>
+	<system:String x:Key="SearchApplication">搜索应用</system:String>
+
+	<system:String x:Key="AppClassification">应用分类</system:String>
+	<system:String x:Key="AppList">应用列表</system:String>
+	<system:String x:Key="Select">选择</system:String>
+	<system:String x:Key="RemoveFromCategory">从分类中移除</system:String>
+	
+	
+	<system:String x:Key="SelectSite">选择站点</system:String>
+	<system:String x:Key="Search">搜索</system:String>
+	<system:String x:Key="UseRegularExpressions">使用正则表达式</system:String>
+	<system:String x:Key="Sitelist">站点列表</system:String>
+	
+	
+	
 
 
 	<system:String x:Key="Open">打开</system:String>

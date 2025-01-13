@@ -12,7 +12,6 @@ using Avalonia.Threading;
 using Core.Librarys;
 using Core.Servicers.Instances;
 using DynamicData;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -726,6 +725,10 @@ namespace UI.Controls.Charts
         private void RenderCardStyle()
         {
             var data = Data.Take(ShowLimit).ToList();
+            if(data.Count > 0 && CardContainer.Children.Any(x => x is EmptyData))
+            {
+                CardContainer.Children.Remove(CardContainer.Children.First(x => x is EmptyData));
+            }
             var chatItemTypeCards = CardContainer.Children
              .Where(control => control is ChartsItemTypeCard)
              .Cast<ChartsItemTypeCard>()

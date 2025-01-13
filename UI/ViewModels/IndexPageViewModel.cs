@@ -57,13 +57,11 @@ namespace UI.ViewModels
 
         private async void Init()
         {
-            Application.Current.TryFindResource("Today", out var d);
-            Application.Current.TryFindResource("Thisweek", out var w);
-            TabbarData = new System.Collections.ObjectModel.ObservableCollection<string>()
-            {
-                d as string,
-                w as string
-            };
+            TabbarData =
+            [
+                Application.Current.FindResource("Today") as string,
+                Application.Current.FindResource("Thisweek") as string
+            ];
             TabbarSelectedIndex = 0;
             AppContextMenu = appContextMenuServicer.GetContextMenu();
             WebSiteContextMenu = _webSiteContextMenu.GetContextMenu();
@@ -76,12 +74,12 @@ namespace UI.ViewModels
                 new ()
                 {
                     Id=0,
-                    Name="应用"
+                    Name=Application.Current.FindResource("App") as string
                 },
                 new ()
                 {
                     Id=1,
-                    Name="网站"
+                    Name=Application.Current.FindResource("Website") as string
                 }
             ];
             MoreType = MoreTypeOptions[0];
