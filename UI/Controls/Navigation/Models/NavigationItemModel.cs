@@ -6,16 +6,28 @@ using System.Text;
 using System.Threading.Tasks;
 using UI.Base.Color;
 using UI.Controls.Base;
+using UI.Models;
 using UI.ViewModels;
 
 namespace UI.Controls.Navigation.Models
 {
-    public class NavigationItemModel : ReactiveObject
+    public class NavigationItemModel : UINotifyPropertyChanged
     {
         public int ID { get; set; }
 
         private string _title;
-        public string Title { get => _title; set => this.RaiseAndSetIfChanged(ref _title,value); }
+        public string Title
+        {
+            get => _title; 
+            set
+            {
+                if (value != _title)
+                {
+                    _title = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
         /// <summary>
         /// 未选择时默认图标
         /// </summary>
@@ -46,6 +58,17 @@ namespace UI.Controls.Navigation.Models
         }
         public ColorTypes IconColor { get; set; }
         public string BadgeText { get; set; }
-        public string Uri { get; set; }
+
+        private string _uri;
+        public string Uri { get => _uri;
+            set
+            {
+                if (value != _uri)
+                {
+                    _uri = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
     }
 }

@@ -20,6 +20,8 @@ using Avalonia.Controls;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Core.Enums;
+
 
 
 #if WINDOWS

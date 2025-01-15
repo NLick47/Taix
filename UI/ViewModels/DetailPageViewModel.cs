@@ -66,20 +66,19 @@ namespace UI.ViewModels
 
             Date = DateTime.Now;
 
-            TabbarData = new System.Collections.ObjectModel.ObservableCollection<string>()
-            {
-                "按天","按周","按月","按年"
-            };
+            TabbarData = [ResourceStrings.Daily, ResourceStrings.Weekly, ResourceStrings.Monthly, ResourceStrings.Yearly];
 
-            var weekOptions = new List<SelectItemModel>();
-            weekOptions.Add(new SelectItemModel()
-            {
-                Name = "本周"
-            });
-            weekOptions.Add(new SelectItemModel()
-            {
-                Name = "上周"
-            });
+            List<SelectItemModel> weekOptions =
+            [
+                    new ()
+                    {
+                        Name = ResourceStrings.ThisWeek
+                    },
+                    new()
+                    {
+                        Name = ResourceStrings.LastWeek
+                    }
+            ];
 
             WeekOptions = weekOptions;
 
@@ -121,7 +120,7 @@ namespace UI.ViewModels
 
         private void CreateContextMenu()
         {
-            AppContextMenu = new ();
+            AppContextMenu = new();
             AppContextMenu.Opened += AppContextMenu_Opened;
             MenuItem open = new MenuItem();
             open.Header = "启动应用";
@@ -285,7 +284,7 @@ namespace UI.ViewModels
             });
         }
 
-     
+
 
         private async Task OnRefreshCommand(object obj)
         {
@@ -411,7 +410,7 @@ namespace UI.ViewModels
             {
                 NameIndexStart = 0;
 
-               return LoadDayData();
+                return LoadDayData();
             }
             else if (TabbarSelectedIndex == 1)
             {

@@ -1,4 +1,5 @@
 ﻿using Core;
+using Core.Enums;
 using Core.Servicers.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -42,9 +43,12 @@ namespace UI.Servicers
 
         private void Main_OnStarted(object sender, EventArgs e)
         {
+
+            SystemLanguage.InitializedLanguage((CultureCode)_config.GetConfig().General.Language);
             themeServicer.Init();
             appContextMenuServicer.Init();
             _webSiteContext.Init();
+
             if (!isSelfStart)
             {
                 _statusBarIconServicer.ShowMainWindow();

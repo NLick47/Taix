@@ -61,7 +61,7 @@
 			<control:PageContainer IndexUriList="{Binding IndexUriList}"
 								Instance="{Binding PageContainer,Mode=TwoWay}"
 								   Uri="{Binding Uri,Mode=TwoWay}"
-								   Title="{Binding Title}" />
+								   Title="{Binding Title,Mode=TwoWay}" />
 		</Border>
 	</Grid>
 

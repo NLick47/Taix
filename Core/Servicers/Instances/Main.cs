@@ -141,6 +141,8 @@ namespace Core.Servicers.Instances
 
                 //  处理web记录功能启停
                 HandleWebServiceConfig();
+
+                
             }
         }
 

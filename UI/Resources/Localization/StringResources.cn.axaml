@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
 					xmlns:system="clr-namespace:System;assembly=netstandard"
+					x:Class="UI.Resources.Localization.StringResourcesCn"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
 	<system:String x:Key="Webpage">网页</system:String>
@@ -17,7 +18,10 @@
 	<system:String x:Key="App">应用</system:String>
 	<system:String x:Key="Refresh">刷新</system:String>
 	<system:String x:Key="Browse">浏览</system:String>
-
+	<system:String x:Key="ClassificationName">分类名称</system:String>
+	<system:String x:Key="ExCreateEdit">?创建:编辑</system:String>
+	<system:String x:Key="ExCreateUpdate">?创建:更新</system:String>
+	<system:String x:Key="NewCategory">新建分类</system:String>
 	
 	<system:String x:Key="MostFrequent">最为频繁</system:String>
 	<system:String x:Key="ClassificationProportion">分类占比</system:String>
@@ -25,6 +29,7 @@
 	<system:String x:Key="Today">今日</system:String>
 	<system:String x:Key="Thisweek">本周</system:String>
 	<system:String x:Key="More">更多</system:String>
+
 
 
 	<!--base-->
@@ -112,9 +117,41 @@
 	<system:String x:Key="Sitelist">站点列表</system:String>
 	
 	
+	<system:String x:Key="SelectCategoryColors">选择分类颜色</system:String>
+	<system:String x:Key="PleaseEnterCategoryName">请输入分类名称</system:String>
+	<system:String x:Key="Icon">图标</system:String>
+	<system:String x:Key="AddDirectory">添加目录</system:String>
+	<system:String x:Key="Remove">移除</system:String>
 	
+	
+	
+	<system:String x:Key="Aggregate">总计</system:String>
+	<system:String x:Key="Month">月份</system:String>
+	
+	<system:String x:Key="Daily">按天</system:String>
+	<system:String x:Key="Weekly">按周</system:String>
+	<system:String x:Key="Monthly">按月</system:String>
+	<system:String x:Key="Yearly">按年</system:String>
+	<system:String x:Key="LastWeek">上周</system:String>
+	<system:String x:Key="ThisWeek">本周</system:String>
+	<system:String x:Key="DefaultView">默认视图</system:String>
+	<system:String x:Key="SummaryView">汇总视图</system:String>
+	<system:String x:Key="CategoryView">分类视图</system:String>
+	<system:String x:Key="Uncategorized">未分类</system:String>
 
-
+	<system:String x:Key="ViewCategoryAppList">查看分类应用列表</system:String>
+	<system:String x:Key="Edit">编辑</system:String>
+	<system:String x:Key="DeleteCategory">删除分类</system:String>
+	<system:String x:Key="DirectoryMatch">目录匹配</system:String>
+	<system:String x:Key="CategoryAppCount">分类应用数量</system:String>
+	<system:String x:Key="ViewWebsiteList">查看网站列表</system:String>
+	<system:String x:Key="General">常规</system:String>
+	<system:String x:Key="Behavior">行为</system:String>
+	<system:String x:Key="Data">数据</system:String>
+	<system:String x:Key="About">关于</system:String>
+		
+	
+	
 	<system:String x:Key="Open">打开</system:String>
 	<system:String x:Key="Exit">退出</system:String>
 </ResourceDictionary>

@@ -30,7 +30,7 @@ namespace UI.ViewModels
 
         public DataPageViewModel(IData data, MainViewModel main, IAppConfig appConfig,
             IWebSiteContextMenuServicer webSiteContextMenu,
-            IAppContextMenuServicer contextMenuServicer,IWebData webData)
+            IAppContextMenuServicer contextMenuServicer, IWebData webData)
         {
             this.data = data;
             this.main = main;
@@ -53,10 +53,9 @@ namespace UI.ViewModels
         {
             PropertyChanged += DataPageVM_PropertyChanged;
 
-            TabbarData = new System.Collections.ObjectModel.ObservableCollection<string>()
-            {
-                "按天","按月","按年"
-            };
+            TabbarData = [
+                ResourceStrings.Daily,ResourceStrings.Monthly,ResourceStrings.Yearly
+            ];
 
             TabbarSelectedIndex = 0;
 

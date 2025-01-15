@@ -53,7 +53,7 @@
 							   CornerRadius="12"
 							   Margin="0,0,0,10"
 							   HorizontalAlignment="Left"
-							   ToolTip.Tip="选择">
+							   ToolTip.Tip="{DynamicResource Select}">
 								<StackPanel Orientation="Horizontal" >
 									<base:Icon x:Name="DateIcon" Margin="0,0,5,0" IconType="Calendar"
 											   Foreground="{DynamicResource StandardTextBrush}"
@@ -128,7 +128,7 @@
 												</list:BaseList>
 											</StackPanel>
 											<StackPanel x:Name="MonthSelect" Margin="10,0,0,0" IsVisible="False">
-												<TextBlock Text="月份" HorizontalAlignment="Center"/>
+												<TextBlock Text="{DynamicResource Month}" HorizontalAlignment="Center"/>
 												<list:BaseList x:Name="MonthsList" Height="120" Margin="0,5,0,0" 
 															   HorizontalAlignment="Center">
 

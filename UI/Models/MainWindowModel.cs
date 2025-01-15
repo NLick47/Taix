@@ -38,8 +38,19 @@ namespace UI.Models
             get { return Data_; }
             set { Data_ = value; OnPropertyChanged(); }
         }
-
-        public ObservableCollection<NavigationItemModel> Items { get; set; }
+        private ObservableCollection<NavigationItemModel> _items;
+        public ObservableCollection<NavigationItemModel> Items
+        {
+            get => _items;
+            set
+            {
+                if (_items != value)
+                {
+                    _items = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         private double NavigationWidth_ = 220;
 

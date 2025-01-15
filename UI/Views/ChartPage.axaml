@@ -22,14 +22,14 @@
 
 	<StackPanel Margin="20">
 		<StackPanel Orientation="Horizontal" Margin="0,5,0,20" >
-			<TextBlock TextWrapping=""  Text="{DynamicResource SideStatistics}" FontSize="18" VerticalAlignment="Center"/>
+			<TextBlock  Text="{DynamicResource SideStatistics}" FontSize="18" VerticalAlignment="Center"/>
 			<select:Select Margin="10,0,0,0" VerticalAlignment="Top" Padding="10,5"
 						   IsShowIcon="False" SelectedItem="{Binding ShowType,Mode=TwoWay}"
 						   Options="{Binding ShowTypeOptions}"/>
 		</StackPanel>
 		<Tabbar:Tabbar  Data="{Binding TabbarData}"
 						SelectedIndex="{Binding TabbarSelectedIndex,Mode=TwoWay}"
-						Width="180"
+						
 						HorizontalAlignment="Left"/>
 
 		<Border Margin="0,15,0,0">

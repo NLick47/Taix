@@ -204,6 +204,7 @@ namespace UI.Controls.SettingPanel
                     if (attr is ConfigAttribute)
                     {
                         ConfigAttribute attribute = (ConfigAttribute)attr;
+                        if (attribute.CultureCode != SystemLanguage.CurrentLanguage) continue;
 
                         var config = new Config()
                         {

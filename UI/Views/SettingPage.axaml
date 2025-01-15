@@ -10,9 +10,9 @@
 			 xmlns:Tabbar="using:UI.Controls.Tabbar"
 			 xmlns:SettingPanel="using:UI.Controls.SettingPanel"
              x:Class="UI.Views.SettingPage">
-	<StackPanel Margin="20">
+	<StackPanel Margin="25">
 		<TextBlock Text="{DynamicResource Settings}" FontSize="18" Margin="0,5,0,20"/>
-		<Tabbar:Tabbar Width="230"
+		<Tabbar:Tabbar 
 					   HorizontalAlignment="Left" Data="{Binding TabbarData}"
 					   SelectedIndex="{Binding TabbarSelectedIndex,Mode=TwoWay}"/>
 

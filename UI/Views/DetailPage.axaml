@@ -179,7 +179,7 @@
 						<Tabbar:Tabbar Margin="0,-10,0,0"
 									   Data="{Binding TabbarData}"
 									   SelectedIndex="{Binding TabbarSelectedIndex,Mode=TwoWay}"
-									   Width="180" HorizontalAlignment="Left"/>
+									   HorizontalAlignment="Left"/>
 
 						<Grid >
 							<!--按天-->

@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 	<ResourceDictionary.MergedDictionaries>
 
-		<ResourceInclude Source="/Resources/Localization/StringResources.cn.axaml"/>
+	
 		<ResourceInclude Source="/Themes/Base/Icon.axaml"/>
 		<ResourceInclude Source="/Themes/Base/Img.axaml"/>
 		<ResourceInclude Source="/Themes/Base/View.axaml"/>

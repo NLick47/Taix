@@ -83,7 +83,7 @@
 						</Border.Background>
 						<StackPanel Orientation="Horizontal" TextElement.Foreground="{DynamicResource ThemeBrush}">
 							<base:Icon VerticalAlignment="Center" IconType="Website"/>
-							<TextBlock FontSize="10" VerticalAlignment="Center" Text="网站" Margin="5,0,0,0"/>
+							<TextBlock FontSize="10" VerticalAlignment="Center" Text="{DynamicResource Website}" Margin="5,0,0,0"/>
 						</StackPanel>
 					</Border>
 

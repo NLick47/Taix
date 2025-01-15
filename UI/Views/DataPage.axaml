@@ -29,7 +29,7 @@
 						   SelectedItem="{Binding ShowType,Mode=TwoWay}"
 						   Options="{Binding ShowTypeOptions}"/>
 		</StackPanel>
-		<Tabbar:Tabbar Width="145"
+		<Tabbar:Tabbar
 					   HorizontalAlignment="Left"
 					   Grid.Row="1"
 					   Data="{Binding TabbarData}"

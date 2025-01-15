@@ -14,6 +14,8 @@ using UI.Views;
 using Core.Librarys;
 using ReactiveUI;
 using UI.Servicers;
+using Avalonia;
+using Avalonia.Controls;
 
 namespace UI.ViewModels
 {
@@ -32,7 +34,7 @@ namespace UI.ViewModels
         public ICommand RefreshCommand { get; set; }
         public List<SelectItemModel> ChartDataModeOptions { get; set; }
 
-       
+
 
         public ChartPageViewModel(IData data, ICategorys categorys, MainViewModel mainVM,
             IWebData webData_, IWebSiteContextMenuServicer webSiteContextMenu_, IAppContextMenuServicer appContextMenuServicer)
@@ -47,35 +49,42 @@ namespace UI.ViewModels
             ToDetailCommand = ReactiveCommand.Create<object>(OnTodetailCommand);
             RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshCommand);
 
-            TabbarData = ["按天", "按周", "按月", "按年"];
-            var weekOptions = new List<SelectItemModel>();
-            weekOptions.Add(new SelectItemModel()
-            {
-                Name = "本周"
-            });
-            weekOptions.Add(new SelectItemModel()
-            {
-                Name = "上周"
-            });
+            TabbarData =
+            [
+                ResourceStrings.Daily,
+                ResourceStrings.Weekly,
+                ResourceStrings.Monthly,
+                ResourceStrings.Yearly,
+            ];
+            List<SelectItemModel> weekOptions = [
+                new ()
+                {
+                    Name = ResourceStrings.ThisWeek
+                },
+                new ()
+                {
+                    Name = ResourceStrings.LastWeek
+                }
+            ];
 
-            var chartDataModeOptions = new List<SelectItemModel>
-            {
-                new SelectItemModel()
+
+            List<SelectItemModel> chartDataModeOptions = [
+                new ()
                 {
                     Id = 1,
-                    Name = "默认视图",
+                    Name = ResourceStrings.DefaultView,
                 },
-                new SelectItemModel()
+                new ()
                 {
                     Id = 2,
-                    Name = "汇总视图"
+                    Name = ResourceStrings.SummaryView
                 },
-                new SelectItemModel()
+                new ()
                 {
                     Id = 3,
-                    Name = "分类视图"
+                    Name = ResourceStrings.CategoryView
                 }
-            };
+            ];
 
             ChartDataModeOptions = chartDataModeOptions;
             ChartDataMode = chartDataModeOptions[0];
@@ -232,7 +241,7 @@ namespace UI.ViewModels
             var nullCategory = new CategoryModel()
             {
                 ID = 0,
-                Name = "未分类",
+                Name = ResourceStrings.Uncategorized,
                 IconFile = "avares://Taix/Resources/Icons/tai32.ico"
             };
             foreach (var item in list)
@@ -747,7 +756,7 @@ namespace UI.ViewModels
         #region 网页数据
         private async Task LoadWebData(DateTime start_, DateTime end_)
         {
-            await Task.WhenAll(LoadCategoriesStatistics(start_, end_), LoadWebSitesTopData(start_, end_), 
+            await Task.WhenAll(LoadCategoriesStatistics(start_, end_), LoadWebSitesTopData(start_, end_),
                 LoadWebBrowseDataStatistics(start_, end_)).ConfigureAwait(false);
             WebTotalTime = await _webData.GetBrowseDurationTotalAsync(start_, end_);
             WebSiteCount = await _webData.GetBrowseSitesTotalAsync(start_, end_);

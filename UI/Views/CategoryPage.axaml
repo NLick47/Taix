@@ -48,11 +48,11 @@
 					</Grid.RowDefinitions>
 					<Grid>
 						<StackPanel Orientation="Horizontal" Margin="10,0,0,0">
-							<base:Text Content="?创建:编辑" Value="{Binding IsCreate}"
+							<base:Text Content="{DynamicResource ExCreateEdit}" Value="{Binding IsCreate}"
 									   VerticalAlignment="Center" />
 							<TextBlock  VerticalAlignment="Center" >
 								<Run Text="{Binding ShowType.Name}"/>
-								<Run Text="分类"/>
+								<Run Text="{DynamicResource SideSort}"/>
 							</TextBlock>
 						</StackPanel>
 						<Button:IconButton Foreground="#ccc"
@@ -64,7 +64,7 @@
 
 					<ScrollViewer VerticalScrollBarVisibility="Hidden" Grid.Row="1" x:Name="viewer">
 						<StackPanel Grid.Row="1" Margin="10">
-							<TextBlock Text="分类名称"/>
+							<TextBlock Text="{DynamicResource ClassificationName}"/>
 
 							<Grid>
 								<Grid.ColumnDefinitions>
@@ -72,7 +72,7 @@
 									<ColumnDefinition Width="*"/>
 								</Grid.ColumnDefinitions>
 								<base:ColorSelect Color="{Binding EditColor,Mode=TwoWay}"
-												  ToolTip.Tip="选择分类颜色"
+												  ToolTip.Tip="{DynamicResource SelectCategoryColors}"
 												  HorizontalAlignment="Left"
 												  Margin="0,10,0,0" />
 
@@ -80,9 +80,9 @@
 												IsShowError="{Binding IsEditError,Mode=TwoWay}"
 												Text="{Binding EditName,Mode=TwoWay}"
 												MaxLength="10" Margin="5,10,0,0"
-												Placeholder="请输入分类名称"/>
+												Placeholder="{DynamicResource PleaseEnterCategoryName}"/>
 							</Grid>
-							<TextBlock Text="图标" Margin="0,10,0,0"/>
+							<TextBlock Text="{DynamicResource Icon}" Margin="0,10,0,0"/>
 							<base:IconSelect  URL="{Binding EditIconFile,Mode=TwoWay}"
 											  HorizontalAlignment="Left"
 											  Margin="0,10,0,0" />
@@ -94,12 +94,12 @@
 									<base:View Condition="True" Value="{Binding EditIsDirectoryMath}">
 										<StackPanel Margin="0,10,0,0">
 											<Button:Button HorizontalAlignment="Right" Width="100"
-														   Command="{Binding AddDirectoryCommand}">添加目录</Button:Button>
+														   Command="{Binding AddDirectoryCommand}" Content="{DynamicResource AddDirectory}"></Button:Button>
 											<list:BaseList Items="{Binding EditDirectories,Mode=OneWay}"
 														   SelectedItem="{Binding EditSelectedDirectory,Mode=TwoWay}">
 												<list:BaseList.ContextMenu>
 													<ContextMenu>
-														<MenuItem Header="移除"
+														<MenuItem Header="{DynamicResource Remove}"
 																  Command="{Binding DirectoriesCommand}"
 																  CommandParameter="remove"/>
 													</ContextMenu>
@@ -112,7 +112,7 @@
 						</StackPanel>
 					</ScrollViewer>
 
-					<Button:Button Grid.Row="2" HorizontalAlignment="Right" Text="?创建:更新" Value="{Binding IsCreate}" Width="120" Margin="0,0,10,0" VerticalAlignment="Center" Command="{Binding EditDoneCommand}">
+					<Button:Button Grid.Row="2" HorizontalAlignment="Right" Text="{DynamicResource ExCreateUpdate}" Value="{Binding IsCreate}" Width="120" Margin="0,0,10,0" VerticalAlignment="Center" Command="{Binding EditDoneCommand}">
 
 					</Button:Button>
 				</Grid>
@@ -126,22 +126,22 @@
 			</Grid.RowDefinitions>
 			<Grid.ContextMenu>
 				<ContextMenu>
-					<MenuItem Header="刷新" Command="{Binding RefreshCommand}" />
+					<MenuItem Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}" />
 					<Separator/>
-					<MenuItem Header="新建分类" Command="{Binding EditCommand}" />
+					<MenuItem Header="{DynamicResource NewCategory}" Command="{Binding EditCommand}" />
 				</ContextMenu>
 			</Grid.ContextMenu>
 
 			<StackPanel>
 				<StackPanel Orientation="Horizontal" Margin="0,5,0,20" >
-					<TextBlock Text="分类" FontSize="18" VerticalAlignment="Center"/>
+					<TextBlock Text="{DynamicResource SideSort}" FontSize="18" VerticalAlignment="Center"/>
 					<select:Select Margin="10,0,0,0" VerticalAlignment="Top" Padding="10,5"
 								   IsShowIcon="False" SelectedItem="{Binding ShowType,Mode=TwoWay}"
 								   Options="{Binding ShowTypeOptions}"/>
 				</StackPanel>
 
 				<Button:Button Icon="CalculatorAddition"
-							   Content="新建分类"
+							   Content="{DynamicResource NewCategory}"
 							   HorizontalAlignment="Right"
 							   Margin="0,0,20,0" Width="150"
 							   Command="{Binding EditCommand}"/>
@@ -183,11 +183,11 @@
 
 							<ListBox.ContextMenu>
 								<ContextMenu>
-									<MenuItem Header="查看分类应用列表" Command="{Binding GotoListCommand}"
+									<MenuItem Header="{DynamicResource ViewCategoryAppList}" Command="{Binding GotoListCommand}"
 											  CommandParameter="{Binding SelectedAppCategoryItem}"/>
-									<MenuItem Header="编辑" Command="{Binding EditCommand}"
+									<MenuItem Header="{DynamicResource Edit}" Command="{Binding EditCommand}"
 											  CommandParameter="{Binding SelectedAppCategoryItem}"/>
-									<MenuItem Header="删除分类" Command="{Binding DelCommand}"
+									<MenuItem Header="{DynamicResource DeleteCategory}" Command="{Binding DelCommand}"
 											  CommandParameter="{Binding SelectedAppCategoryItem}"/>
 								</ContextMenu>
 							</ListBox.ContextMenu>
@@ -290,7 +290,7 @@
 															Margin="10" Padding="8,0" CornerRadius="10" Height="20">
 														<TextBlock VerticalAlignment="Center"
 																   HorizontalAlignment="Center" FontSize="10"
-																   Foreground="White" Text="目录匹配"></TextBlock>
+																   Foreground="White" Text="{DynamicResource DirectoryMatch}"></TextBlock>
 													</Border>
 												</base:View>
 
@@ -309,7 +309,7 @@
 															CornerRadius="10"
 															Background="{DynamicResource CategoryAppNumBgBrush}"
 															HorizontalAlignment="Right" VerticalAlignment="Center"
-															Padding="10,5" ToolTip.Tip="分类应用数量">
+															Padding="10,5" ToolTip.Tip="{DynamicResource CategoryAppCount}">
 														<TextBlock Foreground="{DynamicResource DefaultTextBrush}">
 															<Run Text="×"/>
 															<Run Text="{Binding Count}"/>
@@ -339,11 +339,11 @@
 								 ItemsSource="{Binding WebCategoryData}">
 							<ListBox.ContextMenu>
 								<ContextMenu>
-									<MenuItem Header="查看网站列表" Command="{Binding GotoListCommand}"
+									<MenuItem Header="{DynamicResource ViewWebsiteList}" Command="{Binding GotoListCommand}"
 											  CommandParameter="{Binding SelectedWebCategoryItem}"/>
-									<MenuItem Header="编辑" Command="{Binding EditCommand}"
+									<MenuItem Header="{DynamicResource Edit}" Command="{Binding EditCommand}"
 											  CommandParameter="{Binding SelectedWebCategoryItem}"/>
-									<MenuItem Header="删除分类" Command="{Binding DelCommand}"
+									<MenuItem Header="{DynamicResource DeleteCategory}" Command="{Binding DelCommand}"
 											  CommandParameter="{Binding SelectedWebCategoryItem}"/>
 								</ContextMenu>
 							</ListBox.ContextMenu>

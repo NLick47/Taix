@@ -1,19 +1,23 @@
-﻿using System;
+﻿using Core.Enums;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Core.Models.Config
 {
+ 
     [AttributeUsage(AttributeTargets.Class |
  AttributeTargets.Constructor |
  AttributeTargets.Field |
  AttributeTargets.Method |
- AttributeTargets.Property)]
-
+ AttributeTargets.Property, AllowMultiple = true)]
+ 
     public class ConfigAttribute : System.Attribute
     {
+
         public string Name;
         public string Description;
         public string ToggleTrueText;
@@ -26,6 +30,7 @@ namespace Core.Models.Config
         public bool IsCanImportExport;
         public string Options;
         public bool IsBeta;
+        public CultureCode CultureCode = CultureCode.ZhCn;
         public ConfigAttribute()
         {
             ToggleTrueText = "开";

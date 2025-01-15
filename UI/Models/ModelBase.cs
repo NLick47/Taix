@@ -19,19 +19,18 @@ namespace UI.Models
         /// <summary>
         /// 展示类型选项
         /// </summary>
-        public List<SelectItemModel> ShowTypeOptions { get; } = new List<SelectItemModel>()
-        {
-            new SelectItemModel()
+        public List<SelectItemModel> ShowTypeOptions { get; } = [
+            new ()
                 {
-                    Id=0,
-                    Name="应用"
+                    Id = 0,
+                    Name = ResourceStrings.App
                 },
-                new SelectItemModel()
+                new ()
                 {
-                    Id=1,
-                    Name="网站"
+                    Id = 1,
+                    Name = ResourceStrings.Website
                 }
-        };
+        ];
         public ModelBase()
         {
             ShowType = ShowTypeOptions[0];

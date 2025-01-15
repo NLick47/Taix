@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Core.Enums;
 using Core.Models.Config;
 using Core.Models.Config.Link;
 using Core.Servicers.Interfaces;
@@ -44,10 +45,14 @@ namespace UI.ViewModels
             OpenURL = ReactiveCommand.Create<object>(OnOpenURL);
             DelDataCommand = ReactiveCommand.CreateFromTask<object>(OnDelData);
             ExportDataCommand = ReactiveCommand.CreateFromTask<object>(OnExportData);
+            appConfig.ConfigChanged += ConfigChanged; 
             Init();
-
         }
 
+        private void ConfigChanged(ConfigModel oldConfig, ConfigModel newConfig)
+        {
+            SystemLanguage.SetCurrentSystemLanguage((CultureCode)newConfig.General.Language);
+        }
 
         private void Init()
         {
@@ -55,7 +60,7 @@ namespace UI.ViewModels
 
             Data = config.General;
 
-            TabbarData = ["常规", "行为", "数据", "关于"];
+            TabbarData = [ResourceStrings.General, ResourceStrings.Behavior, ResourceStrings.Data, ResourceStrings.About];
 
             PropertyChanged += SettingPageVM_PropertyChanged;
 

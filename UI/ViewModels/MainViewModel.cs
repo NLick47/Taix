@@ -17,6 +17,8 @@ using UI.Controls.Navigation.Models;
 using UI.Controls.Window;
 using UI.Models;
 using UI.Views;
+using Core.Enums;
+using NPOI.OpenXmlFormats.Spreadsheet;
 
 namespace UI.ViewModels
 {
@@ -28,7 +30,7 @@ namespace UI.ViewModels
         public ICommand GotoPageCommand { get; }
 
         public IndexPageViewModel view { get; }
-        private string[] pages = [ nameof(IndexPage), nameof(DataPage), nameof(ChartPage), nameof(CategoryPage)]; /* nameof(ChartPage), nameof(DataPage), nameof(CategoryPage)*/
+        private string[] pages = [nameof(IndexPage), nameof(DataPage), nameof(ChartPage), nameof(CategoryPage)]; /* nameof(ChartPage), nameof(DataPage), nameof(CategoryPage)*/
         public MainViewModel(
            IServiceProvider serviceProvider,
            IAppConfig appConfig,
@@ -40,7 +42,7 @@ namespace UI.ViewModels
             ServiceProvider = serviceProvider;
             OnSelectedCommand = ReactiveCommand.Create<object>(OnSelectedCommandHandle);
             GotoPageCommand = ReactiveCommand.Create<object>(OnGotoPageCommand);
-            Items = new ObservableCollection<NavigationItemModel>();
+            Items = new();
             PropertyChanged += MainViewModel_PropertyChanged;
             InitNavigation();
         }
@@ -62,56 +64,46 @@ namespace UI.ViewModels
         }
         private void InitNavigation()
         {
-            IndexUriList = new ();
-            IndexUriList.AddRange(pages);
-            Application.Current.TryFindResource("SideOverview", out var sideOverview);
-            Application.Current.TryFindResource("SideStatistics", out var sideStatistics);
-            Application.Current.TryFindResource("SideDetails", out var sideDetails);
-            Application.Current.TryFindResource("SideSort", out var sideSort);
-            var observable = Application.Current.Resources.GetResourceObservable("SideOverview");
-            observable.Subscribe(newTitle =>
-            {
+            IndexUriList = new(pages);
+            var overviewObservable = Application.Current.Resources.GetResourceObservable("SideOverview").DistinctUntilChanged();
+            var statisticsObservable = Application.Current.Resources.GetResourceObservable("SideStatistics").DistinctUntilChanged();
+            var detailsObservable = Application.Current.Resources.GetResourceObservable("SideDetails").DistinctUntilChanged();
+            var sortObservable = Application.Current.Resources.GetResourceObservable("SideSort").DistinctUntilChanged();
 
-            });
+            Items = [
+                new()
+                {
+                    UnSelectedIcon = Controls.Base.IconTypes.Home,
+                    SelectedIcon = IconTypes.HomeSolid,
+                    Uri = nameof(IndexPage),
+                    ID = -1
+                },
+                new ()
+                {
+                    UnSelectedIcon = Controls.Base.IconTypes.ZeroBars,
+                    SelectedIcon = IconTypes.FourBars,
+                    Uri = nameof(ChartPage),
+                    ID = 1,
+                },
+                new()
+                {
+                    UnSelectedIcon = Controls.Base.IconTypes.Calendar,
+                    SelectedIcon = IconTypes.CalendarSolid,
+                    Uri = nameof(DataPage),
+                    ID = 2,
+                },
+                new ()
+                {
+                    UnSelectedIcon = Controls.Base.IconTypes.EndPoint,
+                    SelectedIcon = IconTypes.EndPointSolid,
+                    Uri = nameof(CategoryPage),
+                    ID = 3,
+                }];
+            SubscribeToResourceObservable(overviewObservable, -1);
+            SubscribeToResourceObservable(statisticsObservable, 1);
+            SubscribeToResourceObservable(detailsObservable, 2);
+            SubscribeToResourceObservable(sortObservable, 3);
 
-
-            Items.Add(new()
-            {
-                UnSelectedIcon = Controls.Base.IconTypes.Home,
-                SelectedIcon = IconTypes.HomeSolid,
-                Title = sideOverview as string,
-                Uri = nameof(IndexPage),
-                ID = -1
-            });
-
-            Items.Add(new Controls.Navigation.Models.NavigationItemModel()
-            {
-                UnSelectedIcon = Controls.Base.IconTypes.ZeroBars,
-                SelectedIcon = IconTypes.FourBars,
-                Title = sideStatistics as string,
-                Uri = nameof(ChartPage),
-                ID = 1,
-            });
-
-            Items.Add(new Controls.Navigation.Models.NavigationItemModel()
-            {
-                UnSelectedIcon = Controls.Base.IconTypes.Calendar,
-                SelectedIcon = IconTypes.CalendarSolid,
-                Title = sideDetails as string,
-                Uri = nameof(DataPage),
-                ID = 2,
-            });
-
-            Items.Add(new Controls.Navigation.Models.NavigationItemModel()
-            {
-                UnSelectedIcon = Controls.Base.IconTypes.EndPoint,
-                SelectedIcon = IconTypes.EndPointSolid,
-                Title = sideSort as string,
-                Uri = nameof(CategoryPage),
-                ID = 3,
-            });
-
-          
         }
 
         public void Toast(string content, ToastType type = ToastType.Info, IconTypes icon = IconTypes.Accept)
@@ -129,20 +121,27 @@ namespace UI.ViewModels
         {
             int startPageIndex = appConfig.GetConfig().General.StartPage;
             NavSelectedItem = Items[startPageIndex];
-            if(NavSelectedItem != Items[startPageIndex])
+            if (NavSelectedItem != Items[startPageIndex])
             {
                 NavSelectedItem = Items[startPageIndex];
             }
             Uri = Items[startPageIndex].Uri;
-            if(Uri != Items[startPageIndex].Uri)
+            if (Uri != Items[startPageIndex].Uri)
             {
                 Uri = Items[startPageIndex].Uri;
             }
         }
 
-        private void SubscribeToResource(string key)
+        private void SubscribeToResourceObservable(IObservable<object> observable, int id)
         {
-
+            observable.Subscribe(newTitle =>
+            {
+                var nv = Items.First(x => x.ID == id);
+             
+                Items.Remove(nv);
+                nv.Title = newTitle as string;
+                Items.Add(nv);
+            });
         }
 
         private void OnSelectedCommandHandle(object obj)

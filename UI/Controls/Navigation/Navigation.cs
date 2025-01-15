@@ -165,6 +165,7 @@ namespace UI.Controls.Navigation
 
                 }
             }
+            
         }
 
         public Navigation()
@@ -222,6 +223,10 @@ namespace UI.Controls.Navigation
                     {
                         navItem.MouseUp -= NavItem_MouseUp;
                     };
+                }
+                if(SelectedItem?.ID == id)
+                {
+                    navItem.IsSelected = true;
                 }
                 ItemsPanel.Children.Add(navItem);
                 ItemsDictionary.Add(id, navItem);
