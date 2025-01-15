@@ -31,6 +31,7 @@ namespace Core.Models.Config
         public string Options;
         public bool IsBeta;
         public CultureCode CultureCode = CultureCode.ZhCn;
+        public bool OptionsChangedRefresh = false;
         public ConfigAttribute()
         {
             ToggleTrueText = "开";

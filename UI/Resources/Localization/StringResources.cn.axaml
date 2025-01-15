@@ -149,6 +149,18 @@
 	<system:String x:Key="Behavior">行为</system:String>
 	<system:String x:Key="Data">数据</system:String>
 	<system:String x:Key="About">关于</system:String>
+	
+	
+	
+	<system:String x:Key="TimeRangeSelectionError">时间范围选择错误</system:String>
+	<system:String x:Key="DeleteConfirmation">删除确认</system:String>
+	<system:String x:Key="WantPerformAction">是否执行此操作？</system:String>
+	<system:String x:Key="OperationCompleted">操作已完成</system:String>
+	<system:String x:Key="DataExportCompleted">导出数据完成</system:String>
+	<system:String x:Key="DataExportFailed">导出数据失败</system:String>
+	
+	
+	
 		
 	
 	

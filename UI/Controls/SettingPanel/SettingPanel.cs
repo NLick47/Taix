@@ -78,12 +78,13 @@ namespace UI.Controls.SettingPanel
                 isCanRender = true;
                 return;
             }
-            configList = new Dictionary<string, List<Config>>();
-            configList.Add(nosetGroupKey, new List<Config>());
+        
             if (Container == null)
             {
                 return;
             }
+            configList = new Dictionary<string, List<Config>>();
+            configList.Add(nosetGroupKey, new List<Config>());
             Container.Children.Clear();
 
             if (Data == null)
@@ -380,9 +381,17 @@ namespace UI.Controls.SettingPanel
             control.OnSelectedItemChanged += (e, c) =>
             {
                 pi.SetValue(configData, control.SelectedItem.Data);
-
-                isCanRender = false;
                 Data = DeepCopy(configData, configData.GetType());
+                if (configAttribute.OptionsChangedRefresh)
+                {
+                    isCanRender = true;
+                    Render();
+                }
+                else
+                {
+                    isCanRender = false;
+                }
+            
             };
 
 
@@ -429,9 +438,8 @@ namespace UI.Controls.SettingPanel
                         newData.Add(item.ToString());
                     }
                     pi.SetValue(configData, newData);
-
-                    isCanRender = false;
                     Data = DeepCopy(configData, configData.GetType());
+                   
                 };
             };
             listControl.Margin = new Thickness(15, 0, 15, 10);

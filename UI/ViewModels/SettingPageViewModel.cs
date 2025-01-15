@@ -54,6 +54,8 @@ namespace UI.ViewModels
             SystemLanguage.SetCurrentSystemLanguage((CultureCode)newConfig.General.Language);
         }
 
+       
+
         private void Init()
         {
             config = appConfig.GetConfig();
@@ -77,16 +79,17 @@ namespace UI.ViewModels
         {
             if (DelDataStartMonthDate > DelDataEndMonthDate)
             {
-                mainVM.Toast("时间范围选择错误", Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
+                mainVM.Toast(Application.Current.Resources["TimeRangeSelectionError"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
                 return;
             }
 
-            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync("删除确认", "是否执行此操作？");
+            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync(Application.Current.Resources["DeleteConfirmation"] as string,
+                Application.Current.Resources["WantPerformAction"] as string);
             if (isConfirm)
             {
                 await data.ClearRangeAsync(DelDataStartMonthDate, DelDataEndMonthDate);
                 await _webData.ClearAsync(DelDataStartMonthDate, DelDataEndMonthDate);
-                mainVM.Toast("操作已完成", Controls.Window.ToastType.Success);
+                mainVM.Toast(Application.Current.Resources["OperationCompleted"] as string, Controls.Window.ToastType.Success);
             }
         }
 
@@ -105,13 +108,13 @@ namespace UI.ViewModels
                     var folder = result[0];
                     await data.ExportToExcelAsync(folder.Path.LocalPath, ExportDataStartMonthDate, ExportDataEndMonthDate);
                     await _webData.ExportAsync(folder.Path.LocalPath, ExportDataStartMonthDate, ExportDataEndMonthDate);
-                    mainVM.Toast("导出数据完成", Controls.Window.ToastType.Success);
+                    mainVM.Toast(Application.Current.Resources["DataExportCompleted"] as string, Controls.Window.ToastType.Success);
                 }
             }
             catch (Exception ec)
             {
                 Logger.Error(ec.ToString());
-                mainVM.Toast("导出数据失败", Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
+                mainVM.Toast(Application.Current.Resources["DataExportFailed"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
             }
         }
 

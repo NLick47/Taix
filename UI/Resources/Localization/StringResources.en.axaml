@@ -18,13 +18,13 @@
 	<system:String x:Key="App">App</system:String>
 	<system:String x:Key="Refresh">Refresh</system:String>
 	<system:String x:Key="Browse">Browse</system:String>
-	<system:String x:Key="ClassificationName">ClassificationName</system:String>
+	<system:String x:Key="ClassificationName">Category Name</system:String>
 	<system:String x:Key="ExCreateEdit">?Create:Edit</system:String>
 	<system:String x:Key="ExCreateUpdate">?Create:Update</system:String>
 	<system:String x:Key="NewCategory">NewCategory</system:String>
 
 	<system:String x:Key="MostFrequent">Most Frequent</system:String>
-	<system:String x:Key="ClassificationProportion">Classification proportion</system:String>
+	<system:String x:Key="ClassificationProportion">Category proportion</system:String>
 
 	<system:String x:Key="Today">Today</system:String>
 	<system:String x:Key="Thisweek">This Week</system:String>
@@ -58,7 +58,7 @@
 	<system:String x:Key="ApplicationPName">Application Process Name</system:String>
 	<system:String x:Key="ApplicationDescription">Application Description</system:String>
 	<system:String x:Key="ApplicationFilePath">Application File Path</system:String>
-	<system:String x:Key="Classification">Classification</system:String>
+	<system:String x:Key="Classification">Category</system:String>
 
 	<system:String x:Key="LongerWebSiteTip">Data for this site will not be tracked</system:String>
 	<system:String x:Key="WebSiteTitle">Website Name</system:String>
@@ -73,7 +73,7 @@
 	<system:String x:Key="LogTime">Access Time</system:String>
 	<system:String x:Key="Duration">Browse Duration</system:String>
 
-	<system:String x:Key="IgnoreThisApplication">Ignore This Application</system:String>
+	<system:String x:Key="IgnoreThisApplication">Ignore This App</system:String>
 	<system:String x:Key="Unignore">Unignore</system:String>
 	<system:String x:Key="Relevance">Relevance</system:String>
 	<system:String x:Key="MonthlyOverview">Monthly Overview</system:String>
@@ -99,7 +99,7 @@
 	<system:String x:Key="ExternalDeclaration">External Resource Declaration</system:String>
 	<system:String x:Key="FromMicrosoft">From Microsoft</system:String>
 
-	<system:String x:Key="SelectiveApplication">Select Application</system:String>
+	<system:String x:Key="SelectiveApplication">Select App</system:String>
 	<system:String x:Key="SearchApplication">Search Application</system:String>
 
 	<system:String x:Key="AppClassification">App Category</system:String>
@@ -143,6 +143,13 @@
 	<system:String x:Key="Behavior">Behave</system:String>
 	<system:String x:Key="Data">Data</system:String>
 	<system:String x:Key="About">About</system:String>
+
+	<system:String x:Key="TimeRangeSelectionError">Time range selection error</system:String>
+	<system:String x:Key="DeleteConfirmation">Delete Confirmation</system:String>
+	<system:String x:Key="WantPerformAction">Do you want to perform this action?</system:String>
+	<system:String x:Key="OperationCompleted">Operation completed</system:String>
+	<system:String x:Key="DataExportCompleted">Data export completed</system:String>
+	<system:String x:Key="DataExportFailed">Data export failed</system:String>
 	
 	<system:String x:Key="Open">Open</system:String>
 	<system:String x:Key="Exit">Exit</system:String>
