@@ -47,7 +47,7 @@
 
 			<na:Navigation.BottomExtContent>
 				<na:NavigationItem Icon="Settings"
-								   Title="{StaticResource SideSetting}"
+								   Title="{DynamicResource SideSetting}"
 								   Uri="SettingsPage"
 								   Command="{Binding GotoPageCommand}"
 								   CommandParameter="SettingPage"/>

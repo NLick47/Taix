@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Transformation;
 using Avalonia.Styling;
@@ -58,7 +60,31 @@ namespace UI.Controls.Tabbar
         public Tabbar()
         {
             ItemsDictionary = new List<TextBlock>();
-            
+        }
+
+        protected override void OnUnloaded(RoutedEventArgs e)
+        {
+            base.OnUnloaded(e);
+            if(Data != null) Data.CollectionChanged -= Data_CollectionChanged;
+        }
+
+        private void Data_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e == null || Data == null || ItemsDictionary == null)
+                return;
+
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Replace:
+                    if (e.OldStartingIndex >= 0 && e.OldStartingIndex < Data.Count && e.OldStartingIndex < ItemsDictionary.Count)
+                    {
+                        if (Data[e.OldStartingIndex] != null)
+                        {
+                            ItemsDictionary[e.OldStartingIndex].Text = Data[e.OldStartingIndex];
+                        }
+                    }
+                    break;
+            }
         }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -66,6 +92,7 @@ namespace UI.Controls.Tabbar
             base.OnApplyTemplate(e);
             ActiveBlock = e.NameScope.Get<Border>("ActiveBlock");
             ItemsContainer = e.NameScope.Get<Grid>("ItemsContainer");
+            if(Data != null) Data.CollectionChanged += Data_CollectionChanged;
             Render();
         }
 
@@ -146,10 +173,11 @@ namespace UI.Controls.Tabbar
                 control.FontSize = 16;
                 control.Cursor = new Cursor(StandardCursorType.Hand);
                 control.Foreground = new SolidColorBrush(Avalonia.Media.Color.Parse("#1F1F1F"));
+                control.Tag = col;
                 control.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom;
                 control.PointerPressed += (e, c) =>
                 {
-                    int index = Data.IndexOf(item);
+                    int index = int.Parse(((Control)e).Tag?.ToString());
                     if (SelectedIndex != index)
                     {
                         SelectedIndex = index;
