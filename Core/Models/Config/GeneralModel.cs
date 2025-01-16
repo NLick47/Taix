@@ -13,7 +13,7 @@ namespace Core.Models.Config
     public class GeneralModel
     {
         [Config(Name = "开机自启动", Description = "在电脑启动时自动运行 Taix", Group = "基础",CultureCode = CultureCode.ZhCn)]
-        [Config(Name = "StartAtBoot", Description = "Automatically run Taix when the computer starts", Group = "Basics", CultureCode = CultureCode.EnUs)]
+        [Config(Name = "StartAtBoot", Description = "Automatically run Taix when the computer starts", Group = "Basics", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
         /// <summary>
         /// 是否启用开机自启动
         /// </summary>
@@ -59,7 +59,7 @@ namespace Core.Models.Config
         [Config(Options = "Overview|Charts|Details|Category", Name = "Start Page", Description = "Set the page displayed when the main interface opens", Group = "Basics", CultureCode = CultureCode.EnUs)]
         public int StartPage { get; set; } = 0;
         [Config(Name = "启动软件时显示主界面", Description = "在开机自启动时此选项无效", Group = "基础", CultureCode = CultureCode.ZhCn)]
-        [Config(Name = "This option is invalid when starting automatically at boot", Description = "Show Main Window at Startup", Group = "Basics", CultureCode = CultureCode.EnUs)]
+        [Config(Name = "This option is invalid when starting automatically at boot", Description = "Show Main Window at Startup", Group = "Basics",ToggleFalseText = "Off",ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
         /// <summary>
         /// 启动软件时显示主界面
         /// </summary>
@@ -82,7 +82,7 @@ namespace Core.Models.Config
         /// </summary>
         /// 
         [Config(Name = "网站浏览统计", Description = "统计浏览器的网站访问数据，支持：Google Chrome、MSEdge或任何能够安装Chrome拓展的浏览器。请点击 “关于 > 浏览器统计插件” 了解如何安装和使用此功能。", Group = "功能", CultureCode = CultureCode.ZhCn)]
-        [Config(Name = "Web Browsing Statistics", Description = "Statistics for website visits in the browser, supporting: Google Chrome, MSEdge, or any browser that can install Chrome extensions. Click \"About > Browser Statistics Plugin\" to learn how to install and use this feature.", Group = "Features", CultureCode = CultureCode.EnUs)]
+        [Config(Name = "Web Browsing Statistics", Description = "Statistics for website visits in the browser, supporting: Google Chrome, MSEdge, or any browser that can install Chrome extensions. Click \"About > Browser Statistics Plugin\" to learn how to install and use this feature.", Group = "Features", ToggleFalseText = "Off", ToggleTrueText = "On",CultureCode = CultureCode.EnUs)]
         public bool IsWebEnabled { get; set; } = false;
     }
 }

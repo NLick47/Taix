@@ -34,8 +34,8 @@ namespace Core.Models.Config
         public bool OptionsChangedRefresh = false;
         public ConfigAttribute()
         {
-            ToggleTrueText = "开";
-            ToggleFalseText = "关";
+            ToggleTrueText ??= "开";
+            ToggleFalseText ??= "关";
             IsCanRepeat = true;
             Index = 0;
             IsName = false;
