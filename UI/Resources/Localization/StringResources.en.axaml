@@ -238,6 +238,9 @@
 	<system:String x:Key="ClearConfirmation">Clear Confirmation</system:String>
 	<system:String x:Key="ClearAllStatisticsApplicationTip">Are you sure you want to clear all statistics for this application?</system:String>
 	<system:String x:Key="WantClearData">Are you sure you want to clear the data for {0}-{1}?</system:String>
+	
+	<system:String x:Key="Processing">Processing</system:String>
+	<system:String x:Key="Cleared">Cleared</system:String>
 
 	<system:String x:Key="Open">Open</system:String>
 	<system:String x:Key="Exit">Exit</system:String>

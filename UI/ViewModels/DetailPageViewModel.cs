@@ -521,12 +521,12 @@ namespace UI.ViewModels
                 {
                     if (App != null)
                     {
-                        main.Toast("正在处理");
+                        main.Toast(ResourceStrings.Processing);
                         await data.ClearAsync(App.ID, Date);
 
                         await LoadData();
                         await LoadInfo();
-                        main.Toast("已清空");
+                        main.Toast(ResourceStrings.Cleared);
                     }
                 }
             );

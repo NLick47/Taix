@@ -249,6 +249,9 @@
 	<system:String x:Key="ClearAllStatisticsApplicationTip">是否确定清空此应用的所有统计数据？</system:String>
 	<system:String x:Key="WantClearData">是否确定清空此应用 {0}年{1}月 的数据？</system:String>
 	
+	<system:String x:Key="Processing">正在处理</system:String>
+	<system:String x:Key="Cleared">已清空</system:String>
+	
 	<system:String x:Key="Open">打开</system:String>
 	<system:String x:Key="Exit">退出</system:String>
 </ResourceDictionary>

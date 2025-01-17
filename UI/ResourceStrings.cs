@@ -75,6 +75,8 @@ namespace UI
         public static string ClearConfirmation => GetStringValue("ClearConfirmation");
         public static string ClearAllStatisticsApplicationTip => GetStringValue("ClearAllStatisticsApplicationTip");
         public static string WantClearData => GetStringValue("WantClearData");
+        public static string Processing => GetStringValue("Processing");
+        public static string Cleared => GetStringValue("Cleared");
 
 
         private static string GetStringValue(string key)
