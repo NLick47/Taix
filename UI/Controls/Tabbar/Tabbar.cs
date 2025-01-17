@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -124,24 +125,29 @@ namespace UI.Controls.Tabbar
             var item = ItemsDictionary[SelectedIndex];
             var oldSelectedItem = ItemsDictionary[oldSelectedIndex];
 
-            //  选中项的坐标
             var relativePoint = item.Bounds.Position;
-            double scrollX = relativePoint.X;
             item.Foreground = new SolidColorBrush(SelectedTextColor);
-            //给新选项赋样式
-            GetNewSelectedStyle(relativePoint);
-            //移除旧样式
+
+            var itemsContainerBounds = ItemsContainer.Bounds;
+
+            var textBlockBounds = item.Bounds;
+
+            var relativeCenter = new Point(
+                textBlockBounds.Center.X - itemsContainerBounds.X,
+                textBlockBounds.Center.Y - itemsContainerBounds.Y
+            );
+
+            ActiveBlock.TranslatePoint(new Point(0, 0), ItemsContainer);
+            ActiveBlock.Width = item.Bounds.Width;
+
+            ActiveBlock.RenderTransform = TransformOperations.Parse(
+                $"translateX({relativeCenter.X - (ActiveBlock.Width / 2)}px)"
+            );
             ReOldSelectedStyle();
         }
 
         private void ReOldSelectedStyle() => Reset();
 
-        private void GetNewSelectedStyle(Point relativePoint)
-        {
-            ActiveBlock.RenderTransform = TransformOperations.Parse(
-                $"translateX({relativePoint.X}px)"
-            );
-        }
 
         private void Render()
         {
