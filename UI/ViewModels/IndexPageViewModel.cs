@@ -60,7 +60,7 @@ namespace UI.ViewModels
             TabbarData =
             [
                 Application.Current.FindResource("Today") as string,
-                Application.Current.FindResource("Thisweek") as string
+                Application.Current.FindResource("ThisWeek") as string
             ];
             TabbarSelectedIndex = 0;
             AppContextMenu = appContextMenuServicer.GetContextMenu();

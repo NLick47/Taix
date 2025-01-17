@@ -307,10 +307,11 @@ namespace UI.ViewModels
             WebColSelectedIndex = -1;
 
             DataMaximum = 0;
-
-            var weekDateArr = SelectedWeek.Name == "本周" ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
-            WeekDateStr = weekDateArr[0].ToString("yyyy年MM月dd日") + " 到 " + weekDateArr[1].ToString("yyyy年MM月dd日");
-            string[] weekNames = { "周一", "周二", "周三", "周四", "周五", "周六", "周日", };
+            var culture = SystemLanguage.CurrentCultureInfo;
+            var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
+            WeekDateStr = weekDateArr[0].ToString("d", culture) + " " + Application.Current.Resources["To"] + " " + weekDateArr[1].ToString("d",culture);
+            string[] weekNames = [ResourceStrings.Monday, ResourceStrings.Tuesday, ResourceStrings.Wednesday, ResourceStrings.Thursday,
+                    ResourceStrings.Friday,  ResourceStrings.Saturday, ResourceStrings.Sunday];
             var chartData = new List<ChartsDataModel>();
             var sumData = new List<ChartsDataModel>();
 
@@ -318,7 +319,7 @@ namespace UI.ViewModels
             var nullCategory = new CategoryModel()
             {
                 ID = 0,
-                Name = "未分类",
+                Name = ResourceStrings.Uncategorized,
                 IconFile = "avares://Taix/Resources/Icons/tai32.ico"
 
             };
@@ -398,7 +399,7 @@ namespace UI.ViewModels
             var nullCategory = new CategoryModel()
             {
                 ID = 0,
-                Name = "未分类",
+                Name = ResourceStrings.Uncategorized,
                 IconFile = "avares://Taix/Resources/Icons/tai32.ico"
             };
 
@@ -467,14 +468,14 @@ namespace UI.ViewModels
             string[] names = new string[12];
             for (int i = 0; i < 12; i++)
             {
-                names[i] = (i + 1) + "月";
+                names[i] = Application.Current.Resources[$"{(i + 1)}Month"] as string;
             }
 
             var list = await data.GetCategoryYearDataAsync(YearDate);
             var nullCategory = new CategoryModel()
             {
                 ID = 0,
-                Name = "未分类",
+                Name = ResourceStrings.Uncategorized,
                 IconFile = "avares://Taix/Resources/Icons/tai32.ico"
             };
 
@@ -542,7 +543,7 @@ namespace UI.ViewModels
             if (TabbarSelectedIndex == 1)
             {
                 //  周
-                var weekDateArr = SelectedWeek.Name == "本周" ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
+                var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
 
                 dateStart = weekDateArr[0];
                 dateEnd = weekDateArr[1];
@@ -676,6 +677,7 @@ namespace UI.ViewModels
 
         private async Task LoadSelectedColData()
         {
+            var culture = SystemLanguage.CurrentCultureInfo;
             if (ColumnSelectedIndex < 0)
             {
                 DayHoursSelectedTime = String.Empty;
@@ -690,15 +692,16 @@ namespace UI.ViewModels
             {
                 //  天
                 var time = new DateTime(Date.Year, Date.Month, Date.Day, ColumnSelectedIndex, 0, 0);
-                DayHoursSelectedTime = time.ToString("yyyy年MM月dd日 HH点");
+                string format = $"{culture.DateTimeFormat.ShortDatePattern} HH";
+                DayHoursSelectedTime = time.ToString(format, culture);
                 hoursModelList = await data.GetTimeRangelogListAsync(time);
             }
             else if (TabbarSelectedIndex == 1)
             {
                 //  周
-                var weekDateArr = SelectedWeek.Name == "本周" ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
+                var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
                 var time = weekDateArr[0].AddDays(ColumnSelectedIndex);
-                DayHoursSelectedTime = time.ToString("yyyy年MM月dd日");
+                DayHoursSelectedTime = time.ToString("d", culture);
                 daysModelList = await data.GetDateRangelogListAsync(time, time);
             }
             else if (TabbarSelectedIndex == 2)
@@ -706,7 +709,7 @@ namespace UI.ViewModels
                 //  月
                 var dateArr = Time.GetMonthDate(MonthDate);
                 var time = dateArr[0].AddDays(ColumnSelectedIndex);
-                DayHoursSelectedTime = time.ToString("yyyy年MM月dd日");
+                DayHoursSelectedTime = time.ToString("d", culture);
                 daysModelList = await data.GetDateRangelogListAsync(time, time);
             }
             else if (TabbarSelectedIndex == 3)
@@ -715,7 +718,7 @@ namespace UI.ViewModels
                 var dateStart = new DateTime(YearDate.Year, ColumnSelectedIndex + 1, 1);
                 var dateEnd = new DateTime(dateStart.Year, dateStart.Month, DateTime.DaysInMonth(dateStart.Year, dateStart.Month), 23, 59, 59);
 
-                DayHoursSelectedTime = dateStart.ToString("yyyy年MM月");
+                DayHoursSelectedTime = dateStart.ToString(culture.DateTimeFormat.YearMonthPattern, culture);
                 daysModelList = await data.GetDateRangelogListAsync(dateStart, dateEnd);
             }
 
@@ -778,7 +781,7 @@ namespace UI.ViewModels
             {
                 var category = await _webData.GetWebSiteCategoryAsync(item.ID);
                 var bindModel = new ChartsDataModel();
-                bindModel.Name = item.ID == 0 ? "未分类" : item.Name;
+                bindModel.Name = item.ID == 0 ? ResourceStrings.Uncategorized : item.Name;
                 bindModel.Value = item.Value;
                 bindModel.Data = item;
                 bindModel.Color = item.ID == 0 ? "#ccc" : category.Color;
@@ -800,7 +803,7 @@ namespace UI.ViewModels
             var emptyCategory = new WebSiteCategoryModel()
             {
                 ID = 0,
-                Name = "未分类",
+                Name = ResourceStrings.Uncategorized,
                 IconFile = "avares://Taix/Resources/Icons/tai32.ico"
             };
 
@@ -808,14 +811,15 @@ namespace UI.ViewModels
 
             if (TabbarSelectedIndex == 1)
             {
-                colNames = new string[] { "周一", "周二", "周三", "周四", "周五", "周六", "周日", };
+                colNames = [ResourceStrings.Monday, ResourceStrings.Tuesday, ResourceStrings.Wednesday, ResourceStrings.Thursday,
+                    ResourceStrings.Friday,  ResourceStrings.Saturday, ResourceStrings.Sunday];
             }
             else if (TabbarSelectedIndex == 3)
             {
                 colNames = new string[12];
                 for (int i = 0; i < 12; i++)
                 {
-                    colNames[i] = (i + 1) + "月";
+                    colNames[i] = (i + 1) + ResourceStrings.Month;
                 }
             }
 
@@ -866,20 +870,22 @@ namespace UI.ViewModels
             var chartData = new List<ChartsDataModel>();
             bool isTime = false;
             DateTime startTime = DateTime.Now, endTime = DateTime.Now;
+            var culture = SystemLanguage.CurrentCultureInfo;
             if (TabbarSelectedIndex == 0)
             {
                 //  天
+                string format = $"{culture.DateTimeFormat.ShortDatePattern} HH";
                 var time = new DateTime(Date.Year, Date.Month, Date.Day, WebColSelectedIndex, 0, 0);
-                WebSitesColSelectedTimeText = time.ToString("yyyy年MM月dd日 HH点");
+                WebSitesColSelectedTimeText = time.ToString(format, culture);
                 isTime = true;
                 startTime = endTime = time;
             }
             else if (TabbarSelectedIndex == 1)
             {
                 //  周
-                var weekDateArr = SelectedWeek.Name == "本周" ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
+                var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
                 var time = weekDateArr[0].AddDays(WebColSelectedIndex);
-                WebSitesColSelectedTimeText = time.ToString("yyyy年MM月dd日");
+                WebSitesColSelectedTimeText = time.ToString("d",culture);
                 startTime = endTime = time;
             }
             else if (TabbarSelectedIndex == 2)
@@ -887,7 +893,7 @@ namespace UI.ViewModels
                 //  月
                 var dateArr = Time.GetMonthDate(MonthDate);
                 var time = dateArr[0].AddDays(WebColSelectedIndex);
-                WebSitesColSelectedTimeText = time.ToString("yyyy年MM月dd日");
+                WebSitesColSelectedTimeText = time.ToString("d",culture);
                 startTime = endTime = time;
             }
             else if (TabbarSelectedIndex == 3)
@@ -896,7 +902,7 @@ namespace UI.ViewModels
                 var dateStart = new DateTime(YearDate.Year, WebColSelectedIndex + 1, 1);
                 var dateEnd = new DateTime(dateStart.Year, dateStart.Month, DateTime.DaysInMonth(dateStart.Year, dateStart.Month), 23, 59, 59);
 
-                WebSitesColSelectedTimeText = dateStart.ToString("yyyy年MM月");
+                WebSitesColSelectedTimeText = dateStart.ToString(culture.DateTimeFormat.YearMonthPattern);
 
                 startTime = dateStart;
                 endTime = dateEnd;

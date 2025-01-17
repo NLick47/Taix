@@ -60,19 +60,19 @@ namespace UI.Servicers
             _menu.Items.Clear();
 
             MenuItem open = new MenuItem();
-            open.Header = "在浏览器打开网站";
+            open.Header = ResourceStrings.OpenWebsite;
             open.PointerPressed += Open_Click; ;
 
 
             _setCategory = new MenuItem();
-            _setCategory.Header = "设置分类";
+            _setCategory.Header = ResourceStrings.SetCategory;
 
             MenuItem editAlias = new MenuItem();
-            editAlias.Header = "编辑别名";
+            editAlias.Header = ResourceStrings.EditAlias;
             editAlias.Click += EditAlias_ClickAsync;
 
             _block = new MenuItem();
-            _block.Header = "忽略此网站";
+            _block.Header = ResourceStrings.IgnoreSite;
             _block.PointerPressed += Block_Click;
 
             _site = new MenuItem();
@@ -95,11 +95,11 @@ namespace UI.Servicers
 
             try
             {
-                string input = await _uIServicer.ShowInputModalAsync("修改别名", "请输入别名", site.Alias, (val) =>
+                string input = await _uIServicer.ShowInputModalAsync(ResourceStrings.EditAlias, ResourceStrings.EnterAlias, site.Alias, (val) =>
                 {
                     if (val.Length > 15)
                     {
-                        _main.Error("别名最大长度为15位字符");
+                        _main.Error(string.Format(ResourceStrings.AliasMaxLengthTip,15));
                         return false;
                     }
                     return true;
@@ -112,7 +112,7 @@ namespace UI.Servicers
 
                 await _webData.UpdateAsync(site);
 
-                _main.Success("别名已更新");
+                _main.Success(ResourceStrings.AliasUpdated);
                 Debug.WriteLine("输入内容：" + input);
             }
             catch
@@ -134,11 +134,11 @@ namespace UI.Servicers
             var config = _appConfig.GetConfig();
             if (config.Behavior.IgnoreURLList.Contains(site.Domain))
             {
-                _block.Header = "取消忽略此站点";
+                _block.Header = ResourceStrings.UnignoreSite;
             }
             else
             {
-                _block.Header = "忽略此站点";
+                _block.Header = ResourceStrings.IgnoreSite;
             }
 
             UpdateCategoryMenu();
@@ -150,7 +150,7 @@ namespace UI.Servicers
             var site = data.Data as WebSiteModel;
             if (!string.IsNullOrEmpty(site.Domain))
             {
-                _main.Info("操作已执行");
+                _main.Info(ResourceStrings.OperationCompleted);
                 try
                 {
                     ProcessStartInfo psi = new ProcessStartInfo
@@ -186,12 +186,12 @@ namespace UI.Servicers
             if (config.Behavior.IgnoreURLList.Contains(site.Domain))
             {
                 config.Behavior.IgnoreURLList.Remove(site.Domain);
-                _main.Toast($"已取消忽略此域名 {site.Domain}", Controls.Window.ToastType.Success);
+                _main.Toast(string.Format(ResourceStrings.UnignoredDomain,site.Domain), Controls.Window.ToastType.Success);
             }
             else
             {
                 config.Behavior.IgnoreURLList.Add(site.Domain);
-                _main.Toast($"已忽略此域名 {site.Domain}", Controls.Window.ToastType.Success);
+                _main.Toast(string.Format(ResourceStrings.IgnoreSite,site.Domain), Controls.Window.ToastType.Success);
 
                 newBadgeList.Add(ChartBadgeModel.IgnoreBadge);
             }

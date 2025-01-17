@@ -159,7 +159,7 @@ namespace UI.Controls
             var control = e.Sender as PageContainer;
             if (string.IsNullOrEmpty(e.NewValue?.ToString())) return;
             var oldUri = e.OldValue?.ToString();
-            if (control.PageCache.ContainsKey(oldUri))
+            if (oldUri != null && control.PageCache.ContainsKey(oldUri))
             {
                 PageModel page = control.PageCache[oldUri];
                 page.ScrollValue = control.ScrollViewer.Offset.Y;

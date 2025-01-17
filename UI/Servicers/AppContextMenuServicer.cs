@@ -63,27 +63,27 @@ namespace UI.Servicers
             menu.Items.Clear();
 
             MenuItem run = new MenuItem();
-            run.Header = "启动应用";
+            run.Header = ResourceStrings.StartApplication;
             run.PointerPressed += Run_Click;
 
             MenuItem openDir = new MenuItem();
-            openDir.Header = "打开应用所在目录";
+            openDir.Header = ResourceStrings.OpenApplicationDirectory;
             openDir.PointerPressed += OpenDir_Click;
 
             setCategory = new MenuItem();
-            setCategory.Header = "设置分类";
+            setCategory.Header = ResourceStrings.SetCategory;
 
             MenuItem editAlias = new MenuItem();
-            editAlias.Header = "编辑别名";
+            editAlias.Header = ResourceStrings.EditAlias;
             editAlias.Click += EditAlias_ClickAsync;
 
             setLink = new MenuItem();
-            setLink.Header = "添加关联";
+            setLink.Header = ResourceStrings.AddAssociation;
 
-            block.Header = "忽略此应用";
+            block.Header = ResourceStrings.IgnoreThisApplication;
             block.PointerPressed += Block_Click;
 
-            _whiteList.Header = "添加到白名单";
+            _whiteList.Header = ResourceStrings.AddWhitelist;
             _whiteList.PointerPressed += _whiteList_Click;
 
             menu.Items.Add(run);
@@ -114,11 +114,11 @@ namespace UI.Servicers
 
             try
             {
-                string input = await _uIServicer.ShowInputModalAsync("修改别名", "请输入别名", app.Alias, (val) =>
+                string input = await _uIServicer.ShowInputModalAsync(ResourceStrings.UpdateAlias, ResourceStrings.EnterAlias, app.Alias, (val) =>
                 {
                     if (val.Length > 15)
                     {
-                        main.Error("别名最大长度为15位字符");
+                        main.Error(string.Format(ResourceStrings.AliasMaxLengthTip,15));
                         return false;
                     }
                     return true;
@@ -130,7 +130,7 @@ namespace UI.Servicers
                 appData.UpdateApp(editApp);
                 data.Name = string.IsNullOrEmpty(input) ? editApp.Description : input;
 
-                main.Success("别名已更新");
+                main.Success(ResourceStrings.AliasUpdated);
                 Debug.WriteLine("输入内容：" + input);
             }
             catch
@@ -162,13 +162,12 @@ namespace UI.Servicers
             if (config.Behavior.IgnoreProcessList.Contains(app.Name))
             {
                 config.Behavior.IgnoreProcessList.Remove(app.Name);
-                main.Toast($"已取消忽略此应用 {app.Description}", Controls.Window.ToastType.Success);
+                main.Toast(string.Format(ResourceStrings.IgnoringApplicationCancelled,app.Description), Controls.Window.ToastType.Success);
             }
             else
             {
                 config.Behavior.IgnoreProcessList.Add(app.Name);
-                main.Toast($"已忽略此应用 {app.Description}", Controls.Window.ToastType.Success);
-
+                main.Toast(string.Format(ResourceStrings.ApplicationNowIgnored,app.Description), Controls.Window.ToastType.Success);
                 newBadgeList.Add(ChartBadgeModel.IgnoreBadge);
             }
             data.BadgeList = newBadgeList;
@@ -193,20 +192,20 @@ namespace UI.Servicers
             var config = appConfig.GetConfig();
             if (config.Behavior.IgnoreProcessList.Contains(app.Name))
             {
-                block.Header = "取消忽略此应用";
+                block.Header = ResourceStrings.Unignore;
             }
             else
             {
-                block.Header = "忽略此应用";
+                block.Header = ResourceStrings.IgnoreThisApplication;
             }
 
             if (config.Behavior.ProcessWhiteList.Contains(app.Name))
             {
-                _whiteList.Header = "从白名单移除";
+                _whiteList.Header = ResourceStrings.RemoveWhitelist;
             }
             else
             {
-                _whiteList.Header = "添加到白名单";
+                _whiteList.Header = ResourceStrings.AddWhitelist;
             }
 
             UpdateCategory();
@@ -293,11 +292,11 @@ namespace UI.Servicers
                 link.ProcessList.Add(app.Name);
                 appConfig.Save();
 
-                main.Toast("关联成功", Controls.Window.ToastType.Success);
+                main.Toast(ResourceStrings.AssociationSuccessful, Controls.Window.ToastType.Success);
             }
             else
             {
-                main.Toast("关联配置不存在", Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
+                main.Toast(ResourceStrings.AssociationConfigurationNotExist, Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
             }
         }
 
@@ -324,7 +323,7 @@ namespace UI.Servicers
             app.Category = category;
             appData.UpdateApp(app);
 
-            main.Toast("操作已执行", Controls.Window.ToastType.Success);
+            main.Toast(ResourceStrings.OperationCompleted, Controls.Window.ToastType.Success);
         }
 
 
@@ -346,7 +345,7 @@ namespace UI.Servicers
             }
             else
             {
-                main.Toast("应用文件似乎不存在", Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
+                main.Toast(ResourceStrings.ApplicationFileExist, Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
             }
         }
 
@@ -365,12 +364,12 @@ namespace UI.Servicers
             if (File.Exists(app.File))
             {
                 System.Diagnostics.Process.Start(app.File);
-                main.Toast("操作已执行", Controls.Window.ToastType.Info);
+                main.Toast(ResourceStrings.OperationCompleted, Controls.Window.ToastType.Info);
 
             }
             else
             {
-                main.Toast("应用文件似乎不存在", Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
+                main.Toast(ResourceStrings.ApplicationFileExist, Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
             }
         }
 
@@ -395,12 +394,12 @@ namespace UI.Servicers
             if (config.Behavior.ProcessWhiteList.Contains(app.Name))
             {
                 config.Behavior.ProcessWhiteList.Remove(app.Name);
-                main.Toast($"已从白名单移除此应用 {app.Description}", Controls.Window.ToastType.Success);
+                main.Toast($"{ResourceStrings.RemovedApplicationFromWhitelist} {app.Description}", Controls.Window.ToastType.Success);
             }
             else
             {
                 config.Behavior.ProcessWhiteList.Add(app.Name);
-                main.Toast($"已添加至白名单 {app.Description}", Controls.Window.ToastType.Success);
+                main.Toast($"{ResourceStrings.AddedToWhitelist} {app.Description}", Controls.Window.ToastType.Success);
             }
         }
     }

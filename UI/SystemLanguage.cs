@@ -20,22 +20,31 @@ namespace UI
     internal class SystemLanguage
     {
         private static readonly Dictionary<CultureInfo, CultureCode> _cultures = new()
-        {
-            { new CultureInfo("zh-CN"), CultureCode.ZhCn },
-            { new CultureInfo("en-US"), CultureCode.EnUs }
-        };
+    {
+        { new CultureInfo("zh-CN"), CultureCode.ZhCn },
+        { new CultureInfo("en-US"), CultureCode.EnUs }
+    };
 
         private static readonly Dictionary<CultureCode, ResourceDictionary> _controlsLocaleUri = new()
-        {
-            { CultureCode.ZhCn,new zh_cn()},
-            { CultureCode.EnUs,new en_us() },
-        };
+    {
+        { CultureCode.ZhCn, new zh_cn() },
+        { CultureCode.EnUs, new en_us() },
+    };
 
         private static readonly Dictionary<CultureCode, ResourceDictionary> _pageLocaleUri = new()
-        {
-            { CultureCode.ZhCn,new StringResourcesCn()},
-            { CultureCode.EnUs,new StringResourcesEn() },
-        };
+    {
+        { CultureCode.ZhCn, new StringResourcesCn() },
+        { CultureCode.EnUs, new StringResourcesEn() },
+    };
+
+        private static readonly Dictionary<CultureCode, CultureInfo> _cultureCodeToCultureInfo = new()
+    {
+        { CultureCode.ZhCn, new CultureInfo("zh-CN") },
+        { CultureCode.EnUs, new CultureInfo("en-US") }
+    };
+
+        private static bool _isInitialized = false;
+        private static CultureCode _currentLanguage;
 
         public static CultureInfo GetCurrentSystemLanguage()
         {
@@ -49,12 +58,20 @@ namespace UI
             }
         }
 
-        private static bool _isInitialized = false;
+        public static CultureInfo ConvertToCultureInfo(CultureCode culture)
+        {
+            if (culture == CultureCode.Auto)
+            {
+                return GetCurrentSystemLanguage();
+            }
+            if (_cultureCodeToCultureInfo.TryGetValue(culture, out var cultureInfo))
+            {
+                return cultureInfo;
+            }
+            throw new ArgumentException("Invalid CultureCode");
+        }
 
-        private static CultureCode _currentLanguage;
-
-
-
+        public static CultureInfo CurrentCultureInfo { get => ConvertToCultureInfo(_currentLanguage); }
         public static CultureCode CurrentLanguage
         {
             get => _currentLanguage;
@@ -66,46 +83,45 @@ namespace UI
                 }
             }
         }
-        public static void InitializedLanguage(CultureCode culture)
+
+        public static void InitializeLanguage(CultureCode culture)
         {
-            if(culture == CultureCode.Auto)
+            if (culture == CultureCode.Auto)
             {
-                var lan = GetCurrentSystemLanguage();
-                culture = _cultures[lan];
+                culture = _cultures[GetCurrentSystemLanguage()];
             }
             if (_isInitialized)
             {
                 throw new Exception("Language has been initialized");
             }
             _isInitialized = true;
-            Application.Current.Resources.MergedDictionaries.Add(_pageLocaleUri[culture]);
-            Application.Current.Resources.MergedDictionaries.Add(_controlsLocaleUri[culture]);
-          
-            _currentLanguage = culture;
+            SetCurrentSystemLanguage(culture);
         }
 
-
-
-
-        public static void SetCurrentSystemLanguage(CultureCode culture)
+        private static void SetCurrentSystemLanguage(CultureCode culture)
         {
-            if (_currentLanguage != culture)
+            if (culture == CultureCode.Auto)
             {
-                if (culture == CultureCode.Auto)
+                culture = _cultures[GetCurrentSystemLanguage()];
+            }
+
+            if (_controlsLocaleUri.TryGetValue(culture, out var controlsLocale) &&
+                _pageLocaleUri.TryGetValue(culture, out var pageLocale))
+            {
+                foreach (var pageLocaleItem in pageLocale)
                 {
-                    var lan = GetCurrentSystemLanguage();
-                    culture = _cultures[lan];
+                    Application.Current.Resources[pageLocaleItem.Key] = pageLocaleItem.Value;
+                }
+                foreach (var controlsLocaleItem in controlsLocale)
+                {
+                    Application.Current.Resources[controlsLocaleItem.Key] = controlsLocaleItem.Value;
                 }
 
-                foreach (var pageLocale in _pageLocaleUri[culture])
-                {
-                    Application.Current.Resources[pageLocale.Key] = pageLocale.Value;
-                }
-                foreach (var controlsLocale in _controlsLocaleUri[culture])
-                {
-                    Application.Current.Resources[controlsLocale.Key] = controlsLocale.Value;
-                }
                 _currentLanguage = culture;
+            }
+            else
+            {
+                throw new ArgumentException("Invalid CultureCode");
             }
         }
     }

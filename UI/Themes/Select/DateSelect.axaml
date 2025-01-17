@@ -161,7 +161,7 @@
 														   TextAlignment="Center" Margin="5,0"
 														   VerticalAlignment="Center">
 													<Run Text="{TemplateBinding Month ,Converter= {StaticResource ToStringConverter}}"/>
-													<Run Text="月"/>
+													<Run Text="{DynamicResource Month}"/>
 												</TextBlock>
 
 												<button:IconButton Icon="ChevronRight"

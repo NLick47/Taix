@@ -27,7 +27,6 @@
 	<system:String x:Key="ClassificationProportion">分类占比</system:String>
 
 	<system:String x:Key="Today">今日</system:String>
-	<system:String x:Key="Thisweek">本周</system:String>
 	<system:String x:Key="More">更多</system:String>
 
 
@@ -126,7 +125,7 @@
 	
 	
 	<system:String x:Key="Aggregate">总计</system:String>
-	<system:String x:Key="Month">月份</system:String>
+	<system:String x:Key="Month">月</system:String>
 	
 	<system:String x:Key="Daily">按天</system:String>
 	<system:String x:Key="Weekly">按周</system:String>
@@ -159,11 +158,82 @@
 	<system:String x:Key="DataExportCompleted">导出数据完成</system:String>
 	<system:String x:Key="DataExportFailed">导出数据失败</system:String>
 	
+	<system:String x:Key="Year">年</system:String>
+	<system:String x:Key="Day">日</system:String>
+	
+	<system:String x:Key="Monday">周一</system:String>
+	<system:String x:Key="Tuesday">周二</system:String>
+	<system:String x:Key="Wednesday">周三</system:String>
+	<system:String x:Key="Thursday">周四</system:String>
+	<system:String x:Key="Friday">周五</system:String>
+	<system:String x:Key="Saturday">周六</system:String>
+	<system:String x:Key="Sunday">周日</system:String>
 	
 	
-		
+	<system:String x:Key="WantDeleteCategory">是否确认删除该分类？</system:String>
+	<system:String x:Key="CategoryDeleted">分类已删除</system:String>
+	<system:String x:Key="CategoryNameExists">分类名称已存在</system:String>
+	<system:String x:Key="ColoreExists">颜色已存在，请重新选择</system:String>
+	<system:String x:Key="CreationCompleted">创建完成</system:String>
+	<system:String x:Key="NoChangesMade">没有修改</system:String>
+	<system:String x:Key="Updated">已更新</system:String>
+	<system:String x:Key="DirectoryExists">目录已存在</system:String>
+	<system:String x:Key="Added">已添加</system:String>
+	<system:String x:Key="AdditionFailed">添加失败，请重试</system:String>
+	<system:String x:Key="CategoryCannotEmpty">分类名称不能为空</system:String>
+	<system:String x:Key="SelectCategoryIcon">请选择一个分类图标</system:String>
+	<system:String x:Key="CategoryColor">请设置一个分类颜色</system:String>
+	<system:String x:Key="IconFileCannotExceed">图标文件不能超过1MB</system:String>
+	<system:String x:Key="OperationFailedRetry">操作失败，请重试</system:String>
+
+
+	<system:String x:Key="1Month">1月</system:String>
+	<system:String x:Key="2Month">2月</system:String>
+	<system:String x:Key="3Month">3月</system:String>
+	<system:String x:Key="4Month">4月</system:String>
+	<system:String x:Key="5Month">5月</system:String>
+	<system:String x:Key="6Month">6月</system:String>
+	<system:String x:Key="7Month">7月</system:String>
+	<system:String x:Key="8Month">8月</system:String>
+	<system:String x:Key="9Month">9月</system:String>
+	<system:String x:Key="10Month">10月</system:String>
+	<system:String x:Key="11Month">11月</system:String>
+	<system:String x:Key="12Month">12月</system:String>
 	
 	
+	<system:String x:Key="StartApplication">启动应用</system:String>
+	<system:String x:Key="CopyApplicationProcessName">复制应用进程名称</system:String>
+	<system:String x:Key="CopyApplicationFilePath">复制应用文件路径</system:String>
+	<system:String x:Key="OpenApplicationDirectory">打开应用所在目录</system:String>
+	<system:String x:Key="ClearStatistics">清空统计</system:String>
+	<system:String x:Key="SetCategory">设置分类</system:String>
+	<system:String x:Key="EditAlias">编辑别名</system:String>
+	<system:String x:Key="RemovedApplicationFromWhitelist">已从白名单移除此应用</system:String>
+	<system:String x:Key="AddedToWhitelist">已添加至白名单</system:String>
+	<system:String x:Key="UpdateAlias">修改别名</system:String>
+	<system:String x:Key="EnterAlias">请输入别名</system:String>
+	<system:String x:Key="AliasMaxLengthTip">别名最大长度为{0}位字符</system:String>
+	<system:String x:Key="AliasUpdated">别名已更新</system:String>
+	<system:String x:Key="AddAssociation">添加关联</system:String>
+	<system:String x:Key="AddWhitelist">添加到白名单</system:String>
+	<system:String x:Key="ApplicationFileExist">应用文件似乎不存在</system:String>
+	<system:String x:Key="RemoveWhitelist">从白名单移除</system:String>
+	<system:String x:Key="AssociationSuccessful">关联成功</system:String>
+	<system:String x:Key="AssociationConfigurationNotExist">关联配置不存在</system:String>
+	
+	<system:String x:Key="IgnoringApplicationCancelled">已取消忽略此应用 {0}</system:String>
+	<system:String x:Key="ApplicationNowIgnored">已忽略此应用 {0}</system:String>
+	
+	<system:String x:Key="OpenWebsite">在浏览器打开网站</system:String>
+	<system:String x:Key="IgnoreWebsite">忽略此网站</system:String>
+	<system:String x:Key="UnignoreSite">取消忽略此站点</system:String>
+	<system:String x:Key="IgnoreSite">忽略此站点</system:String>
+	
+	
+
+
+
+
 	<system:String x:Key="Open">打开</system:String>
 	<system:String x:Key="Exit">退出</system:String>
 </ResourceDictionary>

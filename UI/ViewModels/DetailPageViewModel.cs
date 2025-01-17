@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls;
+﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Core.Librarys;
 using Core.Models;
@@ -115,7 +116,7 @@ namespace UI.ViewModels
                 }
             }
 
-            CreateContextMenu();
+            //CreateContextMenu();
         }
 
         private void CreateContextMenu()
@@ -123,35 +124,35 @@ namespace UI.ViewModels
             AppContextMenu = new();
             AppContextMenu.Opened += AppContextMenu_Opened;
             MenuItem open = new MenuItem();
-            open.Header = "启动应用";
+            open.Header = ResourceStrings.StartApplication;
             open.Click += (e, c) =>
             {
                 OnInfoMenuActionCommand("open exe");
             };
 
             MenuItem copyProcessName = new MenuItem();
-            copyProcessName.Header = "复制应用进程名称";
+            copyProcessName.Header = ResourceStrings.CopyApplicationProcessName;
             copyProcessName.Click += (e, c) =>
             {
                 OnInfoMenuActionCommand("copy processname");
             };
 
             MenuItem copyProcessFile = new MenuItem();
-            copyProcessFile.Header = "复制应用文件路径";
+            copyProcessFile.Header = ResourceStrings.CopyApplicationFilePath;
             copyProcessFile.Click += (e, c) =>
             {
                 OnInfoMenuActionCommand("copy process file");
             };
 
             MenuItem openDir = new MenuItem();
-            openDir.Header = "打开应用所在目录";
+            openDir.Header = ResourceStrings.OpenApplicationDirectory;
             openDir.Click += (e, c) =>
             {
                 OnInfoMenuActionCommand("open dir");
             };
 
             MenuItem reLoadData = new MenuItem();
-            reLoadData.Header = "刷新";
+            reLoadData.Header = ResourceStrings.Refresh;
             reLoadData.Click += async (e, c) =>
             {
                 await LoadChartData();
@@ -159,13 +160,13 @@ namespace UI.ViewModels
             };
 
             MenuItem clear = new MenuItem();
-            clear.Header = "清空统计";
+            clear.Header = ResourceStrings.ClearStatistics;
             clear.Click += ClearAppData_Click;
 
             _setCategoryMenuItem = new MenuItem();
-            _setCategoryMenuItem.Header = "设置分类";
+            _setCategoryMenuItem.Header = ResourceStrings.SetCategory;
             MenuItem editAlias = new MenuItem();
-            editAlias.Header = "编辑别名";
+            editAlias.Header = ResourceStrings.EditAlias;
             editAlias.Click += EditAlias_ClickAsync;
 
             _whiteListMenuItem = new MenuItem();
@@ -174,12 +175,12 @@ namespace UI.ViewModels
                 if (config.Behavior.ProcessWhiteList.Contains(App.Name))
                 {
                     config.Behavior.ProcessWhiteList.Remove(App.Name);
-                    main.Toast($"已从白名单移除此应用 {App.Description}", Controls.Window.ToastType.Success);
+                    main.Toast($"{ResourceStrings.RemovedApplicationFromWhitelist} {App.Description}", Controls.Window.ToastType.Success);
                 }
                 else
                 {
                     config.Behavior.ProcessWhiteList.Add(App.Name);
-                    main.Toast($"已添加至白名单 {App.Description}", Controls.Window.ToastType.Success);
+                    main.Toast($"{ResourceStrings.AddedToWhitelist} {App.Description}", Controls.Window.ToastType.Success);
                 }
             };
 
@@ -202,11 +203,11 @@ namespace UI.ViewModels
             var app = appData.GetApp(App.ID);
             try
             {
-                string input = await _uIServicer.ShowInputModalAsync("修改别名", "请输入别名", app.Alias, (val) =>
+                string input = await _uIServicer.ShowInputModalAsync(ResourceStrings.UpdateAlias, ResourceStrings.EnterAlias, app.Alias, (val) =>
                 {
                     if (val.Length > 15)
                     {
-                        main.Error("别名最大长度为15位字符");
+                        main.Error(string.Format(ResourceStrings.AliasMaxLengthTip,15));
                         return false;
                     }
                     return true;
@@ -217,7 +218,7 @@ namespace UI.ViewModels
                 appData.UpdateApp(app);
                 App = app;
 
-                main.Success("别名已更新");
+                main.Success(ResourceStrings.AliasUpdated);
             }
             catch
             {
@@ -585,16 +586,17 @@ namespace UI.ViewModels
         private async Task LoadWeekData()
         {
             DataMaximum = 0;
+            var culture = SystemLanguage.CurrentCultureInfo;
+            var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
 
-            var weekDateArr = SelectedWeek.Name == "本周" ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
-
-            WeekDateStr = weekDateArr[0].ToString("yyyy年MM月dd日") + " 到 " + weekDateArr[1].ToString("yyyy年MM月dd日");
+            WeekDateStr = weekDateArr[0].ToString("d", culture) + $" {Application.Current.Resources["To"]} " + weekDateArr[1].ToString("d",culture);
 
             var list = await data.GetAppRangeDataAsync(App.ID, weekDateArr[0], weekDateArr[1]);
 
             var chartData = new List<ChartsDataModel>();
 
-            string[] weekNames = { "周一", "周二", "周三", "周四", "周五", "周六", "周日", };
+            string[] weekNames = [ResourceStrings.Monday, ResourceStrings.Tuesday, ResourceStrings.Wednesday, ResourceStrings.Thursday,
+                    ResourceStrings.Friday,  ResourceStrings.Saturday, ResourceStrings.Sunday];
             foreach (var item in list)
             {
 
@@ -652,7 +654,7 @@ namespace UI.ViewModels
             string[] names = new string[12];
             for (int i = 0; i < 12; i++)
             {
-                names[i] = (i + 1) + "月";
+                names[i] = Application.Current.Resources[$"{i+1}Month"] as string;
             }
 
             foreach (var item in list)

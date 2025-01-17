@@ -19,6 +19,7 @@ using UI.Views;
 using UI.Models.Category;
 using CategoryModel = UI.Models.Category.CategoryModel;
 using DynamicData;
+using Avalonia;
 namespace UI.ViewModels
 {
     public class CategoryPageViewModel : CategoryPageModel
@@ -119,7 +120,8 @@ namespace UI.ViewModels
             {
                 return;
             }
-            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync("删除分类", "是否确认删除该分类？");
+            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync(Application.Current.Resources["DeleteCategory"] as string, 
+                Application.Current.Resources["WantDeleteCategory"] as string);
             if (isConfirm)
             {
                 await _webData.DeleteWebSiteCategoryAsync(SelectedWebCategoryItem.Data);
@@ -130,7 +132,7 @@ namespace UI.ViewModels
                 {
                     WebCategoryData = new System.Collections.ObjectModel.ObservableCollection<WebCategoryModel>();
                 }
-                mainVM.Toast("分类已删除", Controls.Window.ToastType.Success);
+                mainVM.Toast(Application.Current.Resources["CategoryDeleted"] as string, Controls.Window.ToastType.Success);
             }
         }
 
@@ -145,17 +147,17 @@ namespace UI.ViewModels
                     var path = result[0].Path.LocalPath;
                     if (EditDirectories.Contains(path))
                     {
-                        mainVM.Toast("目录已存在", Controls.Window.ToastType.Error);
+                        mainVM.Toast(Application.Current.Resources["DirectoryExists"] as string, Controls.Window.ToastType.Error);
                         return;
                     }
                     EditDirectories.Add(path);
-                    mainVM.Toast("已添加", Controls.Window.ToastType.Success);
+                    mainVM.Toast(Application.Current.Resources["Added"] as string, Controls.Window.ToastType.Success);
                 }
             }
             catch (Exception ec)
             {
                 Logger.Error(ec.ToString());
-                mainVM.Toast("添加失败，请重试", Controls.Window.ToastType.Error);
+                mainVM.Toast(Application.Current.Resources["AdditionFailed"] as string, Controls.Window.ToastType.Error);
             }
         }
 
@@ -177,22 +179,22 @@ namespace UI.ViewModels
             if (string.IsNullOrEmpty(EditName))
             {
                 IsEditError = true;
-                EditErrorText = "分类名称不能为空";
+                EditErrorText = Application.Current.Resources["CategoryCannotEmpty"] as string;
                 return false;
             }
             if (string.IsNullOrEmpty(EditIconFile))
             {
-                mainVM.Toast("请选择一个分类图标", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
+                mainVM.Toast(Application.Current.Resources["SelectCategoryIcon"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                 return false;
             }
             if (string.IsNullOrEmpty(EditColor))
             {
-                mainVM.Toast("请设置一个分类颜色", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
+                mainVM.Toast(Application.Current.Resources["CategoryColor"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                 return false;
             }
             if (EditIconFile.IndexOf("avares://") == -1 && new FileInfo(EditIconFile).Length > 1000000)
             {
-                mainVM.Toast("图标文件不能超过1MB", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
+                mainVM.Toast(Application.Current.Resources["IconFileCannotExceed"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                 return false;
             }
             return true;
@@ -210,10 +212,10 @@ namespace UI.ViewModels
                 {
                     if (Data.Where(m => m.Data.Name == EditName).Any())
                     {
-                        mainVM.Toast("分类名称已存在", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
+                        mainVM.Toast(Application.Current.Resources["CategoryNameExists"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                         return;
                     }
-                    mainVM.Toast("创建完成", Controls.Window.ToastType.Success);
+                    mainVM.Toast(Application.Current.Resources["CreationCompleted"] as string, Controls.Window.ToastType.Success);
 
                     EditVisibility = false;
 
@@ -250,10 +252,10 @@ namespace UI.ViewModels
                     //  判断重复分类名称
                     if (Data.Where(m => m.Data.Name == EditName && m.Data.ID != SelectedAppCategoryItem.Data.ID).Any())
                     {
-                        mainVM.Toast("分类名称已存在", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
+                        mainVM.Toast(Application.Current.Resources["CategoryNameExists"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                         return;
                     }
-                    mainVM.Toast("已更新", Controls.Window.ToastType.Success);
+                    mainVM.Toast(Application.Current.Resources["Updated"] as string, Controls.Window.ToastType.Success);
                     var category = categorys.GetCategory(SelectedAppCategoryItem.Data.ID);
                     if (category != null)
                     {
@@ -294,7 +296,7 @@ namespace UI.ViewModels
             catch (Exception ec)
             {
                 Logger.Error(ec.ToString());
-                mainVM.Toast("操作失败，请重试", Controls.Window.ToastType.Error);
+                mainVM.Toast(Application.Current.Resources["OperationFailedRetry"] as string, Controls.Window.ToastType.Error);
             }
         }
 
@@ -304,7 +306,8 @@ namespace UI.ViewModels
             {
                 return;
             }
-            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync("删除分类", "是否确认删除该分类？");
+            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync(Application.Current.Resources["DeleteCategory"] as string, 
+                Application.Current.Resources["WantDeleteCategory"] as string);
             if (isConfirm)
             {
                 var category = categorys.GetCategory(SelectedAppCategoryItem.Data.ID);
@@ -322,7 +325,7 @@ namespace UI.ViewModels
                     //  从界面移除
 
                     Data.Remove(SelectedAppCategoryItem);
-                    mainVM.Toast("分类已删除", Controls.Window.ToastType.Success);
+                    mainVM.Toast(Application.Current.Resources["CategoryDeleted"] as string, Controls.Window.ToastType.Success);
 
                 }
             }
@@ -339,12 +342,12 @@ namespace UI.ViewModels
                 //  判断重复分类名称
                 if (WebCategoryData.Where(m => m.Data.Name == EditName).Any())
                 {
-                    mainVM.Toast("分类名称已存在", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
+                    mainVM.Toast(Application.Current.Resources["CategoryNameExists"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                     return;
                 }
                 if (WebCategoryData.Where(m => m.Data.Color == EditColor).Any())
                 {
-                    mainVM.Toast("颜色已存在，请重新选择", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
+                    mainVM.Toast(Application.Current.Resources["ColoreExists"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                     return;
                 }
 
@@ -357,7 +360,7 @@ namespace UI.ViewModels
 
                 if (category != null)
                 {
-                    mainVM.Toast("创建完成", Controls.Window.ToastType.Success);
+                    mainVM.Toast(Application.Current.Resources["CreationCompleted"] as string, Controls.Window.ToastType.Success);
                     EditVisibility = false;
 
                     var webCategory = new WebCategoryModel()
@@ -380,7 +383,7 @@ namespace UI.ViewModels
                 }
                 else
                 {
-                    mainVM.Toast("创建失败", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
+                    mainVM.Toast(Application.Current.Resources["CreationFailed"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                 }
 
 
@@ -393,21 +396,21 @@ namespace UI.ViewModels
                 //  判断重复分类名称
                 if (WebCategoryData.Where(m => m.Data.Name == EditName && m.Data.ID != SelectedWebCategoryItem.Data.ID).Any())
                 {
-                    mainVM.Toast("分类名称已存在", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
+                    mainVM.Toast(Application.Current.Resources["CategoryNameExists"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                     return;
                 }
                 if (WebCategoryData.Where(m => m.Data.Color == EditColor && m.Data.ID != SelectedWebCategoryItem.Data.ID).Any())
                 {
-                    mainVM.Toast("颜色已存在，请重新选择", Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
+                    mainVM.Toast(Application.Current.Resources["ColoreExists"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.ImportantBadge12);
                     return;
                 }
                 if (EditName == SelectedWebCategoryItem.Data.Name && EditIconFile == SelectedWebCategoryItem.Data.IconFile && EditColor == SelectedWebCategoryItem.Data.Color)
                 {
-                    mainVM.Toast("没有修改");
+                    mainVM.Toast(Application.Current.Resources["NoChangesMade"] as string);
                     EditVisibility = false;
                     return;
                 }
-                mainVM.Toast("已更新", Controls.Window.ToastType.Success);
+                mainVM.Toast(Application.Current.Resources["Updated"] as string, Controls.Window.ToastType.Success);
 
                 var category = SelectedWebCategoryItem.Data;
                 category.Name = EditName;

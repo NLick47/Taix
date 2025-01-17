@@ -51,7 +51,7 @@ namespace UI.ViewModels
 
         private void ConfigChanged(ConfigModel oldConfig, ConfigModel newConfig)
         {
-            SystemLanguage.SetCurrentSystemLanguage((CultureCode)newConfig.General.Language);
+            SystemLanguage.CurrentLanguage = (CultureCode)newConfig.General.Language;
             TabbarData[0] = ResourceStrings.General;
             TabbarData[1] = ResourceStrings.Behavior;
             TabbarData[2] = ResourceStrings.Data;

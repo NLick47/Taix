@@ -44,7 +44,7 @@ namespace UI.Servicers
         private void Main_OnStarted(object sender, EventArgs e)
         {
 
-            SystemLanguage.InitializedLanguage((CultureCode)_config.GetConfig().General.Language);
+            SystemLanguage.InitializeLanguage((CultureCode)_config.GetConfig().General.Language);
             themeServicer.Init();
             appContextMenuServicer.Init();
             _webSiteContext.Init();

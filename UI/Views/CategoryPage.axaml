@@ -89,7 +89,7 @@
 							<base:View Condition="=0" Value="{Binding ShowType.Id}">
 								<StackPanel>
 									<Border Margin="0,10,0,0">
-										<toggle:Toggle IsChecked="{Binding EditIsDirectoryMath,Mode=TwoWay}" TextPosition="Left" OnText="目录匹配" OffText="目录匹配"></toggle:Toggle>
+										<toggle:Toggle IsChecked="{Binding EditIsDirectoryMath,Mode=TwoWay}" TextPosition="Left" OnText="{DynamicResource DirectoryMatch}" OffText="{DynamicResource DirectoryMatch}"></toggle:Toggle>
 									</Border>
 									<base:View Condition="True" Value="{Binding EditIsDirectoryMath}">
 										<StackPanel Margin="0,10,0,0">

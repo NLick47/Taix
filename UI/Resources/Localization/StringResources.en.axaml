@@ -27,7 +27,6 @@
 	<system:String x:Key="ClassificationProportion">Category proportion</system:String>
 
 	<system:String x:Key="Today">Today</system:String>
-	<system:String x:Key="Thisweek">This Week</system:String>
 	<system:String x:Key="More">More</system:String>
 
 
@@ -119,7 +118,7 @@
 	<system:String x:Key="Remove">Remove</system:String>
 
 	<system:String x:Key="Aggregate">Total</system:String>
-	<system:String x:Key="Month">Month</system:String>
+	<system:String x:Key="Month">month</system:String>
 
 	<system:String x:Key="Daily">Daily</system:String>
 	<system:String x:Key="Weekly">Weekly</system:String>
@@ -150,7 +149,80 @@
 	<system:String x:Key="OperationCompleted">Operation completed</system:String>
 	<system:String x:Key="DataExportCompleted">Data export completed</system:String>
 	<system:String x:Key="DataExportFailed">Data export failed</system:String>
+
+	<system:String x:Key="Year">year</system:String>
+	<system:String x:Key="Day">day</system:String>
 	
+	<system:String x:Key="Monday">Monday</system:String>
+	<system:String x:Key="Tuesday">Tuesday</system:String>
+	<system:String x:Key="Wednesday">Wednesday</system:String>
+	<system:String x:Key="Thursday">Thursday</system:String>
+	<system:String x:Key="Friday">Friday</system:String>
+	<system:String x:Key="Saturday">Saturday</system:String>
+	<system:String x:Key="Sunday">Sunday</system:String>
+
+
+	<system:String x:Key="WantDeleteCategory">Are you sure you want to delete this category?</system:String>
+	<system:String x:Key="CategoryDeleted">Category has been deleted</system:String>
+	<system:String x:Key="CategoryNameExists">Category name already exists</system:String>
+	<system:String x:Key="ColoreExists">Color already exists, please choose a different one</system:String>
+	<system:String x:Key="CreationCompleted">Creation completed</system:String>
+	<system:String x:Key="NoChangesMade">No changes made</system:String>
+	<system:String x:Key="Updated">Updated</system:String>
+	<system:String x:Key="DirectoryExists">Directory already exists</system:String>
+	<system:String x:Key="Added">Added</system:String>
+	<system:String x:Key="AdditionFailed">Addition failed, please retry</system:String>
+	<system:String x:Key="CategoryCannotEmpty">Category name cannot be empty</system:String>
+	<system:String x:Key="SelectCategoryIcon">Please select a category icon</system:String>
+	<system:String x:Key="CategoryColor">Please set a category color</system:String>
+	<system:String x:Key="IconFileCannotExceed">Icon file cannot exceed 1MB</system:String>
+	<system:String x:Key="OperationFailedRetry">Operation failed, please retr</system:String>
+
+
+
+	<system:String x:Key="1Month">Jan</system:String>
+	<system:String x:Key="2Month">Feb</system:String>
+	<system:String x:Key="3Month">Mar</system:String>
+	<system:String x:Key="4Month">Apr</system:String>
+	<system:String x:Key="5Month">May</system:String>
+	<system:String x:Key="6Month">Jun</system:String>
+	<system:String x:Key="7Month">Jul</system:String>
+	<system:String x:Key="8Month">Aug</system:String>
+	<system:String x:Key="9Month">Sep</system:String>
+	<system:String x:Key="10Month">Oct</system:String>
+	<system:String x:Key="11Month">Nov</system:String>
+	<system:String x:Key="12Month">Dec</system:String>
+	
+	<system:String x:Key="StartApplication">Start Application</system:String>
+	<system:String x:Key="CopyApplicationProcessName">Copy Application Process Name</system:String>
+	<system:String x:Key="CopyApplicationFilePath">Copy Application File Path</system:String>
+	<system:String x:Key="OpenApplicationDirectory">Open Application Directory</system:String>
+	<system:String x:Key="ClearStatistics">Clear Statistics</system:String>
+	<system:String x:Key="SetCategory">Set Category</system:String>
+	<system:String x:Key="EditAlias">Edit Alias</system:String>
+	<system:String x:Key="RemovedApplicationFromWhitelist">Application Removed from Whitelist</system:String>
+	<system:String x:Key="AddedToWhitelist">Added to Whitelist</system:String>
+	<system:String x:Key="UpdateAlias">Update Alias</system:String>
+	<system:String x:Key="EnterAlias">Enter Alias</system:String>
+	<system:String x:Key="AliasMaxLengthTip">Alias Maximum Length is {0} Characters</system:String>
+	<system:String x:Key="AliasUpdated">Alias Updated</system:String>
+	<system:String x:Key="AddAssociation">Add Association</system:String>
+	<system:String x:Key="AddWhitelist">Add to Whitelist</system:String>
+	<system:String x:Key="ApplicationFileExist">The Application File Does Not Seem to Exist</system:String>
+	<system:String x:Key="RemoveWhitelist">Remove from Whitelist</system:String>
+	
+	<system:String x:Key="IgnoringApplicationCancelled">Ignoring This Application {0} Cancelled</system:String>
+	<system:String x:Key="ApplicationNowIgnored">This Application {0} is Now Ignored</system:String>
+	
+	<system:String x:Key="UnignoredDomain">Unignored domain {0}</system:String>
+	<system:String x:Key="IgnoredDomain">Ignored domain {0}</system:String>
+	
+	<system:String x:Key="OpenWebsite">Open Website in Browser</system:String>
+	<system:String x:Key="IgnoreWebsite">Ignore This Website</system:String>
+	<system:String x:Key="UnignoreSite">Unignore This Site</system:String>
+	<system:String x:Key="IgnoreSite">Ignore This Site</system:String>
+
+
 	<system:String x:Key="Open">Open</system:String>
 	<system:String x:Key="Exit">Exit</system:String>
 </ResourceDictionary>

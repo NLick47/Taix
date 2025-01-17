@@ -287,11 +287,12 @@ namespace UI.ViewModels
             else if (TabbarSelectedIndex == 1)
             {
                 //  按周
-                var weekDateArr = SelectedWeek.Name == "本周" ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
+                var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
                 WeekDateStr = weekDateArr[0].ToString("yyyy年MM月dd日") + " 到 " + weekDateArr[1].ToString("yyyy年MM月dd日");
                 startDate = weekDateArr[0];
                 endDate = weekDateArr[1];
-                colNames = new string[] { "周一", "周二", "周三", "周四", "周五", "周六", "周日", };
+                colNames = [ResourceStrings.Monday, ResourceStrings.Tuesday, ResourceStrings.Wednesday, ResourceStrings.Thursday,
+                    ResourceStrings.Friday,  ResourceStrings.Saturday, ResourceStrings.Sunday];
             }
             else if (TabbarSelectedIndex == 2)
             {
@@ -310,7 +311,7 @@ namespace UI.ViewModels
                 colNames = new string[12];
                 for (int i = 0; i < 12; i++)
                 {
-                    colNames[i] = (i + 1) + "月";
+                    colNames[i] = (i + 1) + ResourceStrings.Month;
                 }
             }
             //  柱形图数据
