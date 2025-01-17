@@ -69,6 +69,12 @@ namespace UI
         public static string IgnoreSite => GetStringValue("IgnoreSite");
         public static string UnignoredDomain => GetStringValue("UnignoredDomain");
         public static string IgnoredDomain => GetStringValue("IgnoredDomain");
+        public static string Confirm => GetStringValue("Confirm");
+        public static string LongDayTips => GetStringValue("LongDayTips");
+        public static string NoData => GetStringValue("NoData");
+        public static string ClearConfirmation => GetStringValue("ClearConfirmation");
+        public static string ClearAllStatisticsApplicationTip => GetStringValue("ClearAllStatisticsApplicationTip");
+        public static string WantClearData => GetStringValue("WantClearData");
 
 
         private static string GetStringValue(string key)

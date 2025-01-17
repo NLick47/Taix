@@ -793,14 +793,19 @@ namespace Core.Servicers.Instances
         public async Task ClearAsync(int appID_)
         {
             using var db = new TaiDbContext();
-            var delDaily = await db.DailyLog.FirstAsync(x => x.AppModelID == appID_);
-            db.Remove(delDaily);
-            var delHours = await db.HoursLog.FirstAsync(x => x.AppModelID == appID_);
-            db.Remove(delHours);
-            var upApp = await db.App.FirstAsync(x => x.ID == appID_);
-            upApp.TotalTime = 0;
-            db.App.Update(upApp);
-            await db.SaveChangesAsync();
+            var dailyLogs = await db.DailyLog.Where(d => d.AppModelID == appID_).ToListAsync();
+            db.DailyLog.RemoveRange(dailyLogs);
+            
+            var hoursLogs = await db.HoursLog.Where(h => h.AppModelID == appID_).ToListAsync();
+            db.HoursLog.RemoveRange(hoursLogs);
+            
+            var appModel = db.App.FirstOrDefault(a => a.ID == appID_);
+            if (appModel != null)
+            {
+                appModel.TotalTime = 0;
+            }
+
+           await db.SaveChangesAsync();
         }
     }
 }

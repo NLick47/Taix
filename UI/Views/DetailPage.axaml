@@ -28,6 +28,7 @@
 
 		<Border
 		   Background="{DynamicResource SettingPanelBgBrush}"
+		   ContextMenu="{Binding AppContextMenu}"
 		   CornerRadius="12"
 		   Padding="0,20">
 

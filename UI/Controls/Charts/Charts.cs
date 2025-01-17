@@ -794,7 +794,16 @@ namespace UI.Controls.Charts
 
             var dataGrid = new Grid();
 
-            string[] week = { "一", "二", "三", "四", "五", "六", "日" };
+            string[] week = [
+                Application.Current.Resources["Mon"] as string, 
+                Application.Current.Resources["Tue"] as string, 
+                Application.Current.Resources["Wed"] as string,
+                Application.Current.Resources["Thu"] as string,
+                Application.Current.Resources["Fri"] as string, 
+                Application.Current.Resources["Sat"] as string, 
+                Application.Current.Resources["Sun"] as string
+                
+            ];
             for (int i = 0; i < 7; i++)
             {
 

@@ -221,7 +221,23 @@
 	<system:String x:Key="IgnoreWebsite">Ignore This Website</system:String>
 	<system:String x:Key="UnignoreSite">Unignore This Site</system:String>
 	<system:String x:Key="IgnoreSite">Ignore This Site</system:String>
-
+	
+	<system:String x:Key="Confirm">Confirm</system:String>
+	
+		
+	<system:String x:Key="Mon">Mon</system:String>
+	<system:String x:Key="Tue">Tue</system:String>
+	<system:String x:Key="Wed">Wed</system:String>
+	<system:String x:Key="Thu">Thu</system:String>
+	<system:String x:Key="Fri">Fri</system:String>
+	<system:String x:Key="Sat">Sat</system:String>
+	<system:String x:Key="Sun">Sun</system:String>
+	
+	<system:String x:Key="LongDayTips">The longest day was on the {0}th, using {1}</system:String>
+	
+	<system:String x:Key="ClearConfirmation">Clear Confirmation</system:String>
+	<system:String x:Key="ClearAllStatisticsApplicationTip">Are you sure you want to clear all statistics for this application?</system:String>
+	<system:String x:Key="WantClearData">Are you sure you want to clear the data for {0}-{1}?</system:String>
 
 	<system:String x:Key="Open">Open</system:String>
 	<system:String x:Key="Exit">Exit</system:String>

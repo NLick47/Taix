@@ -191,7 +191,7 @@ namespace UI.Servicers
             else
             {
                 config.Behavior.IgnoreURLList.Add(site.Domain);
-                _main.Toast(string.Format(ResourceStrings.IgnoreSite,site.Domain), Controls.Window.ToastType.Success);
+                _main.Toast(string.Format(ResourceStrings.IgnoredDomain,site.Domain), Controls.Window.ToastType.Success);
 
                 newBadgeList.Add(ChartBadgeModel.IgnoreBadge);
             }

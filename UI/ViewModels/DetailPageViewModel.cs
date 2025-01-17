@@ -38,13 +38,12 @@ namespace UI.ViewModels
         private MenuItem _whiteListMenuItem;
 
         public DetailPageViewModel(
-         IData data,
-         MainViewModel main,
-         IAppConfig appConfig,
-         ICategorys categories,
-         IAppData appData,
-
-         IUIServicer uIServicer_)
+            IData data,
+            MainViewModel main,
+            IAppConfig appConfig,
+            ICategorys categories,
+            IAppData appData,
+            IUIServicer uIServicer_)
         {
             this.data = data;
             this.main = main;
@@ -55,7 +54,7 @@ namespace UI.ViewModels
             _uIServicer = uIServicer_;
 
             BlockActionCommand = ReactiveCommand.Create<object>(OnBlockActionCommand);
-            ClearSelectMonthDataCommand = ReactiveCommand.Create<object>(OnClearSelectMonthDataCommand);
+            ClearSelectMonthDataCommand = ReactiveCommand.CreateFromTask<object>(OnClearSelectMonthDataCommand);
             RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshCommand);
 
             Init();
@@ -67,18 +66,19 @@ namespace UI.ViewModels
 
             Date = DateTime.Now;
 
-            TabbarData = [ResourceStrings.Daily, ResourceStrings.Weekly, ResourceStrings.Monthly, ResourceStrings.Yearly];
+            TabbarData =
+                [ResourceStrings.Daily, ResourceStrings.Weekly, ResourceStrings.Monthly, ResourceStrings.Yearly];
 
             List<SelectItemModel> weekOptions =
             [
-                    new ()
-                    {
-                        Name = ResourceStrings.ThisWeek
-                    },
-                    new()
-                    {
-                        Name = ResourceStrings.LastWeek
-                    }
+                new()
+                {
+                    Name = ResourceStrings.ThisWeek
+                },
+                new()
+                {
+                    Name = ResourceStrings.LastWeek
+                }
             ];
 
             WeekOptions = weekOptions;
@@ -106,7 +106,8 @@ namespace UI.ViewModels
             await LoadDayData();
 
             //  判断正则忽略
-            var regexList = config.Behavior.IgnoreProcessList.Where(m => Regex.IsMatch(m, @"[\.|\*|\?|\{|\\|\[|\^|\|]"));
+            var regexList =
+                config.Behavior.IgnoreProcessList.Where(m => Regex.IsMatch(m, @"[\.|\*|\?|\{|\\|\[|\^|\|]"));
             foreach (string reg in regexList)
             {
                 if (RegexHelper.IsMatch(App.Name, reg) || RegexHelper.IsMatch(App.File, reg))
@@ -116,7 +117,7 @@ namespace UI.ViewModels
                 }
             }
 
-            //CreateContextMenu();
+            CreateContextMenu();
         }
 
         private void CreateContextMenu()
@@ -125,31 +126,19 @@ namespace UI.ViewModels
             AppContextMenu.Opened += AppContextMenu_Opened;
             MenuItem open = new MenuItem();
             open.Header = ResourceStrings.StartApplication;
-            open.Click += (e, c) =>
-            {
-                OnInfoMenuActionCommand("open exe");
-            };
+            open.Click += (e, c) => { OnInfoMenuActionCommand("open exe"); };
 
             MenuItem copyProcessName = new MenuItem();
             copyProcessName.Header = ResourceStrings.CopyApplicationProcessName;
-            copyProcessName.Click += (e, c) =>
-            {
-                OnInfoMenuActionCommand("copy processname");
-            };
+            copyProcessName.Click += (e, c) => { OnInfoMenuActionCommand("copy processname"); };
 
             MenuItem copyProcessFile = new MenuItem();
             copyProcessFile.Header = ResourceStrings.CopyApplicationFilePath;
-            copyProcessFile.Click += (e, c) =>
-            {
-                OnInfoMenuActionCommand("copy process file");
-            };
+            copyProcessFile.Click += (e, c) => { OnInfoMenuActionCommand("copy process file"); };
 
             MenuItem openDir = new MenuItem();
             openDir.Header = ResourceStrings.OpenApplicationDirectory;
-            openDir.Click += (e, c) =>
-            {
-                OnInfoMenuActionCommand("open dir");
-            };
+            openDir.Click += (e, c) => { OnInfoMenuActionCommand("open dir"); };
 
             MenuItem reLoadData = new MenuItem();
             reLoadData.Header = ResourceStrings.Refresh;
@@ -175,12 +164,14 @@ namespace UI.ViewModels
                 if (config.Behavior.ProcessWhiteList.Contains(App.Name))
                 {
                     config.Behavior.ProcessWhiteList.Remove(App.Name);
-                    main.Toast($"{ResourceStrings.RemovedApplicationFromWhitelist} {App.Description}", Controls.Window.ToastType.Success);
+                    main.Toast($"{ResourceStrings.RemovedApplicationFromWhitelist} {App.Description}",
+                        Controls.Window.ToastType.Success);
                 }
                 else
                 {
                     config.Behavior.ProcessWhiteList.Add(App.Name);
-                    main.Toast($"{ResourceStrings.AddedToWhitelist} {App.Description}", Controls.Window.ToastType.Success);
+                    main.Toast($"{ResourceStrings.AddedToWhitelist} {App.Description}",
+                        Controls.Window.ToastType.Success);
                 }
             };
 
@@ -198,20 +189,23 @@ namespace UI.ViewModels
             AppContextMenu.Items.Add(clear);
             AppContextMenu.Items.Add(_whiteListMenuItem);
         }
+
         private async void EditAlias_ClickAsync(object sender, RoutedEventArgs e)
         {
             var app = appData.GetApp(App.ID);
             try
             {
-                string input = await _uIServicer.ShowInputModalAsync(ResourceStrings.UpdateAlias, ResourceStrings.EnterAlias, app.Alias, (val) =>
-                {
-                    if (val.Length > 15)
+                string input = await _uIServicer.ShowInputModalAsync(ResourceStrings.UpdateAlias,
+                    ResourceStrings.EnterAlias, app.Alias, (val) =>
                     {
-                        main.Error(string.Format(ResourceStrings.AliasMaxLengthTip,15));
-                        return false;
-                    }
-                    return true;
-                });
+                        if (val.Length > 15)
+                        {
+                            main.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
+                            return false;
+                        }
+
+                        return true;
+                    });
 
                 //  开始更新别名
                 app.Alias = input;
@@ -228,13 +222,15 @@ namespace UI.ViewModels
 
         private async void ClearAppData_Click(object sender, RoutedEventArgs e)
         {
-            bool isConfirm = await _uIServicer.ShowConfirmDialogAsync("清空确认", "是否确定清空此应用的所有统计数据？");
+            bool isConfirm = await _uIServicer.ShowConfirmDialogAsync(ResourceStrings.ClearConfirmation,
+                ResourceStrings.ClearAllStatisticsApplicationTip);
             if (isConfirm)
             {
                 await data.ClearAsync(App.ID);
                 await LoadChartData();
                 await LoadData();
-                main.Toast("操作已执行", Controls.Window.ToastType.Success, Controls.Base.IconTypes.Accept);
+                main.Toast(ResourceStrings.OperationCompleted, Controls.Window.ToastType.Success,
+                    Controls.Base.IconTypes.Accept);
             }
         }
 
@@ -247,10 +243,7 @@ namespace UI.ViewModels
                 var categoryMenu = new MenuItem();
                 categoryMenu.Header = category.Name;
                 categoryMenu.IsChecked = App.CategoryID == category.ID;
-                categoryMenu.Click += (s, ea) =>
-                {
-                    UpdateCategory(category);
-                };
+                categoryMenu.Click += (s, ea) => { UpdateCategory(category); };
                 _setCategoryMenuItem.Items.Add(categoryMenu);
             }
 
@@ -258,11 +251,11 @@ namespace UI.ViewModels
 
             if (config.Behavior.ProcessWhiteList.Contains(App.Name))
             {
-                _whiteListMenuItem.Header = "从白名单移除";
+                _whiteListMenuItem.Header = ResourceStrings.RemoveWhitelist;
             }
             else
             {
-                _whiteListMenuItem.Header = "添加到白名单";
+                _whiteListMenuItem.Header = ResourceStrings.AddWhitelist;
             }
         }
 
@@ -284,7 +277,6 @@ namespace UI.ViewModels
                 }
             });
         }
-
 
 
         private async Task OnRefreshCommand(object obj)
@@ -328,9 +320,10 @@ namespace UI.ViewModels
             //}
         }
 
-        private async void OnClearSelectMonthDataCommand(object obj)
+        private async Task OnClearSelectMonthDataCommand(object obj)
         {
-            bool isConfirm = await _uIServicer.ShowConfirmDialogAsync("清空确认", $"是否确定清空此应用 {Date.Year}年{Date.Month}月 的数据？");
+            bool isConfirm = await _uIServicer.ShowConfirmDialogAsync(ResourceStrings.ClearConfirmation,
+                string.Format(ResourceStrings.WantClearData, Date.Year, Date.Month));
             if (isConfirm)
             {
                 await Clear();
@@ -343,13 +336,15 @@ namespace UI.ViewModels
             {
                 config.Behavior.IgnoreProcessList.Add(App.Name);
                 IsIgnore = true;
-                main.Toast("应用已忽略", Controls.Window.ToastType.Success);
+                main.Toast(string.Format(ResourceStrings.ApplicationNowIgnored, App.Name),
+                    Controls.Window.ToastType.Success);
             }
             else
             {
                 config.Behavior.IgnoreProcessList.Remove(App.Name);
                 IsIgnore = false;
-                main.Toast("已取消忽略", Controls.Window.ToastType.Success);
+                main.Toast(string.Format(ResourceStrings.IgnoringApplicationCancelled, App.Name),
+                    Controls.Window.ToastType.Success);
             }
 
             appConfig.Save();
@@ -375,7 +370,6 @@ namespace UI.ViewModels
                         appData.UpdateApp(app);
                     }
                 }
-
             }
 
             //  处理图表数据加载
@@ -383,19 +377,22 @@ namespace UI.ViewModels
             {
                 await LoadDayData();
             }
+
             if (e.PropertyName == nameof(TabbarSelectedIndex))
             {
                 await LoadChartData();
-
             }
+
             if (e.PropertyName == nameof(SelectedWeek))
             {
                 await LoadWeekData();
             }
+
             if (e.PropertyName == nameof(MonthDate))
             {
                 await LoadMonthlyData();
             }
+
             if (e.PropertyName == nameof(YearDate))
             {
                 await LoadYearData();
@@ -427,6 +424,7 @@ namespace UI.ViewModels
             {
                 return LoadYearData();
             }
+
             return Task.CompletedTask;
         }
 
@@ -450,29 +448,28 @@ namespace UI.ViewModels
             }
 
             Categorys = list;
-
         }
 
         private Task LoadInfo()
         {
             return Task.Run(() =>
-            {
-                if (App != null)
                 {
-
-                    //  判断是否是忽略的进程
-                    IsIgnore = config.Behavior.IgnoreProcessList.Contains(App.Name);
-
-                    LoadCategorys(App.Category?.Name);
-
-                    //  读取关联应用数据
-                    var link = config.Links.Where(m => m.ProcessList.Contains(App.Name)).FirstOrDefault();
-                    if (link != null)
+                    if (App != null)
                     {
-                        LinkApps = appData.GetAllApps().Where(m => link.ProcessList.Contains(m.Name) && m.Name != App.Name).ToList();
+                        //  判断是否是忽略的进程
+                        IsIgnore = config.Behavior.IgnoreProcessList.Contains(App.Name);
+
+                        LoadCategorys(App.Category?.Name);
+
+                        //  读取关联应用数据
+                        var link = config.Links.Where(m => m.ProcessList.Contains(App.Name)).FirstOrDefault();
+                        if (link != null)
+                        {
+                            LinkApps = appData.GetAllApps()
+                                .Where(m => link.ProcessList.Contains(m.Name) && m.Name != App.Name).ToList();
+                        }
                     }
                 }
-            }
             );
         }
 
@@ -488,12 +485,12 @@ namespace UI.ViewModels
                 DateTime end = new DateTime(Date.Year, Date.Month, DateTime.DaysInMonth(Date.Year, Date.Month));
                 var monthAllData = await data.GetDateRangelogListAsync(start, end);
 
-                LongDay = "暂无数据";
+                LongDay = ResourceStrings.NoData;
                 if (monthData.Count > 0)
                 {
                     var longDayData = monthData.OrderByDescending(m => m.Time).FirstOrDefault();
-                    LongDay = "最长一天是在 dd 号，使用了" + Time.ToString(longDayData.Time);
-
+                    LongDay = string.Format(ResourceStrings.LongDayTips, longDayData.Date.ToString("dd"),
+                        Time.ToString(longDayData.Time));
                 }
 
 
@@ -504,8 +501,9 @@ namespace UI.ViewModels
                 }
                 else
                 {
-                    Ratio = "暂无数据";
+                    Ratio = ResourceStrings.NoData;
                 }
+
                 Data = MapToChartsData(monthData);
                 if (Data.Count == 0)
                 {
@@ -517,20 +515,20 @@ namespace UI.ViewModels
             }
         }
 
-        private async Task Clear()
+        private Task Clear()
         {
-            await Task.Run(async () =>
-            {
-                if (App != null)
+            return Task.Run(async () =>
                 {
-                    main.Toast("正在处理");
-                    await data.ClearAsync(App.ID, Date);
+                    if (App != null)
+                    {
+                        main.Toast("正在处理");
+                        await data.ClearAsync(App.ID, Date);
 
-                    await LoadData();
-                    await LoadInfo();
-                    main.Toast("已清空");
+                        await LoadData();
+                        await LoadInfo();
+                        main.Toast("已清空");
+                    }
                 }
-            }
             );
         }
 
@@ -543,7 +541,8 @@ namespace UI.ViewModels
             {
                 var bindModel = new ChartsDataModel();
                 bindModel.Data = item;
-                bindModel.Name = !string.IsNullOrEmpty(item.AppModel?.Alias) ? item.AppModel.Alias : string.IsNullOrEmpty(item.AppModel?.Description) ? item.AppModel.Name : item.AppModel.Description;
+                bindModel.Name = !string.IsNullOrEmpty(item.AppModel?.Alias) ? item.AppModel.Alias :
+                    string.IsNullOrEmpty(item.AppModel?.Description) ? item.AppModel.Name : item.AppModel.Description;
                 bindModel.Value = item.Time;
                 bindModel.Tag = Time.ToString(item.Time);
                 bindModel.PopupText = item.AppModel.File;
@@ -556,6 +555,7 @@ namespace UI.ViewModels
         }
 
         #region 柱状图图表数据加载
+
         /// <summary>
         /// 加载天数据
         /// </summary>
@@ -569,7 +569,6 @@ namespace UI.ViewModels
 
             foreach (var item in list)
             {
-
                 chartData.Add(new ChartsDataModel()
                 {
                     Name = App.Description,
@@ -577,6 +576,7 @@ namespace UI.ViewModels
                     Values = item.Values,
                 });
             }
+
             ChartData = chartData;
         }
 
@@ -587,22 +587,26 @@ namespace UI.ViewModels
         {
             DataMaximum = 0;
             var culture = SystemLanguage.CurrentCultureInfo;
-            var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
+            var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek
+                ? Time.GetThisWeekDate()
+                : Time.GetLastWeekDate();
 
-            WeekDateStr = weekDateArr[0].ToString("d", culture) + $" {Application.Current.Resources["To"]} " + weekDateArr[1].ToString("d",culture);
+            WeekDateStr = weekDateArr[0].ToString("d", culture) + $" {Application.Current.Resources["To"]} " +
+                          weekDateArr[1].ToString("d", culture);
 
             var list = await data.GetAppRangeDataAsync(App.ID, weekDateArr[0], weekDateArr[1]);
 
             var chartData = new List<ChartsDataModel>();
 
-            string[] weekNames = [ResourceStrings.Monday, ResourceStrings.Tuesday, ResourceStrings.Wednesday, ResourceStrings.Thursday,
-                    ResourceStrings.Friday,  ResourceStrings.Saturday, ResourceStrings.Sunday];
+            string[] weekNames =
+            [
+                ResourceStrings.Monday, ResourceStrings.Tuesday, ResourceStrings.Wednesday, ResourceStrings.Thursday,
+                ResourceStrings.Friday, ResourceStrings.Saturday, ResourceStrings.Sunday
+            ];
             foreach (var item in list)
             {
-
                 chartData.Add(new ChartsDataModel()
                 {
-
                     Name = App.Description,
                     Icon = App.IconFile,
                     Values = item.Values,
@@ -627,10 +631,8 @@ namespace UI.ViewModels
 
             foreach (var item in list)
             {
-
                 chartData.Add(new ChartsDataModel()
                 {
-
                     Name = App.Description,
                     Icon = App.IconFile,
                     Values = item.Values,
@@ -654,12 +656,11 @@ namespace UI.ViewModels
             string[] names = new string[12];
             for (int i = 0; i < 12; i++)
             {
-                names[i] = Application.Current.Resources[$"{i+1}Month"] as string;
+                names[i] = Application.Current.Resources[$"{i + 1}Month"] as string;
             }
 
             foreach (var item in list)
             {
-
                 chartData.Add(new ChartsDataModel()
                 {
                     Name = App.Description,
@@ -671,6 +672,7 @@ namespace UI.ViewModels
 
             ChartData = chartData;
         }
+
         #endregion
     }
 }

@@ -135,12 +135,12 @@
 																   VerticalAlignment="Center"
 																    Command="{Binding SetYearCommand, RelativeSource={RelativeSource TemplatedParent}}"
 																   CommandParameter="-1"/>
-												<TextBlock Width="50"
+												<TextBlock
 														   Foreground="{DynamicResource StandardTextBrush}"
 														   TextAlignment="Center" Margin="5,0"
 														   VerticalAlignment="Center" >
 													<Run Text="{TemplateBinding Year ,Converter={StaticResource ToStringConverter}}"/>
-													<Run Text="年"/>
+													<Run Text="{DynamicResource Year}"/>
 												</TextBlock>
 												<button:IconButton Icon="ChevronRight" FontSize="12"
 																   VerticalAlignment="Center"
@@ -156,7 +156,7 @@
 																   VerticalAlignment="Center"
 																   Command="{Binding SetMonthCommand, RelativeSource={RelativeSource TemplatedParent}}"
 																   CommandParameter="-1"/>
-												<TextBlock Width="30"
+												<TextBlock
 														   Foreground="{DynamicResource StandardTextBrush}"
 														   TextAlignment="Center" Margin="5,0"
 														   VerticalAlignment="Center">
@@ -193,13 +193,13 @@
 														<ColumnDefinition Width="35"/>
 														<ColumnDefinition Width="35"/>
 													</Grid.ColumnDefinitions>
-													<TextBlock Grid.Column="0" Text="一" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
-													<TextBlock Grid.Column="1" Text="二" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
-													<TextBlock Grid.Column="2" Text="三" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
-													<TextBlock Grid.Column="3" Text="四" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
-													<TextBlock Grid.Column="4" Text="五" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
-													<TextBlock Grid.Column="5" Text="六" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
-													<TextBlock Grid.Column="6" Text="日" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="0" Text="{DynamicResource Mon}" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="1" Text="{DynamicResource Tue}" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="2" Text="{DynamicResource Wed}" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="3" Text="{DynamicResource Thu}" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="4" Text="{DynamicResource Fri}" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="5" Text="{DynamicResource Sat}" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
+													<TextBlock Grid.Column="6" Text="{DynamicResource Sun}" HorizontalAlignment="Center" Foreground="{DynamicResource SubTextBrush}"/>
 
 												</Grid>
 											</Border>
@@ -298,7 +298,7 @@
 
 									<Border Grid.Row="2" HorizontalAlignment="Right" Margin="0,10,0,0">
 										<StackPanel Orientation="Horizontal">
-											<button:Button Content="确认" Width="100"
+											<button:Button Content="{DynamicResource Confirm}" Width="100"
 														    Command="{Binding DoneCommand, RelativeSource={RelativeSource TemplatedParent}}"/>
 										</StackPanel>
 									</Border>
