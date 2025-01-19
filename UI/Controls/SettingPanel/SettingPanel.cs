@@ -17,7 +17,16 @@ using Avalonia.Media;
 using System.Collections;
 using UI.Controls.Select;
 using System.IO;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using Infrastructure.Librarys;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using UI.Controls.Window;
+using UI.Models;
+using UI.Servicers;
+using UI.ViewModels;
 
 namespace UI.Controls.SettingPanel
 {
@@ -458,13 +467,13 @@ namespace UI.Controls.SettingPanel
             var contextMenu = new ContextMenu();
 
             var contextMenuItemDel = new MenuItem();
-            contextMenuItemDel.Header = "移除";
+            contextMenuItemDel.Header = Application.Current.FindResource("Remove");
             contextMenuItemDel.Click += (e, c) =>
             {
                 listControl.Items.Remove(listControl.SelectedItem);
             };
             var contextMenuItemCopy = new MenuItem();
-            contextMenuItemCopy.Header = "复制内容";
+            contextMenuItemCopy.Header = Application.Current.FindResource("CopyContent");
             contextMenuItemCopy.Click += (e, c) =>
             {
                 var clipboard = TopLevel.GetTopLevel(this)!.Clipboard!;
@@ -479,6 +488,11 @@ namespace UI.Controls.SettingPanel
 
             //  添加输入框
             var addInputBox = new InputBox();
+            addInputBox.GotFocus += (e, c) =>
+            {
+                var box = e as InputBox;
+                box?.HideError();
+            };
             addInputBox.Placeholder = configAttribute.Placeholder;
             addInputBox.Margin = new Thickness(0, 0, 10, 0);
 
@@ -486,13 +500,14 @@ namespace UI.Controls.SettingPanel
             //添加
             var addBtn = new Button.Button();
             //addBtn.Margin = new Thickness(15, 0, 15, 10);
-            addBtn.Content = "添加";
+            addBtn.Content =  Application.Current.FindResource("Add");
 
             addBtn.Click += (e, c) =>
             {
-                if (addInputBox.Text == String.Empty || list.Contains(addInputBox.Text))
+                if (string.IsNullOrEmpty(addInputBox.Text) || list.Contains(addInputBox.Text))
                 {
-                    addInputBox.Error = configAttribute.Name + (addInputBox.Text == String.Empty ? "不能为空" : "已存在");
+                    addInputBox.Error = configAttribute.Name + (string.IsNullOrEmpty(addInputBox.Text) ? Application.Current.FindResource("CannotBeEmpty") 
+                        : Application.Current.FindResource("AlreadyExists"));
                     addInputBox.ShowError();
                     return;
                 }
@@ -512,11 +527,19 @@ namespace UI.Controls.SettingPanel
             moreActionBtn.Icon = Base.IconTypes.More;
 
             var moreActionMenu = new ContextMenu();
-
-            //moreActionBtn.PointerPressed += (e, c) =>
-            //{
-            //    moreActionMenu.IsOpen = true;
-            //};
+            moreActionMenu.HorizontalOffset = -15;
+            moreActionMenu.VerticalOffset = 10;
+            moreActionBtn.PointerPressed += (e, c) =>
+            {
+                if (!moreActionMenu.IsOpen)
+                {
+                    moreActionMenu.Open(e as Control);
+                }
+                else
+                {
+                    moreActionMenu.Close();
+                }
+            };
             bool isHasMoreAction = false;
             if (configAttribute.IsCanImportExport)
             {
@@ -525,72 +548,82 @@ namespace UI.Controls.SettingPanel
 
                 //  导入操作
                 var importMenuItem = new MenuItem();
-                importMenuItem.Header = "导入";
-                importMenuItem.Click += (e, c) =>
+                importMenuItem.Header = Application.Current.FindResource("Import");
+                importMenuItem.Click += async (e, c) =>
                 {
-                    //Microsoft.Win32.OpenFileDialog ofd = new Microsoft.Win32.OpenFileDialog();
-                    //ofd.Title = "选择文件";
-                    //ofd.Filter = "json(*.json)|*.json";
-                    //ofd.FileName = configAttribute.Name;
+                    var deskLifettime = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                    var storage = deskLifettime.MainWindow.StorageProvider;
+                    var result = await storage.OpenFilePickerAsync(new ()
+                    {
+                        AllowMultiple = false,
+                        FileTypeFilter =
+                        [
+                            new FilePickerFileType("Json")
+                            {
+                                Patterns = [ "*.json"]
+                            }
+                        ]
+                    });
+                    if (result != null && result.Count > 0)
+                    {
+                        var view = App.ServiceProvider.GetRequiredService<MainViewModel>();
+                        try
+                        {
+                            var data = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(result.First().Path.LocalPath))!;
+                            if (data == null)
+                            {
+                                view.Toast(Application.Current.FindResource("InvalidFileContent") as string,ToastType.Error);
+                                return;
+                            }
 
-                    //bool? result = ofd.ShowDialog();
-                    //if (result == true)
-                    //{
-                    //try
-                    //{
-                    //    List<string> data = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(ofd.FileName));
-                    //    if (data == null)
-                    //    {
-                    //        MessageBox.Show("文件格式有误或者数据为空，请选择有效的导出文件。");
-                    //    }
-                    //    else
-                    //    {
-                    //        if (MessageBox.Show("导入将覆盖现有配置，确定吗？", "注意", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                    //        {
-                    //            pi.SetValue(configData, data);
-                    //            listControl.Items.Clear();
-                    //            foreach (string item in data)
-                    //            {
-                    //                listControl.Items.Add(item);
-                    //            }
-                    //            MessageBox.Show("导入完成！", "提示");
-                    //        }
-                    //    }
-                    //}
-                    //catch (Exception ex)
-                    //{
-                    //    Logger.Error($"导入配置“{configAttribute.Name}”时失败：{ex.Message}");
-                    //    MessageBox.Show("导入失败！", "提示");
-                    //}
-                    //}
+                           var isConfirm = await App.ServiceProvider.GetRequiredService<IUIServicer>().ShowConfirmDialogAsync(
+                                Application.Current.FindResource("PleaseNote") as string,
+                                Application.Current.FindResource("ImportingOverwriteOriginal") as string);
 
+                            if (isConfirm)
+                            {
+                                pi.SetValue(configData, data);
+                                listControl.Items.Clear();
+                                foreach (string item in data)
+                                {
+                                    listControl.Items.Add(item);
+                                }
+                                view.Toast(Application.Current.FindResource("ImportCompleted") as string,ToastType.Success);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"导入配置“{configAttribute.Name}”时失败：{ex.Message}");
+                            view.Toast(Application.Current.FindResource("ImportFailed") as string, ToastType.Error);
+                        }
+                    }
                 };
 
                 //  导出操作
                 var exportMenuItem = new MenuItem();
-                exportMenuItem.Header = "导出";
-                exportMenuItem.Click += (e, c) =>
+                exportMenuItem.Header = Application.Current.FindResource("Export");
+                exportMenuItem.Click += async (e, c) =>
                 {
-                    //try
-                    //{
-                    //    Microsoft.Win32.SaveFileDialog sfd = new Microsoft.Win32.SaveFileDialog();
-                    //    sfd.Title = "选择文件";
-                    //    sfd.Filter = "json(*.json)|*.json";
-                    //    sfd.FileName = configAttribute.Name + "导出配置";
-
-                    //    bool? result = sfd.ShowDialog();
-                    //    if (result == true)
-                    //    {
-                    //        File.WriteAllText(sfd.FileName, JsonConvert.SerializeObject(listControl.Items));
-                    //        MessageBox.Show("导出完成", "提示");
-                    //    }
-                    //}
-                    //catch (Exception ex)
-                    //{
-                    //    Logger.Error($"导出配置“{configAttribute.Name}”时失败：{ex.Message}");
-                    //    MessageBox.Show("导出失败！", "提示");
-                    //}
-
+                    var view = App.ServiceProvider.GetRequiredService<MainViewModel>();
+                    try
+                    {
+                        var deskLifettime =
+                            Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                        var storage = deskLifettime.MainWindow.StorageProvider;
+                        var result = await storage.SaveFilePickerAsync(new()
+                        {
+                            DefaultExtension = "json",
+                        });
+                        if (result != null)
+                        {
+                            File.WriteAllText(result.Path.LocalPath, JsonConvert.SerializeObject(listControl.Items));
+                        }
+                    }
+                    catch (Exception ex)
+                    { 
+                        Logger.Error($"导出配置“{configAttribute.Name}”时失败：{ex.Message}");
+                       view.Toast(Application.Current.FindResource("ExportFailed") as string, ToastType.Error);
+                    }
                 };
 
 

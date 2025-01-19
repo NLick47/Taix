@@ -9,6 +9,8 @@ using System.Linq;
 using System.Reactive;
 using System.Text;
 using System.Threading.Tasks;
+using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using UI.Controls.Window;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
@@ -60,12 +62,17 @@ namespace UI.Controls.Select
 
         private async Task OnSelect(object obj)
         {
-            var win = App.ServiceProvider.GetRequiredService<DefaultWindow>();
-            var storage = win.StorageProvider;
-            var results = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+            var storage = TopLevel.GetTopLevel(this).StorageProvider;
+            var results = await storage.OpenFilePickerAsync(new ()
             {
                 AllowMultiple = false,
-                FileTypeFilter = [new("*.png"), new("*.jpg")]
+                FileTypeFilter =
+                [
+                    new FilePickerFileType("Images")
+                    {
+                        Patterns = [ "*.png", "*.jpg", "*.jpeg"]
+                    }
+                ]
             });
 
             var selectFile =  results.FirstOrDefault();

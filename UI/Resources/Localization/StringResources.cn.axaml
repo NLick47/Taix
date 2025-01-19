@@ -252,6 +252,23 @@
 	<system:String x:Key="Processing">正在处理</system:String>
 	<system:String x:Key="Cleared">已清空</system:String>
 	
+	<system:String x:Key="Add">添加</system:String>
+	<system:String x:Key="CannotBeEmpty">不能为空</system:String>
+	<system:String x:Key="AlreadyExists">已存在</system:String>
+	<system:String x:Key="CopyContent">复制内容</system:String>
+	<system:String x:Key="Import">导入</system:String>
+	
+	<system:String x:Key="InvalidFileContent">文件内容无效</system:String>
+	<system:String x:Key="ImportCompleted">导入完成</system:String>
+	<system:String x:Key="ImportFailed">导入失败</system:String>
+	<system:String x:Key="PleaseNote">注意</system:String>
+	<system:String x:Key="ImportingOverwriteOriginal">导入会覆盖原配置</system:String>
+	<system:String x:Key="ExportFailed">导出失败</system:String>
+	<system:String x:Key="ExportCompleted">导出完成</system:String>
+	
+	
+
+	
 	<system:String x:Key="Open">打开</system:String>
 	<system:String x:Key="Exit">退出</system:String>
 </ResourceDictionary>

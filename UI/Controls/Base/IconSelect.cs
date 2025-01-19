@@ -79,8 +79,7 @@ namespace UI.Controls.Base
 
         private async Task OnFileSelect(object obj)
         {
-            var win = this.GetVisualRoot() as Avalonia.Controls.Window;
-            var storage = win.StorageProvider;
+            var storage = TopLevel.GetTopLevel(this).StorageProvider;
             var result = await storage.OpenFilePickerAsync(new()
             {
                 AllowMultiple = false,

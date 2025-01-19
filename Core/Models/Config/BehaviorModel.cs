@@ -12,7 +12,7 @@ namespace Core.Models.Config
     public class BehaviorModel
     {
         [Config(Name = "睡眠监测", Description = "离开电脑时自动停止统计，重启软件生效。（一般情况不建议关闭）", Group = "偏好",CultureCode = Enums.CultureCode.ZhCn)]
-        [Config(Name = "Sleep Monitoring", Description = "Automatically stops statistics when you leave the computer, takes effect after restarting the software. (Not recommended to disable in general cases)", Group = "Preference", CultureCode = Enums.CultureCode.EnUs)]
+        [Config(Name = "Sleep Monitoring", Description = "Automatically stops statistics when you leave the computer, takes effect after restarting the software. (Not recommended to disable in general cases)", Group = "Preference", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = Enums.CultureCode.EnUs)]
         /// <summary>
         /// 睡眠监测
         /// </summary>
@@ -31,7 +31,7 @@ namespace Core.Models.Config
         public List<string> IgnoreURLList { get; set; } = new List<string>();
 
         [Config(Name = "应用白名单", Description = "仅统计白名单内的应用", Group = "应用白名单",CultureCode = Enums.CultureCode.ZhCn)]
-        [Config(Name = "Application Whitelist", Description = "Only statistics applications within the whitelist", Group = "Application Whitelist", CultureCode = Enums.CultureCode.EnUs)]
+        [Config(Name = "Application Whitelist", Description = "Only statistics applications within the whitelist", Group = "Application Whitelist",  ToggleFalseText = "Off", ToggleTrueText = "On",CultureCode = Enums.CultureCode.EnUs)]
         /// <summary>
         /// 睡眠监测
         /// </summary>

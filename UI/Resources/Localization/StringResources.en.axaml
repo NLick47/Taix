@@ -241,6 +241,19 @@
 	
 	<system:String x:Key="Processing">Processing</system:String>
 	<system:String x:Key="Cleared">Cleared</system:String>
+	
+	<system:String x:Key="Add">Add</system:String>
+	<system:String x:Key="CannotBeEmpty">cannot be empty</system:String>
+	<system:String x:Key="AlreadyExists">already exists</system:String>
+	<system:String x:Key="CopyContent">Copy Content</system:String>
+	<system:String x:Key="Import">Import</system:String>
+	
+	<system:String x:Key="InvalidFileContent">Invalid file content</system:String>
+	<system:String x:Key="ImportCompleted">Import completed</system:String>
+	<system:String x:Key="PleaseNote">Please note</system:String>
+	<system:String x:Key="ImportingOverwriteOriginal">Importing will overwrite the original configuration</system:String>
+	<system:String x:Key="ExportFailed">Export failed</system:String>
+	<system:String x:Key="ExportCompleted">Export completed</system:String>
 
 	<system:String x:Key="Open">Open</system:String>
 	<system:String x:Key="Exit">Exit</system:String>

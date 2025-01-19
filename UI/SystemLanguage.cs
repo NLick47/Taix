@@ -104,6 +104,7 @@ namespace UI
             {
                 culture = _cultures[GetCurrentSystemLanguage()];
             }
+            if(culture == _currentLanguage) return; 
 
             if (_controlsLocaleUri.TryGetValue(culture, out var controlsLocale) &&
                 _pageLocaleUri.TryGetValue(culture, out var pageLocale))

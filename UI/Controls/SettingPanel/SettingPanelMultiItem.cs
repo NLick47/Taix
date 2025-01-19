@@ -174,7 +174,7 @@ namespace UI.Controls.SettingPanel
             var contextMenu = new ContextMenu();
 
             var contextMenuItemDel = new MenuItem();
-            contextMenuItemDel.Header = "移除";
+            contextMenuItemDel.Header = Application.Current.FindResource("Remove");
             contextMenuItemDel.Click += (e, c) =>
             {
                 listControl.Items.Remove(listControl.SelectedItem);
@@ -189,7 +189,7 @@ namespace UI.Controls.SettingPanel
 
             var addBtn = new Button.Button();
             //addBtn.Margin = new Thickness(15, 0, 15, 10);
-            addBtn.Content = "添加";
+            addBtn.Content = Application.Current.FindResource("Add");
 
             addBtn.Click += (e, c) =>
             {
@@ -261,7 +261,8 @@ namespace UI.Controls.SettingPanel
             textBox.Width = 125;
             textBox.TextChanged += (e, c) =>
             {
-                textBox.Error = attribute.Name + (textBox.Text == String.Empty ? "不能为空" : "已存在");
+                textBox.Error = attribute.Name + (string.IsNullOrEmpty(textBox.Text) ? Application.Current.FindResource("CannotBeEmpty") 
+                    :  Application.Current.FindResource("AlreadyExists"));
 
                 if (!attribute.IsCanRepeat)
                 {
@@ -275,7 +276,7 @@ namespace UI.Controls.SettingPanel
                         textBox.HideError();
                     }
                 }
-                if (textBox.Text == String.Empty)
+                if (string.IsNullOrEmpty(textBox.Text))
                 {
                     textBox.ShowError();
                 }
@@ -291,7 +292,7 @@ namespace UI.Controls.SettingPanel
             };
             textBox.LostFocus += (e, c) =>
             {
-                if (textBox.Text == String.Empty)
+                if (string.IsNullOrEmpty(textBox.Text))
                 {
                     textBox.Text = textBox.Tag.ToString();
                     return;

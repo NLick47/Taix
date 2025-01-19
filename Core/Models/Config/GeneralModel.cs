@@ -36,7 +36,7 @@ namespace Core.Models.Config
         /// 是否保留界面大小
         /// </summary>
         [Config(Name = "保留窗口大小", Description = "保留当前的窗口大小，而非使用系统默认尺寸", Group = "界面", CultureCode = CultureCode.ZhCn)]
-        [Config(Name = "Save Window Size", Description = "Retain the current window size instead of using the system default dimensions", Group = "Interface", CultureCode = CultureCode.EnUs)]
+        [Config(Name = "Save Window Size", Description = "Retain the current window size instead of using the system default dimensions", ToggleFalseText = "Off", ToggleTrueText = "On",Group = "Interface", CultureCode = CultureCode.EnUs)]
         public bool IsSaveWindowSize { get; set; } = false;
 
         [Config(Options = "自动|中|英",Name = "语言",Description = "设置程序首选的显示语言",Group = "界面",OptionsChangedRefresh = true,CultureCode = CultureCode.ZhCn)]
