@@ -42,8 +42,6 @@
 		<TrimmerRootAssembly Include="Core" />
 		<TrimmerRootAssembly Include="Avalonia.Controls" />
 		<TrimmerRootAssembly Include="Microsoft.Win32.SystemEvents" />
-		<TrimmerRootAssembly Include="Microsoft.Win32.TaskScheduler" />
-
 	</ItemGroup>
 
 	<ItemGroup>

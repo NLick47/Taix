@@ -1,9 +1,10 @@
-﻿using Infrastructure.Servicers;
+﻿using Infrastructure.Librarys;
+using Infrastructure.Servicers;
 using Microsoft.Win32;
-using Microsoft.Win32.TaskScheduler;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,35 +17,31 @@ namespace Win
             return (string.Empty, string.Empty);
         }
 
-        public bool SetStartup(bool startup = true)
+        public bool SetAutoStartInRegistry()
         {
-            string TaskName = "Taix task";
-            var logonUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
-            string tai = Path.Combine(
-                  AppDomain.CurrentDomain.BaseDirectory,
-                   "Taix.exe");
-            string taskDescription = "Taix开机自启服务";
-            using (var taskService = new TaskService())
+            try
             {
-                var tasks = taskService.RootFolder.GetTasks(new System.Text.RegularExpressions.Regex(TaskName));
-                foreach (var t in tasks)
+                var AppName = "Taix";
+                var Key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+                if (Key == null)
                 {
-                    taskService.RootFolder.DeleteTask(t.Name);
+                    Key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run");
                 }
 
-                if (startup)
+                var AppPath = string.Concat(AppDomain.CurrentDomain.BaseDirectory, "Taix.exe --selfStart");
+                var ExistingValue = Key.GetValue(AppName) as string;
+
+                if (ExistingValue != $"\"{AppPath}\"")
                 {
-                    var task = taskService.NewTask();
-                    task.RegistrationInfo.Description = taskDescription;
-                    task.Triggers.Add(new LogonTrigger { UserId = logonUser });
-                    task.Principal.RunLevel = TaskRunLevel.Highest;
-                    task.Actions.Add(new ExecAction(tai, "--selfStart", AppDomain.CurrentDomain.BaseDirectory));
-                    task.Settings.StopIfGoingOnBatteries = false;
-                    task.Settings.DisallowStartIfOnBatteries = false;
-                    taskService.RootFolder.RegisterTaskDefinition(TaskName, task);
+                    Key.SetValue(AppName, $"\"{AppPath}\"");
                 }
             }
-            return false;
+            catch (Exception e)
+            {
+                Logger.Error("SetAutoStartInRegistry" + e.Message);
+                return false;
+            }
+            return true;
         }
     }
 }

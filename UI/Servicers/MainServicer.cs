@@ -1,6 +1,8 @@
-﻿using Core;
+﻿using Avalonia;
+using Core;
 using Core.Enums;
 using Core.Servicers.Interfaces;
+using Infrastructure.Servicers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +20,7 @@ namespace UI.Servicers
         private readonly IWebSiteContextMenuServicer _webSiteContext;
         private readonly IStatusBarIconServicer _statusBarIconServicer;
         private readonly IAppConfig _config;
+        private readonly ISystemInfrastructure _systemInfrastructure;
         private bool isSelfStart = false;
 
         public MainServicer(IMain main,
@@ -25,7 +28,7 @@ namespace UI.Servicers
             IStatusBarIconServicer statusBarIconServicer_,
              IAppContextMenuServicer appContextMenuServicer,
             IWebSiteContextMenuServicer webSiteContext_,
-            IAppConfig config_)
+            IAppConfig config_, ISystemInfrastructure systemInfrastructure_)
         {
             this.main = main;
             this.themeServicer = themeServicer;
@@ -33,6 +36,7 @@ namespace UI.Servicers
             _webSiteContext = webSiteContext_;
             _statusBarIconServicer = statusBarIconServicer_;
             _config = config_;
+            _systemInfrastructure = systemInfrastructure_;
         }
         public  Task Start(bool isSelfStart)
         {
@@ -43,14 +47,18 @@ namespace UI.Servicers
 
         private void Main_OnStarted(object sender, EventArgs e)
         {
-
             SystemLanguage.InitializeLanguage((CultureCode)_config.GetConfig().General.Language);
+            if (!_config.GetConfig().General.IsStartatboot && isSelfStart)
+            {
+                App.Exit();
+            }
             themeServicer.Init();
             appContextMenuServicer.Init();
             _webSiteContext.Init();
 
             if (!isSelfStart)
             {
+                _systemInfrastructure.SetAutoStartInRegistry();
                 _statusBarIconServicer.ShowMainWindow();
             }
 

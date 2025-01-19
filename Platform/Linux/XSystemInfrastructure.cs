@@ -14,7 +14,7 @@ namespace Linux
             return (string.Empty,string.Empty);
         }
 
-        public bool SetStartup(bool startup = true)
+        public bool SetAutoStartInRegistry()
         {
             return false;
         }

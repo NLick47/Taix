@@ -8,6 +8,7 @@
 	<AssemblyName>TaixBug</AssemblyName>
 	<ApplicationIcon>ghost_gray (320).ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="ghost_gray %28320%29.ico" />

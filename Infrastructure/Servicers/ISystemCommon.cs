@@ -8,7 +8,7 @@ namespace Infrastructure.Servicers
 {
     public interface  ISystemInfrastructure
     {
-        public  bool SetStartup(bool startup = true);
+        public  bool SetAutoStartInRegistry();
 
         public (string ostype, string version) GetOSVersionName();
     }

@@ -7,10 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Win32.SystemEvents" Version="6.0.0" />
-    <PackageReference Include="TaskScheduler" Version="2.11.0" />
+    <PackageReference Include="Microsoft.Win32.SystemEvents" Version="9.0.1" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <ProjectReference Include="..\..\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
