@@ -57,3 +57,4 @@ _ncrunch_temp_/
 # 操作系统
 Thumbs.db
 .DS_Store
+/UI/Properties/PublishProfiles/FolderProfile.pubxml
