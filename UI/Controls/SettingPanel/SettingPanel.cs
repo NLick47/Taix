@@ -27,6 +27,7 @@ using UI.Controls.Window;
 using UI.Models;
 using UI.Servicers;
 using UI.ViewModels;
+using SharedLibrary;
 
 namespace UI.Controls.SettingPanel
 {

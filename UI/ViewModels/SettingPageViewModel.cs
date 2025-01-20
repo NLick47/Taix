@@ -6,6 +6,7 @@ using Core.Models.Config.Link;
 using Core.Servicers.Interfaces;
 using Infrastructure.Librarys;
 using ReactiveUI;
+using SharedLibrary;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

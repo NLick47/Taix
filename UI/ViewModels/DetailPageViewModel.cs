@@ -6,6 +6,7 @@ using Core.Models;
 using Core.Models.Config;
 using Core.Servicers.Interfaces;
 using ReactiveUI;
+using SharedLibrary;
 using System;
 using System.Collections.Generic;
 using System.Linq;

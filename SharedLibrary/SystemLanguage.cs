@@ -1,23 +1,12 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml.Styling;
-using Avalonia.Styling;
 using Core.Enums;
-using Core.Servicers.Interfaces;
-using NPOI.SS.Formula.Functions;
-using NPOI.XSSF.Streaming.Values;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UI.Controls.Locale;
 using UI.Resources.Localization;
 
-namespace UI
+namespace SharedLibrary
 {
-    internal class SystemLanguage
+    public class SystemLanguage
     {
         private static readonly Dictionary<CultureInfo, CultureCode> _cultures = new()
     {
@@ -25,11 +14,6 @@ namespace UI
         { new CultureInfo("en-US"), CultureCode.EnUs }
     };
 
-        private static readonly Dictionary<CultureCode, ResourceDictionary> _controlsLocaleUri = new()
-    {
-        { CultureCode.ZhCn, new zh_cn() },
-        { CultureCode.EnUs, new en_us() },
-    };
 
         private static readonly Dictionary<CultureCode, ResourceDictionary> _pageLocaleUri = new()
     {
@@ -106,18 +90,12 @@ namespace UI
             }
             if(culture == _currentLanguage) return; 
 
-            if (_controlsLocaleUri.TryGetValue(culture, out var controlsLocale) &&
-                _pageLocaleUri.TryGetValue(culture, out var pageLocale))
+            if ( _pageLocaleUri.TryGetValue(culture, out var pageLocale))
             {
                 foreach (var pageLocaleItem in pageLocale)
                 {
                     Application.Current.Resources[pageLocaleItem.Key] = pageLocaleItem.Value;
                 }
-                foreach (var controlsLocaleItem in controlsLocale)
-                {
-                    Application.Current.Resources[controlsLocaleItem.Key] = controlsLocaleItem.Value;
-                }
-
                 _currentLanguage = culture;
             }
             else

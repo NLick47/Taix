@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Core.Enums;
 using ReactiveUI;
+using SharedLibrary;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

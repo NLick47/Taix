@@ -16,6 +16,7 @@ using ReactiveUI;
 using UI.Servicers;
 using Avalonia;
 using Avalonia.Controls;
+using SharedLibrary;
 
 namespace UI.ViewModels
 {

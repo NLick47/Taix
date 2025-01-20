@@ -4,6 +4,7 @@ using Core.Servicers.Interfaces;
 using Infrastructure.Librarys;
 using Microsoft.EntityFrameworkCore.Scaffolding.Metadata;
 using ReactiveUI;
+using SharedLibrary;
 using System;
 using System.Collections.Generic;
 using System.Linq;

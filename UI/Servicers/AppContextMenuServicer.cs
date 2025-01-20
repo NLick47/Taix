@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Core.Models;
 using Core.Servicers.Interfaces;
+using SharedLibrary;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

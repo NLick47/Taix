@@ -72,7 +72,6 @@ namespace UI
 
         private void ConfigureServices(IServiceCollection services)
         {
-            //  核心服务
             services.AddSingleton<IAppTimerServicer, AppTimerServicer>();
             services.AddSingleton<IWebServer, WebServer>();
             services.AddSingleton<IMain, Main>();
@@ -83,8 +82,7 @@ namespace UI
             services.AddSingleton<IAppData, AppData>();
             services.AddSingleton<ICategorys, Categorys>();
             services.AddSingleton<IWebFilter, WebFilter>();
-
-            //  UI服务
+            
             services.AddSingleton<IUIServicer, UIServicer>();
             services.AddSingleton<IAppContextMenuServicer, AppContextMenuServicer>();
             services.AddSingleton<IThemeServicer, ThemeServicer>();
@@ -95,36 +93,31 @@ namespace UI
 
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<MainWindow>();
-            //  首页
+
             services.AddTransient<IndexPage>();
             services.AddTransient<IndexPageViewModel>();
-
-            //  数据页
+            
             services.AddTransient<DataPage>();
             services.AddTransient<DataPageViewModel>();
-
-            //  设置页
+            
             services.AddTransient<SettingPage>();
             services.AddTransient<SettingPageViewModel>();
-
-            ////  详情页
+            
             services.AddTransient<DetailPage>();
             services.AddTransient<DetailPageViewModel>();
-
-            //  分类
+            
             services.AddTransient<CategoryPage>();
             services.AddTransient<CategoryPageViewModel>();
-
-            //  分类app
+            
             services.AddTransient<CategoryAppListPage>();
             services.AddTransient<CategoryAppListPageViewModel>();
-            //  分类站点
+
             services.AddTransient<CategoryWebSiteListPage>();
             services.AddTransient<CategoryWebSiteListPageViewModel>();
-            //  图表
+
             services.AddTransient<ChartPage>();
             services.AddTransient<ChartPageViewModel>();
-            //  网站详情
+            
             services.AddTransient<WebSiteDetailPage>();
             services.AddTransient<WebSiteDetailPageViewModel>();
         }
@@ -193,7 +186,6 @@ namespace UI
 
         private   async Task OnStartup(object sender, string[] args)
         {
-            //  阻止多开进程
             if (IsRuned())
             {
                 Exit();

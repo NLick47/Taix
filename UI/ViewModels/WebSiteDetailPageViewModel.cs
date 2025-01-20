@@ -19,6 +19,7 @@ using System.Security.Cryptography.Xml;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia;
 using ReactiveUI;
+using SharedLibrary;
 
 namespace UI.ViewModels
 {

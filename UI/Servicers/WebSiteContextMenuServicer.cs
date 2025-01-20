@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Core.Models.Db;
 using Core.Servicers.Interfaces;
 using Infrastructure.Librarys;
+using SharedLibrary;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
