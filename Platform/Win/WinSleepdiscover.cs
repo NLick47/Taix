@@ -72,7 +72,7 @@ namespace Win
         {
             StopTimer();
             timer = new ();
-            timer.Interval = new(0,0,1);
+            timer.Interval = new(0,5,0);
             timer.Tick += Timer_Tick;
             timer.Start();
         }
@@ -106,13 +106,9 @@ namespace Win
             {
                 if (wParam == Win32API.WM_LBUTTONDBLCLK || wParam == Win32API.WM_WHEEL)
                 {
-                    if (status == SleepStatus.Sleep)
-                    {
-                        Logger.Info("鼠标唤醒");
+                    Logger.Info("鼠标唤醒");
 
-                        Wake();
-                    }
-                  
+                    Wake();
                 }
 
             }
