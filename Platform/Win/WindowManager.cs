@@ -1,10 +1,11 @@
-﻿using Infrastructure.Models.AppObserver;
-using Platform;
+﻿using SharedLibrary.Models.AppObserver;
+using SharedLibrary;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SharedLibrary.Servicers;
 
 namespace Win
 {

@@ -1,7 +1,7 @@
-﻿using Infrastructure.Enums;
-using Infrastructure.Event;
-using Infrastructure.Models.AppObserver;
-using Infrastructure.Servicers;
+﻿using SharedLibrary.Enums;
+using SharedLibrary.Event;
+using SharedLibrary.Models.AppObserver;
+using SharedLibrary.Servicers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

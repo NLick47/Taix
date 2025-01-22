@@ -9,7 +9,6 @@ using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
-using MathNet.Numerics;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using System;

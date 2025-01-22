@@ -1,8 +1,8 @@
 ﻿using Avalonia;
 using Core;
-using Core.Enums;
+using SharedLibrary.Enums;
 using Core.Servicers.Interfaces;
-using Infrastructure.Servicers;
+using SharedLibrary.Servicers;
 using SharedLibrary;
 using System;
 using System.Collections.Generic;

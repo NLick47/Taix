@@ -6,7 +6,7 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using Core;
 using Core.Servicers.Interfaces;
-using Infrastructure.Librarys;
+using SharedLibrary.Librarys;
 using ReactiveUI;
 using System;
 using System.Threading.Tasks;

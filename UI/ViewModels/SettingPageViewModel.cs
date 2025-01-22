@@ -1,10 +1,10 @@
 ﻿using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Core.Enums;
+using SharedLibrary.Enums;
 using Core.Models.Config;
 using Core.Models.Config.Link;
 using Core.Servicers.Interfaces;
-using Infrastructure.Librarys;
+using SharedLibrary.Librarys;
 using ReactiveUI;
 using SharedLibrary;
 using System;

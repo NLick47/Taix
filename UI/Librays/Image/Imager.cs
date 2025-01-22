@@ -1,7 +1,7 @@
 ﻿using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Core.Librarys;
-using Infrastructure.Librarys;
+using SharedLibrary.Librarys;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -5,8 +5,6 @@ VisualStudioVersion = 17.10.35027.167
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UI", "UI\UI.csproj", "{C88D2AEA-1C58-4D50-89EF-00C877B833AC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "Infrastructure\Infrastructure.csproj", "{8A75624E-BF49-412D-94A1-C86DBA03521A}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "Core\Core.csproj", "{AB8BEC14-8744-4627-984B-B1A40893951A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Platform", "Platform", "{E9416DE9-ED0C-4721-8E64-94AA8C736B15}"
@@ -17,9 +15,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Linux", "Platform\Linux\Lin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mac", "Platform\Mac\Mac.csproj", "{0A8B7E8F-2141-4E6D-A19C-8EDAA36C8AE7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaixBug", "TaixBug\TaixBug.csproj", "{645C09E3-DD5C-4FE9-9173-6FC1D6021CFB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaixBug", "TaixBug\TaixBug.csproj", "{645C09E3-DD5C-4FE9-9173-6FC1D6021CFB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedLibrary", "SharedLibrary\SharedLibrary.csproj", "{1F21CC6B-42F4-4F00-BD7B-623F97F4EE12}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharedLibrary", "SharedLibrary\SharedLibrary.csproj", "{1F21CC6B-42F4-4F00-BD7B-623F97F4EE12}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,10 +29,6 @@ Global
 		{C88D2AEA-1C58-4D50-89EF-00C877B833AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C88D2AEA-1C58-4D50-89EF-00C877B833AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C88D2AEA-1C58-4D50-89EF-00C877B833AC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8A75624E-BF49-412D-94A1-C86DBA03521A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8A75624E-BF49-412D-94A1-C86DBA03521A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8A75624E-BF49-412D-94A1-C86DBA03521A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8A75624E-BF49-412D-94A1-C86DBA03521A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AB8BEC14-8744-4627-984B-B1A40893951A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AB8BEC14-8744-4627-984B-B1A40893951A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AB8BEC14-8744-4627-984B-B1A40893951A}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -1,5 +1,4 @@
-﻿using Core.Enums;
-using Core.Models.Config;
+﻿using Core.Models.Config;
 using System;
 using System.Collections.Generic;
 using System.Linq;

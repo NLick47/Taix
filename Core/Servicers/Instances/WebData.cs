@@ -1,4 +1,4 @@
-﻿using Infrastructure.Librarys;
+﻿using SharedLibrary.Librarys;
 using Core.Librarys;
 using Core.Librarys.Browser;
 using Core.Librarys.SQLite;

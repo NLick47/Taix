@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 
-namespace Infrastructure.Librarys
+namespace SharedLibrary.Librarys
 {
         public static class Logger
         {

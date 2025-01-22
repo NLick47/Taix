@@ -1,4 +1,4 @@
-﻿using Infrastructure.Event;
+﻿using SharedLibrary.Event;
 using System;
 using System.Collections.Generic;
 using System.Linq;

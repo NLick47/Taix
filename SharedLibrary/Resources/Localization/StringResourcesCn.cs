@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace UI.Resources.Localization
+namespace SharedLibrary.Resources.Localization
 {
     public class StringResourcesCn : ResourceDictionary
     {

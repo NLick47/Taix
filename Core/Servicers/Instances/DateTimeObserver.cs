@@ -1,4 +1,4 @@
-﻿using Infrastructure.Librarys;
+﻿using SharedLibrary.Librarys;
 using Core.Event;
 using Core.Librarys;
 using Core.Servicers.Interfaces;

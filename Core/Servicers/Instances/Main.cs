@@ -1,9 +1,7 @@
-﻿using Infrastructure.Enums;
-using Infrastructure.Event;
-using Infrastructure.Librarys;
-using Infrastructure.Servicers;
-using Core.Enums;
-using Core.Event;
+﻿using SharedLibrary.Enums;
+using SharedLibrary.Event;
+using SharedLibrary.Librarys;
+using SharedLibrary.Servicers;
 using Core.Librarys;
 using Core.Librarys.Browser;
 using Core.Librarys.Browser.Favicon;

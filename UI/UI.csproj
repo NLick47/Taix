@@ -151,12 +151,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
-	</ItemGroup>
-
-	<ItemGroup>
+		<ProjectReference Include="..\Core\Core.csproj" />
 		<ProjectReference Include="..\Platform\Win\Win.csproj" />
-		<ProjectReference Include="..\SharedLibrary\SharedLibrary.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -4,7 +4,6 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
-using Core.Enums;
 using ReactiveUI;
 using SharedLibrary;
 using System;

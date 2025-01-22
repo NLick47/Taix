@@ -1,4 +1,4 @@
-﻿using Core.Models.AppObserver;
+﻿using SharedLibrary.Models.AppObserver;
 using System;
 using System.Collections.Generic;
 using System.Linq;

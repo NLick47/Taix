@@ -33,7 +33,7 @@ namespace Core.Servicers.Instances
             }
             catch (Exception ex)
             {
-               Infrastructure.Librarys.Logger.Error("无法启动浏览器服务，" + ex);
+                SharedLibrary.Librarys.Logger.Error("无法启动浏览器服务，" + ex);
             }
         }
 
@@ -54,7 +54,7 @@ namespace Core.Servicers.Instances
             }
             catch (Exception ec)
             {
-               Infrastructure.Librarys.Logger.Error(ec.ToString());
+                SharedLibrary.Librarys.Logger.Error(ec.ToString());
             }
         }
 

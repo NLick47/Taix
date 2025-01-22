@@ -4,24 +4,30 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Core.Enums
+namespace SharedLibrary.Enums
 {
     /// <summary>
-    /// 应用类型
+    /// 浏览器类型
     /// </summary>
-    public enum AppType
+    public enum BrowserType
     {
         /// <summary>
-        /// 传统应用
+        /// 无
         /// </summary>
-        Win32,
+        None,
         /// <summary>
-        /// UWP
+        /// 谷歌浏览器
         /// </summary>
-        UWP,
+        Chrome,
         /// <summary>
-        /// 系统组件，如任务栏、开始菜单、状态栏、系统登录界面等
+        /// Microsoft Edge
         /// </summary>
-        SystemComponent
+        MSEdge,
+        /// <summary>
+        /// Vivaldi
+        /// </summary>
+        Vivaldi
+
+
     }
 }

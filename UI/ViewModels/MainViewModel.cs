@@ -17,8 +17,6 @@ using UI.Controls.Navigation.Models;
 using UI.Controls.Window;
 using UI.Models;
 using UI.Views;
-using Core.Enums;
-using NPOI.OpenXmlFormats.Spreadsheet;
 
 namespace UI.ViewModels
 {

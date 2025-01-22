@@ -20,7 +20,7 @@ using System.IO;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
-using Infrastructure.Librarys;
+using SharedLibrary.Librarys;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using UI.Controls.Window;

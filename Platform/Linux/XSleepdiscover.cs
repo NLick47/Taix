@@ -1,5 +1,5 @@
-﻿using Infrastructure.Event;
-using Infrastructure.Servicers;
+﻿using SharedLibrary.Event;
+using SharedLibrary.Servicers;
 using System;
 using System.Collections.Generic;
 using System.Linq;

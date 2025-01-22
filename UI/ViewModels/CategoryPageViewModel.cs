@@ -2,7 +2,7 @@
 using Core.Models;
 using Core.Servicers.Interfaces;
 using DynamicData.Binding;
-using Infrastructure.Librarys;
+using SharedLibrary.Librarys;
 using Newtonsoft.Json;
 using ReactiveUI;
 using System;

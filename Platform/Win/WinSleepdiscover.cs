@@ -1,11 +1,12 @@
-﻿using Infrastructure.Enums;
-using Infrastructure.Event;
-using Infrastructure.Librarys;
-using Infrastructure.Servicers;
+﻿using SharedLibrary.Enums;
+using SharedLibrary.Event;
+using SharedLibrary.Librarys;
+using SharedLibrary.Servicers;
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using Avalonia.Threading;
 
 
 namespace Win
@@ -14,7 +15,7 @@ namespace Win
     {
         public event SleepdiscoverEventHandler SleepStatusChanged;
 
-        private System.Timers.Timer timer;
+        private DispatcherTimer  timer;
 
         private Point lastPoint;
 
@@ -70,8 +71,9 @@ namespace Win
         private void StartTimer()
         {
             StopTimer();
-            timer = new System.Timers.Timer(1000 * 60 * 5);
-            timer.Elapsed += Timer_Tick;
+            timer = new ();
+            timer.Interval = new(0,0,1);
+            timer.Tick += Timer_Tick;
             timer.Start();
         }
 
@@ -79,7 +81,7 @@ namespace Win
         {
             if (timer != null)
             {
-                timer.Elapsed -= Timer_Tick;
+                timer.Tick -= Timer_Tick;
                 timer.Stop();
             }
         }
@@ -104,9 +106,13 @@ namespace Win
             {
                 if (wParam == Win32API.WM_LBUTTONDBLCLK || wParam == Win32API.WM_WHEEL)
                 {
-                    Logger.Info("鼠标唤醒");
+                    if (status == SleepStatus.Sleep)
+                    {
+                        Logger.Info("鼠标唤醒");
 
-                    Wake();
+                        Wake();
+                    }
+                  
                 }
 
             }
@@ -222,8 +228,7 @@ namespace Win
         private async void Timer_Tick(object sender, EventArgs e)
         {
             Debug.WriteLine("检测");
-            timer.Stop();
-            bool isSleep = await IsSleepAsync();
+            bool isSleep = true;
             if (isSleep)
             {
                 Sleep();
@@ -250,7 +255,7 @@ namespace Win
             status = SleepStatus.Sleep;
 
             //  设置鼠标钩子
-            mouseHook = Win32API.SetMouseHook(mouseProc);
+             Win32API.SetMouseHook(mouseProc);
 
             //  状态通知
             SleepStatusChanged?.Invoke(status);
@@ -298,30 +303,16 @@ namespace Win
         /// <returns>播放返回true</returns>
         private async Task<bool> IsPlaySoundAsync()
         {
-            bool result = false;
-
-            await Task.Run(async () =>
+            for (int time = 30; time > 0; time--)
             {
-                //  持续30秒
-                int time = 30;
-
-                while (time > 0)
+                if (Win32API.IsWindowsPlayingSound())
                 {
-                    bool isPlay = Win32API.IsWindowsPlayingSound();
-                    if (isPlay)
-                    {
-                        result = true;
-                        break;
-                    }
-                    else
-                    {
-                        time--;
-                        Debug.WriteLine(time);
-                        await Task.Delay(1000);
-                    }
+                    return true;
                 }
-            });
-            return result;
+                Debug.WriteLine(time);
+                await Task.Delay(1000);
+            }
+            return false;
         }
 
         /// <summary>

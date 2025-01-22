@@ -1,7 +1,7 @@
-﻿using Infrastructure.Enums;
-using Infrastructure.Event;
-using Infrastructure.Servicers;
-using Platform;
+﻿using SharedLibrary.Enums;
+using SharedLibrary.Event;
+using SharedLibrary.Servicers;
+using SharedLibrary;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

@@ -1,7 +1,7 @@
-﻿using Infrastructure.Enums;
-using Infrastructure.Librarys;
-using Infrastructure.Models.AppObserver;
-using Infrastructure.Servicers;
+﻿using SharedLibrary.Enums;
+using SharedLibrary.Librarys;
+using SharedLibrary.Models.AppObserver;
+using SharedLibrary.Servicers;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

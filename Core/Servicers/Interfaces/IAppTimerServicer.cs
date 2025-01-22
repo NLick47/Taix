@@ -1,11 +1,11 @@
-﻿using Infrastructure.Event;
+﻿using SharedLibrary.Event;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Infrastructure.Servicers
+namespace Core.Servicers
 {
     public interface IAppTimerServicer
     {

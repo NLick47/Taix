@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharedLibrary.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,7 +12,7 @@ namespace Core.Models.Config.Link
         /// <summary>
         /// 关联名称
         /// </summary>
-        [Config(Name = "名称", Description = "设置一个名称用于识别该关联", IsName = true, IsCanRepeat = false,CultureCode = Enums.CultureCode.ZhCn)]
+        [Config(Name = "名称", Description = "设置一个名称用于识别该关联", IsName = true, IsCanRepeat = false,CultureCode = CultureCode.ZhCn)]
         public string Name { get; set; } = "新的关联";
         /// <summary>
         /// 关联进程列表

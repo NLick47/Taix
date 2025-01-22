@@ -1,11 +1,11 @@
-﻿using Infrastructure.Models.AppObserver;
+﻿using SharedLibrary.Models.AppObserver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Infrastructure.Event
+namespace SharedLibrary.Event
 {
     public class AppDurationUpdatedEventArgs
     {

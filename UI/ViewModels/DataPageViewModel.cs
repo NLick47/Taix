@@ -1,8 +1,7 @@
 ﻿using Core.Librarys;
 using Core.Models;
 using Core.Servicers.Interfaces;
-using Infrastructure.Librarys;
-using Microsoft.EntityFrameworkCore.Scaffolding.Metadata;
+using SharedLibrary.Librarys;
 using ReactiveUI;
 using SharedLibrary;
 using System;

@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Infrastructure.Servicers;
+using SharedLibrary.Servicers;
 using Core.Librarys;
 using Core.Servicers.Instances;
 using Core.Servicers.Interfaces;
@@ -10,17 +10,17 @@ using System;
 using System.IO;
 using UI.ViewModels;
 using UI.Views;
-using Infrastructure.Librarys;
+using SharedLibrary.Librarys;
 using System.Reflection;
 using Avalonia.Media;
 using UI.Servicers;
 using UI.Controls.Window;
-using Platform;
 using Avalonia.Controls;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Core.Enums;
+using Core.Servicers;
+
 
 
 

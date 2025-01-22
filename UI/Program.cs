@@ -1,6 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.ReactiveUI;
-using Infrastructure.Librarys;
+using SharedLibrary.Librarys;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.IO;

@@ -1,5 +1,5 @@
-﻿using Infrastructure.Librarys;
-using Infrastructure.Servicers;
+﻿using SharedLibrary.Librarys;
+using SharedLibrary.Servicers;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;

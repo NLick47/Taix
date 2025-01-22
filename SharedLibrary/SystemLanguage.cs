@@ -1,8 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
-using Core.Enums;
+using SharedLibrary.Enums;
+using SharedLibrary.Resources.Localization;
 using System.Globalization;
-using UI.Resources.Localization;
 
 namespace SharedLibrary
 {

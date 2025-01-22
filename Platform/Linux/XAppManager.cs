@@ -1,5 +1,5 @@
-﻿using Infrastructure.Models.AppObserver;
-using Infrastructure.Servicers;
+﻿using SharedLibrary.Models.AppObserver;
+using SharedLibrary.Servicers;
 using System;
 using System.Collections.Generic;
 using System.Linq;

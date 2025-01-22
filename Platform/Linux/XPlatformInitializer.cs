@@ -1,6 +1,5 @@
-﻿using Infrastructure.Servicers;
+﻿using SharedLibrary.Servicers;
 using Microsoft.Extensions.DependencyInjection;
-using Platform;
 using System;
 using System.Collections.Generic;
 using System.Linq;
