@@ -58,3 +58,5 @@ _ncrunch_temp_/
 Thumbs.db
 .DS_Store
 /UI/Properties/PublishProfiles/FolderProfile.pubxml
+/SharedLibrary/Properties/PublishProfiles
+/TaixBug/Properties/PublishProfiles
