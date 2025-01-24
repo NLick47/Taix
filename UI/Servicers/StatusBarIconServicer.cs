@@ -218,6 +218,7 @@ namespace UI.Servicers
             {
                 existingWindow.WindowState = WindowState.Normal;
             }
+            existingWindow.Activate();
         }
     }
 }
