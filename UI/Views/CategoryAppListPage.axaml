@@ -8,7 +8,6 @@
 			 xmlns:input="using:UI.Controls.Input"
 			  xmlns:c="using:UI.Controls"
 			 Foreground="{DynamicResource StandardTextBrush}"
-			 IsFillPage="True"
 			 xmlns:model="using:UI.ViewModels"
 			 xmlns:Button="clr-namespace:UI.Controls.Button"
 			 x:DataType="model:CategoryAppListPageViewModel"

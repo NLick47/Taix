@@ -162,7 +162,6 @@ namespace UI.Servicers
         {
             var desk = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
             var config = _appConfig.GetConfig();
-
             if (!isInit)
             {
                 isInit = true;

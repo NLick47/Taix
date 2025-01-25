@@ -20,8 +20,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Core.Servicers;
-
-
+using UI.Models;
 
 
 #if WINDOWS
@@ -171,9 +170,17 @@ namespace UI
 
         public override  async void OnFrameworkInitializationCompleted()
         {
-            await OnStartup(this, Environment.GetCommandLineArgs()).ConfigureAwait(false);
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {            
+            {
+                if (Avalonia.Controls.Design.IsDesignMode)
+                {
+                    desktop.MainWindow = new MainWindow()
+                    {
+                        DataContext = App.ServiceProvider.GetService<MainViewModel>()
+                    };
+                    return;
+                }
+                await OnStartup(this, Environment.GetCommandLineArgs()).ConfigureAwait(false);
                 desktop.Exit += (e, r) =>
                 {
                     Logger.Save(true);
