@@ -23,9 +23,6 @@ using Core.Servicers;
 using UI.Models;
 
 
-#if WINDOWS
-using Win;
-#endif
 
 namespace UI
 {
@@ -60,9 +57,13 @@ namespace UI
             //var methodInfo = classType!.GetMethod("Initialize");
             //methodInfo!.Invoke(Instance, new object[] { services });
             IPlatformInitializer platformInitializer = null;
-#if WINDOWS
-            platformInitializer = new WinPlatformInitializer();
-#endif
+            #if WINDOWS
+            platformInitializer = new Win.WinPlatformInitializer();
+            #elif LINUX
+            platformInitializer = new Linux.XPlatformInitializer();
+            #elif MACOS
+            #endif
+            
             platformInitializer.Initialize(services);
         }
 

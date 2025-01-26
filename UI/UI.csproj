@@ -8,16 +8,34 @@
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 		<PublishTrimmed>true</PublishTrimmed>
 		<TrimMode>full</TrimMode>
-		
-		<DefineConstants>WINDOWS</DefineConstants>
 		<AssemblyName>Taix</AssemblyName>
 		<Version>1.0.0.3</Version>
 		<ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
 	</PropertyGroup>
-	<PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'win-x64' Or $(RuntimeIdentifier) == 'win-x86'">
 		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('windows'))">
+		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'linux-x64'">
+		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('linux'))">
+		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'osx-x64'">
+		<DefineConstants>$(DefineConstants);MACOS</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('osx'))">
+		<DefineConstants>$(DefineConstants);MACOS</DefineConstants>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<TrimmerRootAssembly Include="Microsoft.Data.Sqlite" />
@@ -152,9 +170,32 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Core\Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)'=='win-x64' OR '$(RuntimeIdentifier)' == 'win-x86'">
 		<ProjectReference Include="..\Platform\Win\Win.csproj" />
 	</ItemGroup>
 
+	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('windows'))">
+		<ProjectReference Include="..\Platform\Win\Win.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)' == 'linux-x64'">
+		<ProjectReference Include="..\Platform\Linux\Linux.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('linux'))">
+		<ProjectReference Include="..\Platform\Linux\Linux.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)' == 'osx-x64'">
+		<ProjectReference Include="..\Platform\Mac\Mac.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('osx'))">
+		<ProjectReference Include="..\Platform\Mac\Mac.csproj" />
+	</ItemGroup>
+	
 	<ItemGroup>
 		<UpToDateCheckInput Remove="Themes\Navigation\NavigationItem.axaml" />
 	</ItemGroup>
