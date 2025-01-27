@@ -14,46 +14,41 @@ namespace Linux
     public class XAppManager : IAppManager
     {
         private readonly IntPtr _display;
+        
         public XAppManager()
         {
+            _processNameCache = new();
+            _apps = new();
             _display = Xlib.XOpenDisplay(IntPtr.Zero);
         }
         
         public AppInfo GetAppInfo(nint hwnd_)
         {
-            GetWindowProcessId(_display,hwnd_, out var processId);
+            if(hwnd_ == IntPtr.Zero) return AppInfo.Empty;
+            if (GetWindowProcessId(_display, hwnd_, out var processId))
+            {
+                var processName =  GetAppProcessName(processId);
+            }
+        
             return AppInfo.Empty;
         }
+        
         private Dictionary<string, AppInfo> _apps;
         private readonly ConcurrentDictionary<int, (string Name, DateTime LastChecked)> _processNameCache;
-        private int _outTime = 5000;
+        
          private bool GetWindowProcessId(IntPtr display, IntPtr handle, out int processId)
         {
             processId = 0;
             IntPtr pidAtom = Xlib.XInternAtom(display, "_NET_WM_PID", true);
-            if (pidAtom == IntPtr.Zero)
-            {
-                return false;
-            }
-            IntPtr card32Atom = Xlib.XInternAtom(display, "CARD32", true);
-            // if (card32Atom == IntPtr.Zero)
-            // {
-            //     Console.WriteLine("无法获取 CARD32 原子");
-            //     return false;
-            // }
-
-            IntPtr actualType;
-            int actualFormat;
-            IntPtr nitems, bytesAfter;
-            IntPtr propReturn;
-
-            int result = Xlib.XGetWindowProperty(display, handle, pidAtom, IntPtr.Zero, new IntPtr(4), false,(IntPtr) Atom.AnyPropertyType, out actualType, out actualFormat, out nitems, out bytesAfter, out propReturn);
+            int result = Xlib.XGetWindowProperty(display, handle, pidAtom, IntPtr.Zero, new IntPtr(4), 
+                false,(IntPtr) Atom.AnyPropertyType, out var _, out var actualFormat, out var nitems, out var _, 
+                out var propReturn);
             if (result != 0)
             {
                 return false;
             }
 
-            if (actualType == Xlib.XInternAtom(display, "CARD32", true) && actualFormat == 32 && nitems == 1)
+            if (actualFormat == 32 && nitems == 1)
             {
                 processId = Marshal.ReadInt32(propReturn);
                 Xlib.XFree(propReturn);

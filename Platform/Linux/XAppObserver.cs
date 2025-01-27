@@ -17,6 +17,7 @@ namespace Linux
         private bool _isStart;
         private readonly IAppManager _appManager;
         private readonly IWindowManager _windowManager;
+        private  IntPtr _defaultRootWindow;
 
         public XAppObserver(IAppManager appManager_, IWindowManager windowManager)
         {
@@ -37,8 +38,8 @@ namespace Linux
             }
             _isStart = true;
             var defaultScreen = Xlib.XDefaultScreen(_display);
-            var rootWindow =  Xlib.XRootWindow(_display,defaultScreen);
-            Xlib.XSelectInput(_display, rootWindow, EventMask.FocusChangeMask);
+            _defaultRootWindow =  Xlib.XRootWindow(_display,defaultScreen);
+            Xlib.XSelectInput(_display, _defaultRootWindow, EventMask.SubstructureNotifyMask);
             _ = Task.Run(() => MonitorFocusChanges());
         }
 
@@ -59,15 +60,31 @@ namespace Linux
                     {
                         Xlib.XNextEvent(_display,  ev);
                         var xevent = Marshal.PtrToStructure<XAnyEvent>(ev);
-                        // if (xevent.type == (int)Event.FocusIn)
-                        // {
-                        //     var args = GetAppInfoEventArgs(xevent.window, DateTime.Now);
-                        //     OnAppActiveChanged?.Invoke(this, args);
-                        // }
-                        Debug.Write(ev);
+                        if (xevent.type == (int)Event.CreateNotify || 
+                            xevent.type == (int)Event.DestroyNotify)
+                        {
+                            var activeWindowHandle = GetActiveWindowHandle();
+                            var args = GetAppInfoEventArgs(activeWindowHandle, DateTime.Now);
+                            OnAppActiveChanged?.Invoke(this, args);
+                        }
                     }
                 }
         }
+        
+        private IntPtr GetActiveWindowHandle()
+        {
+            var activeWindowAtom = Xlib.XInternAtom(_display, "_NET_ACTIVE_WINDOW", false);
+            if (Xlib.XGetWindowProperty(_display, _defaultRootWindow, activeWindowAtom, 0, 1, false,
+                    (IntPtr)Atom.AnyPropertyType, out var _, out var _, out var _, out var _, out var prop) == 0)
+            {
+                return Marshal.ReadIntPtr(prop);
+            }
+            
+            return IntPtr.Zero;
+        }
+        
+        
+        
         private AppActiveChangedEventArgs GetAppInfoEventArgs(IntPtr handle_, DateTime activeTime_)
         {
             var app = _appManager.GetAppInfo(handle_);
