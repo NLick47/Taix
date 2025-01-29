@@ -9,7 +9,7 @@
 		<PublishTrimmed>true</PublishTrimmed>
 		<TrimMode>full</TrimMode>
 		<AssemblyName>Taix</AssemblyName>
-		<Version>1.0.0.3</Version>
+		<Version>$(APP_VERSION)</Version>
 		<ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
 	</PropertyGroup>
 
