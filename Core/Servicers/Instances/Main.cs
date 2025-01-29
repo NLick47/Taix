@@ -183,8 +183,6 @@ namespace Core.Servicers.Instances
             catch (Exception e)
             {
                 AppState.IsLoading = false;
-                Logger.Error("Run"+e.Message);
-                Logger.Save();
                 throw;
             }
         }
