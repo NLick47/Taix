@@ -16,12 +16,15 @@ jobs:
         cpu: [ x64 ]
         kind: [ 7z ]
     steps:
+      - name: Install 7-Zip
+        run: choco install 7zip -y
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Install .NET 8.0
+      - name: Install .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: |
+            8.0.x
       - name: Set APP_VERSION environment variable
         run: |
           $appVersion = "${{ github.ref_name }}" -replace '^v', ''
@@ -31,7 +34,7 @@ jobs:
           dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o ./output/${{ matrix.cpu }}
       - name: Compress build artifacts
         run: |
-          Compress-Archive -Path ./output/${{ matrix.cpu }}/* -DestinationPath ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
+          7z a -t7z ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }} ./output/${{ matrix.cpu }}/*
       - name: Upload build artifacts ${{ matrix.kind }}
         uses: actions/upload-artifact@v3
         with:
