@@ -28,7 +28,7 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "APP_VERSION=$appVersion"
       - name: Build and Publish
         run: |
-          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishSingleFile=true -o ./output/${{ matrix.cpu }}
+          dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o ./output/${{ matrix.cpu }}
       - name: Compress build artifacts
         run: |
           Compress-Archive -Path ./output/${{ matrix.cpu }}/* -DestinationPath ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
