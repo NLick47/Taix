@@ -10,7 +10,7 @@
 				  TargetType="controls:DefaultWindow">
 		<Setter Property="ExtendClientAreaToDecorationsHint"
 							 Value="True"/>
-
+		<Setter Property="SystemDecorations" Value="None"></Setter>
 		<Setter Property="ExtendClientAreaTitleBarHeightHint" Value="32"/>
 		<Setter Property="ExtendClientAreaChromeHints" Value="NoChrome"/>
 		<Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
