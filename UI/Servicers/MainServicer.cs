@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using SharedLibrary.Librarys;
 
 namespace UI.Servicers
 {
@@ -39,30 +40,31 @@ namespace UI.Servicers
             _config = config_;
             _systemInfrastructure = systemInfrastructure_;
         }
-        public  Task Start(bool isSelfStart)
+        public Task Start(bool isSelfStart)
         {
             this.isSelfStart = isSelfStart;
             main.OnStarted += Main_OnStarted;
-            return Task.WhenAll(main.Run(), _statusBarIconServicer.Init());
+            main.OnConfigLoaded += (s,e)=> {
+                if (isSelfStart && !_config.GetConfig().General.IsStartatboot)
+                {
+                    Environment.Exit(0);
+                    return;
+                }
+            };
+            return Task.WhenAll(main.Run(),_statusBarIconServicer.Init());
         }
 
         private void Main_OnStarted(object sender, EventArgs e)
         {
             SystemLanguage.InitializeLanguage((CultureCode)_config.GetConfig().General.Language);
-            if (!_config.GetConfig().General.IsStartatboot && isSelfStart)
-            {
-                App.Exit();
-            }
             themeServicer.Init();
             appContextMenuServicer.Init();
             _webSiteContext.Init();
-
             if (!isSelfStart)
             {
                 _systemInfrastructure.SetAutoStartInRegistry();
                 _statusBarIconServicer.ShowMainWindow();
             }
-
         }
     }
 }

@@ -552,8 +552,7 @@ namespace UI.Controls.SettingPanel
                 importMenuItem.Header = Application.Current.FindResource("Import");
                 importMenuItem.Click += async (e, c) =>
                 {
-                    var deskLifettime = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-                    var storage = deskLifettime.MainWindow.StorageProvider;
+                    var storage = TopLevel.GetTopLevel(this).StorageProvider;
                     var result = await storage.OpenFilePickerAsync(new ()
                     {
                         AllowMultiple = false,

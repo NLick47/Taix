@@ -2,28 +2,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="372" d:DesignHeight="390"
-        x:Class="TaixBug.MainWindow"
-		Height="372" Width="390" CanResize="False"  WindowStartupLocation="CenterScreen"
-        Title="Taix Crash">
+        mc:Ignorable="d" Height="372"
+		Width="390" CanResize="False"
+		WindowStartupLocation="CenterScreen"
+        x:Class="UI.ErrorDialog"
+        Title="ErrorDialog">
 	<Grid Margin="10">
-		<Popup Placement="Center" Height="100" Width="200"
-			   PlacementTarget="Content" x:Name="Popup" IsOpen="False">
-			<Grid Margin="5,5,0,0" RowDefinitions="20,10,Auto,Auto">
-				<TextBlock Text="提示" 
-						    FontSize="14" FontWeight="Bold"
-						   Foreground="Gray" Grid.Row="0"/>
-				<TextBlock Text="Taix 似乎已被删除"  Foreground="Gray"   FontSize="14" Grid.Row="2"/>
-				<Button Content="确定" 
-						Margin="0,0,15,0"
-						Click="Button_Click"
-						HorizontalAlignment="Right"
-						Grid.Row="3"  FontSize="14" />
-			</Grid> 
-		</Popup>
 		<StackPanel>
 			<Image x:Name="IconGray" Width="120"
-				HorizontalAlignment="Center" VerticalAlignment="Top" Source="/ghost_gray (320).ico" >
+				HorizontalAlignment="Center" VerticalAlignment="Top" Source="/Resources/Icons/ghost_gray (320).ico" >
 
 				<Image.Effect>
 					<DropShadowDirectionEffect BlurRadius="10" Direction="0" ShadowDepth="0" Color="Black" Opacity="0.1"/>
@@ -48,26 +35,11 @@
 
 					<TextBlock Foreground="Gray" TextWrapping="WrapWithOverflow"  FontSize="14" HorizontalAlignment="Left" Margin="0,5,0,0">
 						<Run Text="1. 通过"/>
-						<HyperlinkButton Foreground="Blue" ToolTip.Tip="浏览器打开" 
+						<HyperlinkButton Foreground="Blue" ToolTip.Tip="浏览器打开"
 										  Click="IssuesHyperlinkClick">Github Issues</HyperlinkButton>
 					</TextBlock>
 				</StackPanel>
 			</Border>
 		</StackPanel>
-
-		<StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Left">
-			<Button Click="Restart">
-				<Button.Template>
-					<ControlTemplate>
-						<Border Background="#2b20d9"  Padding="10,10" CornerRadius="4">
-							<TextBlock Text="重新启动 Taix" Foreground="White"/>
-						</Border>
-					</ControlTemplate>
-				</Button.Template>
-			</Button>
-		</StackPanel>
-
-		
 	</Grid>
-
 </Window>

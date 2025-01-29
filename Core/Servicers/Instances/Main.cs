@@ -69,6 +69,7 @@ namespace Core.Servicers.Instances
 
         public event EventHandler OnUpdateTime;
         public event EventHandler OnStarted;
+        public event EventHandler OnConfigLoaded;
 
         /// <summary>
         /// 忽略进程缓存列表
@@ -165,10 +166,9 @@ namespace Core.Servicers.Instances
                 AppState.IsLoading = false;
 
 
-
-                //  加载应用配置（确保配置文件最先加载
                 appConfig.Load();
                 config = appConfig.GetConfig();
+                OnConfigLoaded.Invoke(this,EventArgs.Empty);
                 UpdateConfigIgnoreProcess();
                 UpdateConfigProcessWhiteList();
 
@@ -180,9 +180,11 @@ namespace Core.Servicers.Instances
 
                 OnStarted?.Invoke(this, EventArgs.Empty);
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 AppState.IsLoading = false;
+                Logger.Error("Run"+e.Message);
+                Logger.Save();
                 throw;
             }
         }

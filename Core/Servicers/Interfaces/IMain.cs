@@ -36,5 +36,7 @@ namespace Core.Servicers.Interfaces
         /// 初始化完成时发生
         /// </summary>
         event EventHandler OnStarted;
+
+        event EventHandler OnConfigLoaded;
     }
 }

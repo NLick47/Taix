@@ -102,7 +102,7 @@ namespace Win
         private nint HookMouseCallback(int nCode, nint wParam, nint lParam)
         {
 
-            if (nCode >= 0)
+            if (nCode >= 0 && status == SleepStatus.Sleep)
             {
                 if (wParam == Win32API.WM_LBUTTONDBLCLK || wParam == Win32API.WM_WHEEL)
                 {

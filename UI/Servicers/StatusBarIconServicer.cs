@@ -53,24 +53,18 @@ namespace UI.Servicers
         }
 
 
-        private async Task SetIcon(IconType iconType_ = IconType.Normal)
+        private void SetIcon(IconType iconType_ = IconType.Normal)
         {
-
             try
             {
-                string iconName = "tai32";
-                switch (iconType_)
+                string iconName = iconType_ switch 
                 {
-                    case IconType.Busy:
-                        iconName = "taibusy";
-                        break;
-                    default:
-                        iconName = "tai32";
-                        break;
-                }
-                await Dispatcher.UIThread.InvokeAsync(() =>
+                    IconType.Busy => "taibusy",
+                    IconType.Normal => "tai32",
+                    _ => "tai32"
+                };
+                 Dispatcher.UIThread.Invoke(() =>
                 {
-
                     _trayIcon.Icon = new WindowIcon(AssetLoader.Open(new Uri($"avares://Taix/Resources/Icons/{iconName}.ico")));
                 });
             }
@@ -91,7 +85,7 @@ namespace UI.Servicers
 
             _contextMenu.Items.Add(new NativeMenuItem
             {
-                Header = Application.Current.TryFindResource("Open", out var p) == null ? "打开" : p as string,
+                Header = Application.Current.FindResource("Open") as string,
                 Command = ReactiveCommand.Create(() =>
                 {
                     ShowMainWindow();
@@ -100,7 +94,7 @@ namespace UI.Servicers
             });
             _contextMenu.Items.Add(new NativeMenuItem
             {
-                Header = Application.Current.TryFindResource("Exit", out var e) == null ? "退出" : e as string,
+                Header = Application.Current.FindResource("Exit") as string,
                 Command = ReactiveCommand.Create(() =>
                 {
                     ExitApp();
@@ -133,25 +127,25 @@ namespace UI.Servicers
                     if (newText != previousText)
                     {
                         previousText = newText;
-                        await Dispatcher.UIThread.InvokeAsync(() =>
+                        Dispatcher.UIThread.Invoke(() =>
                         {
                             _trayIcon.ToolTipText = newText;
                         });
                     }
                 }
-                await Dispatcher.UIThread.InvokeAsync(() =>
+                Dispatcher.UIThread.Invoke(() =>
                 {
                     _trayIcon.ToolTipText = "Taix!";
                 });
 
-                await SetIcon();
+                SetIcon();
             });
 
         }
 
         public async Task Init()
         {
-            await SetIcon(IconType.Busy);
+            SetIcon(IconType.Busy);
             await WatchStateAsync();
             InitMenu();
         }

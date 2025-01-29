@@ -21,6 +21,9 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Core.Servicers;
 using UI.Models;
+using ReactiveUI;
+using Avalonia.Threading;
+using NPOI.SS.Formula.Functions;
 
 
 
@@ -39,13 +42,13 @@ namespace UI
         public App()
         {
             Instance = this;
-            AppDomain.CurrentDomain.UnhandledException += App_DispatcherUnhandledException;
-
             var serviceCollection = new ServiceCollection();
             CreatePlatformInitializer(serviceCollection);
             ConfigureServices(serviceCollection);
             serviceProvider = serviceCollection.BuildServiceProvider();
         }
+
+       
 
         private void CreatePlatformInitializer(IServiceCollection services)
         {
@@ -122,32 +125,6 @@ namespace UI
             services.AddTransient<WebSiteDetailPageViewModel>();
         }
 
-
-        private  void App_DispatcherUnhandledException(object sender, UnhandledExceptionEventArgs e)
-        {
-            Logger.Error("[Program crash]" + e.ExceptionObject.ToString());
-            Logger.Save(true);
-            string taiBugPath = GetTaiBugPath();
-            if (File.Exists(taiBugPath))
-            {
-                ProcessHelper.Run(taiBugPath, new string[] { string.Empty });
-            }
-            else
-            {
-                Logger.Error("TaiBug executable not found at: " + taiBugPath);
-            }
-        }
-
-        private static string GetTaiBugPath()
-        {
-            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string fileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "TaixBug.exe" : "TaixBug";
-            return Path.Combine(baseDirectory, fileName);
-        }
-
-
-
-
         private bool IsRuned()
         {
             bool ret;
@@ -171,6 +148,21 @@ namespace UI
 
         public override  async void OnFrameworkInitializationCompleted()
         {
+            Dispatcher.UIThread.UnhandledException += (sender, e) =>
+            {
+                Logger.Error("[Program crash]" + e.Exception.Message);
+                Logger.Save(true);
+                new ErrorDialog().Show();
+                e.Handled = true;
+            };
+
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+            {
+                var exception = e.ExceptionObject as Exception;
+                Logger.Error("[Program crash]" + exception.Message);
+                Logger.Save(true);
+            };
+         
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 if (Avalonia.Controls.Design.IsDesignMode)
@@ -181,18 +173,18 @@ namespace UI
                     };
                     return;
                 }
-                await OnStartup(this, Environment.GetCommandLineArgs()).ConfigureAwait(false);
+                OnStartup(this, Environment.GetCommandLineArgs());
                 desktop.Exit += (e, r) =>
                 {
                     Logger.Save(true);
                 };
+            
             }
-          
             base.OnFrameworkInitializationCompleted();
         }
 
 
-        private   async Task OnStartup(object sender, string[] args)
+        private  async void OnStartup(object sender, string[] args)
         {
             if (IsRuned())
             {
@@ -214,8 +206,8 @@ namespace UI
             }
             catch (Exception e)
             {
-
-                throw;
+                Logger.Error(e.Message);
+                Logger.Save(true);
             }
         }
 
