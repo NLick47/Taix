@@ -13,7 +13,7 @@
 		<ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'win-x64' Or $(RuntimeIdentifier) == 'win-x86'">
+	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND ($(RuntimeIdentifier) == 'win-x64' Or $(RuntimeIdentifier) == 'win-x86')">
 		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
 	</PropertyGroup>
 
@@ -58,7 +58,8 @@
 		<ProjectReference Include="..\Core\Core.csproj" />
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)'=='win-x64' OR '$(RuntimeIdentifier)' == 'win-x86'">
+	<ItemGroup Condition="'$(Configuration)' == 'Release' AND ($(RuntimeIdentifier) == 'win-x64' OR $(RuntimeIdentifier) == 'win-x86')">
+		
 		<ProjectReference Include="..\Platform\Win\Win.csproj" />
 	</ItemGroup>
 
