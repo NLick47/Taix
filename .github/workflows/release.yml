@@ -24,10 +24,7 @@ jobs:
           dotnet-version: 8.0.x
       - name: Set APP_VERSION environment variable
         run: |
-          echo "APP_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
-      - name: Set APP_VERSION environment variable
-        run: |
-          echo "APP_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+           echo "APP_VERSION=$(echo ${{ github.ref_name }} | tr -d 'v')" >> $GITHUB_ENV
       - name: Build and Publish
         run: |
           dotnet restore
