@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         cpu: [ x64, x86 ]
-        kind: [ zip ]
+        kind: [ 7z ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -22,8 +22,6 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
-      - name: Restore dependencies
-        run: dotnet restore
       - name: Set APP_VERSION environment variable
         run: |
           echo "APP_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
@@ -32,7 +30,8 @@ jobs:
           echo "APP_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
       - name: Build and Publish
         run: |
-          dotnet publish -c Release -r win-${{ matrix.cpu }} -p:PublishSingleFile=true -p:PublishTrimmed=true -p:Version=${{ env.APP_VERSION }} -o ./output/${{ matrix.cpu }}
+          dotnet restore
+          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:Version=${{ env.APP_VERSION }} -o ./output/${{ matrix.cpu }}
       - name: Compress build artifacts
         run: |
           Compress-Archive -Path ./output/${{ matrix.cpu }}/* -DestinationPath ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
