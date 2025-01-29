@@ -1,0 +1,52 @@
+name: Build
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        cpu: [ x64, x86 ]
+        kind: [ 7z ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install .NET 8.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Set APP_VERSION environment variable
+        run: |
+          echo "APP_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+      - name: Build and Publish
+        run: |
+          dotnet publish -c Release -r win-${{ matrix.cpu }} -p:PublishSingleFile=true -p:PublishTrimmed=true -p:Version=${{ env.APP_VERSION }} -o ./output/${{ matrix.cpu }}
+      - name: Compress build artifacts
+        run: |
+          Compress-Archive -Path ./output/${{ matrix.cpu }}/* -DestinationPath ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
+      - name: Upload build artifacts ${{ matrix.kind }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
+          path: ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
+      - name: Read release notes from file
+        id: release-notes
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: release_notes.txt
+      - name: Release
+        uses: ncipollo/release-action@v1
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        with:
+          allowUpdates: true
+          artifacts: ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
+          body: ${{ steps.release-notes.outputs.content }}
