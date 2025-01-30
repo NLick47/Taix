@@ -125,22 +125,14 @@ namespace UI
             services.AddTransient<WebSiteDetailPageViewModel>();
         }
 
-        private bool IsRuned()
+        private bool IsRunned()
         {
-            bool ret;
-            var b = System.Reflection.Assembly.GetEntryAssembly().ManifestModule.Name;
-            var mutexName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Taix.exe" : "Taix";
-            mutex = new System.Threading.Mutex(true, mutexName, out ret);
-            if (!ret)
-            {
-#if !DEBUG
-                return true;
-
-#endif
-            }
-            return false;
+            var mutexName = "Taix"; 
+            bool createdNew;
+            mutex = new System.Threading.Mutex(true, mutexName, out createdNew);
+            return !createdNew;
         }
-        
+
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);
@@ -186,9 +178,9 @@ namespace UI
 
         private  async void OnStartup(object sender, string[] args)
         {
-            if (IsRuned())
+            if (IsRunned())
             {
-                Exit();
+                Environment.Exit(0);
             }
             var main = serviceProvider.GetService<IMainServicer>();
 

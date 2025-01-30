@@ -19,29 +19,32 @@ namespace Win
 
         public bool SetAutoStartInRegistry()
         {
+            const string appName = "Taix";
+            const string runKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+
             try
             {
-                var AppName = "Taix";
-                var Key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-                if (Key == null)
+                using (RegistryKey runKey = Registry.CurrentUser.OpenSubKey(runKeyPath, true)
+                    ?? Registry.CurrentUser.CreateSubKey(runKeyPath))
                 {
-                    Key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run");
-                }
+                    string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Taix.exe");
 
-                var AppPath = string.Concat(AppDomain.CurrentDomain.BaseDirectory, "Taix.exe --selfStart");
-                var ExistingValue = Key.GetValue(AppName) as string;
+                    string expectedValue = $"\"{exePath}\" --selfStart";
 
-                if (ExistingValue != $"\"{AppPath}\"")
-                {
-                    Key.SetValue(AppName, $"\"{AppPath}\"");
+                    string currentValue = runKey.GetValue(appName) as string;
+
+                    if (currentValue != expectedValue)
+                    {
+                        runKey.SetValue(appName, expectedValue, RegistryValueKind.String);
+                    }
                 }
+                return true;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Logger.Error("SetAutoStartInRegistry" + e.Message);
+                Logger.Error($"SetAutoStartInRegistry failed: {ex.Message}");
                 return false;
             }
-            return true;
         }
     }
 }
