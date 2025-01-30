@@ -255,6 +255,17 @@
 	<system:String x:Key="ExportFailed">Export failed</system:String>
 	<system:String x:Key="ExportCompleted">Export completed</system:String>
 
+
+
+	<system:String x:Key="UnexpectedError">An unexpected error has occurred in Taix!</system:String>
+	<system:String x:Key="Log">log</system:String>
+	<system:String x:Key="SincerelyCrash">We sincerely apologize for this inconvenience! The crash</system:String>
+	<system:String x:Key="LocateFileExplorer">Locate the log file in File Explorer</system:String>
+	<system:String x:Key="PleaseSubmit">has been saved. If possible, please submit it to the developers for investigation. Thank you very much!</system:String>
+	<system:String x:Key="HowSubmitLog">How to Submit the Log to the Developers?</system:String>
+	<system:String x:Key="ViaThe">1. Via the </system:String>
+	<system:String x:Key="OpenInBrowser">Open in browse</system:String>
+
 	<system:String x:Key="Open">Open</system:String>
 	<system:String x:Key="Exit">Exit</system:String>
 </ResourceDictionary>

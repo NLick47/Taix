@@ -25,17 +25,17 @@
 				</Border.Effect>
 
 				<StackPanel x:Name="Content">
-					<TextBlock Foreground="Gray" Text="Taix 发生了一个预料之外的错误！" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,0"/>
+					<TextBlock Foreground="Gray" Text="{DynamicResource UnexpectedError}" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,0"/>
 					<TextBlock Foreground="Gray" TextWrapping="WrapWithOverflow"  FontSize="14" HorizontalAlignment="Center" Margin="0,10,0,0">
-						<Run Text="对此非常抱歉！本次崩溃的"/>
-						<HyperlinkButton ToolTip.Tip ="在资源文件管理器中定位到该日志文件" Click="LogHyperlinkClick" Foreground="Blue">日志</HyperlinkButton>
-						<Run Text="已经保存，如果方便请将它提交给开发者处理，非常谢谢。"/>
+						<Run Text="{DynamicResource SincerelyCrash}"/>
+						<HyperlinkButton ToolTip.Tip ="{DynamicResource LocateFileExplorer}" Click="LogHyperlinkClick" Foreground="Blue" Content="{DynamicResource Log}"/>
+						<Run Text="{DynamicResource PleaseSubmit}"/>
 					</TextBlock>
-					<TextBlock Foreground="Gray" Text="如何给开发者提交日志？" FontSize="14" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+					<TextBlock Foreground="Gray" Text="{DynamicResource HowSubmitLog}" FontSize="14" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,10,0,0"/>
 
 					<TextBlock Foreground="Gray" TextWrapping="WrapWithOverflow"  FontSize="14" HorizontalAlignment="Left" Margin="0,5,0,0">
-						<Run Text="1. 通过"/>
-						<HyperlinkButton Foreground="Blue" ToolTip.Tip="浏览器打开"
+						<Run Text="{DynamicResource ViaThe}"/>
+						<HyperlinkButton Foreground="Blue" ToolTip.Tip="{DynamicResource OpenInBrowser}"
 										  Click="IssuesHyperlinkClick">Github Issues</HyperlinkButton>
 					</TextBlock>
 				</StackPanel>

@@ -267,7 +267,16 @@
 	<system:String x:Key="ExportCompleted">导出完成</system:String>
 	
 	
-
+	<system:String x:Key="UnexpectedError">Taix 发生了一个预料之外的错误！</system:String>
+	<system:String x:Key="Log">日志</system:String>
+	<system:String x:Key="SincerelyCrash">对此非常抱歉！本次崩溃的</system:String>
+	<system:String x:Key="LocateFileExplorer">在资源文件管理器中定位到该日志文件</system:String>
+	<system:String x:Key="PleaseSubmit">已经保存，如果方便请将它提交给开发者处理，非常谢谢。</system:String>
+	<system:String x:Key="HowSubmitLog">如何给开发者提交日志？</system:String>
+	<system:String x:Key="ViaThe">1. 通过</system:String>
+	<system:String x:Key="OpenInBrowser">浏览器打开</system:String>
+	
+	
 	
 	<system:String x:Key="Open">打开</system:String>
 	<system:String x:Key="Exit">退出</system:String>
