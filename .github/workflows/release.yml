@@ -14,10 +14,8 @@ jobs:
     strategy:
       matrix:
         cpu: [ x64, x86 ]
-        kind: [ 7z ]
+        kind: [ zip ]
     steps:
-      - name: Install 7-Zip
-        run: choco install 7zip -y
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install .NET
@@ -32,9 +30,6 @@ jobs:
       - name: Build and Publish
         run: |
           dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false ./UI/UI.csproj -o ./output/${{ matrix.cpu }}
-      - name: Compress build artifacts
-        run: |
-          7z a -t7z ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }} ./output/${{ matrix.cpu }}/*
       - name: Upload build artifacts ${{ matrix.kind }}
         uses: actions/upload-artifact@v3
         with:
