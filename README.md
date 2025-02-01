@@ -1,54 +1,74 @@
-#### Introduction
+#### 项目介绍
 
-First, thank the original author for open sourcing the project. The original project Tai is used to statistics the usage duration of `software` and `websites` on Windows.
+首先感谢原作者的开源，原项目Tai 是用于在 Windows 上统计 `软件` 使用时长和 `网站` 浏览时长
 
-Taix is a technical migration of [Tai](https://github.com/Planshit/Tai). It replaces WPF and .NET Framework with Avalonia and .NET 8. Currently, it only supports Windows. The purpose of this migration is twofold: one is to learn desktop development and Avalonia, and the other is to extend support to Linux and Mac. Additionally, I want to use this application to test future technologies.
+Taix是[Tai](https://github.com/Planshit/Tai)对一次技术迁移。由wpf ,.netframework 更换为Avalonia ,.net8，目前仅支持windows。这次迁移的目的一方面目是用来学习桌面端开发和avalonia，还有就是我想以此去实现对Linux和Mac的支持，并且想以此应用作为以后一些技术的测试。
 
-[English](README.md) | [中文](README_zh.md)
+[English](README-en.md) | 
 
-#### Getting Started
-
-<img src="en.png" style="float: left; zoom: 57%;"  />
+### 开始使用
 
 
 
-## Learn More
+<img src="index.png" style="float: left; zoom: 57%;"  />
 
-#### Application Whitelist
+#### 数据迁移
 
-Tai supports statistics for only the software listed in the whitelist. You can enable this feature in Settings > Behavior.
+如果你已经在使用Tai了想尝试这个应用，可以直接将Tai目录下的Data/data.db文件直接复制到Taix Data/目录下。并且可以将AppIcons目录一同替换。
 
-#### Associated Processes
+#### 使用
 
-If you want to record the usage duration of software on other screens when working with multiple screens, you can add the corresponding software processes to an associated list in the settings. Once added, using any software from the associated list will update the usage duration for all other software in the list, provided they are running (even in the background or without focus). A software process can only be associated once and cannot be associated with multiple other software processes.
+1. 在 [releases](https://github.com/NLick47/Taix/releases) 中可以下载已经编译好的 exe 可执行文件压缩包。建议优选选择标记有 `Latest` 的版本，划到下方的 `Assets` 找到 `Taix.x.x.x.zip` 点击下载；
+2. 下载压缩包后解压到合适的位置（建议不要解压到桌面、系统盘），进入解压后的文件夹内，找到 `👻Tai.exe` ，启动程序，成功启动后你将在状态栏看到 👻 图标；
+3. 使用 `网站浏览统计` 功能需要安装相应的浏览器拓展并且在 设置 > 常规 > 功能中启用。[下载安装浏览器插件说明](https://github.com/Planshit/Tai/discussions/279);
+4. 请以管理员身份运行 Tai ，否则无法统计部分软件。
 
-#### Filtering Applications and Websites
+#### 卸载
 
-You can filter out applications and websites that you do not want to include in the statistics by using process names/URLs or regular expressions in Settings > Behavior.
+1. 在设置中停用开机自启动（如果启用了）；
+2. 删除所有文件即可完成卸载。
 
-#### Data Storage and Export
+#### 基本操作
 
-Tai stores statistics data locally in an unencrypted `SQLite` database located at `运行目录\Data\data.db`. You can export the statistics data in `.xlsx` and `.csv` formats from the settings.
+鼠标双击图标进入程序主界面，右击显示菜单。
 
-#### Sleep Monitoring
+## 了解更多
 
-Tai can detect when the user is away from the computer and stop statistics. You can disable this feature in Settings > Behavior to achieve uninterrupted statistics.
+#### 应用白名单
 
-#### Automatic Classification
+支持仅统计白名单内的软件，在设置 > 行为中可以启用此功能。
 
-Tai can automatically classify software based on the running directory. When adding or editing categories in the Classification Management, you can enable or disable directory matching. For example, if you enable it and add a directory `C:\` to `分类A`, all software on the C drive will be automatically classified into `分类A`.
+#### 关联进程
 
-#### Networking and Privacy
+如果你希望在多屏工作时将其他屏幕所使用的软件同时记录使用时长，可以在设置中将相应的软件进程添加到一个关联列表中。添加完成后，只要使用了关联列表的其中一个软件，就会同步更新使用时长到列表里的其他软件上，但前提是其他软件需要正处于运行中（即使在后台或者没有焦点都行）。一个软件只能关联一次，不能重复与其他软件关联。
 
-Tai makes no other network requests except when checking for updates or upgrading software (which requires you to manually check for updates in the settings). Tai does not collect or upload any of your information.
+#### 过滤应用和网站
 
-## Future Tasks for Taix
+可以在设置 > 行为中通过进程名称/URL或者正则表达式对不需要统计的软件/网站进行过滤。
 
-1. Complete language switching
-2. AOT deployment
-3. Implement duration statistics for Linux X11
-4. Implement duration statistics for MacOS
+#### 数据储存和导出
 
-This is an idea I had, but it is unlikely to be implemented:
+Tai 使用不加密 `SQLite` 数据库将统计数据存储在本地 `运行目录\Data\data.db` 中。可以在设置中将统计的数据以 `.xlsx` 和 `.csv` 两种文件格式导出。
 
-Split the application into a UI and a background service, with the UI retrieving data from the background service via gRPC. The service can be implemented in C++ or Go to minimize memory usage as much as possible.
+#### 睡眠监测
+
+Tai 能够一定程度地发现用户离开电脑从而停止统计，也可以在设置 > 行为中停用此功能以实现不间断统计。
+
+#### 自动分类
+
+可以根据运行目录自动归类，在分类管理中添加/编辑分类时可以启用或关闭目录匹配。比如在 `分类A` 中启用并添加了一个目录 `C:\` ，那么C盘下所有软件都会被自动归类到 `分类A` 中。
+
+#### 联网和隐私
+
+除了检查更新/升级软件时（需要主动在设置中检查更新）之外完全没有其他网络请求。Tai 并不会收集和上传你的任何信息。
+
+
+
+## 之后的计划....
+
+1. 完成多语言切换 （已加入中英切换，可能会存在遗漏和实时切换带来的问题）
+2. 优化一些体验问题，如ContextMenu和分类再次取消（进行中）
+3. 服务与UI分离（进行中）
+4. linux X11 时长统计实现 （进度在d_x11 分支下  暂时暂停进度，等将ui与服务分离后再继续开发测试）（待完成）
+5. Aot发布（尝试将UI进行AOT发布，可能会带来体积增大等问题）
+4. Macos 时长统计实现 （待完成）
