@@ -12,8 +12,12 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.VisualTree;
 using UI.Controls.Charts.Model;
 using UI.ViewModels;
+using UI.Views;
 
 namespace UI.Servicers
 {
@@ -25,18 +29,20 @@ namespace UI.Servicers
         private readonly IAppConfig appConfig;
         private readonly IThemeServicer theme;
         private readonly IUIServicer _uIServicer;
+        private readonly  MainWindow _mainWindow;
         private ContextMenu menu;
         private MenuItem setCategory;
         private MenuItem setLink;
         MenuItem block = new MenuItem();
         MenuItem _whiteList = new MenuItem();
-
+      
         public AppContextMenuServicer(
           MainViewModel main,
           ICategorys categorys,
           IAppData appData,
           IAppConfig appConfig,
           IThemeServicer theme,
+          MainWindow mainWindow,
           IUIServicer uIServicer_)
         {
             this.main = main;
@@ -45,6 +51,7 @@ namespace UI.Servicers
             this.appConfig = appConfig;
             this.theme = theme;
             this._uIServicer = uIServicer_;
+            this._mainWindow = mainWindow;
 
         }
 
@@ -52,6 +59,31 @@ namespace UI.Servicers
         public void Init()
         {
             CreateMenu();
+            _mainWindow.PointerPressed += OnGlobalPointerPressed;
+        }
+
+        private void OnGlobalPointerPressed(object? sender, PointerPressedEventArgs e)
+        {
+            if (e.GetCurrentPoint(null).Properties.IsLeftButtonPressed )
+            {
+                CloseAllContextMenus(_mainWindow);
+            }
+        }
+        
+        private void CloseAllContextMenus(Visual visual)
+        {
+            if (visual is Control ctl
+                && ctl.ContextMenu != null 
+                && ctl.ContextMenu.IsOpen )
+            {
+                ctl.ContextMenu.Close();
+                return;
+            }
+
+            foreach (var child in visual.GetVisualChildren())
+            {
+                CloseAllContextMenus(child);
+            }
         }
 
         private void CreateMenu()
@@ -99,6 +131,7 @@ namespace UI.Servicers
             menu.Items.Add(_whiteList);
             
             menu.Opening += SetCategory_ContextMenuOpening;
+        
         }
 
 

@@ -18,14 +18,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using UI.Controls.Base;
 using UI.Controls.Charts.Model;
 using UI.Controls.Input;
-using UI.Extensions;
 
 namespace UI.Controls.Charts
 {
@@ -610,9 +608,11 @@ namespace UI.Controls.Charts
             {
                 ItemMenu.Opening -= OnContextMenuOpening;
                 _listView.SelectionChanged -= _listView_SelectionChanged;
+           
                 _listView.ContextMenu = ItemMenu;
                 ItemMenu.Opening += OnContextMenuOpening;
                 _listView.SelectionChanged += _listView_SelectionChanged;
+              
             }
             if (_searchBox != null)
             {

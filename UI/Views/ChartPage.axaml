@@ -8,8 +8,6 @@
 			 xmlns:Tabbar="using:UI.Controls.Tabbar"
 			 xmlns:select="using:UI.Controls.Select"
 			 xmlns:base="using:UI.Controls.Base"
-			 xmlns:DatePickerBar="using:UI.Controls.DatePickerBar"
-			 xmlns:converter="using:UI.Controls.Converters"
 			 xmlns:model="using:UI.ViewModels"
 			 x:DataType="model:ChartPageViewModel"
              x:Class="UI.Views.ChartPage">
