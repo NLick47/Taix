@@ -15,6 +15,9 @@ using System.Text;
 using System.Threading.Tasks;
 using UI.Controls.Charts.Model;
 using UI.ViewModels;
+using Avalonia.Controls.Documents;
+using Core.Servicers.Instances;
+using NPOI.SS.Formula.Functions;
 
 namespace UI.Servicers
 {
@@ -32,6 +35,8 @@ namespace UI.Servicers
         private MenuItem _setCategory;
         private MenuItem _block;
         private MenuItem _site;
+        private MenuItem _open;
+        private MenuItem _editAlias;
         public WebSiteContextMenuServicer(
             MainViewModel main_,
             IAppConfig appConfig_,
@@ -48,45 +53,51 @@ namespace UI.Servicers
 
         public void Init()
         {
-            CreateMenu();
+            InitializeMenuItems();
+            SystemLanguage.CurrentLanguageChanged += (s, e) => UpdateMenuTexts();
         }
 
-        private void CreateMenu()
+
+        private void UpdateMenuTexts()
+        {
+            _open.Header = ResourceStrings.OpenWebsite;
+            _setCategory.Header = ResourceStrings.SetCategory;
+            _editAlias.Header = ResourceStrings.EditAlias;
+            _block.Header = ResourceStrings.IgnoreSite;
+        }
+
+        private void InitializeMenuItems()
         {
             if (_menu != null)
             {
                 _menu.Opening -= _menu_ContextMenuOpening;
+                _menu.Items.Clear();
             }
             _menu = new ContextMenu();
-            _menu.Items.Clear();
-
-            MenuItem open = new MenuItem();
-            open.Header = ResourceStrings.OpenWebsite;
-            open.PointerPressed += Open_Click; ;
-
-
+            _open = new MenuItem();
+            _open.PointerPressed += Open_Click; ;
             _setCategory = new MenuItem();
-            _setCategory.Header = ResourceStrings.SetCategory;
 
-            MenuItem editAlias = new MenuItem();
-            editAlias.Header = ResourceStrings.EditAlias;
-            editAlias.Click += EditAlias_ClickAsync;
+            _editAlias = new MenuItem();
+
+            _editAlias.Click += EditAlias_ClickAsync;
 
             _block = new MenuItem();
-            _block.Header = ResourceStrings.IgnoreSite;
+
             _block.PointerPressed += Block_Click;
 
             _site = new MenuItem();
             _site.IsEnabled = false;
 
             _menu.Items.Add(_site);
-            _menu.Items.Add(open);
+            _menu.Items.Add(_open);
             _menu.Items.Add(new Separator());
             _menu.Items.Add(_setCategory);
-            _menu.Items.Add(editAlias);
+            _menu.Items.Add(_editAlias);
             _menu.Items.Add(new Separator());
             _menu.Items.Add(_block);
             _menu.Opening += _menu_ContextMenuOpening;
+            UpdateMenuTexts();
         }
 
         private async void EditAlias_ClickAsync(object sender, RoutedEventArgs e)
@@ -98,9 +109,9 @@ namespace UI.Servicers
             {
                 string input = await _uIServicer.ShowInputModalAsync(ResourceStrings.EditAlias, ResourceStrings.EnterAlias, site.Alias, (val) =>
                 {
-                    if (val.Length > 15)
+                    if (val?.Length > 15)
                     {
-                        _main.Error(string.Format(ResourceStrings.AliasMaxLengthTip,15));
+                        _main.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
                         return false;
                     }
                     return true;
@@ -163,7 +174,7 @@ namespace UI.Servicers
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error("打开网址链接"+ex);
+                    Logger.Error("打开网址链接" + ex);
                 }
             }
         }
@@ -187,12 +198,12 @@ namespace UI.Servicers
             if (config.Behavior.IgnoreURLList.Contains(site.Domain))
             {
                 config.Behavior.IgnoreURLList.Remove(site.Domain);
-                _main.Toast(string.Format(ResourceStrings.UnignoredDomain,site.Domain), Controls.Window.ToastType.Success);
+                _main.Toast(string.Format(ResourceStrings.UnignoredDomain, site.Domain), Controls.Window.ToastType.Success);
             }
             else
             {
                 config.Behavior.IgnoreURLList.Add(site.Domain);
-                _main.Toast(string.Format(ResourceStrings.IgnoredDomain,site.Domain), Controls.Window.ToastType.Success);
+                _main.Toast(string.Format(ResourceStrings.IgnoredDomain, site.Domain), Controls.Window.ToastType.Success);
 
                 newBadgeList.Add(ChartBadgeModel.IgnoreBadge);
             }
@@ -208,16 +219,38 @@ namespace UI.Servicers
             var data = _menu.Tag as ChartsDataModel;
             var site = data.Data as WebSiteModel;
             var categories = await _webData.GetWebSiteCategoriesAsync();
+            var siteCategoryId = (await _webData.GetWebSiteAsync(site.ID)).CategoryID;
             foreach (var category in categories)
             {
                 var categoryMenu = new MenuItem();
                 categoryMenu.Header = category.Name;
-                categoryMenu.IsChecked = site.CategoryID == category.ID;
                 categoryMenu.Click += (s, e) =>
                 {
                     UpdateSiteCategory(data, category.ID);
                 };
                 _setCategory.Items.Add(categoryMenu);
+            }
+            if (siteCategoryId != 0)
+            {
+                _setCategory.Items.Add(new Separator());
+                var un = new MenuItem();
+                un.Header = ResourceStrings.Uncategorized;
+                un.Click += (s, e) =>
+                {
+                    ClearSiteCategory();
+                };
+                _setCategory.Items.Add(un);
+            }
+        }
+
+        private async void ClearSiteCategory()
+        {
+            var data = _menu.Tag as ChartsDataModel;
+            if(data != null)
+            {
+                await _webData.UpdateWebSitesCategoryAsync(new int[] { (data.Data as WebSiteModel).ID }, 0);
+                data.BadgeList = new();
+                _main.Toast(ResourceStrings.OperationCompleted, Controls.Window.ToastType.Success);
             }
         }
 
@@ -247,6 +280,7 @@ namespace UI.Servicers
                     Type = ChartBadgeType.Category
                 });
                 data.BadgeList = newBadgeList;
+                _main.Toast(ResourceStrings.OperationCompleted, Controls.Window.ToastType.Success);
             }
         }
 

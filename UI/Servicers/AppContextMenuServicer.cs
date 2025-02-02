@@ -266,20 +266,39 @@ namespace UI.Servicers
             }
 
             var categories = categorys.GetCategories();
+            var categoryId = appData.GetApp(app.ID).CategoryID;
             foreach (var category in categories)
             {
                 var categoryMenu = new MenuItem();
                 categoryMenu.Header = category.Name;
-                categoryMenu.IsChecked = app.CategoryID == category.ID;
                 categoryMenu.Click += (s, e) =>
                 {
                     SetAppCategory(data, app.ID, category);
                 };
                 setCategory.Items.Add(categoryMenu);
             }
-
+            if(categoryId != 0)
+            {
+                setCategory.Items.Add(new Separator());
+                var un = new MenuItem();
+                un.Header = ResourceStrings.Uncategorized;
+                un.Click += (s, e) =>
+                {
+                    ClearCategory(app.ID);
+                };
+                setCategory.Items.Add(un);
+            }
             setCategory.IsEnabled = setCategory.Items.Count > 0;
+            
+        }
 
+        private void ClearCategory(int appId)
+        {
+            var app = appData.GetApp(appId);
+            app.CategoryID = 0;
+            app.Category = null;
+            appData.UpdateApp(app);
+            main.Toast(ResourceStrings.OperationCompleted, Controls.Window.ToastType.Success);
         }
 
 
