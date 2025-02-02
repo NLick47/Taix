@@ -27,6 +27,8 @@ namespace SharedLibrary
         { CultureCode.EnUs, new CultureInfo("en-US") }
     };
 
+        public static event EventHandler CurrentLanguageChanged;
+
         private static bool _isInitialized = false;
         private static CultureCode _currentLanguage;
 
@@ -97,6 +99,7 @@ namespace SharedLibrary
                     Application.Current.Resources[pageLocaleItem.Key] = pageLocaleItem.Value;
                 }
                 _currentLanguage = culture;
+                CurrentLanguageChanged?.Invoke(null, EventArgs.Empty);
             }
             else
             {

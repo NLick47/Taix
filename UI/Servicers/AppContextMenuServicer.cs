@@ -29,13 +29,17 @@ namespace UI.Servicers
         private readonly IAppConfig appConfig;
         private readonly IThemeServicer theme;
         private readonly IUIServicer _uIServicer;
-        private readonly  MainWindow _mainWindow;
+        private readonly MainWindow _mainWindow;
         private ContextMenu menu;
         private MenuItem setCategory;
         private MenuItem setLink;
+        private MenuItem run;
+        private MenuItem openDir;
+        private MenuItem editAlias;
         MenuItem block = new MenuItem();
-        MenuItem _whiteList = new MenuItem();
-      
+        MenuItem whiteList = new MenuItem();
+
+
         public AppContextMenuServicer(
           MainViewModel main,
           ICategorys categorys,
@@ -52,29 +56,30 @@ namespace UI.Servicers
             this.theme = theme;
             this._uIServicer = uIServicer_;
             this._mainWindow = mainWindow;
-
         }
 
+      
 
         public void Init()
         {
-            CreateMenu();
+            InitializeMenuItems();
             _mainWindow.PointerPressed += OnGlobalPointerPressed;
+            SystemLanguage.CurrentLanguageChanged += (s, e) => UpdateMenuTexts();
         }
 
         private void OnGlobalPointerPressed(object? sender, PointerPressedEventArgs e)
         {
-            if (e.GetCurrentPoint(null).Properties.IsLeftButtonPressed )
+            if (e.GetCurrentPoint(null).Properties.IsLeftButtonPressed)
             {
                 CloseAllContextMenus(_mainWindow);
             }
         }
-        
+
         private void CloseAllContextMenus(Visual visual)
         {
             if (visual is Control ctl
-                && ctl.ContextMenu != null 
-                && ctl.ContextMenu.IsOpen )
+                && ctl.ContextMenu != null
+                && ctl.ContextMenu.IsOpen)
             {
                 ctl.ContextMenu.Close();
                 return;
@@ -86,38 +91,26 @@ namespace UI.Servicers
             }
         }
 
-        private void CreateMenu()
+        private void InitializeMenuItems()
         {
             if (menu != null)
             {
                 menu.Opening -= SetCategory_ContextMenuOpening;
+                menu.Items.Clear();
             }
             menu = new ContextMenu();
-            menu.Items.Clear();
-
-            MenuItem run = new MenuItem();
-            run.Header = ResourceStrings.StartApplication;
+            run = new MenuItem();
             run.PointerPressed += Run_Click;
 
-            MenuItem openDir = new MenuItem();
-            openDir.Header = ResourceStrings.OpenApplicationDirectory;
+            openDir = new MenuItem();
             openDir.PointerPressed += OpenDir_Click;
-
             setCategory = new MenuItem();
-            setCategory.Header = ResourceStrings.SetCategory;
-
-            MenuItem editAlias = new MenuItem();
-            editAlias.Header = ResourceStrings.EditAlias;
+            editAlias = new MenuItem();
             editAlias.Click += EditAlias_ClickAsync;
-
             setLink = new MenuItem();
-            setLink.Header = ResourceStrings.AddAssociation;
-
-            block.Header = ResourceStrings.IgnoreThisApplication;
             block.PointerPressed += Block_Click;
 
-            _whiteList.Header = ResourceStrings.AddWhitelist;
-            _whiteList.PointerPressed += _whiteList_Click;
+            whiteList.PointerPressed += _whiteList_Click;
 
             menu.Items.Add(run);
             menu.Items.Add(new Separator());
@@ -128,12 +121,21 @@ namespace UI.Servicers
 
             menu.Items.Add(openDir);
             menu.Items.Add(block);
-            menu.Items.Add(_whiteList);
-            
-            menu.Opening += SetCategory_ContextMenuOpening;
-        
-        }
+            menu.Items.Add(whiteList);
 
+            menu.Opening += SetCategory_ContextMenuOpening;
+            UpdateMenuTexts();
+        }
+        private void UpdateMenuTexts()
+        {
+            run.Header = ResourceStrings.StartApplication;
+            openDir.Header = ResourceStrings.OpenApplicationDirectory;
+            setCategory.Header = ResourceStrings.SetCategory;
+            editAlias.Header = ResourceStrings.EditAlias;
+            setLink.Header = ResourceStrings.AddAssociation;
+            block.Header = ResourceStrings.IgnoreThisApplication;
+            whiteList.Header = ResourceStrings.AddWhitelist;
+        }
 
         private async void EditAlias_ClickAsync(object sender, RoutedEventArgs e)
         {
@@ -152,10 +154,10 @@ namespace UI.Servicers
                 {
                     if (val?.Length > 15)
                     {
-                        main.Error(string.Format(ResourceStrings.AliasMaxLengthTip,15));
+                        main.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
                         return false;
                     }
-               
+
                     return true;
                 });
 
@@ -174,7 +176,7 @@ namespace UI.Servicers
             }
         }
 
-       
+
 
         private void Block_Click(object sender, PointerPressedEventArgs e)
         {
@@ -197,12 +199,12 @@ namespace UI.Servicers
             if (config.Behavior.IgnoreProcessList.Contains(app.Name))
             {
                 config.Behavior.IgnoreProcessList.Remove(app.Name);
-                main.Toast(string.Format(ResourceStrings.IgnoringApplicationCancelled,app.Description), Controls.Window.ToastType.Success);
+                main.Toast(string.Format(ResourceStrings.IgnoringApplicationCancelled, app.Description), Controls.Window.ToastType.Success);
             }
             else
             {
                 config.Behavior.IgnoreProcessList.Add(app.Name);
-                main.Toast(string.Format(ResourceStrings.ApplicationNowIgnored,app.Description), Controls.Window.ToastType.Success);
+                main.Toast(string.Format(ResourceStrings.ApplicationNowIgnored, app.Description), Controls.Window.ToastType.Success);
                 newBadgeList.Add(ChartBadgeModel.IgnoreBadge);
             }
             data.BadgeList = newBadgeList;
@@ -236,11 +238,11 @@ namespace UI.Servicers
 
             if (config.Behavior.ProcessWhiteList.Contains(app.Name))
             {
-                _whiteList.Header = ResourceStrings.RemoveWhitelist;
+                whiteList.Header = ResourceStrings.RemoveWhitelist;
             }
             else
             {
-                _whiteList.Header = ResourceStrings.AddWhitelist;
+                whiteList.Header = ResourceStrings.AddWhitelist;
             }
 
             UpdateCategory();
