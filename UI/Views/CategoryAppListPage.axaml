@@ -11,6 +11,7 @@
 			 xmlns:model="using:UI.ViewModels"
 			 xmlns:Button="clr-namespace:UI.Controls.Button"
 			 x:DataType="model:CategoryAppListPageViewModel"
+			 IsFillPage="TRUE"
              x:Class="UI.Views.CategoryAppListPage">
 	<Grid>
 		<Grid IsVisible="{Binding ChooseVisibility}" ZIndex="2"

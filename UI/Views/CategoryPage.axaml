@@ -337,6 +337,13 @@
 								 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
 								 SelectedItem="{Binding SelectedWebCategoryItem,Mode=TwoWay}"
 								 ItemsSource="{Binding WebCategoryData}">
+
+							<Interaction.Behaviors>
+								<EventTriggerBehavior EventName="PointerReleased">
+									<InvokeCommandAction Command="{Binding GotoListCommand}"
+														   CommandParameter="{Binding SelectedWebCategoryItem}"/>
+								</EventTriggerBehavior>
+							</Interaction.Behaviors>
 							<ListBox.ContextMenu>
 								<ContextMenu>
 									<MenuItem Header="{DynamicResource ViewWebsiteList}" Command="{Binding GotoListCommand}"

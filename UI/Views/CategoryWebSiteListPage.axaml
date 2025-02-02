@@ -54,7 +54,7 @@
 						
 					</Border>
 					<ListBox  ItemsSource="{Binding WebSiteOptionList}"
-							 Margin="20,0" Grid.Row="2">
+							 Margin="20,5" Grid.Row="2">
 						<ListBox.Styles>
 							<Style Selector="ListBox">
 								<Setter Property="Template">
@@ -149,7 +149,7 @@
 					</ContextMenu>
 				</ListBox.ContextMenu>
 				<Interaction.Behaviors>
-					<EventTriggerBehavior EventName="PointerPressed">
+					<EventTriggerBehavior EventName="PointerReleased">
 						<InvokeCommandAction Command="{Binding GotoDetailCommand}"
 											   CommandParameter="{Binding SelectedItem}" />
 					</EventTriggerBehavior>
