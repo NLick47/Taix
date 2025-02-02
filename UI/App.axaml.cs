@@ -142,7 +142,8 @@ namespace UI
         {
             Dispatcher.UIThread.UnhandledException += (sender, e) =>
             {
-                Logger.Error("[Program crash]" + e.Exception.Message);
+                Logger.Error("[Program crash] " + e.Exception.Message);
+                Logger.Error("Stack trace: " + e.Exception.StackTrace); 
                 Logger.Save(true);
                 new ErrorDialog().Show();
                 e.Handled = true;

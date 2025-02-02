@@ -150,11 +150,12 @@ namespace UI.Servicers
             {
                 string input = await _uIServicer.ShowInputModalAsync(ResourceStrings.UpdateAlias, ResourceStrings.EnterAlias, app.Alias, (val) =>
                 {
-                    if (val.Length > 15)
+                    if (val?.Length > 15)
                     {
                         main.Error(string.Format(ResourceStrings.AliasMaxLengthTip,15));
                         return false;
                     }
+               
                     return true;
                 });
 
