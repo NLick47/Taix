@@ -270,7 +270,10 @@ namespace UI.Servicers
             foreach (var category in categories)
             {
                 var categoryMenu = new MenuItem();
+                categoryMenu.ToggleType = MenuItemToggleType.Radio;
                 categoryMenu.Header = category.Name;
+                categoryMenu.IsChecked = categoryId == category.ID;
+                categoryMenu.IsSelected = true;
                 categoryMenu.Click += (s, e) =>
                 {
                     SetAppCategory(data, app.ID, category);
@@ -298,7 +301,6 @@ namespace UI.Servicers
             app.CategoryID = 0;
             app.Category = null;
             appData.UpdateApp(app);
-            main.Toast(ResourceStrings.OperationCompleted, Controls.Window.ToastType.Success);
         }
 
 
@@ -378,8 +380,6 @@ namespace UI.Servicers
             app.CategoryID = category.ID;
             app.Category = category;
             appData.UpdateApp(app);
-
-            main.Toast(ResourceStrings.OperationCompleted, Controls.Window.ToastType.Success);
         }
 
 

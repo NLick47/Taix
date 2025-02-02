@@ -1,6 +1,7 @@
 ﻿using Core.Models.Db;
 using Core.Servicers.Interfaces;
 using ReactiveUI;
+using SharedLibrary;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -61,7 +62,7 @@ namespace UI.ViewModels
         {
             if (Category == null)
             {
-                _mainVM.Toast("参数错误", Controls.Window.ToastType.Error, Controls.Base.IconTypes.Error);
+                _mainVM.Toast(ResourceStrings.InvalidParameter, Controls.Window.ToastType.Error, Controls.Base.IconTypes.Error);
                 return;
             }
 

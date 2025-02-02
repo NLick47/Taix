@@ -68,14 +68,22 @@ namespace UI.Controls.Base
                 Resource = new Bitmap(AssetLoader.Open(new Uri(path)));
                 return;
             }
-
-            string src = path.IndexOf(":") != -1 ? path : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
-            var desktop = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-            var storage = desktop.MainWindow.StorageProvider;
-            var result = await storage.TryGetFileFromPathAsync(src);
-            if(result != null)
+            try
             {
-                Resource = new Bitmap( await result.OpenReadAsync());
+
+                string src = path.IndexOf(":") != -1 ? path : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
+                var desktop = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                var storage = desktop.MainWindow.StorageProvider;
+                var result = await storage.TryGetFileFromPathAsync(src);
+                if (result != null)
+                {
+                    Resource = new Bitmap(await result.OpenReadAsync());
+                }
+            }
+            catch (Exception e)
+            {
+
+                
             }
         }
 

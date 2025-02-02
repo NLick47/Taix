@@ -1,15 +1,20 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Core.Librarys;
 using Core.Models;
 using Core.Models.Config;
+using Core.Servicers.Instances;
 using Core.Servicers.Interfaces;
+using NPOI.SS.Formula.Functions;
 using ReactiveUI;
 using SharedLibrary;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -117,47 +122,50 @@ namespace UI.ViewModels
                     break;
                 }
             }
-
-            CreateContextMenu();
+            InitializeMenuItems();
+            SystemLanguage.CurrentLanguageChanged += (s, e) => UpdateMenuTexts();
         }
 
-        private void CreateContextMenu()
+        private MenuItem _open;
+        private MenuItem _copyProcessName;
+        private MenuItem _copyProcessFile;
+        private MenuItem _openDir;
+        private MenuItem _reLoadData;
+        private MenuItem _clear;
+        private MenuItem _editAlias;
+
+        private void InitializeMenuItems()
         {
             AppContextMenu = new();
             AppContextMenu.Opened += AppContextMenu_Opened;
-            MenuItem open = new MenuItem();
-            open.Header = ResourceStrings.StartApplication;
-            open.Click += (e, c) => { OnInfoMenuActionCommand("open exe"); };
+            _open = new MenuItem();
+            _open.Click += (e, c) => { OnInfoMenuActionCommand("open exe"); };
 
-            MenuItem copyProcessName = new MenuItem();
-            copyProcessName.Header = ResourceStrings.CopyApplicationProcessName;
-            copyProcessName.Click += (e, c) => { OnInfoMenuActionCommand("copy processname"); };
+            _copyProcessName = new MenuItem();
+            _copyProcessName.Click += (e, c) => { OnInfoMenuActionCommand("copy processname"); };
 
-            MenuItem copyProcessFile = new MenuItem();
-            copyProcessFile.Header = ResourceStrings.CopyApplicationFilePath;
-            copyProcessFile.Click += (e, c) => { OnInfoMenuActionCommand("copy process file"); };
+            _copyProcessFile = new MenuItem();
+            _copyProcessFile.Click += (e, c) => { OnInfoMenuActionCommand("copy process file"); };
 
-            MenuItem openDir = new MenuItem();
-            openDir.Header = ResourceStrings.OpenApplicationDirectory;
-            openDir.Click += (e, c) => { OnInfoMenuActionCommand("open dir"); };
+            _openDir = new MenuItem();
+            _openDir.Click += (e, c) => { OnInfoMenuActionCommand("open dir"); };
 
-            MenuItem reLoadData = new MenuItem();
-            reLoadData.Header = ResourceStrings.Refresh;
-            reLoadData.Click += async (e, c) =>
+            _reLoadData = new MenuItem();
+
+            _reLoadData.Click += async (e, c) =>
             {
                 await LoadChartData();
                 await LoadData();
             };
 
-            MenuItem clear = new MenuItem();
-            clear.Header = ResourceStrings.ClearStatistics;
-            clear.Click += ClearAppData_Click;
+            _clear = new MenuItem();
+            _clear.Click += ClearAppData_Click;
 
             _setCategoryMenuItem = new MenuItem();
-            _setCategoryMenuItem.Header = ResourceStrings.SetCategory;
-            MenuItem editAlias = new MenuItem();
-            editAlias.Header = ResourceStrings.EditAlias;
-            editAlias.Click += EditAlias_ClickAsync;
+
+            _editAlias = new MenuItem();
+       
+            _editAlias.Click += EditAlias_ClickAsync;
 
             _whiteListMenuItem = new MenuItem();
             _whiteListMenuItem.Click += (e, c) =>
@@ -176,19 +184,32 @@ namespace UI.ViewModels
                 }
             };
 
-            AppContextMenu.Items.Add(open);
+            AppContextMenu.Items.Add(_open);
             AppContextMenu.Items.Add(new Separator());
-            AppContextMenu.Items.Add(reLoadData);
+            AppContextMenu.Items.Add(_reLoadData);
             AppContextMenu.Items.Add(new Separator());
             AppContextMenu.Items.Add(_setCategoryMenuItem);
-            AppContextMenu.Items.Add(editAlias);
+            AppContextMenu.Items.Add(_editAlias);
             AppContextMenu.Items.Add(new Separator());
-            AppContextMenu.Items.Add(copyProcessName);
-            AppContextMenu.Items.Add(copyProcessFile);
-            AppContextMenu.Items.Add(openDir);
+            AppContextMenu.Items.Add(_copyProcessName);
+            AppContextMenu.Items.Add(_copyProcessFile);
+            AppContextMenu.Items.Add(_openDir);
             AppContextMenu.Items.Add(new Separator());
-            AppContextMenu.Items.Add(clear);
+            AppContextMenu.Items.Add(_clear);
             AppContextMenu.Items.Add(_whiteListMenuItem);
+            UpdateMenuTexts();
+        }
+
+        private void UpdateMenuTexts()
+        {
+            _open.Header = ResourceStrings.OpenWebsite;
+            _copyProcessName.Header = ResourceStrings.CopyApplicationProcessName;
+            _copyProcessFile.Header = ResourceStrings.CopyApplicationFilePath;
+            _openDir.Header = ResourceStrings.OpenApplicationDirectory;
+            _reLoadData.Header = ResourceStrings.Refresh;
+            _clear.Header = ResourceStrings.ClearStatistics;
+            _setCategoryMenuItem.Header = ResourceStrings.SetCategory;
+            _editAlias.Header = ResourceStrings.EditAlias;
         }
 
         private async void EditAlias_ClickAsync(object sender, RoutedEventArgs e)
@@ -199,7 +220,7 @@ namespace UI.ViewModels
                 string input = await _uIServicer.ShowInputModalAsync(ResourceStrings.UpdateAlias,
                     ResourceStrings.EnterAlias, app.Alias, (val) =>
                     {
-                        if (val.Length > 15)
+                        if (val?.Length > 15)
                         {
                             main.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
                             return false;
@@ -238,16 +259,27 @@ namespace UI.ViewModels
         private void AppContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             _setCategoryMenuItem.Items.Clear();
-
+            var categoryId = appData.GetApp(App.ID).CategoryID;
             foreach (var category in categories.GetCategories())
             {
                 var categoryMenu = new MenuItem();
                 categoryMenu.Header = category.Name;
+                categoryMenu.ToggleType = MenuItemToggleType.Radio;
                 categoryMenu.IsChecked = App.CategoryID == category.ID;
                 categoryMenu.Click += (s, ea) => { UpdateCategory(category); };
                 _setCategoryMenuItem.Items.Add(categoryMenu);
             }
-
+            if (categoryId != 0)
+            {
+                _setCategoryMenuItem.Items.Add(new Separator());
+                var un = new MenuItem();
+                un.Header = ResourceStrings.Uncategorized;
+                un.Click += (s, e) =>
+                {
+                    ClearCategory(App.ID);
+                };
+                _setCategoryMenuItem.Items.Add(un);
+            }
             _setCategoryMenuItem.IsEnabled = _setCategoryMenuItem.Items.Count > 0;
 
             if (config.Behavior.ProcessWhiteList.Contains(App.Name))
@@ -258,6 +290,14 @@ namespace UI.ViewModels
             {
                 _whiteListMenuItem.Header = ResourceStrings.AddWhitelist;
             }
+        }
+
+        private void ClearCategory(int appId)
+        {
+            var app = appData.GetApp(appId);
+            app.CategoryID = 0;
+            app.Category = null;
+            appData.UpdateApp(app);
         }
 
         /// <summary>
@@ -287,38 +327,40 @@ namespace UI.ViewModels
             await LoadData();
         }
 
-        private void OnInfoMenuActionCommand(string action_)
+        private async void OnInfoMenuActionCommand(string action_)
         {
-            //switch (action_)
-            //{
-            //    case "copy processname":
-            //        Clipboard.SetText(App.Name);
+            var desk = UI.App.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+            var clipboard = desk.MainWindow.Clipboard;
+            switch (action_)
+            {
+                case "copy processname":
+                   await clipboard.SetTextAsync(App.Name);
 
-            //        break;
-            //    case "copy process file":
-            //        Clipboard.SetText(App.File);
-            //        break;
-            //    case "open dir":
-            //        if (File.Exists(App.File))
-            //        {
-            //            System.Diagnostics.Process.Start("explorer.exe", "/select, " + App.File);
-            //        }
-            //        else
-            //        {
-            //            main.Toast("应用文件似乎不存在", Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
-            //        }
-            //        break;
-            //    case "open exe":
-            //        if (File.Exists(App.File))
-            //        {
-            //            System.Diagnostics.Process.Start(App.File);
-            //        }
-            //        else
-            //        {
-            //            main.Toast("应用似乎不存在", Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
-            //        }
-            //        break;
-            //}
+                    break;
+                case "copy process file":
+                    await clipboard.SetTextAsync(App.Name);
+                    break;
+                case "open dir":
+                    if (File.Exists(App.File))
+                    {
+                        System.Diagnostics.Process.Start("explorer.exe", "/select, " + App.File);
+                    }
+                    else
+                    {
+                        main.Toast(ResourceStrings.ApplicationFileExist, Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
+                    }
+                    break;
+                case "open exe":
+                    if (File.Exists(App.File))
+                    {
+                        System.Diagnostics.Process.Start(App.File);
+                    }
+                    else
+                    {
+                        main.Toast(ResourceStrings.ApplicationExist, Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
+                    }
+                    break;
+            }
         }
 
         private async Task OnClearSelectMonthDataCommand(object obj)

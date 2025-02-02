@@ -10,6 +10,9 @@ namespace SharedLibrary
 {
     public static class ResourceStrings
     {
+        public static string ClearAllStatisticsSiteTip => GetStringValue("ClearAllStatisticsSiteTip");
+        public static string IgnoreTheSite => GetStringValue("IgnoreTheSite");
+        public static string InvalidParameter => GetStringValue("InvalidParameter");
 
         public static string Daily => GetStringValue("Daily");
         public static string Refresh => GetStringValue("Refresh");
@@ -77,7 +80,11 @@ namespace SharedLibrary
         public static string WantClearData => GetStringValue("WantClearData");
         public static string Processing => GetStringValue("Processing");
         public static string Cleared => GetStringValue("Cleared");
+        public static string ApplicationExist => GetStringValue("ApplicationExist");
 
+        public static string CopyDomain => GetStringValue("CopyDomain");
+
+        public static string IgnoreWebsite=> GetStringValue("IgnoreWebsite");
 
         private static string GetStringValue(string key)
         {

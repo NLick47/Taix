@@ -223,6 +223,8 @@ namespace UI.Servicers
             foreach (var category in categories)
             {
                 var categoryMenu = new MenuItem();
+                categoryMenu.ToggleType = MenuItemToggleType.Radio;
+                categoryMenu.IsChecked = siteCategoryId == category.ID;
                 categoryMenu.Header = category.Name;
                 categoryMenu.Click += (s, e) =>
                 {
@@ -250,7 +252,6 @@ namespace UI.Servicers
             {
                 await _webData.UpdateWebSitesCategoryAsync(new int[] { (data.Data as WebSiteModel).ID }, 0);
                 data.BadgeList = new();
-                _main.Toast(ResourceStrings.OperationCompleted, Controls.Window.ToastType.Success);
             }
         }
 
@@ -280,7 +281,6 @@ namespace UI.Servicers
                     Type = ChartBadgeType.Category
                 });
                 data.BadgeList = newBadgeList;
-                _main.Toast(ResourceStrings.OperationCompleted, Controls.Window.ToastType.Success);
             }
         }
 

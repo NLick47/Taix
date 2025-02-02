@@ -20,6 +20,11 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia;
 using ReactiveUI;
 using SharedLibrary;
+using System.Text.RegularExpressions;
+using Core.Servicers.Instances;
+using NPOI.SS.Formula.Functions;
+using static NPOI.HSSF.Util.HSSFColor;
+using static Core.Servicers.Instances.AppTimerServicer;
 
 namespace UI.ViewModels
 {
@@ -73,26 +78,23 @@ namespace UI.ViewModels
         {
             if (!(_mainVM.Data is WebSiteModel))
             {
-                _mainVM.Error("参数错误");
+                _mainVM.Error(ResourceStrings.InvalidParameter);
                 return;
             }
 
             WebSite = _mainVM.Data as WebSiteModel;
 
-            TabbarData = new System.Collections.ObjectModel.ObservableCollection<string>()
-            {
-                "按天","按周","按月","按年"
-            };
+            TabbarData = [ResourceStrings.Daily,ResourceStrings.Weekly,ResourceStrings.Monthly,ResourceStrings.Yearly];
 
             var weekOptions = new List<SelectItemModel>
             {
-                new SelectItemModel()
+                new ()
                 {
-                    Name = "本周"
+                    Name = ResourceStrings.ThisWeek
                 },
-                new SelectItemModel()
+                new ()
                 {
-                    Name = "上周"
+                    Name = ResourceStrings.LastWeek
                 }
             };
 
@@ -104,8 +106,8 @@ namespace UI.ViewModels
             ChartDate = DateTime.Now;
 
             Load();
-            CreateContextMenu();
-
+            InitializeMenuItems();
+            SystemLanguage.CurrentLanguageChanged += (s, e) => UpdateMenuTexts();
             PropertyChanged += WebSiteDetailPageVM_PropertyChanged;
 
 
@@ -120,57 +122,75 @@ namespace UI.ViewModels
             await LoadCategories();
         }
 
-        private void CreateContextMenu()
+
+        private MenuItem _open;
+        private MenuItem _copyDomain;
+        private MenuItem _reLoadData;
+        private MenuItem _clear;
+        private MenuItem _editAlias;
+
+        private void InitializeMenuItems()
         {
             WebSiteContextMenu = new();
             WebSiteContextMenu.Opened += WebSiteContextMenu_Opened;
-            MenuItem open = new MenuItem();
-            open.Header = "在浏览器打开网站";
-            open.Click += Open_Click;
+            _open = new MenuItem();
+           
+            _open.Click += Open_Click;
 
-            MenuItem copyDomain = new MenuItem();
-            copyDomain.Header = "复制域名";
-            copyDomain.Click += CopyDomain_Click;
+            _copyDomain = new MenuItem();
+            _copyDomain.Click += CopyDomain_Click;
 
-            MenuItem reLoadData = new MenuItem();
-            reLoadData.Header = "刷新";
-            reLoadData.Click += ReLoadData_Click;
+            _reLoadData = new MenuItem();
+            _reLoadData.Click += ReLoadData_Click;
 
-            MenuItem clear = new MenuItem();
-            clear.Header = "清空统计";
-            clear.Click += ClearData_Click;
+            _clear = new MenuItem();
+            _clear.Click += ClearData_Click;
 
             _setCategoryMenuItem = new MenuItem();
-            _setCategoryMenuItem.Header = "设置分类";
 
-            MenuItem editAlias = new MenuItem();
-            editAlias.Header = "编辑别名";
-            editAlias.Click += EditAlias_ClickAsync;
+            _editAlias  = new MenuItem();
+          
+            _editAlias.Click += EditAlias_ClickAsync;
 
             _blockMenuItem = new MenuItem();
-            _blockMenuItem.Header = "忽略此网站";
+          
             _blockMenuItem.Click += _blockMenuItem_Click;
-            WebSiteContextMenu.Items.Add(open);
-            WebSiteContextMenu.Items.Add(reLoadData);
+            WebSiteContextMenu.Items.Add(_open);
+            WebSiteContextMenu.Items.Add(_reLoadData);
+            WebSiteContextMenu.Items.Add(_copyDomain);
             WebSiteContextMenu.Items.Add(new Separator());
             WebSiteContextMenu.Items.Add(_setCategoryMenuItem);
-            WebSiteContextMenu.Items.Add(editAlias);
+            WebSiteContextMenu.Items.Add(_editAlias);
             WebSiteContextMenu.Items.Add(new Separator());
             WebSiteContextMenu.Items.Add(_blockMenuItem);
-            WebSiteContextMenu.Items.Add(clear);
+            WebSiteContextMenu.Items.Add(_clear);
+
+            UpdateMenuTexts();
 
         }
+
+        private void UpdateMenuTexts()
+        {
+            _open.Header = ResourceStrings.OpenWebsite;
+            _copyDomain.Header = ResourceStrings.CopyDomain;
+            _reLoadData.Header = ResourceStrings.Refresh;
+            _clear.Header = ResourceStrings.ClearStatistics;
+            _editAlias.Header = ResourceStrings.EditAlias;
+            _setCategoryMenuItem.Header = ResourceStrings.SetCategory;
+            _blockMenuItem.Header = ResourceStrings.IgnoreWebsite;
+        }
+
         private async void EditAlias_ClickAsync(object sender, RoutedEventArgs e)
         {
 
 
             try
             {
-                string input = await _uIServicer.ShowInputModalAsync("修改别名", "请输入别名", WebSite.Alias, (val) =>
+                string input = await _uIServicer.ShowInputModalAsync(ResourceStrings.EditAlias, ResourceStrings.EnterAlias, WebSite.Alias, (val) =>
                 {
-                    if (val.Length > 15)
+                    if (val?.Length > 15)
                     {
-                        _mainVM.Error("别名最大长度为15位字符");
+                        _mainVM.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
                         return false;
                     }
                     return true;
@@ -181,7 +201,7 @@ namespace UI.ViewModels
                 WebSite.Alias = input;
                 WebSite = await _webData.UpdateAsync(WebSite);
 
-                _mainVM.Success("别名已更新");
+                _mainVM.Success(ResourceStrings.AliasUpdated);
                 Debug.WriteLine("输入内容：" + input);
             }
             catch
@@ -191,12 +211,12 @@ namespace UI.ViewModels
         }
         private async void ClearData_Click(object sender, RoutedEventArgs e)
         {
-            bool isConfirm = await _uIServicer.ShowConfirmDialogAsync("清空确认", "是否确定清空此站点的所有统计数据？");
+            bool isConfirm = await _uIServicer.ShowConfirmDialogAsync(ResourceStrings.ClearConfirmation, ResourceStrings.ClearAllStatisticsSiteTip);
             if (isConfirm)
             {
                 await _webData.ClearAsync(WebSite.ID);
                 Load();
-                _mainVM.Success("操作已执行");
+                _mainVM.Success(ResourceStrings.OperationCompleted);
             }
         }
 
@@ -234,27 +254,47 @@ namespace UI.ViewModels
 
             IsIgnore = !IsIgnore;
 
-            _mainVM.Success("操作成功");
+            _mainVM.Success(ResourceStrings.OperationCompleted);
         }
 
-        private void WebSiteContextMenu_Opened(object sender, RoutedEventArgs e)
+        private async void WebSiteContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             _setCategoryMenuItem.Items.Clear();
+            var categoryId = (await _webData.GetWebSiteAsync(WebSite.ID)).CategoryID;
             foreach (var category in Categories)
             {
                 var categoryMenu = new MenuItem();
                 categoryMenu.Header = category.Name;
-                categoryMenu.IsChecked = WebSite.CategoryID == category.Id;
+                categoryMenu.ToggleType = MenuItemToggleType.Radio;
+               
+                categoryMenu.IsChecked = categoryId == category.Id;
                 categoryMenu.Click += async (s, ea) =>
                 {
                     await UpdateCategory(category.Id);
                 };
                 _setCategoryMenuItem.Items.Add(categoryMenu);
             }
+            if(categoryId != 0)
+            {
+                _setCategoryMenuItem.Items.Add(new Separator());
+                var un = new MenuItem();
+                un.Header = ResourceStrings.Uncategorized;
+                un.Click += (s, e) =>
+                {
+                    ClearSiteCategory();
+                };
+                _setCategoryMenuItem.Items.Add(un);
+            }
 
-            _blockMenuItem.Header = IsIgnore ? "取消忽略此网站" : "忽略此网站";
+            _blockMenuItem.Header = IsIgnore ? ResourceStrings.Unignore : ResourceStrings.IgnoreTheSite;
 
             _blockMenuItem.IsEnabled = !_webFilter.IsRegexIgnore(WebSite.Domain);
+        }
+
+        private async void ClearSiteCategory()
+        {
+            await _webData.UpdateWebSitesCategoryAsync(new int[] { WebSite.ID }, 0);
+            Category = null;
         }
 
 
@@ -288,8 +328,11 @@ namespace UI.ViewModels
             else if (TabbarSelectedIndex == 1)
             {
                 //  按周
+                var culture = SystemLanguage.CurrentCultureInfo;
                 var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
-                WeekDateStr = weekDateArr[0].ToString("yyyy年MM月dd日") + " 到 " + weekDateArr[1].ToString("yyyy年MM月dd日");
+                WeekDateStr = weekDateArr[0].ToString("d", culture) + $" {Application.Current.Resources["To"]} " +
+                        weekDateArr[1].ToString("d", culture);
+
                 startDate = weekDateArr[0];
                 endDate = weekDateArr[1];
                 colNames = [ResourceStrings.Monday, ResourceStrings.Tuesday, ResourceStrings.Wednesday, ResourceStrings.Thursday,
@@ -312,7 +355,7 @@ namespace UI.ViewModels
                 colNames = new string[12];
                 for (int i = 0; i < 12; i++)
                 {
-                    colNames[i] = (i + 1) + ResourceStrings.Month;
+                    colNames[i] = Application.Current.Resources[$"{i + 1}Month"] as string;
                 }
             }
             //  柱形图数据

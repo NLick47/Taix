@@ -73,6 +73,7 @@
 	<system:String x:Key="Duration">Browse Duration</system:String>
 
 	<system:String x:Key="IgnoreThisApplication">Ignore This App</system:String>
+	<system:String x:Key="IgnoreTheSite">Ignore this site</system:String>
 	<system:String x:Key="Unignore">Unignore</system:String>
 	<system:String x:Key="Relevance">Relevance</system:String>
 	<system:String x:Key="MonthlyOverview">Monthly Overview</system:String>
@@ -80,6 +81,7 @@
 	<system:String x:Key="ClearTheMonth">Clear This Month's Data</system:String>
 	<system:String x:Key="AccumulatedUsageDuringTheMonth">Accumulated Usage for This Month</system:String>
 	<system:String x:Key="ProportionDurationInTheMonth">Proportion of Duration in This Month</system:String>
+	<system:String x:Key="InvalidParameter">Invalid Parameter</system:String>
 
 	<system:String x:Key="Settings">Settings</system:String>
 	<system:String x:Key="DeleteData">Delete Data</system:String>
@@ -209,6 +211,7 @@
 	<system:String x:Key="AddAssociation">Add Association</system:String>
 	<system:String x:Key="AddWhitelist">Add to Whitelist</system:String>
 	<system:String x:Key="ApplicationFileExist">The Application File Does Not Seem to Exist</system:String>
+	<system:String x:Key="ApplicationExist"> The application seems not to exist</system:String>
 	<system:String x:Key="RemoveWhitelist">Remove from Whitelist</system:String>
 	
 	<system:String x:Key="IgnoringApplicationCancelled">Ignoring This Application {0} Cancelled</system:String>
@@ -221,6 +224,8 @@
 	<system:String x:Key="IgnoreWebsite">Ignore This Website</system:String>
 	<system:String x:Key="UnignoreSite">Unignore This Site</system:String>
 	<system:String x:Key="IgnoreSite">Ignore This Site</system:String>
+
+	<system:String x:Key="CopyDomain">Copy Domain</system:String>
 	
 	<system:String x:Key="Confirm">Confirm</system:String>
 	
@@ -237,6 +242,7 @@
 	
 	<system:String x:Key="ClearConfirmation">Clear Confirmation</system:String>
 	<system:String x:Key="ClearAllStatisticsApplicationTip">Are you sure you want to clear all statistics for this application?</system:String>
+	<system:String x:Key="ClearAllStatisticsSiteTip">Are you sure you want to clear all statistics for this site?</system:String>
 	<system:String x:Key="WantClearData">Are you sure you want to clear the data for {0}-{1}?</system:String>
 	
 	<system:String x:Key="Processing">Processing</system:String>
