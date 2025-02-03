@@ -34,7 +34,7 @@ jobs:
         run: |
           Compress-Archive -Path ./output/${{ matrix.cpu }}/* -DestinationPath ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip
       - name: Upload build artifacts ${{ matrix.kind }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
           path: ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
