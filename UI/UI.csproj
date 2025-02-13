@@ -41,6 +41,7 @@
 		<TrimmerRootAssembly Include="Taix" />
 		<TrimmerRootAssembly Include="Core" />
 		<TrimmerRootAssembly Include="SharedLibrary" />
+		<TrimmerRootAssembly Include="CsvHelper" />
 	</ItemGroup>
 	
 	<ItemGroup>
