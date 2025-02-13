@@ -687,7 +687,7 @@ namespace Core.Servicers.Instances
                     Date = x.Date.ToString(SystemLanguage.CurrentCultureInfo.DateTimeFormat.ShortDatePattern),
                     AppName = x.AppModel?.Name,
                     Description = x.AppModel?.Description,
-                    Time = x.Time,
+                    Duration = x.Time,
                     Category = x.AppModel.Category == null ? ResourceStrings.Uncategorized : x.AppModel.Category.Name
                 }));
             }
@@ -700,7 +700,7 @@ namespace Core.Servicers.Instances
                     TimePeriod = x.DataTime.ToString("G", SystemLanguage.CurrentCultureInfo),
                     AppName = x.AppModel?.Name,
                     Description = x.AppModel?.Description,
-                    Time = x.Time,
+                    Duration = x.Time,
                     Category = x.AppModel.Category == null ? ResourceStrings.Uncategorized : x.AppModel.Category.Name
                 }));
             }
