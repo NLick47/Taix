@@ -271,6 +271,23 @@
 	<system:String x:Key="HowSubmitLog">How to Submit the Log to the Developers?</system:String>
 	<system:String x:Key="ViaThe">1. Via the </system:String>
 	<system:String x:Key="OpenInBrowser">Open in browse</system:String>
+	
+	
+	<system:String x:Key="ExportDaily">daily</system:String>
+	<system:String x:Key="ExportTimePeriod">time period</system:String>
+	<system:String x:Key="AppliedStatistics">application statistics</system:String>
+	<system:String x:Key="WebsiteStatistics">website statistics</system:String>
+
+	<system:String x:Key="Column1">Time Period</system:String>
+	<system:String x:Key="Column2">Application</system:String>
+	<system:String x:Key="Column3">Description</system:String>
+	<system:String x:Key="Column4">Duration</system:String>
+	<system:String x:Key="Column5">Category</system:String>
+	<system:String x:Key="Column6">Date</system:String>
+	<system:String x:Key="Column7">Time</system:String>
+	<system:String x:Key="Column8">Title</system:String>
+	<system:String x:Key="Column9">Website</system:String>
+	
 
 	<system:String x:Key="Open">Open</system:String>
 	<system:String x:Key="Exit">Exit</system:String>

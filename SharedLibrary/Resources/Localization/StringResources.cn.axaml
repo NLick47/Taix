@@ -281,6 +281,21 @@
 	<system:String x:Key="HowSubmitLog">如何给开发者提交日志？</system:String>
 	<system:String x:Key="ViaThe">1. 通过</system:String>
 	<system:String x:Key="OpenInBrowser">浏览器打开</system:String>
+
+	<system:String x:Key="ExportDaily">每日</system:String>
+	<system:String x:Key="ExportTimePeriod">时段</system:String>
+	<system:String x:Key="AppliedStatistics">应用统计数据</system:String>
+	<system:String x:Key="WebsiteStatistics">网页统计数据</system:String>
+	
+	
+	<system:String x:Key="Column1">时段</system:String>
+	<system:String x:Key="Column2">应用</system:String>
+	<system:String x:Key="Column3">描述</system:String>
+	<system:String x:Key="Column4">时长</system:String>
+	<system:String x:Key="Column5">分类</system:String>
+	<system:String x:Key="Column7">时间</system:String>
+	<system:String x:Key="Column8">标题</system:String>
+	<system:String x:Key="Column9">网址</system:String>
 	
 	
 	

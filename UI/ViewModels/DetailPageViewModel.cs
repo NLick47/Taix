@@ -7,7 +7,6 @@ using Core.Models;
 using Core.Models.Config;
 using Core.Servicers.Instances;
 using Core.Servicers.Interfaces;
-using NPOI.SS.Formula.Functions;
 using ReactiveUI;
 using SharedLibrary;
 using System;

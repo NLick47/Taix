@@ -8,7 +8,6 @@ using Core.Models.WebPage;
 using Core.Servicers.Interfaces;
 using CsvHelper;
 using Newtonsoft.Json;
-using Npoi.Mapper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,7 +21,10 @@ using Microsoft.EntityFrameworkCore;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using Microsoft.EntityFrameworkCore.Internal;
 using SkiaSharp;
-using NPOI.SS.Formula.Functions;
+using ClosedXML.Excel;
+using SharedLibrary;
+using DocumentFormat.OpenXml.Wordprocessing;
+using DocumentFormat.OpenXml.Bibliography;
 
 namespace Core.Servicers.Instances
 {
@@ -804,25 +806,32 @@ namespace Core.Servicers.Instances
 
             using var db = new TaiDbContext();
 
-            var webSiteData = (await db.WebBrowserLogs.Where(m => m.LogTime >= start_ && m.LogTime <= end_)
-                .ToListAsync())
-                .Select(m => new
-                {
-                    时间 = m.LogTime,
-                    标题 = m.Url?.Title,
-                    网址 = m.Url?.Url,
-                    时长 = m.Duration,
-                });
+            var webSiteData = await db.WebBrowserLogs.Where(m => m.LogTime >= start_ && m.LogTime <= end_).Include(x => x.Url)
+              .ToListAsync();
 
-            var mapper = new Mapper();
-            mapper.Put(webSiteData, "浏览记录");
+            using var workbook = new XLWorkbook();
+            var worksheet1 = workbook.Worksheets.Add();
+            worksheet1.Cell(1, 1).Value = ResourceStrings.Column7;
+            worksheet1.Cell(1, 2).Value = ResourceStrings.Column8;
+            worksheet1.Cell(1, 3).Value = ResourceStrings.Column9;
+            worksheet1.Cell(1, 4).Value = ResourceStrings.Column4;
 
-            string name = $"Tai网页统计数据({start_.ToString("yyyy年MM月")}-{end_.ToString("yyyy年MM月")})";
+            for (int i = 0; i < webSiteData.Count; i++)
+            {
+                worksheet1.Cell(i + 2, 1).Value = webSiteData[i].LogTime.ToString("G",SystemLanguage.CurrentCultureInfo);
+                worksheet1.Cell(i + 2, 2).Value = webSiteData[i].Url.Title;
+                worksheet1.Cell(i + 2, 3).Value = webSiteData[i].Url.Url;
+                worksheet1.Cell(i + 2, 4).Value = webSiteData[i].Duration;
+            }
+
+            string name = $"Taix {ResourceStrings.WebsiteStatistics}({start_.ToString("Y", SystemLanguage.CurrentCultureInfo)}-{end_.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
             if (start_.Year == end_.Year && start_.Month == end_.Month)
             {
-                name = $"Tai网页统计数据({start_.ToString("yyyy年MM月")})";
+                name = $"Taix {ResourceStrings.WebsiteStatistics}({start_.ToString("Y",SystemLanguage.CurrentCultureInfo)})";
             }
-            mapper.Save(Path.Combine(dir_, $"{name}.xlsx"), false);
+            var saveFilePath = Path.Combine(dir_, $"{name}.xlsx");
+            if (File.Exists(saveFilePath)) File.Delete(saveFilePath);
+            workbook.SaveAs(saveFilePath);
 
             //  导出csv
             using (var writer = new StreamWriter(Path.Combine(dir_, $"{name}.csv"), false, System.Text.Encoding.UTF8))

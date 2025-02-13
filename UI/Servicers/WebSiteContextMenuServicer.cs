@@ -17,7 +17,6 @@ using UI.Controls.Charts.Model;
 using UI.ViewModels;
 using Avalonia.Controls.Documents;
 using Core.Servicers.Instances;
-using NPOI.SS.Formula.Functions;
 
 namespace UI.Servicers
 {

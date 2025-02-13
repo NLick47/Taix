@@ -1,23 +1,15 @@
-﻿using Core.Librarys.SQLite;
-using Core.Models;
-using Core.Servicers.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using Core.Models.Data;
+﻿using ClosedXML.Excel;
 using Core.Librarys;
-using Npoi.Mapper;
-using System.IO;
+using Core.Librarys.SQLite;
+using Core.Models;
+using Core.Models.Data;
+using Core.Servicers.Interfaces;
 using CsvHelper;
-using System.Globalization;
-using System.Threading.Tasks;
-using System.Windows;
-using SharedLibrary.Librarys;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
-using NPOI.SS.Formula.Functions;
+using SharedLibrary;
+using SharedLibrary.Librarys;
+using System.Diagnostics;
+using System.Globalization;
 
 namespace Core.Servicers.Instances
 {
@@ -172,7 +164,7 @@ namespace Core.Servicers.Instances
             }
             finally
             {
-                
+
             }
         }
 
@@ -638,46 +630,62 @@ namespace Core.Servicers.Instances
             start = new DateTime(start.Year, start.Month, 1, 0, 0, 0);
             end = new DateTime(end.Year, end.Month, DateTime.DaysInMonth(end.Year, end.Month), 23, 59, 59);
             using var db = new TaiDbContext();
-            var day = db.DailyLog.Where(m => m.Date >= start.Date && m.Date <= end.Date)
-                .ToList()
-                .Select(m => new
-                {
-                    日期 = m.Date,
-                    应用 = m.AppModel != null ? m.AppModel.Name : "未知",
-                    描述 = m.AppModel != null ? m.AppModel.Description : "未知",
-                    时长 = m.Time,
-                    分类 = m.AppModel != null && m.AppModel.Category != null ? m.AppModel.Category.Name : "未知"
-                });
+            var days = await db.DailyLog.Where(m => m.Date >= start.Date && m.Date <= end.Date).Include(m => m.AppModel)
+               .ToListAsync();
 
-            var hours = db.HoursLog.Where(m => m.DataTime >= start && m.DataTime <= end)
-                .ToList()
-                .Select(m => new
-                {
-                    时段 = m.DataTime,
-                    应用 = m.AppModel != null ? m.AppModel.Name : "未知",
-                    描述 = m.AppModel != null ? m.AppModel.Description : "未知",
-                    时长 = m.Time,
-                    分类 = m.AppModel != null && m.AppModel.Category != null ? m.AppModel.Category.Name : "未知"
-                });
-            var mapper = new Mapper();
-            mapper.Put(day, "每日");
-            mapper.Put(hours, "时段");
+            var hours = await db.HoursLog.Where(m => m.DataTime >= start && m.DataTime <= end).Include(m => m.AppModel)
+               .ToListAsync();
+              
+            using var workbook = new XLWorkbook();
+            var worksheet1 = workbook.Worksheets.Add(ResourceStrings.ExportDaily);
+            worksheet1.Cell(1, 1).Value = ResourceStrings.Column6;
+            worksheet1.Cell(1, 2).Value = ResourceStrings.Column2;
+            worksheet1.Cell(1, 3).Value = ResourceStrings.Column3;
+            worksheet1.Cell(1, 4).Value = ResourceStrings.Column4;
+            worksheet1.Cell(1, 5).Value = ResourceStrings.Column5;
 
-            string name = $"Tai数据({start.ToString("yyyy年MM月")}-{end.ToString("yyyy年MM月")})";
+            var worksheet2 = workbook.Worksheets.Add(ResourceStrings.ExportTimePeriod);
+            worksheet2.Cell(1, 1).Value = ResourceStrings.Column1;
+            worksheet2.Cell(1, 2).Value = ResourceStrings.Column2;
+            worksheet2.Cell(1, 3).Value = ResourceStrings.Column3;
+            worksheet2.Cell(1, 4).Value = ResourceStrings.Column4;
+            worksheet2.Cell(1, 5).Value = ResourceStrings.Column5;
+
+            for (int i = 0; i < days.Count; i++)
+            {
+                worksheet1.Cell(i + 2, 1).Value = days[i].Date.ToString(SystemLanguage.CurrentCultureInfo.DateTimeFormat.ShortDatePattern);
+                worksheet1.Cell(i + 2, 2).Value = days[i].AppModel?.Name;
+                worksheet1.Cell(i + 2, 3).Value = days[i].AppModel?.Description;
+                worksheet1.Cell(i + 2, 4).Value = days[i].Time;
+                worksheet1.Cell(i + 2, 5).Value = days[i].AppModel.Category == null ? ResourceStrings.Uncategorized : days[i].AppModel.Category.Name;
+            }
+
+            for (int i = 0; i < hours.Count; i++)
+            {
+                worksheet2.Cell(i + 2, 1).Value = hours[i].DataTime.ToString("G",SystemLanguage.CurrentCultureInfo);
+                worksheet2.Cell(i + 2, 2).Value = hours[i].AppModel?.Name;
+                worksheet2.Cell(i + 2, 3).Value = hours[i].AppModel?.Description;
+                worksheet2.Cell(i + 2, 4).Value = hours[i].Time;
+                worksheet2.Cell(i + 2, 5).Value = hours[i].AppModel.Category == null ? ResourceStrings.Uncategorized : days[i].AppModel.Category.Name;
+            }
+        
+            string name = $"Taix {ResourceStrings.AppliedStatistics}({start.ToString("Y",SystemLanguage.CurrentCultureInfo)}-{end.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
             if (start.Year == end.Year && start.Month == end.Month)
             {
-                name = $"Tai数据({start.ToString("yyyy年MM月")})";
+                name = $"Taix {ResourceStrings.AppliedStatistics}({start.ToString("Y",SystemLanguage.CurrentCultureInfo)})";
             }
-            mapper.Save(Path.Combine(dir, $"{name}.xlsx"), false);
+            var saveFilePath = Path.Combine(dir, $"{name}.xlsx");
+            if (File.Exists(saveFilePath)) File.Delete(saveFilePath);
+            workbook.SaveAs(saveFilePath);
 
             //  导出csv
-            using (var writer = new StreamWriter(Path.Combine(dir, $"{name}-每日.csv"), false, System.Text.Encoding.UTF8))
+            using (var writer = new StreamWriter(Path.Combine(dir, $"{name}-{ResourceStrings.ExportDaily}.csv"), false, System.Text.Encoding.UTF8))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
             {
-                await csv.WriteRecordsAsync(day);
+                await csv.WriteRecordsAsync(days);
             }
 
-            using (var writer = new StreamWriter(Path.Combine(dir, $"{name}-时段.csv"), false, System.Text.Encoding.UTF8))
+            using (var writer = new StreamWriter(Path.Combine(dir, $"{name}-{ResourceStrings.ExportTimePeriod}.csv"), false, System.Text.Encoding.UTF8))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
             {
                 await csv.WriteRecordsAsync(hours);
@@ -795,17 +803,17 @@ namespace Core.Servicers.Instances
             using var db = new TaiDbContext();
             var dailyLogs = await db.DailyLog.Where(d => d.AppModelID == appID_).ToListAsync();
             db.DailyLog.RemoveRange(dailyLogs);
-            
+
             var hoursLogs = await db.HoursLog.Where(h => h.AppModelID == appID_).ToListAsync();
             db.HoursLog.RemoveRange(hoursLogs);
-            
+
             var appModel = db.App.FirstOrDefault(a => a.ID == appID_);
             if (appModel != null)
             {
                 appModel.TotalTime = 0;
             }
 
-           await db.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
     }
 }

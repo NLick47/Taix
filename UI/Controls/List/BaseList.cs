@@ -4,7 +4,6 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using DynamicData;
-using MathNet.Numerics;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

@@ -85,6 +85,20 @@ namespace SharedLibrary
         public static string CopyDomain => GetStringValue("CopyDomain");
 
         public static string IgnoreWebsite=> GetStringValue("IgnoreWebsite");
+        public static string ExportDaily => GetStringValue("ExportDaily");
+        public static string ExportTimePeriod => GetStringValue("ExportTimePeriod");
+        public static string Column1 => GetStringValue("Column1");
+        public static string Column2 => GetStringValue("Column2");
+        public static string Column3 => GetStringValue("Column3");
+        public static string Column4 => GetStringValue("Column4");
+        public static string Column5 => GetStringValue("Column5");
+
+        public static string Column6 => GetStringValue("Column6");
+        public static string Column7 => GetStringValue("Column7");
+        public static string Column8 => GetStringValue("Column8");
+        public static string Column9 => GetStringValue("Column9");
+        public static string AppliedStatistics => GetStringValue("AppliedStatistics");
+        public static string WebsiteStatistics => GetStringValue("WebsiteStatistics");
 
         private static string GetStringValue(string key)
         {

@@ -22,8 +22,6 @@ using ReactiveUI;
 using SharedLibrary;
 using System.Text.RegularExpressions;
 using Core.Servicers.Instances;
-using NPOI.SS.Formula.Functions;
-using static NPOI.HSSF.Util.HSSFColor;
 using static Core.Servicers.Instances.AppTimerServicer;
 
 namespace UI.ViewModels
