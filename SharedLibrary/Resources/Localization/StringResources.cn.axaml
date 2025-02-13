@@ -293,6 +293,7 @@
 	<system:String x:Key="Column3">描述</system:String>
 	<system:String x:Key="Column4">时长</system:String>
 	<system:String x:Key="Column5">分类</system:String>
+	<system:String x:Key="Column6">日期</system:String>
 	<system:String x:Key="Column7">时间</system:String>
 	<system:String x:Key="Column8">标题</system:String>
 	<system:String x:Key="Column9">网址</system:String>
