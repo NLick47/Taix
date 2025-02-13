@@ -3,15 +3,13 @@ using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Xml;
-using System.Xml.Serialization;
+using Toolbelt.Drawing;
 
 namespace Core.Librarys
 {
@@ -66,6 +64,7 @@ namespace Core.Librarys
         /// <param name="desc"></param>
         /// <param name="isRelativePath">是否返回相对路径</param>
         /// <returns>返回提取到程序目录下的路径</returns>
+        /// 
         public static string ExtractFromFile(string file, string processname, string desc, bool isCheck = true, bool isRelativePath = true)
         {
             try
@@ -160,24 +159,10 @@ namespace Core.Librarys
                     }
                 }
                 //  exe app icon handle
-
-                Icon ico = Icon.ExtractAssociatedIcon(file);
-
                 try
                 {
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        var bitmap = ico.ToBitmap();
-                        bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
-                        memoryStream.Position = 0; 
-                        using (var skBitmap = SKBitmap.Decode(memoryStream.ToArray()))
-                        using (var image = SKImage.FromBitmap(skBitmap))
-                        using (var png = image.Encode(SKEncodedImageFormat.Png, 100))
-                        using (var fileStream = new FileStream(iconPath, FileMode.Create))
-                        {
-                            png.SaveTo(fileStream);
-                        }
-                    }
+                    using var s = File.Create(iconPath);
+                    IconExtractor.Extract1stIconTo(file, s);
                     return isRelativePath ? relativePath : iconPath;
                 }
                 catch (Exception ex)
