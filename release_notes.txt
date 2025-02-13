@@ -1,17 +1,15 @@
-### v1.0.0.5
+### v1.0.0.6
 
 #### 发布内容
 
-1. 修复分类页遇到点击无反应相关的问题
-2. 右键菜单文本支持随语言动态切换
-3. 右键菜单 - 分类设置 加入还原为未分类
-4. 全局ui异常日志加入堆栈信息
-
-预计1.0最后一个版本，正在进行ui与服务的分离
+1. 修复 #5 数据导出失败的问题
+2. 新增xlsx 列头多语言支持
+3. 保存xlsx文件的包替换为更加轻量级的ClosedXML
+4. 修改应用统计的图标提取，消除对drawing程序集的依赖
 
 ---
 #### Release Notes
-1. Fix unresponsive click issues on the category page
-2. Right-click menu text now supports dynamic language switching
-3. Added "Restore to Uncategorized" option to the right-click menu's category settings
-4. Enhanced global UI exception logs with stack trace information
+1. Fixed issue #5: Data export failure
+2. Added multi-language support for XLSX column headers
+3. Replaced the package for saving XLSX files with the more lightweight ClosedXML
+4. Modified application statistics icon extraction to eliminate dependency on the Drawing assembly
