@@ -25,6 +25,7 @@ using ClosedXML.Excel;
 using SharedLibrary;
 using DocumentFormat.OpenXml.Wordprocessing;
 using DocumentFormat.OpenXml.Bibliography;
+using CsvHelper.Configuration.Attributes;
 
 namespace Core.Servicers.Instances
 {
@@ -837,9 +838,17 @@ namespace Core.Servicers.Instances
             using (var writer = new StreamWriter(Path.Combine(dir_, $"{name}.csv"), false, System.Text.Encoding.UTF8))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
             {
-                await csv.WriteRecordsAsync(webSiteData);
+                await csv.WriteRecordsAsync(webSiteData.Select(x => new
+                {
+                    Time = x.LogTime,
+                    Title = x.Url.Title,
+                    WebSite = x.Url.Url,
+                    Duration = x.Duration
+                }));
             }
         }
+
+       
 
         public async Task<WebSiteModel> UpdateAsync(WebSiteModel website_)
         {

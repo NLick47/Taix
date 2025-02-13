@@ -682,13 +682,27 @@ namespace Core.Servicers.Instances
             using (var writer = new StreamWriter(Path.Combine(dir, $"{name}-{ResourceStrings.ExportDaily}.csv"), false, System.Text.Encoding.UTF8))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
             {
-                await csv.WriteRecordsAsync(days);
+                await csv.WriteRecordsAsync(days.Select(x => new
+                {
+                    Date = x.Date.ToString(SystemLanguage.CurrentCultureInfo.DateTimeFormat.ShortDatePattern),
+                    AppName = x.AppModel?.Name,
+                    Description = x.AppModel?.Description,
+                    Time = x.Time,
+                    Category = x.AppModel.Category == null ? ResourceStrings.Uncategorized : x.AppModel.Category.Name
+                }));
             }
 
             using (var writer = new StreamWriter(Path.Combine(dir, $"{name}-{ResourceStrings.ExportTimePeriod}.csv"), false, System.Text.Encoding.UTF8))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
             {
-                await csv.WriteRecordsAsync(hours);
+                await csv.WriteRecordsAsync(hours.Select(x => new
+                {
+                    TimePeriod = x.DataTime.ToString("G", SystemLanguage.CurrentCultureInfo),
+                    AppName = x.AppModel?.Name,
+                    Description = x.AppModel?.Description,
+                    Time = x.Time,
+                    Category = x.AppModel.Category == null ? ResourceStrings.Uncategorized : x.AppModel.Category.Name
+                }));
             }
         }
 
