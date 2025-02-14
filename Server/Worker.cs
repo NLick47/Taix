@@ -1,10 +1,26 @@
+using Core.Servicers.Interfaces;
+using SharedLibrary.Librarys;
+
 namespace Server;
 
-public class MyBackgroundService : 
+public class Worker : IHostedService
 {
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+   private readonly IMain _main;
+
+   public Worker(IMain main)
+   {
+       _main = main;
+   }
+
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
-            
-        return Task.CompletedTask;  
+        await _main.RunAsync();
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        _main.Stop();
+        Logger.Save(true);
+        return Task.CompletedTask;
     }
 }

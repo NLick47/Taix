@@ -13,30 +13,6 @@
 		<ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND ($(RuntimeIdentifier) == 'win-x64' Or $(RuntimeIdentifier) == 'win-x86')">
-		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('windows'))">
-		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'linux-x64'">
-		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('linux'))">
-		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'osx-x64'">
-		<DefineConstants>$(DefineConstants);MACOS</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('osx'))">
-		<DefineConstants>$(DefineConstants);MACOS</DefineConstants>
-	</PropertyGroup>
-
 	<ItemGroup>
 		<TrimmerRootAssembly Include="Taix" />
 		<TrimmerRootAssembly Include="Core" />
@@ -57,31 +33,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Core\Core.csproj" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(Configuration)' == 'Release' AND ($(RuntimeIdentifier) == 'win-x64' OR $(RuntimeIdentifier) == 'win-x86')">
-		
-		<ProjectReference Include="..\Platform\Win\Win.csproj" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('windows'))">
-		<ProjectReference Include="..\Platform\Win\Win.csproj" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)' == 'linux-x64'">
-		<ProjectReference Include="..\Platform\Linux\Linux.csproj" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('linux'))">
-		<ProjectReference Include="..\Platform\Linux\Linux.csproj" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)' == 'osx-x64'">
-		<ProjectReference Include="..\Platform\Mac\Mac.csproj" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('osx'))">
-		<ProjectReference Include="..\Platform\Mac\Mac.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -121,4 +72,17 @@
 	<ItemGroup>
 		<UpToDateCheckInput Remove="Views\ChartPage.axaml" />
 	</ItemGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="Avalonia" Version="11.2.3" />
+		<PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.2.3" />
+		<PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.3" />
+		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.3" />
+		<PackageReference Include="Avalonia.ReactiveUI" Version="11.2.3" />
+		<PackageReference Include="Avalonia.Themes.Simple" Version="11.2.3" />
+		<PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.2.0" />
+	</ItemGroup>
+	
 </Project>

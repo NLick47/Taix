@@ -1,18 +1,63 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.7" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-  </ItemGroup>
+	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND ($(RuntimeIdentifier) == 'win-x64' Or $(RuntimeIdentifier) == 'win-x86')">
+		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Apis\" />
-  </ItemGroup>
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('windows'))">
+		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'linux-x64'">
+		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('linux'))">
+		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'osx-x64'">
+		<DefineConstants>$(DefineConstants);MACOS</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('osx'))">
+		<DefineConstants>$(DefineConstants);MACOS</DefineConstants>
+	</PropertyGroup>
+
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release' AND ($(RuntimeIdentifier) == 'win-x64' OR $(RuntimeIdentifier) == 'win-x86')">
+
+		<ProjectReference Include="..\Platform\Win\Win.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('Windows'))">
+		<ProjectReference Include="..\Platform\Win\Win.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)' == 'linux-x64'">
+		<ProjectReference Include="..\Platform\Linux\Linux.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('linux'))">
+		<ProjectReference Include="..\Platform\Linux\Linux.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)' == 'osx-x64'">
+		<ProjectReference Include="..\Platform\Mac\Mac.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('osx'))">
+		<ProjectReference Include="..\Platform\Mac\Mac.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Core\Core.csproj" />
+	</ItemGroup>
 
 </Project>

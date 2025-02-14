@@ -14,7 +14,7 @@ namespace Core.Servicers.Interfaces
         /// <summary>
         /// 运行服务（仅首次启动调用）
         /// </summary>
-        Task Run();
+        Task RunAsync();
         /// <summary>
         /// 退出服务
         /// </summary>

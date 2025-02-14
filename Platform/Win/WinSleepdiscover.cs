@@ -6,16 +6,19 @@ using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Drawing;
-using Avalonia.Threading;
+using System.Runtime.InteropServices;
+using Timer = System.Timers.Timer;
 
 
 namespace Win
 {
     public class WinSleepdiscover : ISleepdiscover
     {
+      
+        
         public event SleepdiscoverEventHandler SleepStatusChanged;
 
-        private DispatcherTimer  timer;
+        private Timer  timer;
 
         private Point lastPoint;
 
@@ -50,10 +53,31 @@ namespace Win
             keyboardProc = HookCallback;
             mouseProc = HookMouseCallback;
         }
+        
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MSG
+        {
+            public IntPtr hwnd;
+            public uint message;
+            public IntPtr wParam;
+            public IntPtr lParam;
+            public uint time;
+            public Win32API.POINT pt;
+        }
+        
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern bool GetMessage(out MSG lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern bool TranslateMessage([In] ref MSG lpMsg);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr DispatchMessage([In] ref MSG lpMsg);
 
         public void Start()
         {
             StartTimer();
+            
 
             lastPoint = Win32API.GetCursorPosition();
             playSoundStartTime = DateTime.MinValue;
@@ -61,6 +85,17 @@ namespace Win
 
             //  设置键盘钩子
             Win32API.SetKeyboardHook(keyboardProc);
+            RunMessageLoop();
+        }
+        
+        private void RunMessageLoop()
+        {
+            MSG msg;
+            while (GetMessage(out msg, IntPtr.Zero, 0, 0))
+            {
+                TranslateMessage(ref msg);
+                DispatchMessage(ref msg);
+            }
         }
 
         public void Stop()
@@ -72,8 +107,8 @@ namespace Win
         {
             StopTimer();
             timer = new ();
-            timer.Interval = new(0,5,0);
-            timer.Tick += Timer_Tick;
+            timer.Interval = 60 * 1000 * 5; 
+            timer.Elapsed += Timer_Tick;
             timer.Start();
         }
 
@@ -81,8 +116,9 @@ namespace Win
         {
             if (timer != null)
             {
-                timer.Tick -= Timer_Tick;
+                timer.Elapsed -= Timer_Tick;
                 timer.Stop();
+                timer.Dispose();
             }
         }
 

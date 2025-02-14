@@ -627,83 +627,83 @@ namespace Core.Servicers.Instances
 
         public async Task ExportToExcelAsync(string dir, DateTime start, DateTime end)
         {
-            start = new DateTime(start.Year, start.Month, 1, 0, 0, 0);
-            end = new DateTime(end.Year, end.Month, DateTime.DaysInMonth(end.Year, end.Month), 23, 59, 59);
-            using var db = new TaiDbContext();
-            var days = await db.DailyLog.Where(m => m.Date >= start.Date && m.Date <= end.Date).Include(m => m.AppModel)
-               .ToListAsync();
-
-            var hours = await db.HoursLog.Where(m => m.DataTime >= start && m.DataTime <= end).Include(m => m.AppModel)
-               .ToListAsync();
-              
-            using var workbook = new XLWorkbook();
-            var worksheet1 = workbook.Worksheets.Add(ResourceStrings.ExportDaily);
-            worksheet1.Cell(1, 1).Value = ResourceStrings.Column6;
-            worksheet1.Cell(1, 2).Value = ResourceStrings.Column2;
-            worksheet1.Cell(1, 3).Value = ResourceStrings.Column3;
-            worksheet1.Cell(1, 4).Value = ResourceStrings.Column4;
-            worksheet1.Cell(1, 5).Value = ResourceStrings.Column5;
-
-            var worksheet2 = workbook.Worksheets.Add(ResourceStrings.ExportTimePeriod);
-            worksheet2.Cell(1, 1).Value = ResourceStrings.Column1;
-            worksheet2.Cell(1, 2).Value = ResourceStrings.Column2;
-            worksheet2.Cell(1, 3).Value = ResourceStrings.Column3;
-            worksheet2.Cell(1, 4).Value = ResourceStrings.Column4;
-            worksheet2.Cell(1, 5).Value = ResourceStrings.Column5;
-
-            for (int i = 0; i < days.Count; i++)
-            {
-                worksheet1.Cell(i + 2, 1).Value = days[i].Date.ToString(SystemLanguage.CurrentCultureInfo.DateTimeFormat.ShortDatePattern);
-                worksheet1.Cell(i + 2, 2).Value = days[i].AppModel?.Name;
-                worksheet1.Cell(i + 2, 3).Value = days[i].AppModel?.Description;
-                worksheet1.Cell(i + 2, 4).Value = days[i].Time;
-                worksheet1.Cell(i + 2, 5).Value = days[i].AppModel.Category == null ? ResourceStrings.Uncategorized : days[i].AppModel.Category.Name;
-            }
-
-            for (int i = 0; i < hours.Count; i++)
-            {
-                worksheet2.Cell(i + 2, 1).Value = hours[i].DataTime.ToString("G",SystemLanguage.CurrentCultureInfo);
-                worksheet2.Cell(i + 2, 2).Value = hours[i].AppModel?.Name;
-                worksheet2.Cell(i + 2, 3).Value = hours[i].AppModel?.Description;
-                worksheet2.Cell(i + 2, 4).Value = hours[i].Time;
-                worksheet2.Cell(i + 2, 5).Value = hours[i].AppModel.Category == null ? ResourceStrings.Uncategorized : days[i].AppModel.Category.Name;
-            }
-        
-            string name = $"Taix {ResourceStrings.AppliedStatistics}({start.ToString("Y",SystemLanguage.CurrentCultureInfo)}-{end.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
-            if (start.Year == end.Year && start.Month == end.Month)
-            {
-                name = $"Taix {ResourceStrings.AppliedStatistics}({start.ToString("Y",SystemLanguage.CurrentCultureInfo)})";
-            }
-            var saveFilePath = Path.Combine(dir, $"{name}.xlsx");
-            if (File.Exists(saveFilePath)) File.Delete(saveFilePath);
-            workbook.SaveAs(saveFilePath);
-
-            //  导出csv
-            using (var writer = new StreamWriter(Path.Combine(dir, $"{name}-{ResourceStrings.ExportDaily}.csv"), false, System.Text.Encoding.UTF8))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-            {
-                await csv.WriteRecordsAsync(days.Select(x => new
-                {
-                    Date = x.Date.ToString(SystemLanguage.CurrentCultureInfo.DateTimeFormat.ShortDatePattern),
-                    AppName = x.AppModel?.Name,
-                    Description = x.AppModel?.Description,
-                    Duration = x.Time,
-                    Category = x.AppModel.Category == null ? ResourceStrings.Uncategorized : x.AppModel.Category.Name
-                }));
-            }
-
-            using (var writer = new StreamWriter(Path.Combine(dir, $"{name}-{ResourceStrings.ExportTimePeriod}.csv"), false, System.Text.Encoding.UTF8))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-            {
-                await csv.WriteRecordsAsync(hours.Select(x => new
-                {
-                    TimePeriod = x.DataTime.ToString("G", SystemLanguage.CurrentCultureInfo),
-                    AppName = x.AppModel?.Name,
-                    Description = x.AppModel?.Description,
-                    Duration = x.Time,
-                    Category = x.AppModel.Category == null ? ResourceStrings.Uncategorized : x.AppModel.Category.Name
-                }));
-            }
+            // start = new DateTime(start.Year, start.Month, 1, 0, 0, 0);
+            // end = new DateTime(end.Year, end.Month, DateTime.DaysInMonth(end.Year, end.Month), 23, 59, 59);
+            // using var db = new TaiDbContext();
+            // var days = await db.DailyLog.Where(m => m.Date >= start.Date && m.Date <= end.Date).Include(m => m.AppModel)
+            //    .ToListAsync();
+            //
+            // var hours = await db.HoursLog.Where(m => m.DataTime >= start && m.DataTime <= end).Include(m => m.AppModel)
+            //    .ToListAsync();
+            //   
+            // using var workbook = new XLWorkbook();
+            // var worksheet1 = workbook.Worksheets.Add(ResourceStrings.ExportDaily);
+            // worksheet1.Cell(1, 1).Value = ResourceStrings.Column6;
+            // worksheet1.Cell(1, 2).Value = ResourceStrings.Column2;
+            // worksheet1.Cell(1, 3).Value = ResourceStrings.Column3;
+            // worksheet1.Cell(1, 4).Value = ResourceStrings.Column4;
+            // worksheet1.Cell(1, 5).Value = ResourceStrings.Column5;
+            //
+            // var worksheet2 = workbook.Worksheets.Add(ResourceStrings.ExportTimePeriod);
+            // worksheet2.Cell(1, 1).Value = ResourceStrings.Column1;
+            // worksheet2.Cell(1, 2).Value = ResourceStrings.Column2;
+            // worksheet2.Cell(1, 3).Value = ResourceStrings.Column3;
+            // worksheet2.Cell(1, 4).Value = ResourceStrings.Column4;
+            // worksheet2.Cell(1, 5).Value = ResourceStrings.Column5;
+            //
+            // for (int i = 0; i < days.Count; i++)
+            // {
+            //     worksheet1.Cell(i + 2, 1).Value = days[i].Date.ToString(SystemLanguage.CurrentCultureInfo.DateTimeFormat.ShortDatePattern);
+            //     worksheet1.Cell(i + 2, 2).Value = days[i].AppModel?.Name;
+            //     worksheet1.Cell(i + 2, 3).Value = days[i].AppModel?.Description;
+            //     worksheet1.Cell(i + 2, 4).Value = days[i].Time;
+            //     worksheet1.Cell(i + 2, 5).Value = days[i].AppModel.Category == null ? ResourceStrings.Uncategorized : days[i].AppModel.Category.Name;
+            // }
+            //
+            // for (int i = 0; i < hours.Count; i++)
+            // {
+            //     worksheet2.Cell(i + 2, 1).Value = hours[i].DataTime.ToString("G",SystemLanguage.CurrentCultureInfo);
+            //     worksheet2.Cell(i + 2, 2).Value = hours[i].AppModel?.Name;
+            //     worksheet2.Cell(i + 2, 3).Value = hours[i].AppModel?.Description;
+            //     worksheet2.Cell(i + 2, 4).Value = hours[i].Time;
+            //     worksheet2.Cell(i + 2, 5).Value = hours[i].AppModel.Category == null ? ResourceStrings.Uncategorized : days[i].AppModel.Category.Name;
+            // }
+            //
+            // string name = $"Taix {ResourceStrings.AppliedStatistics}({start.ToString("Y",SystemLanguage.CurrentCultureInfo)}-{end.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
+            // if (start.Year == end.Year && start.Month == end.Month)
+            // {
+            //     name = $"Taix {ResourceStrings.AppliedStatistics}({start.ToString("Y",SystemLanguage.CurrentCultureInfo)})";
+            // }
+            // var saveFilePath = Path.Combine(dir, $"{name}.xlsx");
+            // if (File.Exists(saveFilePath)) File.Delete(saveFilePath);
+            // workbook.SaveAs(saveFilePath);
+            //
+            // //  导出csv
+            // using (var writer = new StreamWriter(Path.Combine(dir, $"{name}-{ResourceStrings.ExportDaily}.csv"), false, System.Text.Encoding.UTF8))
+            // using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            // {
+            //     await csv.WriteRecordsAsync(days.Select(x => new
+            //     {
+            //         Date = x.Date.ToString(SystemLanguage.CurrentCultureInfo.DateTimeFormat.ShortDatePattern),
+            //         AppName = x.AppModel?.Name,
+            //         Description = x.AppModel?.Description,
+            //         Duration = x.Time,
+            //         Category = x.AppModel.Category == null ? ResourceStrings.Uncategorized : x.AppModel.Category.Name
+            //     }));
+            // }
+            //
+            // using (var writer = new StreamWriter(Path.Combine(dir, $"{name}-{ResourceStrings.ExportTimePeriod}.csv"), false, System.Text.Encoding.UTF8))
+            // using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            // {
+            //     await csv.WriteRecordsAsync(hours.Select(x => new
+            //     {
+            //         TimePeriod = x.DataTime.ToString("G", SystemLanguage.CurrentCultureInfo),
+            //         AppName = x.AppModel?.Name,
+            //         Description = x.AppModel?.Description,
+            //         Duration = x.Time,
+            //         Category = x.AppModel.Category == null ? ResourceStrings.Uncategorized : x.AppModel.Category.Name
+            //     }));
+            // }
         }
 
         public Task<int> GetDateRangeAppCountAsync(DateTime start, DateTime end)

@@ -1,10 +1,12 @@
-﻿using Avalonia;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using Avalonia;
 using Avalonia.Controls;
 using SharedLibrary.Enums;
-using SharedLibrary.Resources.Localization;
-using System.Globalization;
+using UI.Resources.Localization;
 
-namespace SharedLibrary
+namespace UI
 {
     public class SystemLanguage
     {

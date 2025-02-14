@@ -42,34 +42,9 @@ namespace UI
         {
             Instance = this;
             var serviceCollection = new ServiceCollection();
-            CreatePlatformInitializer(serviceCollection);
             ConfigureServices(serviceCollection);
             serviceProvider = serviceCollection.BuildServiceProvider();
         }
-
-       
-
-        private void CreatePlatformInitializer(IServiceCollection services)
-        {
-            //string platfromName = PlatformInfo.GetPlatformName();
-            //string dllPath = Path.Combine(AppContext.BaseDirectory, $"{platfromName}.dll");
-            //var assembly = Assembly.LoadFile(dllPath);
-            //var classType = assembly.GetType($"{platfromName}.WinPlatformInitializer");
-            //var Instance = Activator.CreateInstance(classType!);
-            //var methodInfo = classType!.GetMethod("Initialize");
-            //methodInfo!.Invoke(Instance, new object[] { services });
-            IPlatformInitializer platformInitializer = null;
-            #if WINDOWS
-            platformInitializer = new Win.WinPlatformInitializer();
-            #elif LINUX
-            platformInitializer = new Linux.XPlatformInitializer();
-            #elif MACOS
-            #endif
-            
-            platformInitializer.Initialize(services);
-        }
-
-        
 
 
         private void ConfigureServices(IServiceCollection services)

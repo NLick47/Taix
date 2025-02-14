@@ -789,50 +789,50 @@ namespace Core.Servicers.Instances
 
         public async Task ExportAsync(string dir_, DateTime start_, DateTime end_)
         {
-            start_ = new DateTime(start_.Year, start_.Month, 1, 0, 0, 0);
-            end_ = new DateTime(end_.Year, end_.Month, DateTime.DaysInMonth(end_.Year, end_.Month), 23, 59, 59);
-
-            using var db = new TaiDbContext();
-
-            var webSiteData = await db.WebBrowserLogs.Where(m => m.LogTime >= start_ && m.LogTime <= end_).Include(x => x.Url)
-              .ToListAsync();
-
-            using var workbook = new XLWorkbook();
-            var worksheet1 = workbook.Worksheets.Add();
-            worksheet1.Cell(1, 1).Value = ResourceStrings.Column7;
-            worksheet1.Cell(1, 2).Value = ResourceStrings.Column8;
-            worksheet1.Cell(1, 3).Value = ResourceStrings.Column9;
-            worksheet1.Cell(1, 4).Value = ResourceStrings.Column4;
-
-            for (int i = 0; i < webSiteData.Count; i++)
-            {
-                worksheet1.Cell(i + 2, 1).Value = webSiteData[i].LogTime.ToString("G", SystemLanguage.CurrentCultureInfo);
-                worksheet1.Cell(i + 2, 2).Value = webSiteData[i].Url.Title;
-                worksheet1.Cell(i + 2, 3).Value = webSiteData[i].Url.Url;
-                worksheet1.Cell(i + 2, 4).Value = webSiteData[i].Duration;
-            }
-
-            string name = $"Taix {ResourceStrings.WebsiteStatistics}({start_.ToString("Y", SystemLanguage.CurrentCultureInfo)}-{end_.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
-            if (start_.Year == end_.Year && start_.Month == end_.Month)
-            {
-                name = $"Taix {ResourceStrings.WebsiteStatistics}({start_.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
-            }
-            var saveFilePath = Path.Combine(dir_, $"{name}.xlsx");
-            if (File.Exists(saveFilePath)) File.Delete(saveFilePath);
-            workbook.SaveAs(saveFilePath);
-
-            //  导出csv
-            using (var writer = new StreamWriter(Path.Combine(dir_, $"{name}.csv"), false, System.Text.Encoding.UTF8))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-            {
-                await csv.WriteRecordsAsync(webSiteData.Select(x => new
-                {
-                    Time = x.LogTime,
-                    Title = x.Url.Title,
-                    WebSite = x.Url.Url,
-                    Duration = x.Duration
-                }));
-            }
+            // start_ = new DateTime(start_.Year, start_.Month, 1, 0, 0, 0);
+            // end_ = new DateTime(end_.Year, end_.Month, DateTime.DaysInMonth(end_.Year, end_.Month), 23, 59, 59);
+            //
+            // using var db = new TaiDbContext();
+            //
+            // var webSiteData = await db.WebBrowserLogs.Where(m => m.LogTime >= start_ && m.LogTime <= end_).Include(x => x.Url)
+            //   .ToListAsync();
+            //
+            // using var workbook = new XLWorkbook();
+            // var worksheet1 = workbook.Worksheets.Add();
+            // worksheet1.Cell(1, 1).Value = ResourceStrings.Column7;
+            // worksheet1.Cell(1, 2).Value = ResourceStrings.Column8;
+            // worksheet1.Cell(1, 3).Value = ResourceStrings.Column9;
+            // worksheet1.Cell(1, 4).Value = ResourceStrings.Column4;
+            //
+            // for (int i = 0; i < webSiteData.Count; i++)
+            // {
+            //     worksheet1.Cell(i + 2, 1).Value = webSiteData[i].LogTime.ToString("G", SystemLanguage.CurrentCultureInfo);
+            //     worksheet1.Cell(i + 2, 2).Value = webSiteData[i].Url.Title;
+            //     worksheet1.Cell(i + 2, 3).Value = webSiteData[i].Url.Url;
+            //     worksheet1.Cell(i + 2, 4).Value = webSiteData[i].Duration;
+            // }
+            //
+            // string name = $"Taix {ResourceStrings.WebsiteStatistics}({start_.ToString("Y", SystemLanguage.CurrentCultureInfo)}-{end_.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
+            // if (start_.Year == end_.Year && start_.Month == end_.Month)
+            // {
+            //     name = $"Taix {ResourceStrings.WebsiteStatistics}({start_.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
+            // }
+            // var saveFilePath = Path.Combine(dir_, $"{name}.xlsx");
+            // if (File.Exists(saveFilePath)) File.Delete(saveFilePath);
+            // workbook.SaveAs(saveFilePath);
+            //
+            // //  导出csv
+            // using (var writer = new StreamWriter(Path.Combine(dir_, $"{name}.csv"), false, System.Text.Encoding.UTF8))
+            // using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            // {
+            //     await csv.WriteRecordsAsync(webSiteData.Select(x => new
+            //     {
+            //         Time = x.LogTime,
+            //         Title = x.Url.Title,
+            //         WebSite = x.Url.Url,
+            //         Duration = x.Duration
+            //     }));
+            // }
         }
 
 
