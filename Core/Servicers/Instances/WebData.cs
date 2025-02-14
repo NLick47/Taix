@@ -92,7 +92,7 @@ namespace Core.Servicers.Instances
                     }
 
                     //  获取链接
-                    var url = GetCreateUrl(db, site_);
+                    var url = GetCreateUrl(site_);
                     if (url == null)
                     {
                         throw new Exception("在创建URL时异常");
@@ -170,7 +170,7 @@ namespace Core.Servicers.Instances
                 }
 
                 //  更新链接图标
-                var url = GetCreateUrl(db, site_);
+                var url = GetCreateUrl( site_);
                 if (url != null)
                 {
                     url.IconFile = iconFile_;
@@ -211,31 +211,29 @@ namespace Core.Servicers.Instances
         /// </summary>
         /// <param name="url_"></param>
         /// <returns></returns>
-        private WebUrlModel GetCreateUrl(TaiDbContext db, Site site_)
+        private WebUrlModel GetCreateUrl(Site site_)
         {
-            lock (_createUrlLocker)
+            using var db = new TaiDbContext();
+            var result = db.WebUrls.Where(m => m.Url == site_.Url).FirstOrDefault();
+            if (result == null)
             {
-                var result = db.WebUrls.Where(m => m.Url == site_.Url).FirstOrDefault();
-                if (result == null)
+                result = new() 
                 {
-                    db.WebUrls.Add(new()
-                    {
-                        Url = site_.Url,
-                        Title = site_.Title,
-                    });
+                    Url = site_.Url,
+                    Title = site_.Title,
+                };
+                db.WebUrls.Add(result);
+                db.SaveChanges();
+            }
+            else
+            {
+                if (result.Title != site_.Title)
+                {
+                    result.Title = site_.Title;
                     db.SaveChanges();
                 }
-                else
-                {
-                    if (result.Title != site_.Title)
-                    {
-                        result.Title = site_.Title;
-                        db.SaveChanges();
-                    }
-                }
-                return result;
-
             }
+            return result;
         }
         #endregion
 
@@ -545,7 +543,7 @@ namespace Core.Servicers.Instances
                                     from c in categoryGrouping.DefaultIfEmpty()
                                     where b.LogTime >= start && b.LogTime <= end
                                     group new { b, c }
-                                    by new {CategoryID = p.CategoryID }
+                                    by new { CategoryID = p.CategoryID }
                          into grouped
                                     select new CategoryStatisticModel
                                     {
@@ -556,19 +554,19 @@ namespace Core.Servicers.Instances
 
 
 
-            var data = await ( from wbl in db.WebBrowserLogs
-               join ws in db.WebSites on wbl.SiteId equals ws.ID into websiteGroup
-               from ws in websiteGroup.DefaultIfEmpty()
-               join wsc in db.WebSiteCategories on ws.CategoryID equals wsc.ID into websiteCategoryGroup
-               from wsc in websiteCategoryGroup.DefaultIfEmpty()
-               where wbl.LogTime >= start && wbl.LogTime <= end
-               group wbl by new { wbl.LogTime, ws.CategoryID } into g
-               select new CategoryStatisticModel
-               {
-                   Duration = g.Sum(w => w.Duration),
-                   LogTime = g.Key.LogTime,
-                   CategoryID = g.Key.CategoryID
-               }).ToListAsync();
+            var data = await (from wbl in db.WebBrowserLogs
+                              join ws in db.WebSites on wbl.SiteId equals ws.ID into websiteGroup
+                              from ws in websiteGroup.DefaultIfEmpty()
+                              join wsc in db.WebSiteCategories on ws.CategoryID equals wsc.ID into websiteCategoryGroup
+                              from wsc in websiteCategoryGroup.DefaultIfEmpty()
+                              where wbl.LogTime >= start && wbl.LogTime <= end
+                              group wbl by new { wbl.LogTime, ws.CategoryID } into g
+                              select new CategoryStatisticModel
+                              {
+                                  Duration = g.Sum(w => w.Duration),
+                                  LogTime = g.Key.LogTime,
+                                  CategoryID = g.Key.CategoryID
+                              }).ToListAsync();
 
             var result = new List<ColumnDataModel>();
 
@@ -819,7 +817,7 @@ namespace Core.Servicers.Instances
 
             for (int i = 0; i < webSiteData.Count; i++)
             {
-                worksheet1.Cell(i + 2, 1).Value = webSiteData[i].LogTime.ToString("G",SystemLanguage.CurrentCultureInfo);
+                worksheet1.Cell(i + 2, 1).Value = webSiteData[i].LogTime.ToString("G", SystemLanguage.CurrentCultureInfo);
                 worksheet1.Cell(i + 2, 2).Value = webSiteData[i].Url.Title;
                 worksheet1.Cell(i + 2, 3).Value = webSiteData[i].Url.Url;
                 worksheet1.Cell(i + 2, 4).Value = webSiteData[i].Duration;
@@ -828,7 +826,7 @@ namespace Core.Servicers.Instances
             string name = $"Taix {ResourceStrings.WebsiteStatistics}({start_.ToString("Y", SystemLanguage.CurrentCultureInfo)}-{end_.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
             if (start_.Year == end_.Year && start_.Month == end_.Month)
             {
-                name = $"Taix {ResourceStrings.WebsiteStatistics}({start_.ToString("Y",SystemLanguage.CurrentCultureInfo)})";
+                name = $"Taix {ResourceStrings.WebsiteStatistics}({start_.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
             }
             var saveFilePath = Path.Combine(dir_, $"{name}.xlsx");
             if (File.Exists(saveFilePath)) File.Delete(saveFilePath);
@@ -848,7 +846,7 @@ namespace Core.Servicers.Instances
             }
         }
 
-       
+
 
         public async Task<WebSiteModel> UpdateAsync(WebSiteModel website_)
         {
