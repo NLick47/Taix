@@ -1,15 +1,10 @@
-### v1.0.0.6
+### v1.0.0.7
 
 #### 发布内容
 
-1. 修复 #5 数据导出失败的问题
-2. 新增xlsx 列头多语言支持
-3. 保存xlsx文件的包替换为更加轻量级的ClosedXML
-4. 修改应用统计的图标提取，消除对drawing程序集的依赖
-
+1. 还原休眠检测代码 （用于调试休眠检测而进行的修改的代码被一同提交到主分而出现的时长统计问题）
+2. 修改创建浏览链接的efcore操作
 ---
 #### Release Notes
-1. Fixed issue #5: Data export failure
-2. Added multi-language support for XLSX column headers
-3. Replaced the package for saving XLSX files with the more lightweight ClosedXML
-4. Modified application statistics icon extraction to eliminate dependency on the Drawing assembly
+1. Restored hibernation detection code (Fixes duration statistics issues caused by debug modifications accidentally committed to main branch)
+2. Modified EF Core operations for creating browser links
