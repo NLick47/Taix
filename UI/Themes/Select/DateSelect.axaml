@@ -285,9 +285,10 @@
 
 												<ListBox.ItemTemplate>
 													<DataTemplate>
-														<WrapPanel   Orientation="Horizontal" x:DataType="controls:DayModel">
+														<WrapPanel   Orientation="Horizontal" >
 															<Border>
-																<TextBlock  Text="{Binding DayText} " />
+																<TextBlock x:DataType="controls:DayModel"
+																           Text="{Binding DayText} " />
 															</Border>
 														</WrapPanel>
 													</DataTemplate>

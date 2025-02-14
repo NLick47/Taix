@@ -8,12 +8,7 @@
 		<SimpleTheme/>
 		<StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Simple/Simple.xaml" />
 	</Application.Styles>
-	<Application.Resources>
-		<!-- 英文系统字体 -->
-		<FontFamily x:Key="EnglishFont">Arial</FontFamily>
-		<!-- 中文系统字体 -->
-		<FontFamily x:Key="ChineseFont">Microsoft YaHei</FontFamily>
-	</Application.Resources>
+             
 	<Application.Resources>
 		<ResourceDictionary>
 			<ResourceDictionary.MergedDictionaries>
