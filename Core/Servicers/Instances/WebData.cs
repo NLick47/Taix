@@ -12,20 +12,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Linq.Expressions;
-
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using Microsoft.EntityFrameworkCore.Internal;
-using SkiaSharp;
 using ClosedXML.Excel;
 using SharedLibrary;
-using DocumentFormat.OpenXml.Wordprocessing;
-using DocumentFormat.OpenXml.Bibliography;
-using CsvHelper.Configuration.Attributes;
 
 namespace Core.Servicers.Instances
 {

@@ -224,7 +224,7 @@ namespace Win
         private async void Timer_Tick(object sender, EventArgs e)
         {
             Debug.WriteLine("检测");
-            bool isSleep = true;
+            bool isSleep = await IsSleepAsync();
             if (isSleep)
             {
                 Sleep();
