@@ -97,16 +97,24 @@ namespace UI.Controls.Base
                     }
                     else if (Condition.IndexOf("not empty") != -1)
                     {
-                        isShow = Value != null &&
-                         (Value is IEnumerable data && data.Cast<object>().Any() ||
-                          !string.IsNullOrEmpty(Value.ToString()));
+                        isShow = Value switch
+                        {
+                            null => false,
+                            IList<object> m => m.Count != 0,
+                            IList n => n.Count != 0,
+                            _ => !string.IsNullOrEmpty(Value.ToString())
+                        };
+
                     }
                     else if (Condition.IndexOf("empty") != -1)
                     {
-                        isShow = (Value == null) ||
-                              (Value is IList<object> c && c.Count == 0) ||
-                              (Value is IList data && data.Count == 0) ||
-                              string.IsNullOrEmpty(Value?.ToString());
+                        isShow = Value switch
+                        {
+                            null => true,
+                            IList<object> m => m.Count == 0,
+                            IList n => n.Count == 0,
+                            _ => string.IsNullOrEmpty(Value.ToString())
+                        };
                     }
                     else
                     {
