@@ -227,76 +227,86 @@ namespace UI.ViewModels
         /// <summary>
         /// 加载天数据
         /// </summary>
-        private async Task LoadDayData()
+        private Task LoadDayData()
         {
-            ColumnSelectedIndex = -1;
-            WebColSelectedIndex = -1;
-
-            DataMaximum = 3600;
-
-            //  应用数据
-            var chartData = new List<ChartsDataModel>();
-            var sumData = new List<ChartsDataModel>();
-
-            var list = await data.GetCategoryHoursDataAsync(Date);
-            var nullCategory = new CategoryModel()
+            return Task.Run(async () =>
             {
-                ID = 0,
-                Name = ResourceStrings.Uncategorized,
-                IconFile = "avares://Taix/Resources/Icons/tai32.ico"
-            };
-            foreach (var item in list)
-            {
-                var category = categorys.GetCategory(item.CategoryID);
-                if (item.CategoryID == 0)
+                //  应用数据
+                var chartData = new List<ChartsDataModel>();
+                var sumData = new List<ChartsDataModel>();
+
+                var list = await data.GetCategoryHoursDataAsync(Date);
+                var nullCategory = new CategoryModel()
                 {
-                    category = nullCategory;
+                    ID = 0,
+                    Name = ResourceStrings.Uncategorized,
+                    IconFile = "avares://Taix/Resources/Icons/tai32.ico"
+                };
+                foreach (var item in list)
+                {
+                    var category = categorys.GetCategory(item.CategoryID);
+                    if (item.CategoryID == 0)
+                    {
+                        category = nullCategory;
+                    }
+                    if (category != null)
+                    {
+                        var dataItem = new ChartsDataModel()
+                        {
+
+                            Name = category.Name,
+                            Icon = category.IconFile,
+                            Values = item.Values,
+                            Color = category.Color
+                        };
+                        if (category.ID == 0)
+                        {
+                            dataItem.Color = "#E5F7F6F2";
+                        }
+                        chartData.Add(dataItem);
+                    }
                 }
-                if (category != null)
+                if (ChartDataMode.Id == 1 || ChartDataMode.Id == 3)
                 {
+                    Avalonia.Threading.Dispatcher.UIThread.Invoke(() =>
+                    {
+                        Data = chartData;
+                    });
+                }
+                else
+                {
+                    //  汇总
+                    var values = await data.GetRangeTotalDataAsync(Date, Date);
+
+
                     var dataItem = new ChartsDataModel()
                     {
-
-                        Name = category.Name,
-                        Icon = category.IconFile,
-                        Values = item.Values,
-                        Color = category.Color
+                        Values = values,
                     };
-                    if (category.ID == 0)
+
+                    sumData.Add(dataItem);
+                    Avalonia.Threading.Dispatcher.UIThread.Invoke(() =>
                     {
-                        dataItem.Color = "#E5F7F6F2";
-                    }
-                    chartData.Add(dataItem);
+                        Data = sumData;
+                    });
+
                 }
-            }
-            if (ChartDataMode.Id == 1 || ChartDataMode.Id == 3)
-            {
-                Data = chartData;
-            }
-            else
-            {
-                //  汇总
-                var values = await data.GetRangeTotalDataAsync(Date, Date);
+                double totalUse = Data.Sum(m => m.Values.Sum());
+                totalTime_ = totalUse;
 
-
-                var dataItem = new ChartsDataModel()
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
-                    Values = values,
-                };
+                    RadarData = chartData;
+                    ColumnSelectedIndex = -1;
+                    WebColSelectedIndex = -1;
+                    DataMaximum = 3600;
+                    TotalHours = Time.ToHoursString(totalUse);
+                });
+                await LoadTopData();
 
-                sumData.Add(dataItem);
-                Data = sumData;
-            }
-
-            RadarData = chartData;
-
-            double totalUse = Data.Sum(m => m.Values.Sum());
-            totalTime_ = totalUse;
-            TotalHours = Time.ToHoursString(totalUse);
-            await LoadTopData();
-
-            //  网页数据
-            await LoadWebData(Date, Date);
+                //  网页数据
+                await LoadWebData(Date, Date);
+            });
         }
 
         /// <summary>
@@ -310,7 +320,7 @@ namespace UI.ViewModels
             DataMaximum = 0;
             var culture = SystemLanguage.CurrentCultureInfo;
             var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
-            WeekDateStr = weekDateArr[0].ToString("d", culture) + " " + Application.Current.Resources["To"] + " " + weekDateArr[1].ToString("d",culture);
+            WeekDateStr = weekDateArr[0].ToString("d", culture) + " " + Application.Current.Resources["To"] + " " + weekDateArr[1].ToString("d", culture);
             string[] weekNames = [ResourceStrings.Monday, ResourceStrings.Tuesday, ResourceStrings.Wednesday, ResourceStrings.Thursday,
                     ResourceStrings.Friday,  ResourceStrings.Saturday, ResourceStrings.Sunday];
             var chartData = new List<ChartsDataModel>();
@@ -886,7 +896,7 @@ namespace UI.ViewModels
                 //  周
                 var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek ? Time.GetThisWeekDate() : Time.GetLastWeekDate();
                 var time = weekDateArr[0].AddDays(WebColSelectedIndex);
-                WebSitesColSelectedTimeText = time.ToString("d",culture);
+                WebSitesColSelectedTimeText = time.ToString("d", culture);
                 startTime = endTime = time;
             }
             else if (TabbarSelectedIndex == 2)
@@ -894,7 +904,7 @@ namespace UI.ViewModels
                 //  月
                 var dateArr = Time.GetMonthDate(MonthDate);
                 var time = dateArr[0].AddDays(WebColSelectedIndex);
-                WebSitesColSelectedTimeText = time.ToString("d",culture);
+                WebSitesColSelectedTimeText = time.ToString("d", culture);
                 startTime = endTime = time;
             }
             else if (TabbarSelectedIndex == 3)
