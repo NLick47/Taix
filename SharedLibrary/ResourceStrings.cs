@@ -99,6 +99,7 @@ namespace SharedLibrary
         public static string Column9 => GetStringValue("Column9");
         public static string AppliedStatistics => GetStringValue("AppliedStatistics");
         public static string WebsiteStatistics => GetStringValue("WebsiteStatistics");
+        public static string Ignore => GetStringValue("Ignore");
 
         private static string GetStringValue(string key)
         {

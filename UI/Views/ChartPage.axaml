@@ -287,6 +287,7 @@
 															   ItemMenu="{Binding AppContextMenu}"
 															   Data="{Binding DayHoursData}"
 															   ChartsType="List"
+															   IsShowBadge="True"
 															   ClickCommand="{Binding ToDetailCommand}" />
 											</base:View>
 											<base:View Value="{Binding DayHoursData}" Condition="empty">

@@ -17,6 +17,8 @@ using UI.Servicers;
 using Avalonia;
 using Avalonia.Controls;
 using SharedLibrary;
+using static UI.Controls.SettingPanel.SettingPanel;
+using Core.Models.Config;
 
 namespace UI.ViewModels
 {
@@ -28,6 +30,7 @@ namespace UI.ViewModels
         private readonly IAppContextMenuServicer appContextMenuServicer;
         private readonly IWebData _webData;
         private readonly IWebSiteContextMenuServicer _webSiteContextMenu;
+        private readonly ConfigModel _config;
 
         private double totalTime_ = 0;
         private int appCount_ = 0;
@@ -38,7 +41,7 @@ namespace UI.ViewModels
 
 
         public ChartPageViewModel(IData data, ICategorys categorys, MainViewModel mainVM,
-            IWebData webData_, IWebSiteContextMenuServicer webSiteContextMenu_, IAppContextMenuServicer appContextMenuServicer)
+            IWebData webData_, IWebSiteContextMenuServicer webSiteContextMenu_, IAppContextMenuServicer appContextMenuServicer,IAppConfig appConfig)
         {
             this.data = data;
             this.categorys = categorys;
@@ -46,7 +49,7 @@ namespace UI.ViewModels
             this.appContextMenuServicer = appContextMenuServicer;
             _webData = webData_;
             _webSiteContextMenu = webSiteContextMenu_;
-
+            _config = appConfig.GetConfig();
             ToDetailCommand = ReactiveCommand.Create<object>(OnTodetailCommand);
             RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshCommand);
 
@@ -744,6 +747,20 @@ namespace UI.ViewModels
                     bindModel.Tag = Time.ToString(item.Time);
                     bindModel.PopupText = item.AppModel?.File;
                     bindModel.Icon = item.AppModel?.IconFile;
+                    bindModel.BadgeList = new List<ChartBadgeModel>();
+                    if (item.AppModel.Category != null)
+                    {
+                        bindModel.BadgeList.Add(new ChartBadgeModel()
+                        {
+                            Name = item.AppModel.Category.Name,
+                            Color = item.AppModel.Category.Color,
+                            Type = ChartBadgeType.Category
+                        });
+                    }
+                    if (_config.Behavior.IgnoreProcessList.Contains(item.AppModel.Name))
+                    {
+                        bindModel.BadgeList.Add(ChartBadgeModel.IgnoreBadge);
+                    }
                     chartsDatas.Add(bindModel);
                 }
             }
@@ -758,6 +775,21 @@ namespace UI.ViewModels
                     bindModel.Tag = Time.ToString(item.Time);
                     bindModel.PopupText = item.AppModel?.File;
                     bindModel.Icon = item.AppModel?.IconFile;
+               
+                    if (item.AppModel.Category != null)
+                    {
+                        bindModel.BadgeList.Add(new ChartBadgeModel()
+                        {
+                            Name = item.AppModel.Category.Name,
+                            Color = item.AppModel.Category.Color,
+                            Type = ChartBadgeType.Category
+                        });
+                    }
+                    if (_config.Behavior.IgnoreProcessList.Contains(item.AppModel.Name))
+                    {
+                        bindModel.BadgeList.Add(ChartBadgeModel.IgnoreBadge);
+                    }
+
                     chartsDatas.Add(bindModel);
                 }
             }

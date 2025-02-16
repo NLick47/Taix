@@ -28,9 +28,15 @@ namespace UI.Controls.Charts.Model
         /// </summary>
         public static ChartBadgeModel IgnoreBadge = new ChartBadgeModel()
         {
-            Name = "忽略",
+            Name = SharedLibrary.ResourceStrings.Ignore,
             Color = "#f51837",
             Type = ChartBadgeType.Ignore
+        };
+
+        public static IReadOnlySet<string> IgnreLanguages = new HashSet<string>()
+        {
+            {"忽略"},
+            {"ignore"}
         };
     }
 }

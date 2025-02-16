@@ -608,11 +608,11 @@ namespace UI.Controls.Charts
             {
                 ItemMenu.Opening -= OnContextMenuOpening;
                 _listView.SelectionChanged -= _listView_SelectionChanged;
-           
+
                 _listView.ContextMenu = ItemMenu;
                 ItemMenu.Opening += OnContextMenuOpening;
                 _listView.SelectionChanged += _listView_SelectionChanged;
-              
+
             }
             if (_searchBox != null)
             {
@@ -692,32 +692,33 @@ namespace UI.Controls.Charts
             }
         }
 
-        private void HandleSearch()
+        private async void HandleSearch()
         {
-            Task.Run(() =>
-            {
-                string searchKeyLower = searchKey.ToLower();
-                var newListData = Data
-                    .Where(data =>
-                    {
-                        string content = (data.Name + data.PopupText).ToLower();
-                        bool show = content.Contains(searchKeyLower);
+            var data = Data.ToList();
+            await Task.Run(() =>
+             {
+                 string searchKeyLower = searchKey.ToLower();
+                 var newListData = data
+                     .Where(data =>
+                     {
+                         string content = (data.Name + data.PopupText).ToLower();
+                         bool show = content.Contains(searchKeyLower);
 
-                        if (!show)
-                        {
-                            show = searchKeyLower == "忽略" && data.BadgeList.Any(m => m.Type == ChartBadgeType.Ignore);
-                            if (!show && data.BadgeList.Any())
-                            {
-                                show = data.BadgeList.Any(m => m.Name.ToLower().Contains(searchKeyLower));
-                            }
-                        }
+                         if (!show)
+                         {
+                             show = ChartBadgeModel.IgnreLanguages.Contains(searchKeyLower) && data.BadgeList != null && data.BadgeList.Any(m => m.Type == ChartBadgeType.Ignore);
+                             if (!show && data.BadgeList != null && data.BadgeList.Any())
+                             {
+                                 show = data.BadgeList.Any(m => m.Name.ToLower().Contains(searchKeyLower));
+                             }
+                         }
 
-                        return show;
-                    })
-                    .ToList();
+                         return show;
+                     })
+                     .ToList();
 
-                Dispatcher.UIThread.Invoke(() => ListViewBindingData = newListData);
-            });
+                 Dispatcher.UIThread.Invoke(() => ListViewBindingData = newListData);
+             });
         }
         #endregion
 
@@ -725,7 +726,7 @@ namespace UI.Controls.Charts
         private void RenderCardStyle()
         {
             var data = Data.Take(ShowLimit).ToList();
-            if(data.Count > 0 && CardContainer.Children.Any(x => x is EmptyData))
+            if (data.Count > 0 && CardContainer.Children.Any(x => x is EmptyData))
             {
                 CardContainer.Children.Remove(CardContainer.Children.First(x => x is EmptyData));
             }
@@ -795,14 +796,14 @@ namespace UI.Controls.Charts
             var dataGrid = new Grid();
 
             string[] week = [
-                Application.Current.Resources["Mon"] as string, 
-                Application.Current.Resources["Tue"] as string, 
+                Application.Current.Resources["Mon"] as string,
+                Application.Current.Resources["Tue"] as string,
                 Application.Current.Resources["Wed"] as string,
                 Application.Current.Resources["Thu"] as string,
-                Application.Current.Resources["Fri"] as string, 
-                Application.Current.Resources["Sat"] as string, 
+                Application.Current.Resources["Fri"] as string,
+                Application.Current.Resources["Sat"] as string,
                 Application.Current.Resources["Sun"] as string
-                
+
             ];
             for (int i = 0; i < 7; i++)
             {

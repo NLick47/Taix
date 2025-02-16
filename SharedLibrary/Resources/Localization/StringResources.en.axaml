@@ -287,6 +287,8 @@
 	<system:String x:Key="Column7">Time</system:String>
 	<system:String x:Key="Column8">Title</system:String>
 	<system:String x:Key="Column9">Website</system:String>
+
+	<system:String x:Key="Ignore">Ignore</system:String>
 	
 
 	<system:String x:Key="Open">Open</system:String>

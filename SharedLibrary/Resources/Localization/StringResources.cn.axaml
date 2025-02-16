@@ -299,6 +299,9 @@
 	<system:String x:Key="Column9">网址</system:String>
 	
 	
+	<system:String x:Key="Ignore">忽略</system:String>
+	
+	
 	
 	<system:String x:Key="Open">打开</system:String>
 	<system:String x:Key="Exit">退出</system:String>
