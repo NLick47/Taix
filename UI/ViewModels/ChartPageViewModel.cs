@@ -239,19 +239,9 @@ namespace UI.ViewModels
                 var sumData = new List<ChartsDataModel>();
 
                 var list = await data.GetCategoryHoursDataAsync(Date);
-                var nullCategory = new CategoryModel()
-                {
-                    ID = 0,
-                    Name = ResourceStrings.Uncategorized,
-                    IconFile = "avares://Taix/Resources/Icons/tai32.ico"
-                };
                 foreach (var item in list)
                 {
                     var category = categorys.GetCategory(item.CategoryID);
-                    if (item.CategoryID == 0)
-                    {
-                        category = nullCategory;
-                    }
                     if (category != null)
                     {
                         var dataItem = new ChartsDataModel()
@@ -262,10 +252,6 @@ namespace UI.ViewModels
                             Values = item.Values,
                             Color = category.Color
                         };
-                        if (category.ID == 0)
-                        {
-                            dataItem.Color = "#E5F7F6F2";
-                        }
                         chartData.Add(dataItem);
                     }
                 }
@@ -330,21 +316,10 @@ namespace UI.ViewModels
             var sumData = new List<ChartsDataModel>();
 
             var list = await data.GetCategoryRangeDataAsync(weekDateArr[0], weekDateArr[1]);
-            var nullCategory = new CategoryModel()
-            {
-                ID = 0,
-                Name = ResourceStrings.Uncategorized,
-                IconFile = "avares://Taix/Resources/Icons/tai32.ico"
-
-            };
 
             foreach (var item in list)
             {
                 var category = categorys.GetCategory(item.CategoryID);
-                if (item.CategoryID == 0)
-                {
-                    category = nullCategory;
-                }
                 if (category != null)
                 {
                     var dataItem = new ChartsDataModel()
@@ -356,10 +331,6 @@ namespace UI.ViewModels
                         ColumnNames = weekNames,
                         Color = category.Color,
                     };
-                    if (category.ID == 0)
-                    {
-                        dataItem.Color = "#E5F7F6F2";
-                    }
                     chartData.Add(dataItem);
                 }
             }
@@ -410,34 +381,20 @@ namespace UI.ViewModels
 
             var list = await data.GetCategoryRangeDataAsync(dateArr[0], dateArr[1]);
 
-            var nullCategory = new CategoryModel()
-            {
-                ID = 0,
-                Name = ResourceStrings.Uncategorized,
-                IconFile = "avares://Taix/Resources/Icons/tai32.ico"
-            };
 
             foreach (var item in list)
             {
                 var category = categorys.GetCategory(item.CategoryID);
-                if (item.CategoryID == 0)
-                {
-                    category = nullCategory;
-                }
                 if (category != null)
                 {
                     var dataItem = new ChartsDataModel()
                     {
-
                         Name = category.Name,
                         Icon = category.IconFile,
                         Values = item.Values,
                         Color = category.Color
                     };
-                    if (category.ID == 0)
-                    {
-                        dataItem.Color = "#E5F7F6F2";
-                    }
+                  
                     chartData.Add(dataItem);
                 }
             }
@@ -485,21 +442,11 @@ namespace UI.ViewModels
                 names[i] = Application.Current.Resources[$"{(i + 1)}Month"] as string;
             }
 
-            var list = await data.GetCategoryYearDataAsync(YearDate);
-            var nullCategory = new CategoryModel()
-            {
-                ID = 0,
-                Name = ResourceStrings.Uncategorized,
-                IconFile = "avares://Taix/Resources/Icons/tai32.ico"
-            };
+            var list = await data.GetCategoryYearDataAsync(YearDate);                     
 
             foreach (var item in list)
             {
                 var category = categorys.GetCategory(item.CategoryID);
-                if (item.CategoryID == 0)
-                {
-                    category = nullCategory;
-                }
                 if (category != null)
                 {
                     var dataItem = new ChartsDataModel()
@@ -511,10 +458,7 @@ namespace UI.ViewModels
                         ColumnNames = names,
                         Color = category.Color
                     };
-                    if (category.ID == 0)
-                    {
-                        dataItem.Color = "#E5F7F6F2";
-                    }
+                
                     chartData.Add(dataItem);
                 }
             }

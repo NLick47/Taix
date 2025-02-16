@@ -2,70 +2,162 @@
 using Core.Models;
 using Core.Servicers.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Core.Servicers.Instances
 {
     public class Categorys : ICategorys
     {
-        private List<CategoryModel> _categories;
-        public Categorys()
-        {
-            this._categories = new List<CategoryModel>();
-        }
+        private readonly List<CategoryModel> _categories = new List<CategoryModel>();
+        private const string AppStateFilePath = "appstate.json";
+        private readonly object _lock = new object();
 
         public async Task<CategoryModel> CreateAsync(CategoryModel category)
         {
             using var db = new TaiDbContext();
-            db.Categorys.Add(category);
+            await db.Categorys.AddAsync(category);
             await db.SaveChangesAsync();
-            _categories.Add(category);
+
+            lock (_lock)
+            {
+                _categories.Add(category);
+            }
             return category;
         }
 
         public async Task DeleteAsync(CategoryModel category)
         {
+            if (category.ID == 0) return;
             using var db = new TaiDbContext();
-
-            var item = await db.Categorys.FirstOrDefaultAsync(m => m.ID == category.ID);
+            var item = await db.Categorys.FindAsync(category.ID);
             if (item != null)
             {
                 db.Categorys.Remove(item);
                 await db.SaveChangesAsync();
-                _categories.Remove(category);
+
+                lock (_lock)
+                {
+                    _categories.RemoveAll(c => c.ID == category.ID);
+                }
             }
         }
 
-        public List<CategoryModel> GetCategories()
+        public List<CategoryModel> GetCategories(bool containSystemCategory = false)
         {
-            return this._categories;
+            lock (_lock)
+            {
+                if (containSystemCategory)
+                {
+                    _categories.First(x => x.ID == 0).Name = SharedLibrary.ResourceStrings.Uncategorized;
+                    return new List<CategoryModel>(_categories);
+                }
+                return new List<CategoryModel>(_categories.Where(x => x.ID != 0));
+            }
         }
 
         public CategoryModel GetCategory(int id)
         {
-            return _categories.Where(m => m.ID == id).FirstOrDefault();
+            lock (_lock)
+            {
+                var category = _categories.FirstOrDefault(m => m.ID == id);
+                if (category != null && id == 0)
+                {
+                    category.Name = SharedLibrary.ResourceStrings.Uncategorized;
+                }
+
+                return category;
+            }
         }
 
         public async Task LoadAsync()
         {
-            Debug.WriteLine("加载分类");
+            Debug.WriteLine("开始加载分类");
             using var db = new TaiDbContext();
-            this._categories = await db.Categorys.ToListAsync();
-            Debug.WriteLine("加载分类完成");
 
+            await db.Database.EnsureCreatedAsync();
+            var systemCategory = await LoadOrCreateSystemCategoryAsync(db);
+
+            var dbCategories = await db.Categorys.ToListAsync();
+
+            lock (_lock)
+            {
+                _categories.Clear();
+                if (!_categories.Any(c => c.ID == systemCategory.ID))
+                {
+                    _categories.Add(systemCategory);
+                }
+                _categories.AddRange(dbCategories);
+            }
+            Debug.WriteLine($"分类加载完成，共{_categories.Count}个分类");
         }
+
+        private async Task<CategoryModel> LoadOrCreateSystemCategoryAsync(TaiDbContext db)
+        {
+            var defaultSystemCategory = CategoryModel.DefaultSystemCategory();
+            if (!File.Exists(AppStateFilePath))
+            {
+                await using (File.Create(AppStateFilePath)) { }
+
+                await File.WriteAllTextAsync(AppStateFilePath, JsonConvert.SerializeObject(defaultSystemCategory));
+            }
+            CategoryModel systemCategory = null;
+            try
+            {
+                var json = await File.ReadAllTextAsync(AppStateFilePath);
+                systemCategory = JsonConvert.DeserializeObject<CategoryModel>(json) ?? defaultSystemCategory;
+            }
+            catch (JsonException)
+            {
+                await File.WriteAllTextAsync(AppStateFilePath, JsonConvert.SerializeObject(defaultSystemCategory));
+                systemCategory = defaultSystemCategory;
+            }
+            catch (Exception ex)
+            {
+                return defaultSystemCategory;
+            }
+            return systemCategory;
+        }
+
 
 
         public async Task UpdateAsync(CategoryModel category)
         {
+            if (category.ID == 0)
+            {
+                string json;
+                lock (_lock)
+                {
+                    var systemCategory = _categories.First(x => x.ID == 0);
+                    systemCategory.IconFile = category.IconFile;
+                    systemCategory.Color = category.Color;
+                    json = JsonConvert.SerializeObject(systemCategory);
+                }
+                await File.WriteAllTextAsync(AppStateFilePath, json);
+                return;
+            }
             using var db = new TaiDbContext();
-            db.Categorys.Update(category);
-            await db.SaveChangesAsync();
+
+            var existing = await db.Categorys.FindAsync(category.ID);
+            if (existing != null)
+            {
+                db.Entry(existing).CurrentValues.SetValues(category);
+                await db.SaveChangesAsync();
+
+                lock (_lock)
+                {
+                    var index = _categories.FindIndex(c => c.ID == category.ID);
+                    if (index >= 0)
+                    {
+                        _categories[index] = existing;
+                    }
+                }
+            }
         }
     }
 }

@@ -434,6 +434,7 @@ namespace UI.ViewModels
         {
             EditVisibility = true;
             IsCreate = obj == null;
+            IsSysCategory = false;
             if(EditDirectories.Count != 0)
             {
                 EditDirectories.Clear();
@@ -442,7 +443,7 @@ namespace UI.ViewModels
             {
                 var appCategory = obj as CategoryModel;
                 var webCategory = obj as WebCategoryModel;
-
+                IsSysCategory = appCategory != null && appCategory.Data.ID == 0;
                 EditName = appCategory == null ? webCategory.Data.Name : appCategory.Data.Name;
                 EditIconFile = appCategory == null ? webCategory.Data.IconFile : appCategory.Data.IconFile;
                 EditColor = string.IsNullOrEmpty(appCategory == null ? webCategory.Data.Color : appCategory.Data.Color) ? "#00FFAB" : appCategory == null ? webCategory.Data.Color : appCategory.Data.Color;
@@ -475,7 +476,7 @@ namespace UI.ViewModels
         {
             Data ??= new();
             Data.Clear();
-            foreach (var item in categorys.GetCategories())
+            foreach (var item in categorys.GetCategories(true))
             {
                 Data.Add(new()
                 {

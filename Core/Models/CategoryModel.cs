@@ -53,5 +53,16 @@ namespace Core.Models
                 return JsonConvert.DeserializeObject<List<string>>(Directories);
             }
         }
+
+        public static CategoryModel DefaultSystemCategory()
+        {
+            return new CategoryModel
+            {
+                ID = 0,
+                IconFile = "avares://Taix/Resources/Icons/tai.ico",
+                Color = "#E5F7F6F2",
+                IsDirectoryMath = false
+            };
+        }
     }
 }

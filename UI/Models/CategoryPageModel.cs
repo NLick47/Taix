@@ -79,6 +79,10 @@ namespace UI.Models
             public int Count { get; set; }
         }
 
+        private bool IsSysCategory_;
+
+        public bool IsSysCategory { get => IsSysCategory_; set { IsSysCategory_ = value;OnPropertyChanged(); } }
+
         private ObservableCollection<WebCategoryModel> WebCategoryData_;
         public ObservableCollection<WebCategoryModel> WebCategoryData { get { return WebCategoryData_; } set { WebCategoryData_ = value; OnPropertyChanged(); } }
 
