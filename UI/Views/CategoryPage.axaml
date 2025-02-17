@@ -79,7 +79,7 @@
 								<input:InputBox Grid.Column="1" Error="{Binding EditErrorText}"
 												IsShowError="{Binding IsEditError,Mode=TwoWay}"
 												Text="{Binding EditName,Mode=TwoWay}"
-												IsReadOnly="{Binding IsSysCategory}"
+												IsVisible="{Binding !IsSysCategory}"
 												MaxLength="10" Margin="5,10,0,0"
 												Placeholder="{DynamicResource PleaseEnterCategoryName}"/>
 							</Grid>
@@ -88,10 +88,9 @@
 											  HorizontalAlignment="Left"
 											  Margin="0,10,0,0" />
 							<base:View Condition="=0" Value="{Binding ShowType.Id}">
-								<StackPanel>
+								<StackPanel IsVisible="{Binding !IsSysCategory}">
 									<Border Margin="0,10,0,0">
 										<toggle:Toggle 
-											IsEnabled="{Binding !IsSysCategory}"
 											IsChecked="{Binding EditIsDirectoryMath,Mode=TwoWay}" TextPosition="Left" OnText="{DynamicResource DirectoryMatch}" OffText="{DynamicResource DirectoryMatch}"></toggle:Toggle>
 									</Border>
 									<base:View Condition="True" Value="{Binding EditIsDirectoryMath}">
