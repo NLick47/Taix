@@ -11,6 +11,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SharedLibrary.Librarys;
+using System.Reflection;
+using UI.Servicers.Updater;
+using Avalonia.Controls.ApplicationLifetimes;
+using UI.Models;
+using UI.Controls.Window;
 
 namespace UI.Servicers
 {
@@ -44,15 +49,19 @@ namespace UI.Servicers
         {
             this.isSelfStart = isSelfStart;
             main.OnStarted += Main_OnStarted;
-            main.OnConfigLoaded += (s,e)=> {
-                if (isSelfStart && !_config.GetConfig().General.IsStartatboot)
-                {
-                    Environment.Exit(0);
-                    return;
-                }
-            };
-            return Task.WhenAll(main.Run(),_statusBarIconServicer.Init());
+            main.OnConfigLoaded += ConfigLoaded;
+            return Task.WhenAll(main.Run(), _statusBarIconServicer.Init());
         }
+
+        private async void ConfigLoaded(object sender, EventArgs e)
+        {
+            if (isSelfStart && !_config.GetConfig().General.IsStartatboot)
+            {
+                Environment.Exit(0);
+                return;
+            }
+        }
+
 
         private void Main_OnStarted(object sender, EventArgs e)
         {
@@ -62,7 +71,9 @@ namespace UI.Servicers
             _webSiteContext.Init();
             if (!isSelfStart)
             {
+#if !DEBUG
                 _systemInfrastructure.SetAutoStartInRegistry();
+#endif
                 _statusBarIconServicer.ShowMainWindow();
             }
         }

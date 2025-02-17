@@ -199,8 +199,8 @@
 										<TextBlock Text="{TemplateBinding DialogTitle}" FontSize="16" FontWeight="Bold"/>
 										<TextBlock Grid.Row="1" Text="{TemplateBinding DialogMessage}" VerticalAlignment="Top" TextWrapping="WrapWithOverflow"/>
 										<StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-											<button:Button x:Name="CancelBtn" Width="100">取消</button:Button>
-											<button:Button x:Name="ConfirmBtn" Background="{DynamicResource ThemeBrush}" Foreground="White" Width="100" Margin="10,0,0,0">确定</button:Button>
+											<button:Button x:Name="CancelBtn" Width="100" Content="{DynamicResource Cancel}"/>
+											<button:Button x:Name="ConfirmBtn" Background="{DynamicResource ThemeBrush}" Foreground="White" Width="100" Margin="10,0,0,0" Content="{DynamicResource Confirm}"/>
 										</StackPanel>
 									</Grid>
 								</Border>

@@ -289,6 +289,13 @@
 	<system:String x:Key="Column9">Website</system:String>
 
 	<system:String x:Key="Ignore">Ignore</system:String>
+
+
+	<system:String x:Key="NewVersionAvailable">New Version Available</system:String>
+	<system:String x:Key="WantGoDownloadPage">Do you want to go to the download page for the latest version？</system:String>
+	
+	
+	<system:String x:Key="Cancel">Cancel</system:String>
 	
 
 	<system:String x:Key="Open">Open</system:String>

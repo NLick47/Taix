@@ -168,7 +168,7 @@ namespace Core.Servicers.Instances
 
                 appConfig.Load();
                 config = appConfig.GetConfig();
-                OnConfigLoaded.Invoke(this,EventArgs.Empty);
+                OnConfigLoaded?.Invoke(this,EventArgs.Empty);
                 UpdateConfigIgnoreProcess();
                 UpdateConfigProcessWhiteList();
 

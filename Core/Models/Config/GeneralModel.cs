@@ -19,6 +19,8 @@ namespace Core.Models.Config
         /// </summary>
         public bool IsStartatboot { get; set; }
 
+
+
         /// <summary>
         /// 主题模式
         /// </summary>
@@ -64,6 +66,16 @@ namespace Core.Models.Config
         /// 启动软件时显示主界面
         /// </summary>
         public bool IsStartupShowMainWindow { get; set; } = true;
+
+
+
+
+        [Config(Name = "自动检测更新", Description = "", Group = "基础", CultureCode = CultureCode.ZhCn)]
+        [Config(Name = "Automatic Update Detection", Description = "", Group = "Basics", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
+        /// <summary>
+        /// 是否启用开机自启动
+        /// </summary>
+        public bool IsAutoUpdate { get; set; } = true;
         /// <summary>
         /// 概览页最为频繁显示条数
         /// </summary>
