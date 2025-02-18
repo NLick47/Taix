@@ -19,7 +19,18 @@ namespace UI.Models
         }
 
         private CategoryModel SelectedAppCategoryItem_;
-        public CategoryModel SelectedAppCategoryItem { get { return SelectedAppCategoryItem_; } set { SelectedAppCategoryItem_ = value; OnPropertyChanged(); } }
+        public CategoryModel SelectedAppCategoryItem
+        {
+            get { return SelectedAppCategoryItem_; }
+            set
+            {
+                if (value != null && value.Data != null)
+                {
+                    SelectedAppCategoryItem_ = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
 
         private bool EditVisibility_ = false;
@@ -81,7 +92,12 @@ namespace UI.Models
 
         private bool IsSysCategory_;
 
-        public bool IsSysCategory { get => IsSysCategory_; set { IsSysCategory_ = value;OnPropertyChanged(); } }
+
+        private bool IsRightClickSelected_;
+
+        public bool IsSelectedSysCategory { get => IsRightClickSelected_; set { IsRightClickSelected_ = value; OnPropertyChanged(); } }
+
+        public bool IsSysCategory { get => IsSysCategory_; set { IsSysCategory_ = value; OnPropertyChanged(); } }
 
         private ObservableCollection<WebCategoryModel> WebCategoryData_;
         public ObservableCollection<WebCategoryModel> WebCategoryData { get { return WebCategoryData_; } set { WebCategoryData_ = value; OnPropertyChanged(); } }

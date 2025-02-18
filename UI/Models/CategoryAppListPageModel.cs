@@ -11,6 +11,8 @@ namespace UI.Models
     public class CategoryAppListPageModel : ModelBase
     {
         private UI.Models.Category.CategoryModel Category_;
+
+        public bool IsSystemCategory => Category_.Data.ID == 0;
         public UI.Models.Category.CategoryModel Category { get { return Category_; } set { Category_ = value; OnPropertyChanged(); } }
         private List<AppModel> Data_;
 

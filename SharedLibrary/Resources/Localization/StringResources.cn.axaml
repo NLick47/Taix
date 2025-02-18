@@ -306,6 +306,7 @@
 	<system:String x:Key="WantGoDownloadPage">是否立即前往下载最新版本？</system:String>
 
 	<system:String x:Key="Cancel">取消</system:String>
+	<system:String x:Key="RestoreSystemCategory">还原系统分类</system:String>
 	
 	
 	<system:String x:Key="Open">打开</system:String>

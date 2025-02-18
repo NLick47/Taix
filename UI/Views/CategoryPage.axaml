@@ -172,13 +172,18 @@
 							<base:EmptyData/>
 						</base:View>
 
-						<ListBox Margin="10,20,10,0"  ItemsSource="{Binding Data}"
-							
+						<ListBox Margin="10,20,10,0"   ItemsSource="{Binding Data}"
 								 SelectedItem="{Binding SelectedAppCategoryItem,Mode=TwoWay}"
-								  ScrollViewer.HorizontalScrollBarVisibility="Disabled" >
+								  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 							<Interaction.Behaviors>
 								<EventTriggerBehavior EventName="PointerReleased">
 									<InvokeCommandAction Command="{Binding GotoListCommand}"
+														   CommandParameter="{Binding SelectedAppCategoryItem}"/>
+									
+								</EventTriggerBehavior>
+
+								<EventTriggerBehavior EventName="ContextRequested">
+									<InvokeCommandAction Command="{Binding ListBoxContextRequested}"
 														   CommandParameter="{Binding SelectedAppCategoryItem}"/>
 								</EventTriggerBehavior>
 							</Interaction.Behaviors>
@@ -190,7 +195,12 @@
 									<MenuItem Header="{DynamicResource Edit}" Command="{Binding EditCommand}"
 											  CommandParameter="{Binding SelectedAppCategoryItem}"/>
 									<MenuItem Header="{DynamicResource DeleteCategory}" Command="{Binding DelCommand}"
+											IsVisible="{Binding !IsSelectedSysCategory}"
 											  CommandParameter="{Binding SelectedAppCategoryItem}"/>
+
+									<MenuItem Header="{DynamicResource RestoreSystemCategory}" Command="{Binding RestoreSystemCategoryCommand}"
+											IsVisible="{Binding IsSelectedSysCategory}"
+										  CommandParameter="{Binding SelectedAppCategoryItem}"/>
 								</ContextMenu>
 							</ListBox.ContextMenu>
 

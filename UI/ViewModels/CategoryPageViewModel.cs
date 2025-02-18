@@ -55,6 +55,10 @@ namespace UI.ViewModels
         /// 添加目录
         /// </summary>
         public ICommand AddDirectoryCommand { get; private set; }
+
+        public ICommand ListBoxContextRequestedCommand { get; private set; }
+
+        public ICommand RestoreSystemCategoryCommand { get; private set; }
         /// <summary>
         /// 目录菜单命令
         /// </summary>
@@ -75,6 +79,8 @@ namespace UI.ViewModels
             RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefresh);
             AddDirectoryCommand = ReactiveCommand.CreateFromTask<object>(OnAddDirectory);
             DirectoriesCommand = ReactiveCommand.Create<object>(OnDirectoriesCommand);
+            ListBoxContextRequestedCommand = ReactiveCommand.Create<object>(ListBoxContextRequested);
+            RestoreSystemCategoryCommand = ReactiveCommand.CreateFromTask<object>(RestoreSystemCategory);
             LoadData().ConfigureAwait(false).GetAwaiter();
         }
         private Task OnRefresh(object obj)
@@ -82,6 +88,36 @@ namespace UI.ViewModels
             return LoadData();
         }
 
+        public Task RestoreSystemCategory(object arg)
+        {
+            var selected = arg as CategoryModel;
+            if (selected != null && selected.Data != null && selected.Data.ID == 0)
+            {
+                var defaultSys = Core.Models.CategoryModel.DefaultSystemCategory();
+                int editItemIndex = Data.IndexOf(selected);
+                if (editItemIndex != -1)
+                {
+                    Data[editItemIndex] = new CategoryModel
+                    {
+                        Count = Data[editItemIndex].Count,
+                        Data = defaultSys
+                    };
+                }
+              
+                return categorys.UpdateAsync(defaultSys);
+            }
+            return Task.CompletedTask;
+        }
+
+
+        public void ListBoxContextRequested(object arg)
+        {
+            var selected = arg as CategoryModel;
+            if (selected != null && selected.Data != null)
+            {
+                IsSelectedSysCategory = selected.Data.ID == 0;
+            }
+        }
 
         private Task OnDel(object obj)
         {
@@ -120,7 +156,7 @@ namespace UI.ViewModels
             {
                 return;
             }
-            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync(Application.Current.Resources["DeleteCategory"] as string, 
+            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync(Application.Current.Resources["DeleteCategory"] as string,
                 Application.Current.Resources["WantDeleteCategory"] as string);
             if (isConfirm)
             {
@@ -306,7 +342,7 @@ namespace UI.ViewModels
             {
                 return;
             }
-            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync(Application.Current.Resources["DeleteCategory"] as string, 
+            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync(Application.Current.Resources["DeleteCategory"] as string,
                 Application.Current.Resources["WantDeleteCategory"] as string);
             if (isConfirm)
             {
@@ -435,7 +471,7 @@ namespace UI.ViewModels
             EditVisibility = true;
             IsCreate = obj == null;
             IsSysCategory = false;
-            if(EditDirectories.Count != 0)
+            if (EditDirectories.Count != 0)
             {
                 EditDirectories.Clear();
             }
@@ -452,7 +488,7 @@ namespace UI.ViewModels
                     EditIsDirectoryMath = appCategory.Data.IsDirectoryMath;
                     if (appCategory.Data.Directories != null)
                     {
-                       
+
                         EditDirectories.AddRange(appCategory.Data.DirectoryList);
                     }
                 }
@@ -463,7 +499,7 @@ namespace UI.ViewModels
                 EditIconFile = "avares://Taix/Resources/Emoji/(1).png";
                 EditColor = "#00FFAB";
                 EditIsDirectoryMath = false;
-              
+
             }
         }
 

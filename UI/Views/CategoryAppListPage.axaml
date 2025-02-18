@@ -143,6 +143,7 @@
 				<ListBox.ContextMenu>
 					<ContextMenu>
 						<MenuItem Header="{DynamicResource RemoveFromCategory}" Command="{Binding DelCommand}"
+								  IsVisible="{Binding !IsSystemCategory}"
 								  CommandParameter="{Binding SelectedItem}"/>
 					</ContextMenu>
 				</ListBox.ContextMenu>

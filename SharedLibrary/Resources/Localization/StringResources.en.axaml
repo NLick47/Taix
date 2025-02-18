@@ -296,6 +296,7 @@
 	
 	
 	<system:String x:Key="Cancel">Cancel</system:String>
+	<system:String x:Key="RestoreSystemCategory">Restore System Category</system:String>
 	
 
 	<system:String x:Key="Open">Open</system:String>
