@@ -23,6 +23,7 @@ using Core.Servicers;
 using UI.Models;
 using ReactiveUI;
 using Avalonia.Threading;
+using UI.Servicers.Updater;
 
 
 
@@ -122,6 +123,8 @@ namespace UI
             
             services.AddTransient<WebSiteDetailPage>();
             services.AddTransient<WebSiteDetailPageViewModel>();
+
+            services.AddTransient<UpdateCheckerService>();
         }
 
         private bool IsRunned()

@@ -18,6 +18,7 @@ using System.Windows.Input;
 using UI.Models;
 using UI.Servicers;
 using UI.Servicers.Dialogs;
+using UI.Servicers.Updater;
 
 
 namespace UI.ViewModels
@@ -30,22 +31,25 @@ namespace UI.ViewModels
         private readonly IData data;
         private readonly IWebData _webData;
         private readonly IUIServicer _uiServicer;
+
+        private readonly UpdateCheckerService _updateCheckerService;
         public ICommand OpenURL { get; set; }
         public ICommand CheckUpdate { get; set; }
         public ICommand DelDataCommand { get; set; }
         public ICommand ExportDataCommand { get; set; }
 
-        public SettingPageViewModel(IAppConfig appConfig, MainViewModel mainVM, IData data, IWebData webData, IUIServicer uiServicer_)
+        public SettingPageViewModel(IAppConfig appConfig, MainViewModel mainVM, IData data, IWebData webData, IUIServicer uiServicer_, UpdateCheckerService updateCheckerService)
         {
             this.appConfig = appConfig;
             this.mainVM = mainVM;
             this.data = data;
             _webData = webData;
             _uiServicer = uiServicer_;
-
+            _updateCheckerService = updateCheckerService;
             OpenURL = ReactiveCommand.Create<object>(OnOpenURL);
             DelDataCommand = ReactiveCommand.CreateFromTask<object>(OnDelData);
             ExportDataCommand = ReactiveCommand.CreateFromTask<object>(OnExportData);
+            CheckUpdate = ReactiveCommand.CreateFromTask(OnCheckUpdate);
             appConfig.ConfigChanged += ConfigChanged; 
             Init();
         }
@@ -121,6 +125,11 @@ namespace UI.ViewModels
                 Logger.Error(ec.ToString());
                 mainVM.Toast(Application.Current.Resources["DataExportFailed"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
             }
+        }
+
+        private Task OnCheckUpdate()
+        {
+            return _updateCheckerService.CheckForUpdatesAsync();
         }
 
         private void OnOpenURL(object obj)

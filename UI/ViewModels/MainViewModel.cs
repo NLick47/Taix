@@ -25,6 +25,7 @@ using UI.Servicers.Updater;
 using System.Threading.Tasks;
 using UI.Servicers;
 using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace UI.ViewModels
 {
@@ -139,18 +140,8 @@ namespace UI.ViewModels
 
             if (appConfig.GetConfig().General.IsAutoUpdate)
             {
-                var release = new GithubRelease("https://api.github.com/repos/nlick47/taix/releases/latest", Assembly.GetExecutingAssembly().GetName().Version.ToString());
-                var info = await release.GetRequest();
-                if (info != null)
-                {
-                    var uiService = serviceProvider.GetService(typeof(IUIServicer)) as IUIServicer;
-                    var result = await uiService.ShowConfirmDialogAsync(Application.Current.Resources["NewVersionAvailable"] as string,
-                        Application.Current.Resources["WantGoDownloadPage"] as string);
-                    if (result)
-                    {
-                        Process.Start(new ProcessStartInfo("https://github.com/NLick47/Taix/releases/latest") { UseShellExecute = true });
-                    }
-                }
+                var updateService = serviceProvider.GetService<UpdateCheckerService>();
+                await updateService!.CheckForUpdatesAsync();
             }
         }
 
