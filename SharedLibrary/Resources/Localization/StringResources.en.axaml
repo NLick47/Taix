@@ -293,6 +293,8 @@
 
 	<system:String x:Key="NewVersionAvailable">New Version Available</system:String>
 	<system:String x:Key="WantGoDownloadPage">Do you want to go to the download page for the latest version？</system:String>
+	<system:String x:Key="NoUpdateAvailable">You are already using the latest version.</system:String>
+	<system:String x:Key="UpdateCheckFailed">Update check failed, please check your network.</system:String>
 	
 	
 	<system:String x:Key="Cancel">Cancel</system:String>

@@ -141,7 +141,7 @@ namespace UI.ViewModels
             if (appConfig.GetConfig().General.IsAutoUpdate)
             {
                 var updateService = serviceProvider.GetService<UpdateCheckerService>();
-                await updateService!.CheckForUpdatesAsync();
+                await updateService!.AutoCheckForUpdatesAsync();
             }
         }
 

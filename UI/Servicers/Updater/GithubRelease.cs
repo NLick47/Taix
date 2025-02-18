@@ -100,7 +100,7 @@ namespace UI.Servicers.Updater
                         var data = JsonConvert.DeserializeObject<GithubModel>(body);
                         Info.IsPre = data.prerelease;
                         Info.Title = data.name;
-                        Info.Version = data.tag_name;
+                        Info.Version = data.tag_name.Replace("v",string.Empty);
                         Info.DownloadUrl = data.assets[0].browser_download_url;
                         Info.HtmlUrl = data.html_url;
                         Info.Content = data.body;

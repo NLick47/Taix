@@ -129,7 +129,7 @@ namespace UI.ViewModels
 
         private Task OnCheckUpdate()
         {
-            return _updateCheckerService.CheckForUpdatesAsync();
+            return _updateCheckerService.ManualCheckForUpdatesAsync();
         }
 
         private void OnOpenURL(object obj)

@@ -1,11 +1,10 @@
 ﻿using Avalonia;
+using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
+using UI.ViewModels;
 
 namespace UI.Servicers.Updater
 {
@@ -18,24 +17,59 @@ namespace UI.Servicers.Updater
             _serviceProvider = serviceProvider;
         }
 
-        public async Task CheckForUpdatesAsync()
+        public async Task AutoCheckForUpdatesAsync()
+        {
+            var (release, info) = await GetReleaseInfoAsync();
+            if (info != null && release.IsCanUpdate())
+            {
+                await ShowUpdateDialogAsync();
+            }
+        }
+
+        public async Task ManualCheckForUpdatesAsync()
+        {
+            var (release, info) = await GetReleaseInfoAsync();
+            var uiService = GetUIServicer();
+            var mainView = _serviceProvider.GetService<MainViewModel>();
+            if (info != null)
+            {
+                if (release.IsCanUpdate())
+                {
+                    await ShowUpdateDialogAsync();
+                }
+                else
+                {
+                    mainView.Info(Application.Current.Resources["NoUpdateAvailable"] as string);
+                }
+            }
+            else
+            {
+                mainView.Error(Application.Current.Resources["UpdateCheckFailed"] as string);
+            }
+        }
+
+        private async Task<(GithubRelease release, dynamic info)> GetReleaseInfoAsync()
         {
             var release = new GithubRelease("https://api.github.com/repos/nlick47/taix/releases/latest", Assembly.GetExecutingAssembly().GetName().Version.ToString());
             var info = await release.GetRequest();
-            if (info != null)
-            {
-                var uiService = _serviceProvider.GetService(typeof(IUIServicer)) as IUIServicer;
-                if (uiService != null)
-                {
-                    var result = await uiService.ShowConfirmDialogAsync(
-                        Application.Current.Resources["NewVersionAvailable"] as string,
-                        Application.Current.Resources["WantGoDownloadPage"] as string);
+            return (release, info);
+        }
 
-                    if (result)
-                    {
-                        Process.Start(new ProcessStartInfo("https://github.com/NLick47/Taix/releases/latest") { UseShellExecute = true });
-                    }
-                }
+        private IUIServicer GetUIServicer()
+        {
+            return _serviceProvider.GetService(typeof(IUIServicer)) as IUIServicer;
+        }
+
+        private async Task ShowUpdateDialogAsync()
+        {
+            var uiService = GetUIServicer();
+            var result = await uiService.ShowConfirmDialogAsync(
+                   Application.Current.Resources["NewVersionAvailable"] as string,
+                   Application.Current.Resources["WantGoDownloadPage"] as string);
+
+            if (result)
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/NLick47/Taix/releases/latest") { UseShellExecute = true });
             }
         }
     }
