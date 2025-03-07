@@ -12,8 +12,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using ClosedXML.Excel;
+using CsvHelper.Configuration;
 using SharedLibrary;
 
 namespace Core.Servicers.Instances
@@ -786,53 +788,94 @@ namespace Core.Servicers.Instances
             }
             await db.SaveChangesAsync();
         }
-
-        public async Task ExportAsync(string dir_, DateTime start_, DateTime end_)
+        
+        
+        private void SetWorksheetHeaders(IXLWorksheet worksheet, string[] columns)
         {
-            start_ = new DateTime(start_.Year, start_.Month, 1, 0, 0, 0);
-            end_ = new DateTime(end_.Year, end_.Month, DateTime.DaysInMonth(end_.Year, end_.Month), 23, 59, 59);
-
+            for (int i = 0; i < columns.Length; i++)
+            {
+                worksheet.Cell(1, i + 1).Value = columns[i];
+            }
+        }
+        
+        
+        private void FillWebsiteData(IXLWorksheet worksheet, List<WebBrowseLogModel> data, ExportOptions options)
+        {
+            for (int i = 0; i < data.Count; i++)
+            {
+                var item = data[i];
+                worksheet.Cell(i + 2, 1).Value = item.LogTime.ToString("G", options.Culture);
+                worksheet.Cell(i + 2, 2).Value = item.Url?.Title;
+                worksheet.Cell(i + 2, 3).Value = item.Url?.Url;
+                worksheet.Cell(i + 2, 4).Value = item.Duration;
+            }
+        }
+        
+        public async Task ExportAsync(string dir, DateTime start, DateTime end, ExportOptions options)
+        {
             using var db = new TaiDbContext();
-
-            var webSiteData = await db.WebBrowserLogs.Where(m => m.LogTime >= start_ && m.LogTime <= end_).Include(x => x.Url)
-              .ToListAsync();
+            var webSiteData = await db.WebBrowserLogs
+                .Where(m => m.LogTime >= start && m.LogTime <= end)
+                .Include(x => x.Url)
+                .ToListAsync();
 
             using var workbook = new XLWorkbook();
-            var worksheet1 = workbook.Worksheets.Add();
-            worksheet1.Cell(1, 1).Value = ResourceStrings.Column7;
-            worksheet1.Cell(1, 2).Value = ResourceStrings.Column8;
-            worksheet1.Cell(1, 3).Value = ResourceStrings.Column9;
-            worksheet1.Cell(1, 4).Value = ResourceStrings.Column4;
-
-            for (int i = 0; i < webSiteData.Count; i++)
-            {
-                worksheet1.Cell(i + 2, 1).Value = webSiteData[i].LogTime.ToString("G", SystemLanguage.CurrentCultureInfo);
-                worksheet1.Cell(i + 2, 2).Value = webSiteData[i].Url.Title;
-                worksheet1.Cell(i + 2, 3).Value = webSiteData[i].Url.Url;
-                worksheet1.Cell(i + 2, 4).Value = webSiteData[i].Duration;
-            }
-
-            string name = $"Taix {ResourceStrings.WebsiteStatistics}({start_.ToString("Y", SystemLanguage.CurrentCultureInfo)}-{end_.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
-            if (start_.Year == end_.Year && start_.Month == end_.Month)
-            {
-                name = $"Taix {ResourceStrings.WebsiteStatistics}({start_.ToString("Y", SystemLanguage.CurrentCultureInfo)})";
-            }
-            var saveFilePath = Path.Combine(dir_, $"{name}.xlsx");
+            var worksheet = workbook.Worksheets.Add(options.Website.SheetName);
+            SetWorksheetHeaders(worksheet, options.Website.Columns);
+            
+            FillWebsiteData(worksheet, webSiteData, options);
+            
+            string fileName = GenerateFileName(
+                start, 
+                end, 
+                options.Website.StatisticsLabel,
+                options.Culture,
+                options.FileNamePrefix);
+            var saveFilePath = Path.Combine(dir, $"{fileName}.xlsx");
+    
             if (File.Exists(saveFilePath)) File.Delete(saveFilePath);
             workbook.SaveAs(saveFilePath);
+            
+            await ExportWebsiteCsv(dir, fileName, webSiteData, options);
+        }
 
-            //  导出csv
-            using (var writer = new StreamWriter(Path.Combine(dir_, $"{name}.csv"), false, System.Text.Encoding.UTF8))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+        
+        private async Task ExportWebsiteCsv(string dir, string baseName, List<WebBrowseLogModel> data, ExportOptions options)
+        {
+            var records = data.Select(x => new
             {
-                await csv.WriteRecordsAsync(webSiteData.Select(x => new
-                {
-                    Time = x.LogTime,
-                    Title = x.Url.Title,
-                    WebSite = x.Url.Url,
-                    Duration = x.Duration
-                }));
-            }
+                Time = x.LogTime.ToString("G", options.Culture),
+                Title = x.Url?.Title,
+                WebSite = x.Url?.Url,
+                Duration = x.Duration
+            });
+
+            var csvPath = Path.Combine(dir, $"{baseName}.csv");
+            await WriteCsvAsync(csvPath, records, options.Culture);
+        }
+        private string GenerateFileName(DateTime start, DateTime end, string statisticsLabel, 
+            CultureInfo culture, string prefix)
+        {
+            var dateFormat = culture.DateTimeFormat.YearMonthPattern;
+            var dateRange = start.Year == end.Year && start.Month == end.Month
+                ? start.ToString(dateFormat, culture)
+                : $"{start.ToString(dateFormat, culture)}-{end.ToString(dateFormat, culture)}";
+
+            return $"{prefix} {statisticsLabel} ({dateRange})";
+        }
+
+        private async Task WriteCsvAsync<T>(string path, IEnumerable<T> records, CultureInfo culture)
+        {
+            var config = new CsvConfiguration(culture)
+            {
+                Delimiter = ",",
+                Encoding = Encoding.UTF8,
+                HasHeaderRecord = true
+            };
+
+            using var writer = new StreamWriter(path, false, config.Encoding);
+            using var csv = new CsvWriter(writer, config);
+            await csv.WriteRecordsAsync(records);
         }
 
 

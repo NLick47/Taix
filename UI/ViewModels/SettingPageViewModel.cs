@@ -15,6 +15,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Core.Models.Data;
 using UI.Models;
 using UI.Servicers;
 using UI.Servicers.Dialogs;
@@ -38,7 +39,8 @@ namespace UI.ViewModels
         public ICommand DelDataCommand { get; set; }
         public ICommand ExportDataCommand { get; set; }
 
-        public SettingPageViewModel(IAppConfig appConfig, MainViewModel mainVM, IData data, IWebData webData, IUIServicer uiServicer_, UpdateCheckerService updateCheckerService)
+        public SettingPageViewModel(IAppConfig appConfig, MainViewModel mainVM, IData data, IWebData webData,
+            IUIServicer uiServicer_, UpdateCheckerService updateCheckerService)
         {
             this.appConfig = appConfig;
             this.mainVM = mainVM;
@@ -50,7 +52,7 @@ namespace UI.ViewModels
             DelDataCommand = ReactiveCommand.CreateFromTask<object>(OnDelData);
             ExportDataCommand = ReactiveCommand.CreateFromTask<object>(OnExportData);
             CheckUpdate = ReactiveCommand.CreateFromTask(OnCheckUpdate);
-            appConfig.ConfigChanged += ConfigChanged; 
+            appConfig.ConfigChanged += ConfigChanged;
             Init();
         }
 
@@ -63,7 +65,6 @@ namespace UI.ViewModels
             TabbarData[3] = ResourceStrings.About;
         }
 
-       
 
         private void Init()
         {
@@ -71,7 +72,8 @@ namespace UI.ViewModels
 
             Data = config.General;
 
-            TabbarData = [ResourceStrings.General, ResourceStrings.Behavior, ResourceStrings.Data, ResourceStrings.About];
+            TabbarData =
+                [ResourceStrings.General, ResourceStrings.Behavior, ResourceStrings.Data, ResourceStrings.About];
 
             PropertyChanged += SettingPageVM_PropertyChanged;
 
@@ -88,17 +90,20 @@ namespace UI.ViewModels
         {
             if (DelDataStartMonthDate > DelDataEndMonthDate)
             {
-                mainVM.Toast(Application.Current.Resources["TimeRangeSelectionError"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
+                mainVM.Toast(Application.Current.Resources["TimeRangeSelectionError"] as string,
+                    Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
                 return;
             }
 
-            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync(Application.Current.Resources["DeleteConfirmation"] as string,
+            bool isConfirm = await _uiServicer.ShowConfirmDialogAsync(
+                Application.Current.Resources["DeleteConfirmation"] as string,
                 Application.Current.Resources["WantPerformAction"] as string);
             if (isConfirm)
             {
                 await data.ClearRangeAsync(DelDataStartMonthDate, DelDataEndMonthDate);
                 await _webData.ClearAsync(DelDataStartMonthDate, DelDataEndMonthDate);
-                mainVM.Toast(Application.Current.Resources["OperationCompleted"] as string, Controls.Window.ToastType.Success);
+                mainVM.Toast(Application.Current.Resources["OperationCompleted"] as string,
+                    Controls.Window.ToastType.Success);
             }
         }
 
@@ -110,20 +115,55 @@ namespace UI.ViewModels
                 var storage = desktop.MainWindow.StorageProvider;
                 var result = await storage.OpenFolderPickerAsync(new()
                 {
-
                 });
                 if (result?.Count != 0)
                 {
                     var folder = result[0];
-                    await data.ExportToExcelAsync(folder.Path.LocalPath, ExportDataStartMonthDate, ExportDataEndMonthDate);
-                    await _webData.ExportAsync(folder.Path.LocalPath, ExportDataStartMonthDate, ExportDataEndMonthDate);
-                    mainVM.Toast(Application.Current.Resources["DataExportCompleted"] as string, Controls.Window.ToastType.Success);
+                    var options = new ExportOptions
+                    {
+                        Website = new ExportOptions.WebsiteExportConfig
+                        {
+                            SheetName = "Sheet1",
+                            Columns = new[]
+                            {
+                                ResourceStrings.Column7, ResourceStrings.Column8, ResourceStrings.Column9,
+                                ResourceStrings.Column4
+                            },
+                            StatisticsLabel = ResourceStrings.WebsiteStatistics
+                        },
+                        Application = new ExportOptions.AppExportConfig
+                        {
+                            DailySheetName = ResourceStrings.ExportDaily,
+                            TimePeriodSheetName = ResourceStrings.ExportTimePeriod,
+                            DailyColumns = new[]
+                            {
+                                ResourceStrings.Column6, ResourceStrings.Column2, ResourceStrings.Column3,
+                                ResourceStrings.Column4, ResourceStrings.Column5
+                            },
+                            TimePeriodColumns = new[]
+                            {
+                                ResourceStrings.Column1, ResourceStrings.Column2,
+                                ResourceStrings.Column3, ResourceStrings.Column4, ResourceStrings.Column5
+                            },
+                            StatisticsLabel = ResourceStrings.AppliedStatistics
+                        },
+                        FileNamePrefix = "Taix",
+                        UncategorizedLabel = ResourceStrings.Uncategorized,
+                        Culture = SystemLanguage.CurrentCultureInfo
+                    };
+                    await data.ExportToExcelAsync(folder.Path.LocalPath, ExportDataStartMonthDate,
+                        ExportDataEndMonthDate, options);
+                    await _webData.ExportAsync(folder.Path.LocalPath, ExportDataStartMonthDate, ExportDataEndMonthDate,
+                        options);
+                    mainVM.Toast(Application.Current.Resources["DataExportCompleted"] as string,
+                        Controls.Window.ToastType.Success);
                 }
             }
             catch (Exception ec)
             {
                 Logger.Error(ec.ToString());
-                mainVM.Toast(Application.Current.Resources["DataExportFailed"] as string, Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
+                mainVM.Toast(Application.Current.Resources["DataExportFailed"] as string,
+                    Controls.Window.ToastType.Error, Controls.Base.IconTypes.IncidentTriangle);
             }
         }
 

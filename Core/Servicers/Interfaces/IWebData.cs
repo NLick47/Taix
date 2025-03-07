@@ -167,7 +167,7 @@ namespace Core.Servicers.Interfaces
         /// <param name="dir_">导出目录</param>
         /// <param name="start_">开始时间</param>
         /// <param name="end_">结束时间</param>
-        Task ExportAsync(string dir_, DateTime start_, DateTime end_);
+        Task ExportAsync(string dir_, DateTime start_, DateTime end_,ExportOptions options);
         /// <summary>
         /// 更新站点数据
         /// </summary>

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Core.Servicers.Instances;
 
 namespace Core.Servicers.Interfaces
 {
@@ -97,7 +98,10 @@ namespace Core.Servicers.Interfaces
         /// <summary>
         /// 导出数据到EXCEL
         /// </summary>
-        Task ExportToExcelAsync(string dir, DateTime start, DateTime end);
+        Task ExportToExcelAsync(string dir, 
+            DateTime start, 
+            DateTime end,
+            ExportOptions options);
         /// <summary>
         /// 获取指定日期范围使用应用量
         /// </summary>
