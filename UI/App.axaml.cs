@@ -129,6 +129,9 @@ namespace UI
 
         private bool IsRunned()
         {
+#if DEBUG
+            return false;
+#endif
             var mutexName = "Taix"; 
             bool createdNew;
             mutex = new System.Threading.Mutex(true, mutexName, out createdNew);

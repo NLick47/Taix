@@ -135,7 +135,12 @@ namespace UI.Servicers
                 }
                 Dispatcher.UIThread.Invoke(() =>
                 {
-                    _trayIcon.ToolTipText = "Taix!";
+#if DEBUG
+                    _trayIcon.ToolTipText = "Taix debug";
+#elif !DEBUG
+                     _trayIcon.ToolTipText = "Taix!";
+#endif
+
                 });
 
                 SetIcon();
