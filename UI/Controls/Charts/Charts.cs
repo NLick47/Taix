@@ -555,7 +555,7 @@ namespace UI.Controls.Charts
 
             if (Data == null || Data.Count() <= 0)
             {
-                CardContainer.Children.Clear();
+                CardContainer.Children.Clear(); 
                 CardContainer.Children.Add(new EmptyData());
                 RadarContainer.Child = new EmptyData();
                 _typeATempContainer.Children.Add(new EmptyData());
@@ -1305,11 +1305,15 @@ namespace UI.Controls.Charts
             {
                 maxValue = DataMaximum;
             }
-            var radar = new ChartsItemTypeRadar();
-            radar.Data = Data.OrderBy(m => m.Values.Sum()).ToList();
+            var radar = new RadarChart();
+            radar.Labels = Data.Select(x => x.Name.Length > 4 ? 
+                x.Name.Substring(0,4) : x.Name).ToList();
+            radar.Values = Data.Select(x => x.Values.Sum()).ToList();
             radar.MaxValue = maxValue;
+            ToolTip.SetTip(radar,string.Join(",",Data.
+                Select(x => x.Name + $" {Time.ToString((int)x.Values.Sum())}")));
             RadarContainer.Child = radar;
-
+            
             isRendering = false;
         }
         #endregion

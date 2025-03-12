@@ -48,7 +48,6 @@
 		<ResourceInclude Source="/Themes/Charts/ChartsItemTypeCard.axaml"/>
 		<ResourceInclude Source="/Themes/Charts/ChartsItemTypeList.axaml"/>
 		<ResourceInclude Source="/Themes/Charts/ChartsItemTypeMonth.axaml"/>
-		<ResourceInclude Source="/Themes/Charts/ChartsItemTypeRadar.axaml"/>
 		<ResourceInclude Source="/Themes/Charts/ChartsItemTypeColumn.axaml"/>
 
 		<ResourceInclude Source="/Themes/ColorPicker/ColorPicker.axaml"/>
