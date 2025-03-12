@@ -72,7 +72,7 @@
 			<ColorPicker x:Name="picker" VerticalAlignment="Top" />
 			<button:Button
 				HorizontalAlignment="Right" Margin="0,0,20,0"
-				Content="应用" Click="OkButton_Click" 
+				Content="{DynamicResource Confirm}" Click="OkButton_Click" 
 				Width="100"/>
 		</StackPanel>
 	</Border>

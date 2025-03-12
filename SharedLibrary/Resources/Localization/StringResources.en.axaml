@@ -300,6 +300,11 @@
 	<system:String x:Key="Cancel">Cancel</system:String>
 	<system:String x:Key="RestoreSystemCategory">Restore System Category</system:String>
 	
+	<system:String x:Key="ChooseColor">Choose color</system:String>
+	<system:String x:Key="CustomColor">Custom color</system:String>
+	<system:String x:Key="SelectIcon">Select icon</system:String>
+	<system:String x:Key="CustomPicture">Custom picture</system:String>
+	
 
 	<system:String x:Key="Open">Open</system:String>
 	<system:String x:Key="Exit">Exit</system:String>

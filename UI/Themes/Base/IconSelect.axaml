@@ -50,7 +50,7 @@
 										<RowDefinition Height="auto"/>
 									</Grid.RowDefinitions>
 
-									<TextBlock Text="选择图标" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource DefaultTextBrush}"/>
+									<TextBlock Text="{DynamicResource SelectIcon}" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource DefaultTextBrush}"/>
 
 									<ScrollViewer  Grid.Row="1" VerticalScrollBarVisibility="Auto">
 										<ListBox Grid.Row="1"
@@ -148,7 +148,7 @@
 
 									<button:Button Grid.Row="2" Icon="Photo" HorizontalAlignment="Right" 
 												   Command="{Binding FileSelectCommand,RelativeSource={RelativeSource TemplatedParent}}" 
-												   Content="自定义图片" Width="120"/>
+												   Content="{DynamicResource CustomPicture}" Width="120"/>
 								</Grid>
 							</Border>
 						</Popup>

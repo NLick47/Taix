@@ -309,6 +309,12 @@
 
 	<system:String x:Key="Cancel">取消</system:String>
 	<system:String x:Key="RestoreSystemCategory">还原系统分类</system:String>
+	
+	
+	<system:String x:Key="ChooseColor">选择颜色</system:String>
+	<system:String x:Key="CustomColor">自定义颜色</system:String>
+	<system:String x:Key="SelectIcon">选择图标</system:String>
+	<system:String x:Key="CustomPicture">自定义图片</system:String>
 
 
 
