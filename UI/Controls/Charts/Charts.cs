@@ -1310,7 +1310,7 @@ namespace UI.Controls.Charts
                 x.Name.Substring(0,4) : x.Name).ToList();
             radar.Values = Data.Select(x => x.Values.Sum()).ToList();
             radar.MaxValue = maxValue;
-            ToolTip.SetTip(radar,string.Join(",",Data.
+            ToolTip.SetTip(radar,string.Join("\n",Data.
                 Select(x => x.Name + $" {Time.ToString((int)x.Values.Sum())}")));
             RadarContainer.Child = radar;
             
