@@ -235,6 +235,10 @@ namespace UI.ViewModels
             return Task.Run(async () =>
             {
                 //  应用数据
+                Avalonia.Threading.Dispatcher.UIThread.Invoke(() =>
+                {
+                    DataMaximum = 3600;
+                });
                 var chartData = new List<ChartsDataModel>();
                 var sumData = new List<ChartsDataModel>();
 
@@ -288,7 +292,6 @@ namespace UI.ViewModels
                     RadarData = chartData;
                     ColumnSelectedIndex = -1;
                     WebColSelectedIndex = -1;
-                    DataMaximum = 3600;
                     TotalHours = Time.ToHoursString(totalUse);
                 });
                 await LoadTopData();
