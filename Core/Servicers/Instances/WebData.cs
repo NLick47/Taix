@@ -73,11 +73,12 @@ namespace Core.Servicers.Instances
 
                     if (site == null)
                     {
-                        db.WebSites.Add(new Models.Db.WebSiteModel()
+                        site = new Models.Db.WebSiteModel()
                         {
                             Title = UrlHelper.GetName(site_.Url),
                             Domain = domain,
-                        });
+                        };
+                        db.WebSites.Add(site);
 
                         await db.SaveChangesAsync();
                     }

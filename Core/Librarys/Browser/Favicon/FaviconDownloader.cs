@@ -1,4 +1,5 @@
 ﻿using SharedLibrary.Librarys;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,10 +21,9 @@ namespace Core.Librarys.Browser.Favicon
         {
             if (string.IsNullOrEmpty(url_)) return string.Empty;
 
-            string savePath = Path.Combine(FileHelper.GetRootDirectory(), "WebFavicons", saveName_);
+            string savePath = Path.Combine(FileHelper.GetRootDirectory(), "WebFavicons", saveName_ + Path.GetExtension(url_));
             string dir = Path.GetDirectoryName(savePath);
-            //  暂时不支持svg格式ico，尝试获取png
-            url_ = url_.Replace(".svg", ".png");
+
 
             if (!Directory.Exists(dir))
             {
@@ -37,7 +37,17 @@ namespace Core.Librarys.Browser.Favicon
             {
                 using (var web = new WebClient())
                 {
-                    await web.DownloadFileTaskAsync(url_, savePath);
+                    if (Path.GetExtension(url_) == ".svg")
+                    {
+                        var pngBytes = ConvertSvgToPng(await web.DownloadDataTaskAsync(url_), 32, 32);
+                        await File.WriteAllBytesAsync(savePath, pngBytes);
+                    }
+                    else
+                    {
+                        await web.DownloadFileTaskAsync(url_, savePath);
+
+                    }
+
                     return savePath;
                 }
             }
@@ -46,6 +56,39 @@ namespace Core.Librarys.Browser.Favicon
                 Logger.Error("下载图标失败，" + e);
                 return string.Empty;
             }
+        }
+
+
+        public static byte[] ConvertSvgToPng(byte[] svgBytes, int? width = null, int? height = null, SKColor? background = null)
+        {
+            using MemoryStream svgStream = new MemoryStream(svgBytes);
+            var svg = new SKSvg();
+
+            svg.Load(svgStream);
+
+            var scaledWidth = width ?? (int)svg.Picture.CullRect.Width;
+            var scaledHeight = height ?? (int)svg.Picture.CullRect.Height;
+
+            var imageInfo = new SKImageInfo(scaledWidth, scaledHeight);
+            using var surface = SKSurface.Create(imageInfo);
+            var canvas = surface.Canvas;
+
+            if (background.HasValue)
+            {
+                canvas.Clear(background.Value);
+            }
+
+            var matrix = SKMatrix.CreateScale(
+                scaledWidth / svg.Picture.CullRect.Width,
+                scaledHeight / svg.Picture.CullRect.Height
+            );
+            canvas.DrawPicture(svg.Picture, ref matrix);
+
+            using var image = surface.Snapshot();
+            using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+            using var memoryStream = new MemoryStream();
+            data.SaveTo(memoryStream);
+            return memoryStream.ToArray();
         }
     }
 }

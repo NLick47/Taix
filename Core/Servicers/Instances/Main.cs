@@ -516,7 +516,7 @@ namespace Core.Servicers.Instances
                 Task.Run(async () =>
                 {
                     await _webData.AddUrlBrowseTimeAsync(site, args.Duration, args.ActiveDateTime);
-                    string saveName = UrlHelper.GetName(args.Url) + DateTime.Now.ToString("yyyyMM") + ".ico";
+                    string saveName = UrlHelper.GetName(args.Url) + DateTime.Now.ToString("yyyyMM");
                     string path = await FaviconDownloader.DownloadAsync(args.Icon, saveName);
                     await _webData.UpdateUrlFaviconAsync(site, path);
                 });
