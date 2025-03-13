@@ -1,14 +1,18 @@
-### v1.0.0.8
+### v1.0.0.9
 
 #### 发布内容
 
-1. 设置加入自动检测更新选项
-2. 修复搜索框不起作用
-3. 分类页 - 应用 加入显示系统未分类的卡片，可编辑与查看应用未分类
-4. 优化数据量较多时进入统计页时出现导航栏激活滑块的动画卡顿
+1. 重新实现分类雷达图
+2. 加入svg到png的转换，解决网站时长统计部分站点使用svg图标地址会使展示图标缺失
+3. 完善部分控件缺失的本地化
+4. 修复统计页 - 今日 列统计图初始与刷新后状态下列的最大高度不一致
 ---
 #### Release Notes
-1. Add an automatic update detection option to the settings.
-2. Fix the search box not working.
-3. On the Category page - Applications, add a card to display unclassified system applications, allowing editing and viewing of unclassified applications.
-4. Optimize the navigation bar activation slider animation lag when entering the Statistics page with a large amount of data.
+1. Re-implement categorized radar chart visualization
+(Complete technical overhaul of the radar chart component for classification analysis)
+2. Implement SVG-to-PNG conversion layer
+(Resolve missing icon display issues in website duration statistics caused by SVG icon URLs through automated rasterization)
+3. Complete localization support for missing UI controls
+(Address remaining gaps in multilingual UI elements and regional formatting implementations)
+4. Fix initial/reload height discrepancy in "Today" column charts on statistics page
+(Resolve inconsistent maximum column height between initial load and post-refresh states in time-based analytics visualization)
