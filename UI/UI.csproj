@@ -42,6 +42,7 @@
 		<TrimmerRootAssembly Include="Core" />
 		<TrimmerRootAssembly Include="SharedLibrary" />
 		<TrimmerRootAssembly Include="CsvHelper" />
+		<TrimmerRootAssembly Include="IconExtractor" />
 	</ItemGroup>
 	
 	<ItemGroup>
