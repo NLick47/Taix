@@ -126,6 +126,9 @@ namespace UI.Controls.Charts
                 context.DrawGeometry(null, pen, new PolylineGeometry(points, true));
             }
 
+            var axisPen = new Pen(UI.Base.Color.Colors.GetFromString("#dedede"), 0.3);
+
+
             // 绘制轴线
             for (int i = 0; i < Values.Count; i++)
             {
@@ -133,7 +136,7 @@ namespace UI.Controls.Charts
                 var endPoint = new Point(
                     center.X + radius * Math.Cos(angle),
                     center.Y + radius * Math.Sin(angle));
-                context.DrawLine(pen, center, endPoint);
+                context.DrawLine(axisPen, center, endPoint);
             }
         }
 
