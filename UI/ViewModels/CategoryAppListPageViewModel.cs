@@ -77,6 +77,7 @@ namespace UI.ViewModels
 
         private Task OnSearch(object obj)
         {
+            if(obj == null || string.IsNullOrEmpty(SearchInput)) return Task.CompletedTask;
             string keyword = obj.ToString();
 
             if (keyword == "vscode")
@@ -219,9 +220,15 @@ namespace UI.ViewModels
 
        .ContinueWith(task =>
        {
-           AppList = task.Result;
+           if (task.IsCompletedSuccessfully)
+           {
+               Avalonia.Threading.Dispatcher.UIThread.Invoke(() =>
+               {
+                   AppList = task.Result;
+               });
+           }
 
-       }, TaskScheduler.FromCurrentSynchronizationContext());
+       });
 
         }
 
