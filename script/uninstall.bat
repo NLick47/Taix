@@ -6,6 +6,11 @@ rd /S /Q "Log" 2>nul
 
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "Taix" /f 2>nul
 
+set "USERPROFILE_PATH=%USERPROFILE%"
+del /Q "%USERPROFILE_PATH%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Taix.lnk" 2>nul
+del /Q "%USERPROFILE_PATH%\Desktop\Taix.lnk" 2>nul
+
+
 if exist "Taix.exe" (echo Failed to delete Taix.exe) else (echo Taix.exe deleted)
 if exist "Log\" (echo Failed to delete Log folder) else (echo Log folder deleted)
 reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "Taix" 2>nul && (
