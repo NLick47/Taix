@@ -115,7 +115,7 @@ namespace Core.Servicers.Instances
 
         private void StopTimer()
         {
-            _timer.Stop();
+            _timer?.Stop();
             _endTime = DateTime.Now;
         }
 

@@ -1,17 +1,12 @@
 ﻿using SharedLibrary.Enums;
 using SharedLibrary.Event;
 using SharedLibrary.Servicers;
-using SharedLibrary;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Timers;
 
 namespace Win
 {
@@ -31,7 +26,7 @@ namespace Win
         #endregion
 
         //  获得焦点事件
-        private WinEventDelegate _foregroundEventDelegate;
+        private readonly WinEventDelegate _foregroundEventDelegate;
         private readonly IAppManager _appManager;
         private readonly IWindowManager _windowManager;
         private nint _hook;

@@ -15,52 +15,52 @@ namespace Win
     {
         public event SleepdiscoverEventHandler SleepStatusChanged;
 
-        private DispatcherTimer  timer;
+        private DispatcherTimer  _timer;
 
-        private Point lastPoint;
+        private Point _lastPoint;
 
-        private SleepStatus status = SleepStatus.Wake;
+        private SleepStatus _status = SleepStatus.Wake;
 
         /// <summary>
         /// 播放声音开始时间
         /// </summary>
-        private DateTime playSoundStartTime;
+        private DateTime _playSoundStartTime;
 
         /// <summary>
         /// 最后一次按键时间
         /// </summary>
-        private DateTime pressKeyboardLastTime;
+        private DateTime _pressKeyboardLastTime;
 
         //  键盘钩子
-        private Win32API.LowLevelKeyboardProc keyboardProc;
-        private static nint hookKeyboardID = nint.Zero;
+        private  Win32API.LowLevelKeyboardProc _keyboardProc;
+        private static nint _hookKeyboardId = nint.Zero;
 
 
         //  鼠标钩子
-        private Win32API.LowLevelKeyboardProc mouseProc;
-        private static nint hookMouseID = nint.Zero;
-        private nint mouseHook;
+        private Win32API.LowLevelKeyboardProc _mouseProc;
+        private static nint _hookMouseId = nint.Zero;
+        private nint _mouseHook;
 
-        private int emptyPointNum = 0;
+        private int _emptyPointNum = 0;
         public WinSleepdiscover()
         {
             SystemEvents.PowerModeChanged += new PowerModeChangedEventHandler(OnPowerModeChanged);
             SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
 
-            keyboardProc = HookCallback;
-            mouseProc = HookMouseCallback;
+            _keyboardProc = HookCallback;
+            _mouseProc = HookMouseCallback;
         }
 
         public void Start()
         {
             StartTimer();
 
-            lastPoint = Win32API.GetCursorPosition();
-            playSoundStartTime = DateTime.MinValue;
-            pressKeyboardLastTime = DateTime.Now;
+            _lastPoint = Win32API.GetCursorPosition();
+            _playSoundStartTime = DateTime.MinValue;
+            _pressKeyboardLastTime = DateTime.Now;
 
             //  设置键盘钩子
-            Win32API.SetKeyboardHook(keyboardProc);
+            Win32API.SetKeyboardHook(_keyboardProc);
         }
 
         public void Stop()
@@ -71,18 +71,18 @@ namespace Win
         private void StartTimer()
         {
             StopTimer();
-            timer = new ();
-            timer.Interval = new(0,5,0);
-            timer.Tick += Timer_Tick;
-            timer.Start();
+            _timer = new ();
+            _timer.Interval = new(0,5,0);
+            _timer.Tick += Timer_Tick;
+            _timer.Start();
         }
 
         private void StopTimer()
         {
-            if (timer != null)
+            if (_timer != null)
             {
-                timer.Tick -= Timer_Tick;
-                timer.Stop();
+                _timer.Tick -= Timer_Tick;
+                _timer.Stop();
             }
         }
 
@@ -91,7 +91,7 @@ namespace Win
             if (e.Reason == SessionSwitchReason.RemoteDisconnect || e.Reason == SessionSwitchReason.ConsoleDisconnect)
             {
                 //  与这台设备远程桌面连接断开
-                if (status == SleepStatus.Wake)
+                if (_status == SleepStatus.Wake)
                 {
                     Logger.Warn("与这台设备远程桌面连接断开");
                     Sleep();
@@ -102,7 +102,7 @@ namespace Win
         private nint HookMouseCallback(int nCode, nint wParam, nint lParam)
         {
 
-            if (nCode >= 0 && status == SleepStatus.Sleep)
+            if (nCode >= 0 && _status == SleepStatus.Sleep)
             {
                 if (wParam == Win32API.WM_LBUTTONDBLCLK || wParam == Win32API.WM_WHEEL)
                 {
@@ -113,14 +113,14 @@ namespace Win
 
             }
 
-            return Win32API.CallNextHookEx(hookMouseID, nCode, wParam, lParam);
+            return Win32API.CallNextHookEx(_hookMouseId, nCode, wParam, lParam);
         }
         private nint HookCallback(
            int nCode, nint wParam, nint lParam)
         {
             if (nCode >= 0 && wParam == Win32API.WM_KEYDOWN)
             {
-                if (status == SleepStatus.Sleep)
+                if (_status == SleepStatus.Sleep)
                 {
                     Logger.Info("键盘唤醒");
 
@@ -128,11 +128,11 @@ namespace Win
                 }
                 else
                 {
-                    playSoundStartTime = DateTime.MinValue;
-                    pressKeyboardLastTime = DateTime.Now;
+                    _playSoundStartTime = DateTime.MinValue;
+                    _pressKeyboardLastTime = DateTime.Now;
                 }
             }
-            return Win32API.CallNextHookEx(hookKeyboardID, nCode, wParam, lParam);
+            return Win32API.CallNextHookEx(_hookKeyboardId, nCode, wParam, lParam);
         }
 
         private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
@@ -141,7 +141,7 @@ namespace Win
             {
                 case PowerModes.Suspend:
                     //  电脑休眠
-                    if (status == SleepStatus.Wake)
+                    if (_status == SleepStatus.Wake)
                     {
                         Logger.Info("设备已休眠");
 
@@ -150,7 +150,7 @@ namespace Win
                     break;
                 case PowerModes.Resume:
                     //  电脑恢复
-                    if (status == SleepStatus.Sleep)
+                    if (_status == SleepStatus.Sleep)
                     {
                         Logger.Info("设备已恢复");
 
@@ -173,11 +173,11 @@ namespace Win
 
             if (point.X + point.Y == 0)
             {
-                emptyPointNum++;
+                _emptyPointNum++;
 
-                if (emptyPointNum == 2)
+                if (_emptyPointNum == 2)
                 {
-                    emptyPointNum = 0;
+                    _emptyPointNum = 0;
                     return true;
                 }
             }
@@ -200,20 +200,20 @@ namespace Win
             }
 
             //  在播放声音
-            if (playSoundStartTime == DateTime.MinValue)
+            if (_playSoundStartTime == DateTime.MinValue)
             {
                 //  第一次记录声音开始时间
-                playSoundStartTime = DateTime.Now;
+                _playSoundStartTime = DateTime.Now;
                 return false;
             }
 
             //  声音播放超过两个小时视为睡眠状态
-            TimeSpan timeSpan = DateTime.Now - playSoundStartTime;
+            TimeSpan timeSpan = DateTime.Now - _playSoundStartTime;
 
             if (timeSpan.TotalHours >= 2)
             {
                 //  重置声音开始时间
-                playSoundStartTime = DateTime.MinValue;
+                _playSoundStartTime = DateTime.MinValue;
                 return true;
             }
 
@@ -231,13 +231,13 @@ namespace Win
             }
             else
             {
-                timer.Start();
+                _timer.Start();
             }
         }
 
         private void Sleep()
         {
-            if (status == SleepStatus.Sleep)
+            if (_status == SleepStatus.Sleep)
             {
                 return;
             }
@@ -248,18 +248,18 @@ namespace Win
             //  停止离开检测计时器
             StopTimer();
 
-            status = SleepStatus.Sleep;
+            _status = SleepStatus.Sleep;
 
             //  设置鼠标钩子
-             Win32API.SetMouseHook(mouseProc);
+             Win32API.SetMouseHook(_mouseProc);
 
             //  状态通知
-            SleepStatusChanged?.Invoke(status);
+            SleepStatusChanged?.Invoke(_status);
         }
 
         private void Wake()
         {
-            if (status == SleepStatus.Wake)
+            if (_status == SleepStatus.Wake)
             {
                 return;
             }
@@ -268,10 +268,10 @@ namespace Win
                 //  注册事件
                 SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
 
-                status = SleepStatus.Wake;
+                _status = SleepStatus.Wake;
 
                 //  卸载鼠标钩子
-                Win32API.UnhookWindowsHookEx(mouseHook);
+                Win32API.UnhookWindowsHookEx(_mouseHook);
 
                 //  启动离开检测
                 StartTimer();
@@ -279,13 +279,13 @@ namespace Win
 
 
                 //  重置声音播放时间
-                playSoundStartTime = DateTime.MinValue;
+                _playSoundStartTime = DateTime.MinValue;
 
                 //  重置鼠标坐标
-                lastPoint = Win32API.GetCursorPosition();
+                _lastPoint = Win32API.GetCursorPosition();
 
                 //  状态通知
-                SleepStatusChanged?.Invoke(status);
+                SleepStatusChanged?.Invoke(_status);
             }
             catch (Exception e)
             {
@@ -327,12 +327,12 @@ namespace Win
                 while (time > 0)
                 {
                     Point point = Win32API.GetCursorPosition();
-                    bool isMouseMove = lastPoint.ToString() != point.ToString();
+                    bool isMouseMove = _lastPoint.ToString() != point.ToString();
                     bool isKeyboardActive = !IsKeyboardOuttime();
 
                     if (isMouseMove || isKeyboardActive)
                     {
-                        lastPoint = Win32API.GetCursorPosition();
+                        _lastPoint = Win32API.GetCursorPosition();
                         result = true;
                         break;
                     }
@@ -353,7 +353,7 @@ namespace Win
         /// <returns>超时返回true</returns>
         private bool IsKeyboardOuttime()
         {
-            TimeSpan timeSpan = DateTime.Now - pressKeyboardLastTime;
+            TimeSpan timeSpan = DateTime.Now - _pressKeyboardLastTime;
 #if DEBUG
             return timeSpan.TotalSeconds >= 10;
 #endif

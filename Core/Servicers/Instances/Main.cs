@@ -29,12 +29,12 @@ namespace Core.Servicers.Instances
 {
     public class Main : IMain
     {
-        private readonly IAppObserver appObserver;
-        private readonly IData data;
-        private readonly ISleepdiscover sleepdiscover;
-        private readonly IAppConfig appConfig;
-        private readonly IAppData appData;
-        private readonly ICategorys categories;
+        private readonly IAppObserver _appObserver;
+        private readonly IData _data;
+        private readonly ISleepdiscover _sleepdiscover;
+        private readonly IAppConfig _appConfig;
+        private readonly IAppData _appData;
+        private readonly ICategorys _categories;
         private readonly IWebFilter _webFilter;
         private readonly IAppTimerServicer _appTimer;
         private readonly IWebServer _webServer;
@@ -74,20 +74,20 @@ namespace Core.Servicers.Instances
         /// <summary>
         /// 忽略进程缓存列表
         /// </summary>
-        private List<string> IgnoreProcessCacheList;
+        private List<string> _ignoreProcessCacheList;
 
         /// <summary>
         /// 配置正则忽略进程列表
         /// </summary>
-        private List<string> ConfigIgnoreProcessRegxList;
+        private List<string> _configIgnoreProcessRegxList;
         /// <summary>
         /// 配置忽略进程名称列表
         /// </summary>
-        private List<string> ConfigIgnoreProcessList;
+        private List<string> _configIgnoreProcessList;
         //  更新应用日期
-        private DateTime updadteAppDateTime_ = DateTime.Now.Date;
+        private DateTime _updadteAppDateTime = DateTime.Now.Date;
         //  已经更新过的应用列表
-        private List<string> updatedAppList = new List<string>();
+        private List<string> _updatedAppList = new List<string>();
         private List<string> _configProcessNameWhiteList, _configProcessRegexWhiteList;
         public Main(
             IAppObserver appObserver,
@@ -96,26 +96,26 @@ namespace Core.Servicers.Instances
             IAppConfig appConfig,
             IDateTimeObserver dateTimeObserver,
             IAppData appData, ICategorys categories,
-            IWebFilter webFilter_,
-            IAppTimerServicer appTimer_,
-            IWebServer webServer_,
-            ISystemInfrastructure systemInfrastructure_,
-            IWebData webData_)
+            IWebFilter webFilter,
+            IAppTimerServicer appTimer,
+            IWebServer webServer,
+            ISystemInfrastructure systemInfrastructure,
+            IWebData webData)
         {
-            this.appObserver = appObserver;
-            this.data = data;
-            this.sleepdiscover = sleepdiscover;
-            this.appConfig = appConfig;
-            this.appData = appData;
-            this.categories = categories;
-            _webFilter = webFilter_;
-            _appTimer = appTimer_;
-            _webServer = webServer_;
-            _webData = webData_;
-            _systemInfrastructure = systemInfrastructure_;
-            IgnoreProcessCacheList = new List<string>();
-            ConfigIgnoreProcessRegxList = new List<string>();
-            ConfigIgnoreProcessList = new List<string>();
+            _appObserver = appObserver;
+            _data = data;
+            _sleepdiscover = sleepdiscover;
+            _appConfig = appConfig;
+            _appData = appData;
+            _categories = categories;
+            _webFilter = webFilter;
+            _appTimer = appTimer;
+            _webServer = webServer;
+            _webData = webData;
+            _systemInfrastructure = systemInfrastructure;
+            _ignoreProcessCacheList = new List<string>();
+            _configIgnoreProcessRegxList = new List<string>();
+            _configIgnoreProcessList = new List<string>();
             _configProcessNameWhiteList = new List<string>();
             _configProcessRegexWhiteList = new List<string>();
 
@@ -158,16 +158,16 @@ namespace Core.Servicers.Instances
                     await taiDb.Database.MigrateAsync();
                 }
                 //  加载app信息
-                await appData.LoadAsync();
+                await _appData.LoadAsync();
 
                 // 加载分类信息
-                await categories.LoadAsync();
+                await _categories.LoadAsync();
 
                 AppState.IsLoading = false;
 
 
-                appConfig.Load();
-                config = appConfig.GetConfig();
+                _appConfig.Load();
+                config = _appConfig.GetConfig();
                 OnConfigLoaded?.Invoke(this,EventArgs.Empty);
                 UpdateConfigIgnoreProcess();
                 UpdateConfigProcessWhiteList();
@@ -190,7 +190,7 @@ namespace Core.Servicers.Instances
         {
             //  appTimer必须比Observer先启动*
             _appTimer.Start();
-            appObserver.Start();
+            _appObserver.Start();
             if (config.General.IsWebEnabled)
             {
                 _webServer.Start();
@@ -198,18 +198,18 @@ namespace Core.Servicers.Instances
             if (config.Behavior.IsSleepWatch)
             {
                 //  启动睡眠监测
-                sleepdiscover.Start();
+                _sleepdiscover.Start();
             }
         }
         public void Stop()
         {
-            appObserver.Stop();
+            _appObserver.Stop();
             _appTimer.Stop();
             _webServer.Stop();
         }
         public void Exit()
         {
-            appObserver?.Stop();
+            _appObserver?.Stop();
         }
 
         /// <summary>
@@ -227,12 +227,12 @@ namespace Core.Servicers.Instances
             {
                 return;
             }
-            ConfigIgnoreProcessList.Clear();
-            ConfigIgnoreProcessRegxList.Clear();
-            IgnoreProcessCacheList.Clear();
+            _configIgnoreProcessList.Clear();
+            _configIgnoreProcessRegxList.Clear();
+            _ignoreProcessCacheList.Clear();
 
-            ConfigIgnoreProcessList = config.Behavior.IgnoreProcessList.Where(m => !IsRegex(m)).ToList();
-            ConfigIgnoreProcessRegxList = config.Behavior.IgnoreProcessList.Where(m => IsRegex(m)).ToList();
+            _configIgnoreProcessList = config.Behavior.IgnoreProcessList.Where(m => !IsRegex(m)).ToList();
+            _configIgnoreProcessRegxList = config.Behavior.IgnoreProcessList.Where(m => IsRegex(m)).ToList();
         }
 
         private void UpdateConfigProcessWhiteList()
@@ -291,23 +291,23 @@ namespace Core.Servicers.Instances
         /// <param name="file"></param>
         private bool IsCheckApp(string processName, string description, string file)
         {
-            if (string.IsNullOrEmpty(file) || string.IsNullOrEmpty(processName) || DefaultIgnoreProcess.Contains(processName) || IgnoreProcessCacheList.Contains(processName))
+            if (string.IsNullOrEmpty(file) || string.IsNullOrEmpty(processName) || DefaultIgnoreProcess.Contains(processName) || _ignoreProcessCacheList.Contains(processName))
             {
                 return false;
             }
 
             //  从名称判断
-            if (ConfigIgnoreProcessList.Contains(processName))
+            if (_configIgnoreProcessList.Contains(processName))
             {
                 return false;
             }
 
             //  正则表达式
-            foreach (string reg in ConfigIgnoreProcessRegxList)
+            foreach (string reg in _configIgnoreProcessRegxList)
             {
                 if (RegexHelper.IsMatch(processName, reg) || RegexHelper.IsMatch(file, reg))
                 {
-                    IgnoreProcessCacheList.Add(processName);
+                    _ignoreProcessCacheList.Add(processName);
                     return false;
                 }
             }
@@ -338,7 +338,7 @@ namespace Core.Servicers.Instances
                 if (!isWhite) return false;
             }
 
-            AppModel app = appData.GetApp(processName);
+            AppModel app = _appData.GetApp(processName);
             if (app == null)
             {
                 //  记录应用信息
@@ -346,7 +346,7 @@ namespace Core.Servicers.Instances
                 //  提取icon
                 string iconFile = Iconer.ExtractFromFile(file, processName, description);
 
-                appData.AddApp(new AppModel()
+                _appData.AddApp(new AppModel()
                 {
                     Name = processName,
                     Description = description,
@@ -357,13 +357,13 @@ namespace Core.Servicers.Instances
             }
             else
             {
-                if (updadteAppDateTime_ != DateTime.Now.Date)
+                if (_updadteAppDateTime != DateTime.Now.Date)
                 {
-                    updadteAppDateTime_ = DateTime.Now.Date;
-                    updatedAppList.Clear();
+                    _updadteAppDateTime = DateTime.Now.Date;
+                    _updatedAppList.Clear();
                 }
 
-                if (!updatedAppList.Contains(processName))
+                if (!_updatedAppList.Contains(processName))
                 {
                     //  更新应用信息
                     app.IconFile = Iconer.ExtractFromFile(file, processName, description);
@@ -376,8 +376,8 @@ namespace Core.Servicers.Instances
                     {
                         app.File = file;
                     }
-                    appData.UpdateApp(app);
-                    updatedAppList.Add(processName);
+                    _appData.UpdateApp(app);
+                    _updatedAppList.Add(processName);
                 }
             }
 
@@ -405,7 +405,7 @@ namespace Core.Servicers.Instances
                                     if (IsProcessRuning(linkProcess))
                                     {
                                         //  同步更新
-                                        await data.UpdateAppDurationAsync(linkProcess, seconds, time);
+                                        await _data.UpdateAppDurationAsync(linkProcess, seconds, time);
                                     }
 
                                 }
@@ -480,7 +480,7 @@ namespace Core.Servicers.Instances
                 if (isCheck)
                 {
                     //  更新统计时长
-                    await data.UpdateAppDurationAsync(app.Process, duration, startTime);
+                    await _data.UpdateAppDurationAsync(app.Process, duration, startTime);
                     //  关联进程更新
                     HandleLinks(app.Process, duration, startTime);
                     OnUpdateTime?.Invoke(this, null);
@@ -537,10 +537,10 @@ namespace Core.Servicers.Instances
         {
             try
             {
-                AppModel app = appData.GetApp(processName_);
+                AppModel app = _appData.GetApp(processName_);
                 if (app != null)
                 {
-                    var categoryList = categories.GetCategories().Where(c => c.IsDirectoryMath && c.DirectoryList.Count > 0).ToList();
+                    var categoryList = _categories.GetCategories().Where(c => c.IsDirectoryMath && c.DirectoryList.Count > 0).ToList();
                     CategoryModel mathCategory = null;
                     foreach (var category in categoryList)
                     {
@@ -565,7 +565,7 @@ namespace Core.Servicers.Instances
                         //  匹配成功
                         app.Category = mathCategory;
                         app.CategoryID = mathCategory.ID;
-                        appData.UpdateApp(app);
+                        _appData.UpdateApp(app);
                     }
                 }
             }
