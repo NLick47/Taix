@@ -1128,7 +1128,18 @@ namespace UI.Controls.Charts
 
                 columnBorder.PointerEntered += (e, c) =>
                 {
-                    ColumnValuesInfoList = valuesPopupList.OrderByDescending(m => m.Value).ToList();
+                    var s = valuesPopupList.OrderByDescending(m => m.Value).ToList();
+                    if (s.Count > 1)
+                    {
+                        s.Add(new ()
+                        {
+                            Name = "Sum",
+                            Text = Covervalue(s.Sum(x => x.Value)) + Unit,
+                            Color = "#FF8A8A8A",
+                        });
+                    }
+                    
+                    ColumnValuesInfoList = s;
                     ValuesPopupPlacementTarget = columnBorder;
                     IsShowValuesPopup = valuesPopupList.Count > 0;
 
