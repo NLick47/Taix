@@ -1,18 +1,12 @@
-### v1.0.0.9
-
+### v1.0.1.1 
+该版本不为正式发布，仅用于测试解决自启问题
 #### 发布内容
+- win开机自启由注册表替换为任务计划
+- ci文件32位错误发布和使用64位版本
+- 修改MenuItem停留选中项的颜色
+- 修复选择应用分类搜索弹出的ui异常提示
+- 为柱状图悬弹出层增加时段总计
 
-1. 重新实现分类雷达图
-2. 加入svg到png的转换，解决网站时长统计部分站点使用svg图标地址会使展示图标缺失
-3. 完善部分控件缺失的本地化
-4. 修复统计页 - 今日 列统计图初始与刷新后状态下列的最大高度不一致
----
-#### Release Notes
-1. Re-implement categorized radar chart visualization
-(Complete technical overhaul of the radar chart component for classification analysis)
-2. Implement SVG-to-PNG conversion layer
-(Resolve missing icon display issues in website duration statistics caused by SVG icon URLs through automated rasterization)
-3. Complete localization support for missing UI controls
-(Address remaining gaps in multilingual UI elements and regional formatting implementations)
-4. Fix initial/reload height discrepancy in "Today" column charts on statistics page
-(Resolve inconsistent maximum column height between initial load and post-refresh states in time-based analytics visualization)
+使用该版本需手动删除注册表项，终端运行 reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v "Taix" /f
+
+

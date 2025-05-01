@@ -49,9 +49,17 @@ namespace UI.Servicers
         {
             this.isSelfStart = isSelfStart;
             main.OnStarted += Main_OnStarted;
+            main.OnConfigLoaded += ConfigLoaded;
             return Task.WhenAll(main.Run(), _statusBarIconServicer.Init());
         }
 
+        private void ConfigLoaded(object sender, EventArgs e)
+        {
+            if (!isSelfStart && _config.GetConfig().General.IsStartatboot)
+            {
+                _systemInfrastructure.SetStartup(true);
+            }
+        }
         
         private void Main_OnStarted(object sender, EventArgs e)
         {
