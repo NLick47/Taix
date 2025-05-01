@@ -44,6 +44,11 @@
 		<TrimmerRootAssembly Include="CsvHelper" />
 		<TrimmerRootAssembly Include="IconExtractor" />
 	</ItemGroup>
+
+	<ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
+		<TrimmerRootAssembly Include="Microsoft.Win32.TaskScheduler" />
+		<TrimmerRootAssembly Include="Microsoft.Win32.SystemEvents" />
+	</ItemGroup>
 	
 	<ItemGroup>
 		<AvaloniaResource Include="Resources\Emoji\(*).png" />

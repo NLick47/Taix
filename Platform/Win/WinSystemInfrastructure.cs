@@ -1,10 +1,13 @@
 ﻿using SharedLibrary.Servicers;
 using Microsoft.Win32.TaskScheduler;
+using SharedLibrary.Librarys;
 
 namespace Win
 {
     public class WinSystemInfrastructure : ISystemInfrastructure
     {
+        
+        
         public (string ostype, string version) GetOSVersionName()
         {
             return (string.Empty, string.Empty);
@@ -12,7 +15,11 @@ namespace Win
 
         public bool SetStartup(bool startup = true)
         {
-            string TaskName = "Taix task";
+            string taskName = "Taix";
+#if DEBUG
+            taskName += " debug";
+#endif
+            taskName += " task";
             try
             {
                 var logonUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
@@ -22,6 +29,7 @@ namespace Win
                 
                 if (!File.Exists(tai))
                 {
+                    Logger.Error("SetStartup Taix.exe not found");
                     return false;
                 }
 
@@ -32,7 +40,7 @@ namespace Win
                 bool deletionSuccess = true;
                 try
                 {
-                    var tasks = taskService.RootFolder.GetTasks(new System.Text.RegularExpressions.Regex(TaskName));
+                    var tasks = taskService.RootFolder.GetTasks(new System.Text.RegularExpressions.Regex(taskName));
                     foreach (var t in tasks)
                     {
                         taskService.RootFolder.DeleteTask(t.Name);
@@ -40,6 +48,7 @@ namespace Win
                 }
                 catch (Exception ex)
                 {
+                    Logger.Error(ex.ToString());
                     deletionSuccess = false;
                 }
 
@@ -54,15 +63,12 @@ namespace Win
                         task.Actions.Add(new ExecAction(tai, "--selfStart", AppDomain.CurrentDomain.BaseDirectory));
                         task.Settings.StopIfGoingOnBatteries = false;
                         task.Settings.DisallowStartIfOnBatteries = false;
-                        taskService.RootFolder.RegisterTaskDefinition(TaskName, task);
+                        taskService.RootFolder.RegisterTaskDefinition(taskName, task);
                         return true;
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        return false;
                     }
                     catch (Exception ex)
                     {
+                        Logger.Error(ex.ToString());
                         return false;
                     }
                 }
@@ -71,6 +77,7 @@ namespace Win
             }
             catch (Exception ex)
             {
+                Logger.Error(ex.ToString());
                 return false;
             }
         }
