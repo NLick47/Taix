@@ -129,6 +129,7 @@ namespace Core.Servicers.Instances
         {
             if (oldConfig != newConfig)
             {
+                _systemInfrastructure.SetStartup(newConfig.General.IsStartatboot);
                 //  更新忽略规则
                 UpdateConfigIgnoreProcess();
 

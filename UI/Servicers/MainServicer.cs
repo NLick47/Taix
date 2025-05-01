@@ -49,20 +49,10 @@ namespace UI.Servicers
         {
             this.isSelfStart = isSelfStart;
             main.OnStarted += Main_OnStarted;
-            main.OnConfigLoaded += ConfigLoaded;
             return Task.WhenAll(main.Run(), _statusBarIconServicer.Init());
         }
 
-        private async void ConfigLoaded(object sender, EventArgs e)
-        {
-            if (isSelfStart && !_config.GetConfig().General.IsStartatboot)
-            {
-                Environment.Exit(0);
-                return;
-            }
-        }
-
-
+        
         private void Main_OnStarted(object sender, EventArgs e)
         {
             SystemLanguage.InitializeLanguage((CultureCode)_config.GetConfig().General.Language);
@@ -71,9 +61,6 @@ namespace UI.Servicers
             _webSiteContext.Init();
             if (!isSelfStart)
             {
-#if !DEBUG
-                _systemInfrastructure.SetAutoStartInRegistry();
-#endif
                 _statusBarIconServicer.ShowMainWindow();
             }
         }

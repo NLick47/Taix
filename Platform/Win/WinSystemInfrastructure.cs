@@ -1,12 +1,5 @@
-﻿using SharedLibrary.Librarys;
-using SharedLibrary.Servicers;
-using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SharedLibrary.Servicers;
+using Microsoft.Win32.TaskScheduler;
 
 namespace Win
 {
@@ -17,32 +10,67 @@ namespace Win
             return (string.Empty, string.Empty);
         }
 
-        public bool SetAutoStartInRegistry()
+        public bool SetStartup(bool startup = true)
         {
-            const string appName = "Taix";
-            const string runKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-
+            string TaskName = "Taix task";
             try
             {
-                using (RegistryKey runKey = Registry.CurrentUser.OpenSubKey(runKeyPath, true)
-                    ?? Registry.CurrentUser.CreateSubKey(runKeyPath))
+                var logonUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+                string tai = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "Taix.exe");
+                
+                if (!File.Exists(tai))
                 {
-                    string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Taix.exe");
+                    return false;
+                }
 
-                    string expectedValue = $"\"{exePath}\" --selfStart";
+                string taskDescription = "Taix开机自启服务";
 
-                    string currentValue = runKey.GetValue(appName) as string;
-
-                    if (currentValue != expectedValue)
+                using var taskService = new TaskService();
+                
+                bool deletionSuccess = true;
+                try
+                {
+                    var tasks = taskService.RootFolder.GetTasks(new System.Text.RegularExpressions.Regex(TaskName));
+                    foreach (var t in tasks)
                     {
-                        runKey.SetValue(appName, expectedValue, RegistryValueKind.String);
+                        taskService.RootFolder.DeleteTask(t.Name);
                     }
                 }
-                return true;
+                catch (Exception ex)
+                {
+                    deletionSuccess = false;
+                }
+
+                if (startup)
+                {
+                    try
+                    {
+                        var task = taskService.NewTask();
+                        task.RegistrationInfo.Description = taskDescription;
+                        task.Triggers.Add(new LogonTrigger { UserId = logonUser });
+                        task.Principal.RunLevel = TaskRunLevel.Highest;
+                        task.Actions.Add(new ExecAction(tai, "--selfStart", AppDomain.CurrentDomain.BaseDirectory));
+                        task.Settings.StopIfGoingOnBatteries = false;
+                        task.Settings.DisallowStartIfOnBatteries = false;
+                        taskService.RootFolder.RegisterTaskDefinition(TaskName, task);
+                        return true;
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        return false;
+                    }
+                    catch (Exception ex)
+                    {
+                        return false;
+                    }
+                }
+                
+                return deletionSuccess;
             }
             catch (Exception ex)
             {
-                Logger.Error($"SetAutoStartInRegistry failed: {ex.Message}");
                 return false;
             }
         }

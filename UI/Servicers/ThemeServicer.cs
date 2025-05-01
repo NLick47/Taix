@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Core.Models.Config;
 using UI.Views;
 
 namespace UI.Servicers
@@ -35,7 +36,7 @@ namespace UI.Servicers
             
         }
 
-        private void AppConfig_ConfigChanged(Core.Models.Config.ConfigModel oldConfig, Core.Models.Config.ConfigModel newConfig)
+        private void AppConfig_ConfigChanged(ConfigModel oldConfig, ConfigModel newConfig)
         {
             if (oldConfig.General.Theme != newConfig.General.Theme)
             {
