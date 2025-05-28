@@ -41,8 +41,8 @@ namespace Core.Models.Config
         [Config(Name = "Save Window Size", Description = "Retain the current window size instead of using the system default dimensions", ToggleFalseText = "Off", ToggleTrueText = "On",Group = "Interface", CultureCode = CultureCode.EnUs)]
         public bool IsSaveWindowSize { get; set; } = false;
 
-        [Config(Options = "自动|中|英",Name = "语言",Description = "设置程序首选的显示语言",Group = "界面",OptionsChangedRefresh = true,CultureCode = CultureCode.ZhCn)]
-        [Config(Options = "Auto|Chinese|English", Name = "Language",Description = "Set the preferred display language for the program", Group = "Interface",OptionsChangedRefresh = true, CultureCode = CultureCode.EnUs)]
+        [Config(Options = "自动|中|English",Name = "语言",Description = "设置程序首选的显示语言",Group = "界面",OptionsChangedRefresh = true,CultureCode = CultureCode.ZhCn)]
+        [Config(Options = "Auto|中|English", Name = "Language",Description = "Set the preferred display language for the program", Group = "Interface",OptionsChangedRefresh = true, CultureCode = CultureCode.EnUs)]
         public int Language { get; set; }
         
         /// <summary>
