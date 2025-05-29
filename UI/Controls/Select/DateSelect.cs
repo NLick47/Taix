@@ -15,102 +15,147 @@ using System.Reactive;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia.Collections;
 
 namespace UI.Controls.Select
 {
     public class DayModel
     {
         public DateTime Day { get; set; }
+
         public string DayText
         {
-            get
-            {
-                return Day.Day.ToString();
-            }
+            get { return Day.Day.ToString(); }
         }
+
         public bool IsToday
         {
-            get
-            {
-                return Day.Date == DateTime.Now.Date;
-            }
+            get { return Day.Date == DateTime.Now.Date; }
         }
+
         public bool IsOut
         {
-            get
-            {
-                return Day.Date > DateTime.Now.Date;
-            }
+            get { return Day.Date > DateTime.Now.Date; }
         }
+
         public bool IsDisabled { get; set; }
     }
+
     public class DateSelect : TemplatedControl
     {
-
         protected override Type StyleKeyOverride => typeof(DateSelect);
+
+        private DateSelectType _selectType;
+
+        public static readonly DirectProperty<DateSelect, DateSelectType> SelectTypeProperty =
+            AvaloniaProperty.RegisterDirect<DateSelect, DateSelectType>(
+                nameof(SelectType),
+                o => o.SelectType,
+                (o, v) => o.SelectType = v);
 
         public DateSelectType SelectType
         {
-            get { return GetValue(SelectTypeProperty); }
-            set { SetValue(SelectTypeProperty, value); }
+            get => _selectType;
+            set => SetAndRaise(SelectTypeProperty, ref _selectType, value);
         }
-        public static readonly StyledProperty<DateSelectType> SelectTypeProperty =
-            AvaloniaProperty.Register<DateSelect, DateSelectType>(nameof(SelectType));
+
+        private DateTime _date;
+
+        public static readonly DirectProperty<DateSelect, DateTime> DateProperty =
+            AvaloniaProperty.RegisterDirect<DateSelect, DateTime>(
+                nameof(Date),
+                o => o.Date,
+                (o, v) => o.Date = v);
+
         public DateTime Date
         {
-            get { return GetValue(DateProperty); }
-            set { SetValue(DateProperty, value); }
+            get => _date;
+            set => SetAndRaise(DateProperty, ref _date, value);
         }
-        public static readonly StyledProperty<DateTime> DateProperty =
-            AvaloniaProperty.Register<DateSelect, DateTime>(nameof(Date));
 
+        private int _year;
+
+        public static readonly DirectProperty<DateSelect, int> YearProperty =
+            AvaloniaProperty.RegisterDirect<DateSelect, int>(
+                nameof(Year),
+                o => o.Year,
+                (o, v) => o.Year = v);
 
         public int Year
         {
-            get { return GetValue(YearProperty); }
-            set { SetValue(YearProperty, value); }
+            get => _year;
+            set => SetAndRaise(YearProperty, ref _year, value);
         }
-        public static readonly StyledProperty<int> YearProperty =
-            AvaloniaProperty.Register<DateSelect, int>(nameof(Year));
+
+        private int _month;
+
+        public static readonly DirectProperty<DateSelect, int> MonthProperty =
+            AvaloniaProperty.RegisterDirect<DateSelect, int>(
+                nameof(Month),
+                o => o.Month,
+                (o, v) => o.Month = v);
 
         public int Month
         {
-            get { return GetValue(MonthProperty); }
-            set { SetValue(MonthProperty, value); }
+            get => _month;
+            set => SetAndRaise(MonthProperty, ref _month, value);
         }
 
-        public static readonly StyledProperty<int> MonthProperty =
-            AvaloniaProperty.Register<DateSelect, int>(nameof(Month));
+        private DayModel _day;
+
+        public static readonly DirectProperty<DateSelect, DayModel> DayProperty =
+            AvaloniaProperty.RegisterDirect<DateSelect, DayModel>(
+                nameof(Day),
+                o => o.Day,
+                (o, v) => o.Day = v);
 
         public DayModel Day
         {
-            get { return GetValue(DayProperty); }
-            set { SetValue(DayProperty, value); }
+            get => _day;
+            set => SetAndRaise(DayProperty, ref _day, value);
         }
-        public static readonly StyledProperty<DayModel> DayProperty =
-            AvaloniaProperty.Register<DateSelect, DayModel>(nameof(Day));
+
+        private string _dateStr = string.Empty;
+
+        public static readonly DirectProperty<DateSelect, string> DateStrProperty =
+            AvaloniaProperty.RegisterDirect<DateSelect, string>(
+                nameof(DateStr),
+                o => o.DateStr,
+                (o, v) => o.DateStr = v);
+
         public string DateStr
         {
-            get { return GetValue(DateStrProperty); }
-            set { SetValue(DateStrProperty, value); }
+            get => _dateStr;
+            set => SetAndRaise(DateStrProperty, ref _dateStr, value);
         }
-        public static readonly StyledProperty<string> DateStrProperty =
-            AvaloniaProperty.Register<DateSelect, string>(nameof(DateSelect));
+
+        private List<DayModel> _days = new ();
+
+        public static readonly DirectProperty<DateSelect, List<DayModel>> DaysProperty =
+            AvaloniaProperty.RegisterDirect<DateSelect, List<DayModel>>(
+                nameof(Days),
+                o => o.Days,
+                (o, v) => o.Days = v);
+
         public List<DayModel> Days
         {
-            get { return GetValue(DaysProperty); }
-            set { SetValue(DaysProperty, value); }
+            get => _days;
+            set => SetAndRaise(DaysProperty, ref _days, value);
         }
-        public static readonly StyledProperty<List<DayModel>> DaysProperty =
-            AvaloniaProperty.Register<DateSelect, List<DayModel>>(nameof(Days));
+
+        private bool _isOpen;
+
+        public static readonly DirectProperty<DateSelect, bool> IsOpenProperty =
+            AvaloniaProperty.RegisterDirect<DateSelect, bool>(
+                nameof(IsOpen),
+                o => o.IsOpen,
+                (o, v) => o.IsOpen = v);
 
         public bool IsOpen
         {
-            get { return GetValue(IsOpenProperty); }
-            set { SetValue(IsOpenProperty, value); }
+            get => _isOpen;
+            set => SetAndRaise(IsOpenProperty, ref _isOpen, value);
         }
-        public static readonly StyledProperty<bool> IsOpenProperty =
-            AvaloniaProperty.Register<DateSelect, bool>(nameof(IsOpen));
 
         public ICommand ShowSelectCommand { get; }
         public ICommand SetYearCommand { get; }
@@ -120,6 +165,7 @@ namespace UI.Controls.Select
         private bool IsFirstClick = false;
         private Border SelectContainer;
         private DateTime SelectedDay;
+
         public DateSelect()
         {
             ShowSelectCommand = ReactiveCommand.Create<object>(OnShowSelect);
@@ -129,7 +175,6 @@ namespace UI.Controls.Select
             Year = Date.Year;
             Month = Date.Month;
             SelectedDay = Date.Date;
-
         }
 
 
@@ -153,7 +198,6 @@ namespace UI.Controls.Select
 
         private void OnDone(object obj)
         {
-
             Date = new DateTime(Year, Month, Day != null ? int.Parse(Day.DayText) : 1);
             if (Day != null)
             {
@@ -173,11 +217,11 @@ namespace UI.Controls.Select
             {
                 return;
             }
+
             Month = newMonth;
 
             UpdateDays();
         }
-
 
 
         private void OnSetYear(object obj)
@@ -187,6 +231,7 @@ namespace UI.Controls.Select
             {
                 return;
             }
+
             Year = newYear;
             UpdateDays();
         }
@@ -238,6 +283,7 @@ namespace UI.Controls.Select
                     IsDisabled = true,
                 });
             }
+
             list.AddRange(preAppendDays);
 
             //  当月日期
@@ -253,23 +299,20 @@ namespace UI.Controls.Select
         private void UpdateDateStr()
         {
             var culture = SystemLanguage.CurrentCultureInfo;
-            DateStr = Date.ToString("d",culture);
+            DateStr = Date.ToString("d", culture);
             if (Date.Date == DateTime.Now.Date)
             {
                 DateStr = Application.Current.Resources["Today"] as string;
             }
+
             if (SelectType == DateSelectType.Month)
             {
                 DateStr = Date.ToString("Y", culture);
-
             }
             else if (SelectType == DateSelectType.Year)
             {
-                DateStr = Date.ToString("yyyy",culture);
-
+                DateStr = Date.ToString("yyyy", culture);
             }
-
-            
         }
     }
 }

@@ -16,30 +16,41 @@ namespace UI.Controls.Base
 {
     public class IconSelect : TemplatedControl
     {
+        private List<string> _icons = new List<string>();
         public List<string> Icons
         {
-            get { return GetValue(IconsProperty); }
-            set { SetValue(IconsProperty, value); }
+            get => _icons;
+            set => SetAndRaise(IconsProperty, ref _icons, value);
         }
-        public static readonly StyledProperty<List<string>> IconsProperty =
-            AvaloniaProperty.Register<IconSelect, List<string>>(nameof(Icons));
+        public static readonly DirectProperty<IconSelect, List<string>> IconsProperty =
+            AvaloniaProperty.RegisterDirect<IconSelect, List<string>>(
+                nameof(Icons),
+                o => o.Icons,
+                (o, v) => o.Icons = v);
 
+        private string _url;
         public string URL
         {
-            get { return GetValue(URLProperty); }
-            set { SetValue(URLProperty, value); }
+            get => _url;
+            set => SetAndRaise(URLProperty, ref _url, value);
         }
-        public static readonly StyledProperty<string> URLProperty =
-                AvaloniaProperty.Register<IconSelect, string>(nameof(URL));
+        public static readonly DirectProperty<IconSelect, string> URLProperty =
+            AvaloniaProperty.RegisterDirect<IconSelect, string>(
+                nameof(URL),
+                o => o.URL,
+                (o, v) => o.URL = v);
 
+        private bool _isOpen;
         public bool IsOpen
         {
-            get { return GetValue(IsOpenProperty); }
-            set { SetValue(IsOpenProperty, value); }
+            get => _isOpen;
+            set => SetAndRaise(IsOpenProperty, ref _isOpen, value);
         }
-
-        public static readonly StyledProperty<bool> IsOpenProperty =
-           AvaloniaProperty.Register<IconSelect, bool>(nameof(IsOpen));
+        public static readonly DirectProperty<IconSelect, bool> IsOpenProperty =
+            AvaloniaProperty.RegisterDirect<IconSelect, bool>(
+                nameof(IsOpen),
+                o => o.IsOpen,
+                (o, v) => o.IsOpen = v);
 
         private Border SelectContainer;
 

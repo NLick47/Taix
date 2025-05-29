@@ -39,9 +39,17 @@ namespace UI.Controls.SettingPanel
             public PropertyInfo PropertyInfo { get; set; }
         }
 
-        public object Data { get { return GetValue(DataProperty); } set { SetValue(DataProperty, value); } }
-        public static readonly StyledProperty<object> DataProperty =
-            AvaloniaProperty.Register<SettingPanel, object>(nameof(Data));
+        private object _data;
+        public static readonly DirectProperty<SettingPanel, object> DataProperty =
+            AvaloniaProperty.RegisterDirect<SettingPanel, object>(
+                nameof(Data),
+                o => o.Data,
+                (o, v) => o.Data = v);
+        public object Data
+        {
+            get => _data;
+            set => SetAndRaise(DataProperty, ref _data, value);
+        }
 
         public SolidColorBrush SpliteLineBrush { get { return GetValue(SpliteLineBrushProperty); } set { SetValue(SpliteLineBrushProperty, value); } }
         public static readonly StyledProperty<SolidColorBrush> SpliteLineBrushProperty =

@@ -15,28 +15,35 @@ namespace UI.Controls.Charts
 {
     public class ChartsItemTypePie : Canvas
     {
+        private List<ChartsDataModel> _data = new List<ChartsDataModel>();
         /// <summary>
         /// Data
         /// </summary>
+        public static readonly DirectProperty<ChartsItemTypePie, List<ChartsDataModel>> DataProperty =
+            AvaloniaProperty.RegisterDirect<ChartsItemTypePie, List<ChartsDataModel>>(
+                nameof(Data),
+                o => o.Data,
+                (o, v) => o.Data = v);
         public List<ChartsDataModel> Data
         {
-            get { return GetValue(DataProperty); }
-            set { SetValue(DataProperty, value); }
+            get => _data;
+            set => SetAndRaise(DataProperty, ref _data, value);
         }
-        public static readonly StyledProperty<List<ChartsDataModel>> DataProperty =
-            AvaloniaProperty.Register<ChartsItemTypePie, List<ChartsDataModel>>(nameof(Data));
 
-
+        private double _maxValue;
         /// <summary>
         /// 最大值
         /// </summary>
+        public static readonly DirectProperty<ChartsItemTypePie, double> MaxValueProperty =
+            AvaloniaProperty.RegisterDirect<ChartsItemTypePie, double>(
+                nameof(MaxValue),
+                o => o.MaxValue,
+                (o, v) => o.MaxValue = v);
         public double MaxValue
         {
-            get { return GetValue(MaxValueProperty); }
-            set { SetValue(MaxValueProperty, value); }
+            get => _maxValue;
+            set => SetAndRaise(MaxValueProperty, ref _maxValue, value);
         }
-        public static readonly StyledProperty<double> MaxValueProperty =
-            AvaloniaProperty.Register<ChartsItemTypePie,double>(nameof(MaxValue));
 
         private double _lastAngle = -Math.PI / 2;
         private int _zIndex = 1;

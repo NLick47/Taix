@@ -12,9 +12,17 @@ namespace UI.Controls.SettingPanel
 {
     public class SettingPanelItem  : ContentControl
     {
-        public string Description { get { return GetValue(DescriptionProperty); } set { SetValue(DescriptionProperty, value); } }
-        public static readonly StyledProperty<string> DescriptionProperty =
-            AvaloniaProperty.Register<SettingPanelItem, string>(nameof(Description));
+        private string _description = string.Empty;
+        public static readonly DirectProperty<SettingPanelItem, string> DescriptionProperty =
+            AvaloniaProperty.RegisterDirect<SettingPanelItem, string>(
+                nameof(Description),
+                o => o.Description,
+                (o, v) => o.Description = v);
+        public string Description 
+        {
+            get => _description; 
+            set => SetAndRaise(DescriptionProperty, ref _description, value);
+        }
 
         /// <summary>
         /// 是否显示beta标识

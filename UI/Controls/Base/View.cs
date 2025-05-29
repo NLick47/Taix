@@ -14,22 +14,29 @@ namespace UI.Controls.Base
 {
     public class View : ContentControl
     {
+        private string _condition;
         public string Condition
         {
-            get { return GetValue(ConditionProperty); }
-            set { SetValue(ConditionProperty, value); }
+            get => _condition;
+            set => SetAndRaise(ConditionProperty, ref _condition, value);
         }
+        public static readonly DirectProperty<View, string> ConditionProperty =
+            AvaloniaProperty.RegisterDirect<View, string>(
+                nameof(Condition),
+                o => o.Condition,
+                (o, v) => o.Condition = v);
 
-        public static readonly StyledProperty<string> ConditionProperty =
-          AvaloniaProperty.Register<View, string>(nameof(Condition));
-
+        private object _value;
         public object Value
         {
-            get { return GetValue(ValueProperty); }
-            set { SetValue(ValueProperty, value); }
+            get => _value;
+            set => SetAndRaise(ValueProperty, ref _value, value);
         }
-        public static readonly StyledProperty<object> ValueProperty =
-           AvaloniaProperty.Register<View, object>(nameof(Value));
+        public static readonly DirectProperty<View, object> ValueProperty =
+            AvaloniaProperty.RegisterDirect<View, object>(
+                nameof(Value),
+                o => o.Value,
+                (o, v) => o.Value = v);
 
         protected override Type StyleKeyOverride => typeof(View);
 

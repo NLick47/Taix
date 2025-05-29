@@ -28,35 +28,47 @@ namespace UI.Controls.Base
 {
     public class ColorSelect : TemplatedControl
     {
+        private List<string> _colors = new List<string>();
         public List<string> Colors
         {
-            get { return GetValue(ColorsProperty); }
-            set { SetValue(ColorsProperty, value); }
+            get => _colors;
+            set => SetAndRaise(ColorsProperty, ref _colors, value);
         }
-        public static readonly StyledProperty<List<string>> ColorsProperty =
-            AvaloniaProperty.Register<ColorSelect,List<string>>(nameof(Colors) );
+
+        public static readonly DirectProperty<ColorSelect, List<string>> ColorsProperty =
+            AvaloniaProperty.RegisterDirect<ColorSelect, List<string>>(
+                nameof(Colors),
+                o => o.Colors,
+                (o, v) => o.Colors = v);
 
         private void OnWindowPointerPressed(object sender, PointerPressedEventArgs e)
         {
             IsOpen = false;
         }   
 
+        private string _color = "#00FFAB";
         public string Color
         {
-            get { return GetValue(ColorProperty); }
-            set { SetValue(ColorProperty, value); }
+            get => _color;
+            set => SetAndRaise(ColorProperty, ref _color, value);
         }
-        public static readonly StyledProperty<string> ColorProperty =
-               AvaloniaProperty.Register<ColorSelect, string>(nameof(Color), "#00FFAB");
-
+        public static readonly DirectProperty<ColorSelect, string> ColorProperty =
+            AvaloniaProperty.RegisterDirect<ColorSelect, string>(
+                nameof(Color),
+                o => o.Color,
+                (o, v) => o.Color = v);
+        
+        private bool _isOpen;
         public bool IsOpen
         {
-            get { return GetValue(IsOpenProperty); }
-            set { SetValue(IsOpenProperty, value); }
+            get => _isOpen;
+            set => SetAndRaise(IsOpenProperty, ref _isOpen, value);
         }
-
-        public static readonly StyledProperty<bool> IsOpenProperty =
-           AvaloniaProperty.Register<ColorSelect, bool>(nameof(IsOpen));
+        public static readonly DirectProperty<ColorSelect, bool> IsOpenProperty =
+            AvaloniaProperty.RegisterDirect<ColorSelect, bool>(
+                nameof(IsOpen),
+                o => o.IsOpen,
+                (o, v) => o.IsOpen = v);
 
         private Border SelectContainer;
         private void OnShowSelect(object obj)

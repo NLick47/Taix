@@ -16,30 +16,42 @@ namespace UI.Controls.Base
             Number
         }
 
+        // Value 属性
+        private double _value;
         public double Value
         {
-            get { return GetValue(ValueProperty); }
-            set { SetValue(ValueProperty, value); }
+            get => _value;
+            set => SetAndRaise(ValueProperty, ref _value, value);
         }
-
-        public static readonly StyledProperty<double> ValueProperty =
-          AvaloniaProperty.Register<DiffValue, double>(nameof(Value));
-
+        public static readonly DirectProperty<DiffValue, double> ValueProperty =
+            AvaloniaProperty.RegisterDirect<DiffValue, double>(
+                nameof(Value),
+                o => o.Value,
+                (o, v) => o.Value = v);
+        
+        private double _lastValue;
         public double LastValue
         {
-            get { return GetValue(LastValueProperty); }
-            set { SetValue(LastValueProperty, value); }
+            get => _lastValue;
+            set => SetAndRaise(LastValueProperty, ref _lastValue, value);
         }
-        public static readonly StyledProperty<double> LastValueProperty =
-             AvaloniaProperty.Register<DiffValue, double>(nameof(LastValue));
-
+        public static readonly DirectProperty<DiffValue, double> LastValueProperty =
+            AvaloniaProperty.RegisterDirect<DiffValue, double>(
+                nameof(LastValue),
+                o => o.LastValue,
+                (o, v) => o.LastValue = v);
+        
+        private DiffType _type;
         public DiffType Type
         {
-            get { return (DiffType)GetValue(TypeProperty); }
-            set { SetValue(TypeProperty, value); }
+            get => _type;
+            set => SetAndRaise(TypeProperty, ref _type, value);
         }
-        public static readonly StyledProperty<DiffType> TypeProperty =
-            AvaloniaProperty.Register<DiffValue, DiffType>(nameof(Type));
+        public static readonly DirectProperty<DiffValue, DiffType> TypeProperty =
+            AvaloniaProperty.RegisterDirect<DiffValue, DiffType>(
+                nameof(Type),
+                o => o.Type,
+                (o, v) => o.Type = v);
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {

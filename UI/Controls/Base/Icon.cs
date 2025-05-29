@@ -9,29 +9,29 @@ namespace UI.Controls.Base
 {
     public class Icon : TemplatedControl
     {
-        public static readonly StyledProperty<IconTypes> IconTypeProperty =
-       AvaloniaProperty.Register<Icon, IconTypes>(nameof(IconType), IconTypes.Back
-         
-         );
-
-
-       
-
+        private IconTypes _iconType = IconTypes.Back;
         public IconTypes IconType
         {
-            get => GetValue(IconTypeProperty);
-            set => SetValue(IconTypeProperty, value);
+            get => _iconType;
+            set => SetAndRaise(IconTypeProperty, ref _iconType, value);
         }
+        public static readonly DirectProperty<Icon, IconTypes> IconTypeProperty =
+            AvaloniaProperty.RegisterDirect<Icon, IconTypes>(
+                nameof(IconType),
+                o => o.IconType,
+                (o, v) => o.IconType = v);
 
-        public static readonly StyledProperty<string> UnicodeProperty =
-            AvaloniaProperty.Register<Icon, string>(nameof(Unicode),
-                IconConverter.ToUnicode(IconTypes.Back));
-
+        private string _unicode = IconConverter.ToUnicode(IconTypes.Back);
         public string Unicode
         {
-            get => GetValue(UnicodeProperty);
-            set => SetValue(UnicodeProperty, value);
+            get => _unicode;
+            set => SetAndRaise(UnicodeProperty, ref _unicode, value);
         }
+        public static readonly DirectProperty<Icon, string> UnicodeProperty =
+            AvaloniaProperty.RegisterDirect<Icon, string>(
+                nameof(Unicode),
+                o => o.Unicode,
+                (o, v) => o.Unicode = v);
 
         private  void OnIconTypeChanged(IconTypes icon)
         {

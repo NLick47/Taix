@@ -31,15 +31,17 @@ namespace UI.Controls.Select
         AvaloniaProperty.Register<Select,bool>(nameof(IsOpen));
 
 
+        private List<SelectItemModel> _options = new List<SelectItemModel>();
+        public static readonly DirectProperty<Select, List<SelectItemModel>> OptionsProperty =
+            AvaloniaProperty.RegisterDirect<Select, List<SelectItemModel>>(
+                nameof(Options),
+                o => o.Options,
+                (o, v) => o.Options = v ?? new List<SelectItemModel>());
         public List<SelectItemModel> Options
         {
-            get { return GetValue(OptionsProperty); }
-            set { SetValue(OptionsProperty, value); }
+            get => _options;
+            set => SetAndRaise(OptionsProperty, ref _options, value);
         }
-
-
-        public static readonly StyledProperty<List<SelectItemModel>> OptionsProperty =
-          AvaloniaProperty.Register<Select, List<SelectItemModel>>(nameof(Options));
 
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

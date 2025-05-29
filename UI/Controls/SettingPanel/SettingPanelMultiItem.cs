@@ -18,30 +18,99 @@ namespace UI.Controls.SettingPanel
 {
     public class SettingPanelMultiItem : TemplatedControl
     {
-
         /// <summary>
         /// 所有设置数据
         /// </summary>
-        public Dictionary<string, List<string>> SettingData { get { return GetValue(SettingDataProperty); } set { SetValue(SettingDataProperty, value); } }
-        public static readonly StyledProperty<Dictionary<string, List<string>>> SettingDataProperty =
-            AvaloniaProperty.Register<SettingPanelMultiItem, Dictionary<string, List<string>>>(nameof(SettingData));
-        public bool Fold { get { return GetValue(FoldProperty); } set { SetValue(FoldProperty, value); } }
-        public static readonly StyledProperty<bool> FoldProperty =
-            AvaloniaProperty.Register<SettingPanelMultiItem, bool>(nameof(Fold), false);
+        // Dictionary property
+        private Dictionary<string, List<string>> _settingData = new Dictionary<string, List<string>>();
 
-        public object Data { get { return (object)GetValue(DataProperty); } set { SetValue(DataProperty, value); } }
-        public static readonly StyledProperty<object> DataProperty =
-            AvaloniaProperty.Register<SettingPanelMultiItem, object>(nameof(Data));
+        public static readonly DirectProperty<SettingPanelMultiItem, Dictionary<string, List<string>>>
+            SettingDataProperty =
+                AvaloniaProperty.RegisterDirect<SettingPanelMultiItem, Dictionary<string, List<string>>>(
+                    nameof(SettingData),
+                    o => o.SettingData,
+                    (o, v) => o.SettingData = v);
 
-        public ICommand OnRemoveAction { get { return GetValue(OnRemoveActionProperty); } set { SetValue(OnRemoveActionProperty, value); } }
-        public static readonly StyledProperty<ICommand> OnRemoveActionProperty =
-             AvaloniaProperty.Register<SettingPanelMultiItem, ICommand>(nameof(OnRemoveAction));
-        public ICommand OnFoldAction { get { return GetValue(OnFoldActionProperty); } set { SetValue(OnFoldActionProperty, value); } }
-        public static readonly StyledProperty<ICommand> OnFoldActionProperty =
-            AvaloniaProperty.Register<SettingPanelMultiItem, ICommand>(nameof(OnFoldAction));
-        public string Title { get { return GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
-        public static readonly StyledProperty<string> TitleProperty =
-           AvaloniaProperty.Register<SettingPanelMultiItem, string>(nameof(Title));
+        public Dictionary<string, List<string>> SettingData
+        {
+            get => _settingData;
+            set => SetAndRaise(SettingDataProperty, ref _settingData, value);
+        }
+
+// Fold property with default value
+        private bool _fold = false;
+
+        public static readonly DirectProperty<SettingPanelMultiItem, bool> FoldProperty =
+            AvaloniaProperty.RegisterDirect<SettingPanelMultiItem, bool>(
+                nameof(Fold),
+                o => o.Fold,
+                (o, v) => o.Fold = v);
+
+        public bool Fold
+        {
+            get => _fold;
+            set => SetAndRaise(FoldProperty, ref _fold, value);
+        }
+
+// Generic object property
+        private object _data;
+
+        public static readonly DirectProperty<SettingPanelMultiItem, object> DataProperty =
+            AvaloniaProperty.RegisterDirect<SettingPanelMultiItem, object>(
+                nameof(Data),
+                o => o.Data,
+                (o, v) => o.Data = v);
+
+        public object Data
+        {
+            get => _data;
+            set => SetAndRaise(DataProperty, ref _data, value);
+        }
+
+// Command properties
+        private ICommand _onRemoveAction;
+
+        public static readonly DirectProperty<SettingPanelMultiItem, ICommand> OnRemoveActionProperty =
+            AvaloniaProperty.RegisterDirect<SettingPanelMultiItem, ICommand>(
+                nameof(OnRemoveAction),
+                o => o.OnRemoveAction,
+                (o, v) => o.OnRemoveAction = v);
+
+        public ICommand OnRemoveAction
+        {
+            get => _onRemoveAction;
+            set => SetAndRaise(OnRemoveActionProperty, ref _onRemoveAction, value);
+        }
+
+        private ICommand _onFoldAction;
+
+        public static readonly DirectProperty<SettingPanelMultiItem, ICommand> OnFoldActionProperty =
+            AvaloniaProperty.RegisterDirect<SettingPanelMultiItem, ICommand>(
+                nameof(OnFoldAction),
+                o => o.OnFoldAction,
+                (o, v) => o.OnFoldAction = v);
+
+        public ICommand OnFoldAction
+        {
+            get => _onFoldAction;
+            set => SetAndRaise(OnFoldActionProperty, ref _onFoldAction, value);
+        }
+
+// String property
+        private string _title = string.Empty;
+
+        public static readonly DirectProperty<SettingPanelMultiItem, string> TitleProperty =
+            AvaloniaProperty.RegisterDirect<SettingPanelMultiItem, string>(
+                nameof(Title),
+                o => o.Title,
+                (o, v) => o.Title = v);
+
+        public string Title
+        {
+            get => _title;
+            set => SetAndRaise(TitleProperty, ref _title, value);
+        }
+
         public event EventHandler DataChanged;
 
         private StackPanel Container;
@@ -104,7 +173,6 @@ namespace UI.Controls.SettingPanel
         }
 
 
-
         private void FoldAction(object obj)
         {
             Fold = !Fold;
@@ -119,6 +187,7 @@ namespace UI.Controls.SettingPanel
                 ToolTip.SetTip(FoldBtn, "收起");
             }
         }
+
         private void RenderStringList(ConfigAttribute attribute, PropertyInfo pi)
         {
             var title = new SettingPanelItem();
@@ -147,12 +216,12 @@ namespace UI.Controls.SettingPanel
                     var newData = new List<string>();
                     foreach (var item in listControl.Items)
                     {
-                        if(!string.IsNullOrEmpty(item))
+                        if (!string.IsNullOrEmpty(item))
                         {
                             newData.Add(item.ToString());
                         }
-                        
                     }
+
                     pi.SetValue(configData, newData);
                     Data = configData;
                     DataChanged?.Invoke(this, EventArgs.Empty);
@@ -171,14 +240,12 @@ namespace UI.Controls.SettingPanel
             {
                 list = new List<string>();
             }
+
             var contextMenu = new ContextMenu();
 
             var contextMenuItemDel = new MenuItem();
             contextMenuItemDel.Header = Application.Current.FindResource("Remove");
-            contextMenuItemDel.Click += (e, c) =>
-            {
-                listControl.Items.Remove(listControl.SelectedItem);
-            };
+            contextMenuItemDel.Click += (e, c) => { listControl.Items.Remove(listControl.SelectedItem); };
             contextMenu.Items.Add(contextMenuItemDel);
             listControl.ContextMenu = contextMenu;
 
@@ -211,9 +278,6 @@ namespace UI.Controls.SettingPanel
                 //list.Add(addInputBox.Text);
                 listControl.Items.Add(addInputBox.Text);
                 addInputBox.Text = String.Empty;
-
-
-
             };
             pi.SetValue(configData, list);
             Container.Children.Add(listControl);
@@ -225,19 +289,18 @@ namespace UI.Controls.SettingPanel
                     Width = new GridLength(10, GridUnitType.Star)
                 });
             inputPanel.ColumnDefinitions.Add(
-               new ColumnDefinition()
-               {
-                   Width = new GridLength(2, GridUnitType.Star)
-               });
+                new ColumnDefinition()
+                {
+                    Width = new GridLength(2, GridUnitType.Star)
+                });
             inputPanel.Margin = new Thickness(15, 10, 15, 10);
             Grid.SetColumn(addInputBox, 0);
             Grid.SetColumn(addBtn, 1);
             inputPanel.Children.Add(addInputBox);
             inputPanel.Children.Add(addBtn);
             Container.Children.Add(inputPanel);
-
-
         }
+
         private void RenderTextBox(ConfigAttribute attribute, PropertyInfo pi)
         {
             string value = (string)pi.GetValue(Data);
@@ -261,8 +324,9 @@ namespace UI.Controls.SettingPanel
             textBox.Width = 125;
             textBox.TextChanged += (e, c) =>
             {
-                textBox.Error = attribute.Name + (string.IsNullOrEmpty(textBox.Text) ? Application.Current.FindResource("CannotBeEmpty") 
-                    :  Application.Current.FindResource("AlreadyExists"));
+                textBox.Error = attribute.Name + (string.IsNullOrEmpty(textBox.Text)
+                    ? Application.Current.FindResource("CannotBeEmpty")
+                    : Application.Current.FindResource("AlreadyExists"));
 
                 if (!attribute.IsCanRepeat)
                 {
@@ -276,6 +340,7 @@ namespace UI.Controls.SettingPanel
                         textBox.HideError();
                     }
                 }
+
                 if (string.IsNullOrEmpty(textBox.Text))
                 {
                     textBox.ShowError();
@@ -297,6 +362,7 @@ namespace UI.Controls.SettingPanel
                     textBox.Text = textBox.Tag.ToString();
                     return;
                 }
+
                 if (!attribute.IsCanRepeat)
                 {
                     if (SettingData[pi.Name].Contains(textBox.Text) && textBox.Tag.ToString() != textBox.Text)
@@ -305,17 +371,18 @@ namespace UI.Controls.SettingPanel
                         return;
                     }
                 }
+
                 if (attribute.IsName)
                 {
                     Title = textBox.Text;
                 }
+
                 pi.SetValue(configData, textBox.Text);
                 Data = configData;
                 DataChanged?.Invoke(this, EventArgs.Empty);
 
                 SettingData[pi.Name].Remove(textBox.Tag.ToString());
                 SettingData[pi.Name].Add(textBox.Text);
-
             };
             var item = new SettingPanelItem();
             item.Name = attribute.Name;
@@ -326,8 +393,8 @@ namespace UI.Controls.SettingPanel
             {
                 Title = textBox.Text;
             }
+
             Container.Children.Add(item);
         }
-
     }
 }

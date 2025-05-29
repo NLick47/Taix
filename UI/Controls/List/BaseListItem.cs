@@ -10,13 +10,31 @@ namespace UI.Controls.List
 {
     public class BaseListItem : TemplatedControl
     {
-        public string Text { get { return GetValue(TextProperty); } set { SetValue(TextProperty, value); } }
-        public static readonly StyledProperty<string> TextProperty =
-            AvaloniaProperty.Register<BaseListItem, string>(nameof(Text));
+        private string _text = string.Empty;
+        public static readonly DirectProperty<BaseListItem, string> TextProperty =
+            AvaloniaProperty.RegisterDirect<BaseListItem, string>(
+                nameof(Text),
+                o => o.Text,
+                (o, v) => o.Text = v);
 
-        public bool IsSelected { get { return GetValue(IsSelectedProperty); } set { SetValue(IsSelectedProperty, value); } }
-        public static readonly StyledProperty<bool> IsSelectedProperty =
-            AvaloniaProperty.Register<BaseListItem, bool>(nameof(IsSelected));
+        public string Text
+        {
+            get => _text;
+            set => SetAndRaise(TextProperty, ref _text, value);
+        }
+        
+        private bool _isSelected;
+        public static readonly DirectProperty<BaseListItem, bool> IsSelectedProperty =
+            AvaloniaProperty.RegisterDirect<BaseListItem, bool>(
+                nameof(IsSelected),
+                o => o.IsSelected,
+                (o, v) => o.IsSelected = v);
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetAndRaise(IsSelectedProperty, ref _isSelected, value);
+        }
 
         protected override Type StyleKeyOverride => typeof(BaseListItem);
 

@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Avalonia.Collections;
 using Avalonia.Input;
 using UI.Controls.Charts.Model;
 
@@ -19,33 +20,41 @@ namespace UI.Controls.Charts
 {
     public class RadarChart : Control
     {
-        public static readonly StyledProperty<double> MaxValueProperty =
-            AvaloniaProperty.Register<RadarChart, double>(nameof(MaxValue), 100);
-
-        public static readonly StyledProperty<List<double>> ValuesProperty =
-            AvaloniaProperty.Register<RadarChart, List<double>>(nameof(Values));
-
-        public static readonly StyledProperty<List<string>> LabelsProperty =
-            AvaloniaProperty.Register<RadarChart, List<string>>(nameof(Labels));
-        
+        private double _maxValue = 100;  // 保留默认值100
+        public static readonly DirectProperty<RadarChart, double> MaxValueProperty =
+            AvaloniaProperty.RegisterDirect<RadarChart, double>(
+                nameof(MaxValue),
+                o => o.MaxValue,
+                (o, v) => o.MaxValue = v);
         public double MaxValue
         {
-            get => GetValue(MaxValueProperty);
-            set => SetValue(MaxValueProperty, value);
+            get => _maxValue;
+            set => SetAndRaise(MaxValueProperty, ref _maxValue, value);
         }
 
+        private List<double> _values = new List<double>();
+        public static readonly DirectProperty<RadarChart, List<double>> ValuesProperty =
+            AvaloniaProperty.RegisterDirect<RadarChart, List<double>>(
+                nameof(Values),
+                o => o.Values,
+                (o, v) => o.Values = v);
         public List<double> Values
         {
-            get => GetValue(ValuesProperty);
-            set => SetValue(ValuesProperty, value);
+            get => _values;
+            set => SetAndRaise(ValuesProperty, ref _values, value);
         }
 
+        private List<string> _labels = new List<string>();
+        public static readonly DirectProperty<RadarChart, List<string>> LabelsProperty =
+            AvaloniaProperty.RegisterDirect<RadarChart, List<string>>(
+                nameof(Labels),
+                o => o.Labels,
+                (o, v) => o.Labels = v);
         public List<string> Labels
         {
-            get => GetValue(LabelsProperty);
-            set => SetValue(LabelsProperty, value);
+            get => _labels;
+            set => SetAndRaise(LabelsProperty, ref _labels, value);
         }
-
 
         public override void Render(DrawingContext context)
         {

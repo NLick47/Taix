@@ -16,29 +16,41 @@ namespace UI.Controls.Charts
 {
     public class ChartsItemTypeCard : TemplatedControl
     {
+        private ChartsDataModel _data;
         public ChartsDataModel Data
         {
-            get { return GetValue(DataProperty); }
-            set { SetValue(DataProperty, value); }
+            get => _data;
+            set => SetAndRaise(DataProperty, ref _data, value);
         }
-        public static readonly StyledProperty<ChartsDataModel> DataProperty =
-            AvaloniaProperty.Register<ChartsItemTypeCard, ChartsDataModel>(nameof(Data));
+        public static readonly DirectProperty<ChartsItemTypeCard, ChartsDataModel> DataProperty =
+            AvaloniaProperty.RegisterDirect<ChartsItemTypeCard, ChartsDataModel>(
+                nameof(Data),
+                o => o.Data,
+                (o, v) => o.Data = v);
 
+        private double _maxValue;
         public double MaxValue
         {
-            get { return GetValue(MaxValueProperty); }
-            set { SetValue(MaxValueProperty, value); }
+            get => _maxValue;
+            set => SetAndRaise(MaxValueProperty, ref _maxValue, value);
         }
-        public static readonly StyledProperty<double> MaxValueProperty =
-            AvaloniaProperty.Register<ChartsItemTypeCard, double>(nameof(MaxValue));
+        public static readonly DirectProperty<ChartsItemTypeCard, double> MaxValueProperty =
+            AvaloniaProperty.RegisterDirect<ChartsItemTypeCard, double>(
+                nameof(MaxValue),
+                o => o.MaxValue,
+                (o, v) => o.MaxValue = v);
 
+        private bool _isLoading;
         public bool IsLoading
         {
-            get { return GetValue(IsLoadingProperty); }
-            set { SetValue(IsLoadingProperty, value); }
+            get => _isLoading;
+            set => SetAndRaise(IsLoadingProperty, ref _isLoading, value);
         }
-        public static readonly StyledProperty<bool> IsLoadingProperty =
-           AvaloniaProperty.Register<ChartsItemTypeCard, bool>(nameof(IsLoading));
+        public static readonly DirectProperty<ChartsItemTypeCard, bool> IsLoadingProperty =
+            AvaloniaProperty.RegisterDirect<ChartsItemTypeCard, bool>(
+                nameof(IsLoading),
+                o => o.IsLoading,
+                (o, v) => o.IsLoading = v);
 
         private TextBlock NameTextObj, ValueTextObj;
         private Rectangle ValueBlockObj;

@@ -14,57 +14,87 @@ namespace UI.Controls.Charts
 {
     public class ChartsItemTypeMonth : TemplatedControl
     {
+        private string _toolTip;
 
-        public static readonly StyledProperty<string> ToolTipProperty =
-        AvaloniaProperty.Register<ChartsItemTypeMonth, string>(nameof(ToolTip));
+        public static readonly DirectProperty<ChartsItemTypeMonth, string> ToolTipProperty =
+            AvaloniaProperty.RegisterDirect<ChartsItemTypeMonth, string>(
+                nameof(ToolTip),
+                o => o.ToolTip,
+                (o, v) => o.ToolTip = v);
 
         public string ToolTip
         {
-            get => GetValue(ToolTipProperty);
-            set => SetValue(ToolTipProperty, value);
+            get => _toolTip;
+            set => SetAndRaise(ToolTipProperty, ref _toolTip, value);
         }
+
+        private ChartsDataModel _data;
+
+        public static readonly DirectProperty<ChartsItemTypeMonth, ChartsDataModel> DataProperty =
+            AvaloniaProperty.RegisterDirect<ChartsItemTypeMonth, ChartsDataModel>(
+                nameof(Data),
+                o => o.Data,
+                (o, v) => o.Data = v);
+
         /// <summary>
         /// 数据
         /// </summary>
         public ChartsDataModel Data
         {
-            get { return GetValue(DataProperty); }
-            set { SetValue(DataProperty, value); }
+            get => _data;
+            set => SetAndRaise(DataProperty, ref _data, value);
         }
-        public static readonly StyledProperty<ChartsDataModel> DataProperty =
-            AvaloniaProperty.Register<ChartsItemTypeMonth, ChartsDataModel>(nameof(Data));
+
+        private double _maxValue;
+
+        public static readonly DirectProperty<ChartsItemTypeMonth, double> MaxValueProperty =
+            AvaloniaProperty.RegisterDirect<ChartsItemTypeMonth, double>(
+                nameof(MaxValue),
+                o => o.MaxValue,
+                (o, v) => o.MaxValue = v);
 
         public double MaxValue
         {
-            get { return GetValue(MaxValueProperty); }
-            set { SetValue(MaxValueProperty, value); }
+            get => _maxValue;
+            set => SetAndRaise(MaxValueProperty, ref _maxValue, value);
         }
-        public static readonly StyledProperty<double> MaxValueProperty =
-            AvaloniaProperty.Register<ChartsItemTypeMonth, double>(nameof(MaxValue));
+
+        private bool _isLoading;
+
+        public static readonly DirectProperty<ChartsItemTypeMonth, bool> IsLoadingProperty =
+            AvaloniaProperty.RegisterDirect<ChartsItemTypeMonth, bool>(
+                nameof(IsLoading),
+                o => o.IsLoading,
+                (o, v) => o.IsLoading = v);
 
         /// <summary>
         /// 是否正在加载中
         /// </summary>
         public bool IsLoading
         {
-            get { return GetValue(IsLoadingProperty); }
-            set { SetValue(IsLoadingProperty, value); }
+            get => _isLoading;
+            set => SetAndRaise(IsLoadingProperty, ref _isLoading, value);
         }
-        public static readonly StyledProperty<bool> IsLoadingProperty =
-            AvaloniaProperty.Register<ChartsItemTypeMonth, bool>(nameof(IsLoading));
+
+        private bool _isSelected;
+
+        public static readonly DirectProperty<ChartsItemTypeMonth, bool> IsSelectedProperty =
+            AvaloniaProperty.RegisterDirect<ChartsItemTypeMonth, bool>(
+                nameof(IsSelected),
+                o => o.IsSelected,
+                (o, v) => o.IsSelected = v);
 
         /// <summary>
         /// 是否选中
         /// </summary>
         public bool IsSelected
         {
-            get { return GetValue(IsSelectedProperty); }
-            set { SetValue(IsSelectedProperty, value); }
+            get => _isSelected;
+            set => SetAndRaise(IsSelectedProperty, ref _isSelected, value);
         }
-        public static readonly StyledProperty<bool> IsSelectedProperty =
-            AvaloniaProperty.Register<ChartsItemTypeMonth, bool>(nameof(IsSelected));
 
         private Rectangle ValueBlockObj;
+
         //private StackPanel ValueContainer;
         //private Image IconObj;
         private bool isRendering = false;
@@ -105,6 +135,7 @@ namespace UI.Controls.Charts
             {
                 return;
             }
+
             isRendering = true;
             //Loaded += (s, e) =>
             //{
@@ -144,6 +175,5 @@ namespace UI.Controls.Charts
             //    ValueBlockObj.Width = ValueBlockObj.Height = (Data.Value / MaxValue) * ActualWidth;
             //};
         }
-
     }
 }

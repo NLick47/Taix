@@ -19,31 +19,40 @@ namespace UI.Controls.Navigation
 {
     public class NavigationItem : TemplatedControl
     {
-        public static readonly StyledProperty<int> IDProperty =
-        AvaloniaProperty.Register<NavigationItem, int>(nameof(ID));
-
+        private int _id;
+        public static readonly DirectProperty<NavigationItem, int> IDProperty = 
+            AvaloniaProperty.RegisterDirect<NavigationItem, int>(
+                nameof(ID),
+                o => o.ID,
+                (o, v) => o.ID = v);
         public int ID
         {
-            get => GetValue(IDProperty);
-            set => SetValue(IDProperty, value);
+            get => _id;
+            set => SetAndRaise(IDProperty, ref _id, value);
         }
 
-        public static readonly StyledProperty<ICommand> CommandProperty =
-            AvaloniaProperty.Register<NavigationItem, ICommand>(nameof(Command));
-
+        private ICommand _command;
+        public static readonly DirectProperty<NavigationItem, ICommand> CommandProperty =
+            AvaloniaProperty.RegisterDirect<NavigationItem, ICommand>(
+                nameof(Command),
+                o => o.Command,
+                (o, v) => o.Command = v);
         public ICommand Command
         {
-            get => GetValue(CommandProperty);
-            set => SetValue(CommandProperty, value);
+            get => _command;
+            set => SetAndRaise(CommandProperty, ref _command, value);
         }
 
-        public static readonly StyledProperty<object> CommandParameterProperty =
-            AvaloniaProperty.Register<NavigationItem, object>(nameof(CommandParameter));
-
+        private object _commandParameter;
+        public static readonly DirectProperty<NavigationItem, object> CommandParameterProperty =
+            AvaloniaProperty.RegisterDirect<NavigationItem, object>(
+                nameof(CommandParameter),
+                o => o.CommandParameter,
+                (o, v) => o.CommandParameter = v);
         public object CommandParameter
         {
-            get => GetValue(CommandParameterProperty);
-            set => SetValue(CommandParameterProperty, value);
+            get => _commandParameter;
+            set => SetAndRaise(CommandParameterProperty, ref _commandParameter, value);
         }
 
         public static readonly StyledProperty<IconTypes> IconProperty =
@@ -83,42 +92,53 @@ namespace UI.Controls.Navigation
             set => SetValue(IconColorBrushProperty, value);
         }
 
-        public static readonly StyledProperty<string> TitleProperty =
-            AvaloniaProperty.Register<NavigationItem, string>(nameof(Title), string.Empty);
-
+        private string _title = string.Empty;
+        public static readonly DirectProperty<NavigationItem, string> TitleProperty =
+            AvaloniaProperty.RegisterDirect<NavigationItem, string>(
+                nameof(Title),
+                o => o.Title,
+                (o, v) => o.Title = v);
         public string Title
         {
-            get => GetValue(TitleProperty);
-            set => SetValue(TitleProperty, value);
+            get => _title;
+            set => SetAndRaise(TitleProperty, ref _title, value);
         }
 
-        public static readonly StyledProperty<string> BadgeTextProperty =
-            AvaloniaProperty.Register<NavigationItem, string>(nameof(BadgeText), string.Empty);
-
+        private string _badgeText = string.Empty;
+        public static readonly DirectProperty<NavigationItem, string> BadgeTextProperty =
+            AvaloniaProperty.RegisterDirect<NavigationItem, string>(
+                nameof(BadgeText),
+                o => o.BadgeText,
+                (o, v) => o.BadgeText = v);
         public string BadgeText
         {
-            get => GetValue(BadgeTextProperty);
-            set => SetValue(BadgeTextProperty, value);
+            get => _badgeText;
+            set => SetAndRaise(BadgeTextProperty, ref _badgeText, value);
         }
 
-        public static readonly StyledProperty<string> UriProperty =
-            AvaloniaProperty.Register<NavigationItem, string>(nameof(Uri), string.Empty);
-
+        private string _uri = string.Empty;
+        public static readonly DirectProperty<NavigationItem, string> UriProperty =
+            AvaloniaProperty.RegisterDirect<NavigationItem, string>(
+                nameof(Uri),
+                o => o.Uri,
+                (o, v) => o.Uri = v);
         public string Uri
         {
-            get => GetValue(UriProperty);
-            set => SetValue(UriProperty, value);
+            get => _uri;
+            set => SetAndRaise(UriProperty, ref _uri, value);
         }
 
-        public static readonly StyledProperty<bool> IsSelectedProperty =
-            AvaloniaProperty.Register<NavigationItem, bool>(nameof(IsSelected), false);
-
+        private bool _isSelected = false;
+        public static readonly DirectProperty<NavigationItem, bool> IsSelectedProperty =
+            AvaloniaProperty.RegisterDirect<NavigationItem, bool>(
+                nameof(IsSelected),
+                o => o.IsSelected,
+                (o, v) => o.IsSelected = v);
         public bool IsSelected
         {
-            get => GetValue(IsSelectedProperty);
-            set => SetValue(IsSelectedProperty, value);
+            get => _isSelected;
+            set => SetAndRaise(IsSelectedProperty, ref _isSelected, value);
         }
-
         private static NavigationItem _currentPressedItem;
 
         public delegate void NavigationEventHandler(object sender, PointerPressedEventArgs e);

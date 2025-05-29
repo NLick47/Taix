@@ -11,20 +11,41 @@ namespace UI.Controls.Base
 {
     public class Text : TemplatedControl
     {
+        private string _content;
         public string Content
         {
-            get { return GetValue(ContentProperty); }
-            set { SetValue(ContentProperty, value); }
+            get => _content;
+            set => SetAndRaise(ContentProperty, ref _content, value);
         }
-        public static readonly StyledProperty<string> ContentProperty =
-            AvaloniaProperty.Register<Text, string>(nameof(Content));  
+        public static readonly DirectProperty<Text, string> ContentProperty =
+            AvaloniaProperty.RegisterDirect<Text, string>(
+                nameof(Content),
+                o => o.Content,
+                (o, v) => o.Content = v);
+
+        private bool _value;
         public bool Value
         {
-            get { return GetValue(ValueProperty); }
-            set { SetValue(ValueProperty, value); }
+            get => _value;
+            set => SetAndRaise(ValueProperty, ref _value, value);
         }
-        public static readonly StyledProperty<bool> ValueProperty =
-               AvaloniaProperty.Register<Text, bool>(nameof(Value));
+        public static readonly DirectProperty<Text, bool> ValueProperty =
+            AvaloniaProperty.RegisterDirect<Text, bool>(
+                nameof(Value),
+                o => o.Value,
+                (o, v) => o.Value = v);
+
+        private string _textValue;
+        public string TextValue
+        {
+            get => _textValue;
+            set => SetAndRaise(TextValueProperty, ref _textValue, value);
+        }
+        public static readonly DirectProperty<Text, string> TextValueProperty =
+            AvaloniaProperty.RegisterDirect<Text, string>(
+                nameof(TextValue),
+                o => o.TextValue,
+                (o, v) => o.TextValue = v);
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
@@ -44,14 +65,6 @@ namespace UI.Controls.Base
             base.OnApplyTemplate(e);
             SetContent();
         }
-
-        public string TextValue
-        {
-            get { return GetValue(TextValueProperty); }
-            set { SetValue(TextValueProperty, value); }
-        }
-        public static readonly StyledProperty<string> TextValueProperty =
-            AvaloniaProperty.Register<Text, string>(nameof(TextValue));
 
         private void SetContent()
         {

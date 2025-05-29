@@ -10,21 +10,29 @@ namespace UI.Controls.DatePickerBar
 {
     public class DatePickerBarItem : TemplatedControl
     {
+        private string _title = string.Empty;
         public string Title
         {
-            get { return GetValue(TitleProperty); }
-            set { SetValue(TitleProperty, value); }
+            get => _title; 
+            set => SetAndRaise(TitleProperty, ref _title, value);
         }
-        public static readonly StyledProperty<string> TitleProperty =
-            AvaloniaProperty.Register<DatePickerBarItem,string>(nameof(Title));
+        
+        public static readonly DirectProperty<DatePickerBarItem,string> TitleProperty =
+            AvaloniaProperty.RegisterDirect<DatePickerBarItem,string>(nameof(IsSelected),
+                o => o.Title,(o,v) => o.Title = v);
+
+        
+        private bool _isSelected;
 
         public bool IsSelected
         {
-            get { return GetValue(IsSelectedProperty); }
-            set { SetValue(IsSelectedProperty, value); }
+            get => _isSelected;
+            set => SetAndRaise(IsSelectedProperty, ref _isSelected, value);
         }
-        public static readonly StyledProperty<bool> IsSelectedProperty =
-            AvaloniaProperty.Register<DatePickerBarItem,bool>(nameof(IsSelected));
+        
+        public static readonly DirectProperty<DatePickerBarItem,bool> IsSelectedProperty =
+            AvaloniaProperty.RegisterDirect<DatePickerBarItem,bool>(nameof(IsSelected),
+                o => o.IsSelected,(o,v) => o.IsSelected = v);
 
         public bool IsDisabled
         {
@@ -34,15 +42,21 @@ namespace UI.Controls.DatePickerBar
         public static readonly StyledProperty<bool> IsDisabledProperty =
             AvaloniaProperty.Register<DatePickerBarItem, bool>(nameof(IsDisabled));
 
+        private DateTime _date;
+        
+        
+        public static readonly DirectProperty<DatePickerBarItem, DateTime> DateProperty =
+            AvaloniaProperty.RegisterDirect<DatePickerBarItem, DateTime>(
+                nameof(Date),
+                o => o.Date,
+                (o, v) => o.Date = v);
+
+
         public DateTime Date
         {
-            get { return GetValue(DateProperty); }
-            set { SetValue(DateProperty, value); }
+            get => _date;
+            set => SetAndRaise(DateProperty, ref _date, value);
         }
-        public static readonly StyledProperty<DateTime> DateProperty =
-            AvaloniaProperty.Register<DatePickerBarItem,DateTime>("Date");
-
-
         protected override Type StyleKeyOverride => typeof(DatePickerBarItem);
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

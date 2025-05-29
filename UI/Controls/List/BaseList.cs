@@ -15,14 +15,31 @@ namespace UI.Controls.List
 {
     public class BaseList : TemplatedControl
     {
-        public ObservableCollection<string> Items { get { return GetValue(ItemsProperty); } set { SetValue(ItemsProperty, value); } }
+        private ObservableCollection<string> _items = new  ();
+        public static readonly DirectProperty<BaseList, ObservableCollection<string>> ItemsProperty =
+            AvaloniaProperty.RegisterDirect<BaseList, ObservableCollection<string>>(
+                nameof(Items),
+                o => o.Items,
+                (o, v) => o.Items = v);
 
-        public static readonly StyledProperty<ObservableCollection<string>> ItemsProperty =
-            AvaloniaProperty.Register<BaseList, ObservableCollection<string>>(nameof(Items));
+        public ObservableCollection<string> Items
+        {
+            get => _items;
+            set => SetAndRaise(ItemsProperty, ref _items, value ?? new ());
+        }
 
-        public string SelectedItem { get { return GetValue(SelectedItemProperty); } set { SetValue(SelectedItemProperty, value); } }
-        public static readonly StyledProperty<string> SelectedItemProperty =
-            AvaloniaProperty.Register<BaseList, string>(nameof(SelectedItem));
+        private string? _selectedItem;
+        public static readonly DirectProperty<BaseList, string?> SelectedItemProperty =
+            AvaloniaProperty.RegisterDirect<BaseList, string?>(
+                nameof(SelectedItem),
+                o => o.SelectedItem,
+                (o, v) => o.SelectedItem = v);
+
+        public string? SelectedItem
+        {
+            get => _selectedItem;
+            set => SetAndRaise(SelectedItemProperty, ref _selectedItem, value);
+        }
 
         private StackPanel Container;
 

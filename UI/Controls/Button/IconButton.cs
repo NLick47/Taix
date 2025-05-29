@@ -10,23 +10,30 @@ namespace UI.Controls.Button
 {
     public class IconButton : ContentControl
     {
-        public ICommand Command
+        private ICommand? _command;
+        public ICommand? Command
         {
-            get { return GetValue(CommandProperty); }
-            set { SetValue(CommandProperty, value); }
+            get => _command;
+            set => SetAndRaise(CommandProperty, ref _command, value);
         }
+        public static readonly DirectProperty<IconButton, ICommand?> CommandProperty =
+            AvaloniaProperty.RegisterDirect<IconButton, ICommand?>(
+                nameof(Command),
+                o => o.Command,
+                (o, v) => o.Command = v,
+                enableDataValidation: true);
 
-        public static readonly StyledProperty<ICommand?> CommandProperty =
-              AvaloniaProperty.Register<IconButton, ICommand?>(nameof(Command), enableDataValidation: true);
-
+        private object _commandParameter;
         public object CommandParameter
         {
-            get { return GetValue(CommandParameterProperty); }
-            set { SetValue(CommandParameterProperty, value); }
+            get => _commandParameter;
+            set => SetAndRaise(CommandParameterProperty, ref _commandParameter, value);
         }
-
-        public static readonly StyledProperty<object> CommandParameterProperty =
-           AvaloniaProperty.Register<IconButton,object>(nameof(CommandParameter));
+        public static readonly DirectProperty<IconButton, object> CommandParameterProperty =
+            AvaloniaProperty.RegisterDirect<IconButton, object>(
+                nameof(CommandParameter),
+                o => o.CommandParameter,
+                (o, v) => o.CommandParameter = v);
 
         public IconTypes Icon
         {

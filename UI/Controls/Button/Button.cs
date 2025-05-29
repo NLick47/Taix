@@ -21,11 +21,29 @@ namespace UI.Controls.Button
         public static readonly StyledProperty<IconTypes> IconProperty =
             AvaloniaProperty.Register<Button, IconTypes>(nameof(Icon), IconTypes.None);
 
+        private string _text;
         public string Text
         {
-            get { return GetValue(TextProperty); }
-            set { SetValue(TextProperty, value); }
+            get => _text;
+            set => SetAndRaise(TextProperty, ref _text, value);
         }
+        public static readonly DirectProperty<Button, string> TextProperty =
+            AvaloniaProperty.RegisterDirect<Button, string>(
+                nameof(Text),
+                o => o.Text,
+                (o, v) => o.Text = v);
+
+        private bool _value;
+        public bool Value
+        {
+            get => _value;
+            set => SetAndRaise(ValueProperty, ref _value, value);
+        }
+        public static readonly DirectProperty<Button, bool> ValueProperty =
+            AvaloniaProperty.RegisterDirect<Button, bool>(
+                nameof(Value),
+                o => o.Value,
+                (o, v) => o.Value = v);
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
@@ -36,18 +54,7 @@ namespace UI.Controls.Button
                 button?.SetContent();
             }
         }
-
-        public static readonly StyledProperty<string> TextProperty =
-            AvaloniaProperty.Register<Button, string>(nameof(Text));
-
-        public bool Value
-        {
-            get { return GetValue(ValueProperty); }
-            set { SetValue(ValueProperty, value); }
-        }
-
-        public static readonly StyledProperty<bool> ValueProperty =
-           AvaloniaProperty.Register<Button, bool>(nameof(Value));
+        
 
         protected override Type StyleKeyOverride => typeof(Button);
 

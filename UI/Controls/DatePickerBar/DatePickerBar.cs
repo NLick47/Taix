@@ -15,15 +15,54 @@ namespace UI.Controls.DatePickerBar
 {
     public class DatePickerBar : TemplatedControl
     {
+        private DatePickerShowType _showType = DatePickerShowType.Day;
+        public static readonly DirectProperty<DatePickerBar, DatePickerShowType> ShowTypeProperty =
+            AvaloniaProperty.RegisterDirect<DatePickerBar, DatePickerShowType>(
+                nameof(ShowType),
+                o => o.ShowType,
+                (o, v) => o.ShowType = v);
         public DatePickerShowType ShowType
         {
-            get { return GetValue(ShowTypeProperty); }
-            set { SetValue(ShowTypeProperty, value); }
+            get => _showType;
+            set => SetAndRaise(ShowTypeProperty, ref _showType, value);
         }
 
-        public static readonly StyledProperty<DatePickerShowType> ShowTypeProperty =
-        AvaloniaProperty.Register<DatePickerBar, DatePickerShowType>(nameof(ShowType), DatePickerShowType.Day);
+        private DateTime _selectedDate;
+        public static readonly DirectProperty<DatePickerBar, DateTime> SelectedDateProperty =
+            AvaloniaProperty.RegisterDirect<DatePickerBar, DateTime>(
+                nameof(SelectedDate),
+                o => o.SelectedDate,
+                (o, v) => o.SelectedDate = v);
+        public DateTime SelectedDate
+        {
+            get => _selectedDate;
+            set => SetAndRaise(SelectedDateProperty, ref _selectedDate, value);
+        }
 
+        private string _selectedDateString = string.Empty;
+        public static readonly DirectProperty<DatePickerBar, string> SelectedDateStringProperty =
+            AvaloniaProperty.RegisterDirect<DatePickerBar, string>(
+                nameof(SelectedDateString),
+                o => o.SelectedDateString,
+                (o, v) => o.SelectedDateString = v);
+        public string SelectedDateString
+        {
+            get => _selectedDateString;
+            set => SetAndRaise(SelectedDateStringProperty, ref _selectedDateString, value);
+        }
+
+        private bool _isShowDatePickerPopup;
+        public static readonly DirectProperty<DatePickerBar, bool> IsShowDatePickerPopupProperty =
+            AvaloniaProperty.RegisterDirect<DatePickerBar, bool>(
+                nameof(IsShowDatePickerPopup),
+                o => o.IsShowDatePickerPopup,
+                (o, v) => o.IsShowDatePickerPopup = v);
+        public bool IsShowDatePickerPopup
+        {
+            get => _isShowDatePickerPopup;
+            set => SetAndRaise(IsShowDatePickerPopupProperty, ref _isShowDatePickerPopup, value);
+        }
+        
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
@@ -40,29 +79,7 @@ namespace UI.Controls.DatePickerBar
             }
         }
 
-        public DateTime SelectedDate
-        {
-            get { return GetValue(SelectedDateProperty); }
-            set { SetValue(SelectedDateProperty, value); }
-        }
-        public static readonly StyledProperty<DateTime> SelectedDateProperty =
-            AvaloniaProperty.Register<DatePickerBar,DateTime>(nameof(SelectedDate));
-
-        public string SelectedDateString
-        {
-            get { return GetValue(SelectedDateStringProperty); }
-            set { SetValue(SelectedDateStringProperty, value); }
-        }
-        public static readonly StyledProperty<string> SelectedDateStringProperty =
-            AvaloniaProperty.Register<DatePickerBar,string>(nameof(SelectedDateString));
-
-        public bool IsShowDatePickerPopup
-        {
-            get { return GetValue(IsShowDatePickerPopupProperty); }
-            set { SetValue(IsShowDatePickerPopupProperty, value); }
-        }
-        public static readonly StyledProperty<bool> IsShowDatePickerPopupProperty =
-            AvaloniaProperty.Register<DatePickerBar,bool>(nameof(IsShowDatePickerPopup));
+      
 
         private StackPanel Container;
         private ScrollViewer ScrollViewer;

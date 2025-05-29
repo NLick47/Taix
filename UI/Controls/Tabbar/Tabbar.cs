@@ -43,13 +43,17 @@ namespace UI.Controls.Tabbar
         public static readonly StyledProperty<int> SelectedIndexProperty =
             AvaloniaProperty.Register<Tabbar, int>(nameof(SelectedIndex));
 
+        private ObservableCollection<string> _data = new ObservableCollection<string>();
+        public static readonly DirectProperty<Tabbar, ObservableCollection<string>> DataProperty =
+            AvaloniaProperty.RegisterDirect<Tabbar, ObservableCollection<string>>(
+                nameof(Data),
+                o => o.Data,
+                (o, v) => o.Data = v ?? new ObservableCollection<string>());
         public ObservableCollection<string> Data
         {
-            get { return GetValue(DataProperty); }
-            set { SetValue(DataProperty, value); }
+            get => _data;
+            set => SetAndRaise(DataProperty, ref _data, value);
         }
-        public static readonly StyledProperty<ObservableCollection<string>> DataProperty =
-            AvaloniaProperty.Register<Tabbar, ObservableCollection<string>>(nameof(Data));
 
         private List<TextBlock> ItemsDictionary;
         private Grid ItemsContainer;

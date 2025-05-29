@@ -22,23 +22,29 @@ namespace UI.Controls.Select
             SelectCommand = ReactiveCommand.CreateFromTask<object>(OnSelect);
         }
 
+        private string _url = string.Empty;
+        public static readonly DirectProperty<ImageSelect, string> URLProperty =
+            AvaloniaProperty.RegisterDirect<ImageSelect, string>(
+                nameof(URL),
+                o => o.URL,
+                (o, v) => o.URL = v);
         public string URL
         {
-            get { return GetValue(URLProperty); }
-            set { SetValue(URLProperty, value); }
+            get => _url;
+            set => SetAndRaise(URLProperty, ref _url, value);
         }
-        public static readonly StyledProperty<string> URLProperty =
-            AvaloniaProperty.Register<ImageSelect, string>(nameof(URL));
 
+        private bool _isSelected;
+        public static readonly DirectProperty<ImageSelect, bool> IsSelectedProperty =
+            AvaloniaProperty.RegisterDirect<ImageSelect, bool>(
+                nameof(IsSelected),
+                o => o.IsSelected,
+                (o, v) => o.IsSelected = v);
         public bool IsSelected
         {
-            get { return GetValue(IsSelectedProperty); }
-            set { SetValue(IsSelectedProperty, value); }
+            get => _isSelected;
+            set => SetAndRaise(IsSelectedProperty, ref _isSelected, value);
         }
-
-        public static readonly StyledProperty<bool> IsSelectedProperty =
-           AvaloniaProperty.Register<ImageSelect, bool>(nameof(IsSelected));
-
         public double ImageWidth
         {
             get { return GetValue(ImageWidthProperty); }

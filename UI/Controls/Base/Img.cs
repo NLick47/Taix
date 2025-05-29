@@ -33,15 +33,19 @@ namespace UI.Controls.Base
         }
         public static readonly StyledProperty<IImage> ResourceProperty =
          AvaloniaProperty.Register<Img, IImage>(nameof(Resource), new Bitmap(AssetLoader.Open(new Uri("avares://Taix/Resources/Icons/defaultIcon.png"))));
-
-        /// <summary>
-        /// 图片链接
-        /// </summary>
+        
+        private string _url;
         public string URL
         {
-            get { return GetValue(URLProperty); }
-            set { SetValue(URLProperty, value); }
+            get => _url;
+            set => SetAndRaise(URLProperty, ref _url, value);
         }
+        public static readonly DirectProperty<Img, string> URLProperty =
+            AvaloniaProperty.RegisterDirect<Img, string>(
+                nameof(URL),
+                o => o.URL,
+                (o, v) => o.URL = v);
+
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs e)
         {
@@ -53,9 +57,7 @@ namespace UI.Controls.Base
             }
         }
 
-        public static readonly StyledProperty<string> URLProperty =
-           AvaloniaProperty.Register<Img,string>(nameof(URL));
-
+     
 
         private async void Handle(string path)
         {

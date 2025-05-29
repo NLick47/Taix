@@ -19,28 +19,81 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Avalonia.Collections;
 using UI.Controls.Navigation.Models;
 
 namespace UI.Controls.Navigation
 {
     public class Navigation : TemplatedControl
     {
-        public ContextMenu ItemContextMenu
+        private ContextMenu? _itemContextMenu;
+
+        public static readonly DirectProperty<Navigation, ContextMenu?> ItemContextMenuProperty =
+            AvaloniaProperty.RegisterDirect<Navigation, ContextMenu?>(
+                nameof(ItemContextMenu),
+                o => o.ItemContextMenu,
+                (o, v) => o.ItemContextMenu = v);
+
+        public ContextMenu? ItemContextMenu
         {
-            get { return GetValue(ItemContextMenuProperty); }
-            set { SetValue(SelectedItemProperty, value); }
+            get => _itemContextMenu;
+            set => SetAndRaise(ItemContextMenuProperty, ref _itemContextMenu, value);
+        }
+        
+        private NavigationItemModel? _selectedItem;
+
+        public static readonly DirectProperty<Navigation, NavigationItemModel?> SelectedItemProperty =
+            AvaloniaProperty.RegisterDirect<Navigation, NavigationItemModel?>(
+                nameof(SelectedItem),
+                o => o.SelectedItem,
+                (o, v) => o.SelectedItem = v);
+
+        public NavigationItemModel? SelectedItem
+        {
+            get => _selectedItem;
+            set => SetAndRaise(SelectedItemProperty, ref _selectedItem, value);
         }
 
-        public static readonly StyledProperty<ContextMenu> ItemContextMenuProperty =
-            AvaloniaProperty.Register<Navigation, ContextMenu>(nameof(ItemContextMenu));
+        private object? _topExtContent;
 
-        public static readonly StyledProperty<NavigationItemModel> SelectedItemProperty =
-          AvaloniaProperty.Register<Navigation, NavigationItemModel>(nameof(SelectedItem));
+        public static readonly DirectProperty<Navigation, object?> TopExtContentProperty =
+            AvaloniaProperty.RegisterDirect<Navigation, object?>(
+                nameof(TopExtContent),
+                o => o.TopExtContent,
+                (o, v) => o.TopExtContent = v);
 
-        public NavigationItemModel SelectedItem
+        public object? TopExtContent
         {
-            get { return GetValue(SelectedItemProperty); }
-            set { SetValue(SelectedItemProperty, value); }
+            get => _topExtContent;
+            set => SetAndRaise(TopExtContentProperty, ref _topExtContent, value);
+        }
+
+        private object? _bottomExtContent;
+
+        public static readonly DirectProperty<Navigation, object?> BottomExtContentProperty =
+            AvaloniaProperty.RegisterDirect<Navigation, object?>(
+                nameof(BottomExtContent),
+                o => o.BottomExtContent,
+                (o, v) => o.BottomExtContent = v);
+
+        public object? BottomExtContent
+        {
+            get => _bottomExtContent;
+            set => SetAndRaise(BottomExtContentProperty, ref _bottomExtContent, value);
+        }
+
+        private ObservableCollection<NavigationItemModel> _data = new();
+
+        public static readonly DirectProperty<Navigation, ObservableCollection<NavigationItemModel>> DataProperty =
+            AvaloniaProperty.RegisterDirect<Navigation, ObservableCollection<NavigationItemModel>>(
+                nameof(Data),
+                o => o.Data,
+                (o, v) => o.Data = v);
+
+        public ObservableCollection<NavigationItemModel> Data
+        {
+            get => _data;
+            set => SetAndRaise(DataProperty, ref _data, value);
         }
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -50,51 +103,19 @@ namespace UI.Controls.Navigation
             {
                 OnSelectedItemChanged(change);
             }
+
             if (change.Property == DataProperty)
             {
                 OnDataChanged(change);
             }
-
         }
-
-        public object TopExtContent
-        {
-            get { return GetValue(TopExtContentProperty); }
-            set { SetValue(TopExtContentProperty, value); }
-        }
-        public object BottomExtContent
-        {
-            get { return GetValue(BottomExtContentProperty); }
-            set { SetValue(BottomExtContentProperty, value); }
-        }
-
-        public ObservableCollection<NavigationItemModel> Data
-        {
-            get
-            {
-                return GetValue(DataProperty);
-            }
-            set
-            {
-                SetValue(DataProperty, value);
-            }
-        }
-
-        public static readonly StyledProperty<ObservableCollection<NavigationItemModel>> DataProperty =
-           AvaloniaProperty.Register<Navigation, ObservableCollection<NavigationItemModel>>(nameof(Data));
-
-
-        public static readonly StyledProperty<object> BottomExtContentProperty =
-        AvaloniaProperty.Register<Navigation, object>(nameof(BottomExtContent));
-
-        public static readonly StyledProperty<object> TopExtContentProperty =
-          AvaloniaProperty.Register<Navigation, object>(nameof(TopExtContent));
-
 
         private Dictionary<int, NavigationItem> ItemsDictionary;
 
         public event EventHandler OnSelected;
+
         public event EventHandler OnMouseRightButtonUP;
+
         //  选中标记块
         private Border ActiveBlock;
 
@@ -111,10 +132,12 @@ namespace UI.Controls.Navigation
                 {
                     control.ItemsDictionary[newItem.ID].IsSelected = true;
                 }
+
                 if (oldItem != null && control.ItemsDictionary.ContainsKey(oldItem.ID))
                 {
                     control.ItemsDictionary[oldItem.ID].IsSelected = false;
                 }
+
                 control.ScrollToActive();
             }
         }
@@ -146,6 +169,7 @@ namespace UI.Controls.Navigation
                     AddItem(item as NavigationItemModel);
                 }
             }
+
             if (e.Action == NotifyCollectionChangedAction.Remove)
             {
                 foreach (var item in e.OldItems)
@@ -153,6 +177,7 @@ namespace UI.Controls.Navigation
                     RemoveItem(item as NavigationItemModel);
                 }
             }
+
             if (e.Action == NotifyCollectionChangedAction.Replace)
             {
                 foreach (var ritem in e.NewItems)
@@ -162,10 +187,8 @@ namespace UI.Controls.Navigation
                     ItemsDictionary[id].Icon = item.UnSelectedIcon;
                     ItemsDictionary[id].Title = item.Title;
                     ItemsDictionary[id].SelectedIcon = item.SelectedIcon;
-
                 }
             }
-            
         }
 
         public Navigation()
@@ -207,6 +230,7 @@ namespace UI.Controls.Navigation
                 {
                     return;
                 }
+
                 item.ID = id;
                 navItem.ID = id;
                 navItem.Title = item.Title;
@@ -219,20 +243,18 @@ namespace UI.Controls.Navigation
                 if (!string.IsNullOrEmpty(item.Title))
                 {
                     navItem.MouseUp += NavItem_MouseUp;
-                    navItem.Unloaded += (e, c) =>
-                    {
-                        navItem.MouseUp -= NavItem_MouseUp;
-                    };
+                    navItem.Unloaded += (e, c) => { navItem.MouseUp -= NavItem_MouseUp; };
                 }
-                if(SelectedItem?.ID == id)
+
+                if (SelectedItem?.ID == id)
                 {
                     navItem.IsSelected = true;
                 }
+
                 ItemsPanel.Children.Add(navItem);
                 ItemsDictionary.Add(id, navItem);
             }
         }
-
 
 
         public void CreateTransitions()
@@ -278,13 +300,13 @@ namespace UI.Controls.Navigation
         }
 
 
-
         private int CreateID()
         {
             if (ItemsDictionary.Count == 0)
             {
                 return 1;
             }
+
             return ItemsDictionary.Max(m => m.Key) + 1;
         }
 
@@ -295,6 +317,7 @@ namespace UI.Controls.Navigation
             {
                 return;
             }
+
             var item = ItemsDictionary[SelectedItem.ID];
             item.IsSelected = true;
 
@@ -302,8 +325,6 @@ namespace UI.Controls.Navigation
             var relativePoint = item.Bounds.Position;
             var activeBlockTTF = ActiveBlock.Bounds.Position;
             ActiveBlock.RenderTransform = TransformOperations.Parse($"translateY({relativePoint.Y + 16}px)");
-
-
         }
 
         private void UpdateActiveLocation()
@@ -312,11 +333,9 @@ namespace UI.Controls.Navigation
             {
                 return;
             }
+
             var item = ItemsDictionary[SelectedItem.ID];
-            item.Loaded += (e, c) =>
-            {
-                ScrollToActive(0);
-            };
+            item.Loaded += (e, c) => { ScrollToActive(0); };
         }
 
         private void Render()

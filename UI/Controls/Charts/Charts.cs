@@ -34,319 +34,429 @@ namespace UI.Controls.Charts
             get { return (ChartsType)GetValue(ChartsTypeProperty); }
             set { SetValue(ChartsTypeProperty, value); }
         }
+
         public static readonly StyledProperty<ChartsType> ChartsTypeProperty =
             AvaloniaProperty.Register<Charts, ChartsType>(nameof(ChartsType));
 
+        private double _maxValueLimit;
+
         public double MaxValueLimit
         {
-            get { return (double)GetValue(MaxValueLimitProperty); }
-            set { SetValue(MaxValueLimitProperty, value); }
+            get => _maxValueLimit;
+            set => SetAndRaise(MaxValueLimitProperty, ref _maxValueLimit, value);
         }
-        public static readonly StyledProperty<double> MaxValueLimitProperty =
-            AvaloniaProperty.Register<Charts, double>(nameof(MaxValueLimit), 0);
+
+        public static readonly DirectProperty<Charts, double> MaxValueLimitProperty =
+            AvaloniaProperty.RegisterDirect<Charts, double>(
+                nameof(MaxValueLimit),
+                o => o.MaxValueLimit,
+                (o, v) => o.MaxValueLimit = v);
+
+        private int _showLimit;
 
         public int ShowLimit
         {
-            get { return (int)GetValue(ShowLimitProperty); }
-            set { SetValue(ShowLimitProperty, value); }
+            get => _showLimit;
+            set => SetAndRaise(ShowLimitProperty, ref _showLimit, value);
         }
-        public static readonly StyledProperty<int> ShowLimitProperty =
-            AvaloniaProperty.Register<Charts, int>(nameof(ShowLimit), 0);
+
+        public static readonly DirectProperty<Charts, int> ShowLimitProperty =
+            AvaloniaProperty.RegisterDirect<Charts, int>(
+                nameof(ShowLimit),
+                o => o.ShowLimit,
+                (o, v) => o.ShowLimit = v);
+
+        private IEnumerable<ChartsDataModel> _data;
 
         public IEnumerable<ChartsDataModel> Data
         {
-            get { return (IEnumerable<ChartsDataModel>)GetValue(DataProperty); }
-            set { SetValue(DataProperty, value); }
+            get => _data;
+            set => SetAndRaise(DataProperty, ref _data, value);
         }
 
-        public static readonly StyledProperty<IEnumerable<ChartsDataModel>> DataProperty =
-            AvaloniaProperty.Register<Charts, IEnumerable<ChartsDataModel>>(nameof(Data));
+        public static readonly DirectProperty<Charts, IEnumerable<ChartsDataModel>> DataProperty =
+            AvaloniaProperty.RegisterDirect<Charts, IEnumerable<ChartsDataModel>>(
+                nameof(Data),
+                o => o.Data,
+                (o, v) => o.Data = v);
+
+        private IEnumerable<ChartsDataModel> _listViewBindingData;
 
         public IEnumerable<ChartsDataModel> ListViewBindingData
         {
-            get { return (IEnumerable<ChartsDataModel>)GetValue(ListViewBindingDataProperty); }
-            set { SetValue(ListViewBindingDataProperty, value); }
+            get => _listViewBindingData;
+            set => SetAndRaise(ListViewBindingDataProperty, ref _listViewBindingData, value);
         }
 
-        public static readonly StyledProperty<IEnumerable<ChartsDataModel>> ListViewBindingDataProperty =
-            AvaloniaProperty.Register<Charts, IEnumerable<ChartsDataModel>>(nameof(ListViewBindingData));
+        public static readonly DirectProperty<Charts, IEnumerable<ChartsDataModel>> ListViewBindingDataProperty =
+            AvaloniaProperty.RegisterDirect<Charts, IEnumerable<ChartsDataModel>>(
+                nameof(ListViewBindingData),
+                o => o.ListViewBindingData,
+                (o, v) => o.ListViewBindingData = v);
 
-        /// <summary>
-        /// 加载中时占位显示条数
-        /// </summary>
+        private int _loadingPlaceholderCount;
+
         public int LoadingPlaceholderCount
         {
-            get { return (int)GetValue(LoadingPlaceholderCountProperty); }
-            set { SetValue(LoadingPlaceholderCountProperty, value); }
+            get => _loadingPlaceholderCount;
+            set => SetAndRaise(LoadingPlaceholderCountProperty, ref _loadingPlaceholderCount, value);
         }
-        public static readonly StyledProperty<int> LoadingPlaceholderCountProperty =
-            AvaloniaProperty.Register<Charts, int>(nameof(LoadingPlaceholderCount));
 
-        /// <summary>
-        /// 是否在加载中
-        /// </summary>
+        public static readonly DirectProperty<Charts, int> LoadingPlaceholderCountProperty =
+            AvaloniaProperty.RegisterDirect<Charts, int>(
+                nameof(LoadingPlaceholderCount),
+                o => o.LoadingPlaceholderCount,
+                (o, v) => o.LoadingPlaceholderCount = v);
+
+        private bool _isLoading;
+
         public bool IsLoading
         {
-            get { return (bool)GetValue(IsLoadingProperty); }
-            set { SetValue(IsLoadingProperty, value); }
+            get => _isLoading;
+            set => SetAndRaise(IsLoadingProperty, ref _isLoading, value);
         }
 
-        public static readonly StyledProperty<bool> IsLoadingProperty =
-            AvaloniaProperty.Register<Charts, bool>(nameof(IsLoading));
+        public static readonly DirectProperty<Charts, bool> IsLoadingProperty =
+            AvaloniaProperty.RegisterDirect<Charts, bool>(
+                nameof(IsLoading),
+                o => o.IsLoading,
+                (o, v) => o.IsLoading = v);
 
-        /// <summary>
-        /// 是否可以滚动
-        /// </summary>
+        private bool _isCanScroll;
+
         public bool IsCanScroll
         {
-            get { return (bool)GetValue(IsCanScrollProperty); }
-            set { SetValue(IsCanScrollProperty, value); }
+            get => _isCanScroll;
+            set => SetAndRaise(IsCanScrollProperty, ref _isCanScroll, value);
         }
-        public static readonly StyledProperty<bool> IsCanScrollProperty =
-            AvaloniaProperty.Register<Charts, bool>(nameof(IsCanScroll));
 
-        /// <summary>
-        /// 点击命令
-        /// </summary>
+        public static readonly DirectProperty<Charts, bool> IsCanScrollProperty =
+            AvaloniaProperty.RegisterDirect<Charts, bool>(
+                nameof(IsCanScroll),
+                o => o.IsCanScroll,
+                (o, v) => o.IsCanScroll = v);
+
+        private ICommand _clickCommand;
+
         public ICommand ClickCommand
         {
-            get { return GetValue(ClickCommandProperty); }
-            set { SetValue(ClickCommandProperty, value); }
+            get => _clickCommand;
+            set => SetAndRaise(ClickCommandProperty, ref _clickCommand, value);
         }
 
-        public static readonly StyledProperty<ICommand> ClickCommandProperty =
-             AvaloniaProperty.Register<Charts, ICommand>(nameof(ClickCommand));
+        public static readonly DirectProperty<Charts, ICommand> ClickCommandProperty =
+            AvaloniaProperty.RegisterDirect<Charts, ICommand>(
+                nameof(ClickCommand),
+                o => o.ClickCommand,
+                (o, v) => o.ClickCommand = v);
 
-        /// <summary>
-        /// 柱状图信息数据
-        /// </summary>
+        private List<ChartColumnInfoModel> _columnInfoList;
+
         public List<ChartColumnInfoModel> ColumnInfoList
         {
-            get { return (List<ChartColumnInfoModel>)GetValue(ColumnInfoListProperty); }
-            set { SetValue(ColumnInfoListProperty, value); }
+            get => _columnInfoList;
+            set => SetAndRaise(ColumnInfoListProperty, ref _columnInfoList, value);
         }
-        public static readonly StyledProperty<List<ChartColumnInfoModel>> ColumnInfoListProperty =
-             AvaloniaProperty.Register<Charts, List<ChartColumnInfoModel>>(nameof(ColumnInfoList));
 
+        public static readonly DirectProperty<Charts, List<ChartColumnInfoModel>> ColumnInfoListProperty =
+            AvaloniaProperty.RegisterDirect<Charts, List<ChartColumnInfoModel>>(
+                nameof(ColumnInfoList),
+                o => o.ColumnInfoList,
+                (o, v) => o.ColumnInfoList = v);
 
-        /// <summary>
-        /// 中间值
-        /// </summary>
+        private string _median;
+
         public string Median
         {
-            get { return (string)GetValue(MedianProperty); }
-            set { SetValue(MedianProperty, value); }
+            get => _median;
+            set => SetAndRaise(MedianProperty, ref _median, value);
         }
 
-        public static readonly StyledProperty<string> MedianProperty =
-            AvaloniaProperty.Register<Charts, string>(nameof(Median));
+        public static readonly DirectProperty<Charts, string> MedianProperty =
+            AvaloniaProperty.RegisterDirect<Charts, string>(
+                nameof(Median),
+                o => o.Median,
+                (o, v) => o.Median = v);
 
-        /// <summary>
-        /// 最大值
-        /// </summary>
+        private string _maximum;
+
         public string Maximum
         {
-            get { return (string)GetValue(MaximumProperty); }
-            set { SetValue(MaximumProperty, value); }
+            get => _maximum;
+            set => SetAndRaise(MaximumProperty, ref _maximum, value);
         }
 
-        public static readonly StyledProperty<string> MaximumProperty =
-            AvaloniaProperty.Register<Charts, string>(nameof(Maximum));
+        public static readonly DirectProperty<Charts, string> MaximumProperty =
+            AvaloniaProperty.RegisterDirect<Charts, string>(
+                nameof(Maximum),
+                o => o.Maximum,
+                (o, v) => o.Maximum = v);
 
-        /// <summary>
-        /// 单位
-        /// </summary>
+        private string _unit;
+
         public string Unit
         {
-            get { return (string)GetValue(UnitProperty); }
-            set { SetValue(UnitProperty, value); }
+            get => _unit;
+            set => SetAndRaise(UnitProperty, ref _unit, value);
         }
-        public static readonly StyledProperty<string> UnitProperty =
-           AvaloniaProperty.Register<Charts, string>(nameof(Unit));
 
+        public static readonly DirectProperty<Charts, string> UnitProperty =
+            AvaloniaProperty.RegisterDirect<Charts, string>(
+                nameof(Unit),
+                o => o.Unit,
+                (o, v) => o.Unit = v);
 
-        /// <summary>
-        /// 总计
-        /// </summary>
+        private string _total;
+
         public string Total
         {
-            get { return (string)GetValue(TotalProperty); }
-            set { SetValue(TotalProperty, value); }
+            get => _total;
+            set => SetAndRaise(TotalProperty, ref _total, value);
         }
-        public static readonly StyledProperty<string> TotalProperty =
-            AvaloniaProperty.Register<Charts, string>(nameof(Total));
 
-        /// <summary>
-        /// 数据值类型
-        /// </summary>
+        public static readonly DirectProperty<Charts, string> TotalProperty =
+            AvaloniaProperty.RegisterDirect<Charts, string>(
+                nameof(Total),
+                o => o.Total,
+                (o, v) => o.Total = v);
+
+        private ChartDataValueType _dataValueType;
+
         public ChartDataValueType DataValueType
         {
-            get { return (ChartDataValueType)GetValue(DataValueTypeProperty); }
-            set { SetValue(DataValueTypeProperty, value); }
+            get => _dataValueType;
+            set => SetAndRaise(DataValueTypeProperty, ref _dataValueType, value);
         }
-        public static readonly StyledProperty<ChartDataValueType> DataValueTypeProperty =
-          AvaloniaProperty.Register<Charts, ChartDataValueType>(nameof(DataValueType));
+
+        public static readonly DirectProperty<Charts, ChartDataValueType> DataValueTypeProperty =
+            AvaloniaProperty.RegisterDirect<Charts, ChartDataValueType>(
+                nameof(DataValueType),
+                o => o.DataValueType,
+                (o, v) => o.DataValueType = v);
+
+        private int _nameIndexStart;
 
         public int NameIndexStart
         {
-            get { return (int)GetValue(NameIndexStartProperty); }
-            set { SetValue(NameIndexStartProperty, value); }
+            get => _nameIndexStart;
+            set => SetAndRaise(NameIndexStartProperty, ref _nameIndexStart, value);
         }
-        public static readonly StyledProperty<int> NameIndexStartProperty =
-          AvaloniaProperty.Register<Charts, int>(nameof(NameIndexStart));
 
-        /// <summary>
-        /// 是否空数据
-        /// </summary>
+        public static readonly DirectProperty<Charts, int> NameIndexStartProperty =
+            AvaloniaProperty.RegisterDirect<Charts, int>(
+                nameof(NameIndexStart),
+                o => o.NameIndexStart,
+                (o, v) => o.NameIndexStart = v);
+
+        private bool _isEmpty;
+
         public bool IsEmpty
         {
-            get { return (bool)GetValue(IsEmptyProperty); }
-            set { SetValue(IsEmptyProperty, value); }
+            get => _isEmpty;
+            set => SetAndRaise(IsEmptyProperty, ref _isEmpty, value);
         }
-        public static readonly StyledProperty<bool> IsEmptyProperty =
-             AvaloniaProperty.Register<Charts, bool>(nameof(IsEmpty));
 
+        public static readonly DirectProperty<Charts, bool> IsEmptyProperty =
+            AvaloniaProperty.RegisterDirect<Charts, bool>(
+                nameof(IsEmpty),
+                o => o.IsEmpty,
+                (o, v) => o.IsEmpty = v);
 
-        /// <summary>
-        /// 是否显示总计值（仅柱状图有效，默认显示）
-        /// </summary>
+        private bool _isShowTotal = true;
+
         public bool IsShowTotal
         {
-            get { return (bool)GetValue(IsShowTotalProperty); }
-            set { SetValue(IsShowTotalProperty, value); }
+            get => _isShowTotal;
+            set => SetAndRaise(IsShowTotalProperty, ref _isShowTotal, value);
         }
-        public static readonly StyledProperty<bool> IsShowTotalProperty =
-            AvaloniaProperty.Register<Charts, bool>(nameof(IsShowTotal), true);
 
-        /// <summary>
-        /// 是否允许选择项(仅柱状图有效,默认不允许)
-        /// </summary>
+        public static readonly DirectProperty<Charts, bool> IsShowTotalProperty =
+            AvaloniaProperty.RegisterDirect<Charts, bool>(
+                nameof(IsShowTotal),
+                o => o.IsShowTotal,
+                (o, v) => o.IsShowTotal = v);
+
+        private bool _isCanColumnSelect;
+
         public bool IsCanColumnSelect
         {
-            get { return (bool)GetValue(IsCanColumnSelectProperty); }
-            set { SetValue(IsCanColumnSelectProperty, value); }
+            get => _isCanColumnSelect;
+            set => SetAndRaise(IsCanColumnSelectProperty, ref _isCanColumnSelect, value);
         }
-        public static readonly StyledProperty<bool> IsCanColumnSelectProperty =
-             AvaloniaProperty.Register<Charts, bool>(nameof(IsCanColumnSelect));
 
-        /// <summary>
-        /// 是否显示搜索(仅列表样式有效,默认不显示)
-        /// </summary>
+        public static readonly DirectProperty<Charts, bool> IsCanColumnSelectProperty =
+            AvaloniaProperty.RegisterDirect<Charts, bool>(
+                nameof(IsCanColumnSelect),
+                o => o.IsCanColumnSelect,
+                (o, v) => o.IsCanColumnSelect = v);
+
+        private bool _isSearch;
+
         public bool IsSearch
         {
-            get { return (bool)GetValue(IsSearchProperty); }
-            set { SetValue(IsSearchProperty, value); }
+            get => _isSearch;
+            set => SetAndRaise(IsSearchProperty, ref _isSearch, value);
         }
-        public static readonly StyledProperty<bool> IsSearchProperty =
-            AvaloniaProperty.Register<Charts, bool>(nameof(IsSearch), false);
 
-        /// <summary>
-        /// 选中列索引（仅柱状图有效）
-        /// </summary>
+        public static readonly DirectProperty<Charts, bool> IsSearchProperty =
+            AvaloniaProperty.RegisterDirect<Charts, bool>(
+                nameof(IsSearch),
+                o => o.IsSearch,
+                (o, v) => o.IsSearch = v);
+
+        private int _columnSelectedIndex;
+
         public int ColumnSelectedIndex
         {
-            get { return (int)GetValue(ColumnSelectedIndexProperty); }
-            set { SetValue(ColumnSelectedIndexProperty, value); }
+            get => _columnSelectedIndex;
+            set => SetAndRaise(ColumnSelectedIndexProperty, ref _columnSelectedIndex, value);
         }
-        public static readonly StyledProperty<int> ColumnSelectedIndexProperty =
-           AvaloniaProperty.Register<Charts, int>(nameof(ColumnSelectedIndex));
 
-        /// <summary>
-        /// 是否显示徽章(默认不显示)
-        /// </summary>
+        public static readonly DirectProperty<Charts, int> ColumnSelectedIndexProperty =
+            AvaloniaProperty.RegisterDirect<Charts, int>(
+                nameof(ColumnSelectedIndex),
+                o => o.ColumnSelectedIndex,
+                (o, v) => o.ColumnSelectedIndex = v);
+
+        private bool _isShowBadge;
+
         public bool IsShowBadge
         {
-            get { return (bool)GetValue(IsShowBadgeProperty); }
-            set { SetValue(IsShowBadgeProperty, value); }
+            get => _isShowBadge;
+            set => SetAndRaise(IsShowBadgeProperty, ref _isShowBadge, value);
         }
 
-        public static readonly StyledProperty<bool> IsShowBadgeProperty =
-             AvaloniaProperty.Register<Charts, bool>(nameof(IsShowBadge), false);
+        public static readonly DirectProperty<Charts, bool> IsShowBadgeProperty =
+            AvaloniaProperty.RegisterDirect<Charts, bool>(
+                nameof(IsShowBadge),
+                o => o.IsShowBadge,
+                (o, v) => o.IsShowBadge = v);
+
+        private bool _isShowValuesPopup;
 
         public bool IsShowValuesPopup
         {
-            get { return (bool)GetValue(IsShowValuesPopupProperty); }
-            set { SetValue(IsShowValuesPopupProperty, value); }
+            get => _isShowValuesPopup;
+            set => SetAndRaise(IsShowValuesPopupProperty, ref _isShowValuesPopup, value);
         }
-        public static readonly StyledProperty<bool> IsShowValuesPopupProperty =
-            AvaloniaProperty.Register<Charts, bool>(nameof(IsShowValuesPopup));
+
+        public static readonly DirectProperty<Charts, bool> IsShowValuesPopupProperty =
+            AvaloniaProperty.RegisterDirect<Charts, bool>(
+                nameof(IsShowValuesPopup),
+                o => o.IsShowValuesPopup,
+                (o, v) => o.IsShowValuesPopup = v);
+
+        private Control _valuesPopupPlacementTarget;
 
         public Control ValuesPopupPlacementTarget
         {
-            get { return (Control)GetValue(ValuesPopupPlacementTargetProperty); }
-            set { SetValue(ValuesPopupPlacementTargetProperty, value); }
+            get => _valuesPopupPlacementTarget;
+            set => SetAndRaise(ValuesPopupPlacementTargetProperty, ref _valuesPopupPlacementTarget, value);
         }
-        public static readonly StyledProperty<Control> ValuesPopupPlacementTargetProperty =
-          AvaloniaProperty.Register<Charts, Control>(nameof(ValuesPopupPlacementTarget));
+
+        public static readonly DirectProperty<Charts, Control> ValuesPopupPlacementTargetProperty =
+            AvaloniaProperty.RegisterDirect<Charts, Control>(
+                nameof(ValuesPopupPlacementTarget),
+                o => o.ValuesPopupPlacementTarget,
+                (o, v) => o.ValuesPopupPlacementTarget = v);
+
+        private List<ChartColumnInfoModel> _columnValuesInfoList;
 
         public List<ChartColumnInfoModel> ColumnValuesInfoList
         {
-            get { return (List<ChartColumnInfoModel>)GetValue(ColumnValuesInfoListProperty); }
-            set { SetValue(ColumnValuesInfoListProperty, value); }
+            get => _columnValuesInfoList;
+            set => SetAndRaise(ColumnValuesInfoListProperty, ref _columnValuesInfoList, value);
         }
-        public static readonly StyledProperty<List<ChartColumnInfoModel>> ColumnValuesInfoListProperty =
-            AvaloniaProperty.Register<Charts, List<ChartColumnInfoModel>>(nameof(ColumnValuesInfoList));
+
+        public static readonly DirectProperty<Charts, List<ChartColumnInfoModel>> ColumnValuesInfoListProperty =
+            AvaloniaProperty.RegisterDirect<Charts, List<ChartColumnInfoModel>>(
+                nameof(ColumnValuesInfoList),
+                o => o.ColumnValuesInfoList,
+                (o, v) => o.ColumnValuesInfoList = v);
+
+        private double _valuesPopupHorizontalOffset;
 
         public double ValuesPopupHorizontalOffset
         {
-            get { return (double)GetValue(ValuesPopupHorizontalOffsetProperty); }
-            set { SetValue(ValuesPopupHorizontalOffsetProperty, value); }
+            get => _valuesPopupHorizontalOffset;
+            set => SetAndRaise(ValuesPopupHorizontalOffsetProperty, ref _valuesPopupHorizontalOffset, value);
         }
 
-        public static readonly StyledProperty<double> ValuesPopupHorizontalOffsetProperty =
-             AvaloniaProperty.Register<Charts, double>(nameof(ValuesPopupHorizontalOffset));
+        public static readonly DirectProperty<Charts, double> ValuesPopupHorizontalOffsetProperty =
+            AvaloniaProperty.RegisterDirect<Charts, double>(
+                nameof(ValuesPopupHorizontalOffset),
+                o => o.ValuesPopupHorizontalOffset,
+                (o, v) => o.ValuesPopupHorizontalOffset = v);
 
-        /// <summary>
-        /// 数据最大值
-        /// </summary>
+        private double _dataMaximum;
+
         public double DataMaximum
         {
-            get { return (double)GetValue(DataMaximumProperty); }
-            set { SetValue(DataMaximumProperty, value); }
+            get => _dataMaximum;
+            set => SetAndRaise(DataMaximumProperty, ref _dataMaximum, value);
         }
-        public static readonly StyledProperty<double> DataMaximumProperty =
-          AvaloniaProperty.Register<Charts, double>(nameof(DataMaximum), 0);
+
+        public static readonly DirectProperty<Charts, double> DataMaximumProperty =
+            AvaloniaProperty.RegisterDirect<Charts, double>(
+                nameof(DataMaximum),
+                o => o.DataMaximum,
+                (o, v) => o.DataMaximum = v);
+
+        private double _dataMaxValue;
 
         public double DataMaxValue
         {
-            get { return (double)GetValue(DataMaxValueProperty); }
-            set { SetValue(DataMaxValueProperty, value); }
+            get => _dataMaxValue;
+            set => SetAndRaise(DataMaxValueProperty, ref _dataMaxValue, value);
         }
-        public static readonly StyledProperty<double> DataMaxValueProperty =
-            AvaloniaProperty.Register<Charts, double>(nameof(DataMaxValue));
 
-        /// <summary>
-        /// 是否以堆叠的形式展示（仅柱状图有效）
-        /// </summary>
+        public static readonly DirectProperty<Charts, double> DataMaxValueProperty =
+            AvaloniaProperty.RegisterDirect<Charts, double>(
+                nameof(DataMaxValue),
+                o => o.DataMaxValue,
+                (o, v) => o.DataMaxValue = v);
+
+        private bool _isStack;
+
         public bool IsStack
         {
-            get { return (bool)GetValue(IsStackProperty); }
-            set { SetValue(IsStackProperty, value); }
+            get => _isStack;
+            set => SetAndRaise(IsStackProperty, ref _isStack, value);
         }
-        public static readonly StyledProperty<bool> IsStackProperty =
-             AvaloniaProperty.Register<Charts, bool>(nameof(IsStack));
 
-        /// <summary>
-        /// 是否显示分类信息（仅柱状图有效）
-        /// </summary>
+        public static readonly DirectProperty<Charts, bool> IsStackProperty =
+            AvaloniaProperty.RegisterDirect<Charts, bool>(
+                nameof(IsStack),
+                o => o.IsStack,
+                (o, v) => o.IsStack = v);
+
+        private bool _isShowCategory = true;
+
         public bool IsShowCategory
         {
-            get { return (bool)GetValue(IsShowCategoryProperty); }
-            set { SetValue(IsShowCategoryProperty, value); }
+            get => _isShowCategory;
+            set => SetAndRaise(IsShowCategoryProperty, ref _isShowCategory, value);
         }
-        public static readonly StyledProperty<bool> IsShowCategoryProperty =
-              AvaloniaProperty.Register<Charts, bool>(nameof(IsShowCategory), true);
 
-        /// <summary>
-        /// 图标大小（仅列表样式有效）
-        /// </summary>
+        public static readonly DirectProperty<Charts, bool> IsShowCategoryProperty =
+            AvaloniaProperty.RegisterDirect<Charts, bool>(
+                nameof(IsShowCategory),
+                o => o.IsShowCategory,
+                (o, v) => o.IsShowCategory = v);
+
+        private double _iconSize = 25;
+
         public double IconSize
         {
-            get { return (double)GetValue(IconSizeProperty); }
-            set { SetValue(IconSizeProperty, value); }
+            get => _iconSize;
+            set => SetAndRaise(IconSizeProperty, ref _iconSize, value);
         }
-        public static readonly StyledProperty<double> IconSizeProperty =
-          AvaloniaProperty.Register<Charts, double>(nameof(IconSize), 25);
+
+        public static readonly DirectProperty<Charts, double> IconSizeProperty =
+            AvaloniaProperty.RegisterDirect<Charts, double>(
+                nameof(IconSize),
+                o => o.IconSize,
+                (o, v) => o.IconSize = v);
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
@@ -355,16 +465,18 @@ namespace UI.Controls.Charts
             if (change.Property == DataProperty)
             {
                 charts.Render();
-
             }
+
             if (change.Property == IsLoadingProperty)
             {
                 charts.Render();
             }
+
             if (change.Property == ColumnSelectedIndexProperty)
             {
                 charts.SetColBorderActiveBg((int)change.OldValue, (int)change.NewValue);
             }
+
             if (change.Property == ItemMenuProperty)
             {
                 (var oldVal, var newVal) = change.GetOldAndNewValue<ContextMenu>();
@@ -372,30 +484,28 @@ namespace UI.Controls.Charts
                 {
                     oldVal.Opening -= OnContextMenuOpening;
                     _listView.SelectionChanged -= _listView_SelectionChanged;
-
                 }
+
                 if (newVal != null && _listView != null)
                 {
                     _listView.ContextMenu = newVal;
                     newVal.Opening += OnContextMenuOpening;
                     _listView.SelectionChanged += _listView_SelectionChanged;
                 }
-
             }
-
-
         }
-
-        /// <summary>
-        /// 右键菜单
-        /// </summary>
+        
+        private ContextMenu _itemMenu;
         public ContextMenu ItemMenu
         {
-            get { return (ContextMenu)GetValue(ItemMenuProperty); }
-            set { SetValue(ItemMenuProperty, value); }
+            get => _itemMenu;
+            set => SetAndRaise(ItemMenuProperty, ref _itemMenu, value);
         }
-        public static readonly StyledProperty<ContextMenu> ItemMenuProperty =
-            AvaloniaProperty.Register<Charts, ContextMenu>(nameof(ItemMenu));
+        public static readonly DirectProperty<Charts, ContextMenu> ItemMenuProperty =
+            AvaloniaProperty.RegisterDirect<Charts, ContextMenu>(
+                nameof(ItemMenu),
+                o => o.ItemMenu,
+                (o, v) => o.ItemMenu = v);
 
         /// <summary>
         /// 点击项目时发生
@@ -406,6 +516,7 @@ namespace UI.Controls.Charts
         /// 容器
         /// </summary>
         private StackPanel _typeATempContainer;
+
         private WrapPanel CardContainer;
         private Grid MonthContainer;
         private Border RadarContainer;
@@ -420,6 +531,7 @@ namespace UI.Controls.Charts
         /// 是否在渲染中
         /// </summary>
         private bool isRendering = false;
+
         /// <summary>
         /// 计算最大值
         /// </summary>
@@ -452,10 +564,12 @@ namespace UI.Controls.Charts
                 _typeColumnCanvas = e.NameScope.Get<Canvas>("TypeColumnCanvas");
                 _typeColumnCanvas.SizeChanged += _typeColumnCanvas_SizeChanged;
             }
+
             if (ChartsType == ChartsType.Pie)
             {
                 _commonCanvas.SizeChanged += _commonCanvas_SizeChanged;
             }
+
             Render();
         }
 
@@ -504,7 +618,6 @@ namespace UI.Controls.Charts
                             break;
                     }
                 }
-
             }
         }
 
@@ -514,6 +627,7 @@ namespace UI.Controls.Charts
             {
                 return;
             }
+
             //  计算最大值
             //  如果设置了固定的最大值则使用，否则查找数据中的最大值
             maxValue = MaxValueLimit > 0 ? MaxValueLimit : Data.Count() > 0 ? Data.Max(m => m.Value) : 0;
@@ -525,6 +639,7 @@ namespace UI.Controls.Charts
                 {
                     maxValue = 10;
                 }
+
                 //  适当增加最大值
                 maxValue = Math.Round(maxValue / 2, MidpointRounding.AwayFromZero) * 2 + 2;
                 if (_countText != null)
@@ -555,7 +670,7 @@ namespace UI.Controls.Charts
 
             if (Data == null || Data.Count() <= 0)
             {
-                CardContainer.Children.Clear(); 
+                CardContainer.Children.Clear();
                 CardContainer.Children.Add(new EmptyData());
                 RadarContainer.Child = new EmptyData();
                 _typeATempContainer.Children.Add(new EmptyData());
@@ -591,10 +706,10 @@ namespace UI.Controls.Charts
                     RenderPieStyle();
                     break;
             }
-
         }
 
         #region 渲染列表样式
+
         private void RenderListStyle()
         {
             ListViewBindingData = Data.OrderByDescending(x => x.Value).ToList();
@@ -612,8 +727,8 @@ namespace UI.Controls.Charts
                 _listView.ContextMenu = ItemMenu;
                 ItemMenu.Opening += OnContextMenuOpening;
                 _listView.SelectionChanged += _listView_SelectionChanged;
-
             }
+
             if (_searchBox != null)
             {
                 _searchBox.TextChanged -= SearchBox_TextChanged;
@@ -621,8 +736,6 @@ namespace UI.Controls.Charts
             }
 
             _listView.PointerReleased += OnListViewPointerReleased;
-
-
         }
 
         private void _listView_SelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -660,14 +773,17 @@ namespace UI.Controls.Charts
                 _listView.SelectionChanged -= _listView_SelectionChanged;
                 ItemMenu.Opening -= OnContextMenuOpening;
             }
+
             if (ChartsType == ChartsType.Column)
             {
                 _typeColumnCanvas.SizeChanged -= _typeColumnCanvas_SizeChanged;
             }
+
             if (ChartsType == ChartsType.Pie)
             {
                 _commonCanvas.SizeChanged -= _commonCanvas_SizeChanged;
             }
+
             _listView.PointerReleased -= OnListViewPointerReleased;
             _searchBox.TextChanged -= SearchBox_TextChanged;
         }
@@ -696,33 +812,36 @@ namespace UI.Controls.Charts
         {
             var data = Data.ToList();
             await Task.Run(() =>
-             {
-                 string searchKeyLower = searchKey.ToLower();
-                 var newListData = data
-                     .Where(data =>
-                     {
-                         string content = (data.Name + data.PopupText).ToLower();
-                         bool show = content.Contains(searchKeyLower);
+            {
+                string searchKeyLower = searchKey.ToLower();
+                var newListData = data
+                    .Where(data =>
+                    {
+                        string content = (data.Name + data.PopupText).ToLower();
+                        bool show = content.Contains(searchKeyLower);
 
-                         if (!show)
-                         {
-                             show = ChartBadgeModel.IgnreLanguages.Contains(searchKeyLower) && data.BadgeList != null && data.BadgeList.Any(m => m.Type == ChartBadgeType.Ignore);
-                             if (!show && data.BadgeList != null && data.BadgeList.Any())
-                             {
-                                 show = data.BadgeList.Any(m => m.Name.ToLower().Contains(searchKeyLower));
-                             }
-                         }
+                        if (!show)
+                        {
+                            show = ChartBadgeModel.IgnreLanguages.Contains(searchKeyLower) && data.BadgeList != null &&
+                                   data.BadgeList.Any(m => m.Type == ChartBadgeType.Ignore);
+                            if (!show && data.BadgeList != null && data.BadgeList.Any())
+                            {
+                                show = data.BadgeList.Any(m => m.Name.ToLower().Contains(searchKeyLower));
+                            }
+                        }
 
-                         return show;
-                     })
-                     .ToList();
+                        return show;
+                    })
+                    .ToList();
 
-                 Dispatcher.UIThread.Invoke(() => ListViewBindingData = newListData);
-             });
+                Dispatcher.UIThread.Invoke(() => ListViewBindingData = newListData);
+            });
         }
+
         #endregion
 
         #region 渲染卡片样式Card
+
         private void RenderCardStyle()
         {
             var data = Data.Take(ShowLimit).ToList();
@@ -730,10 +849,11 @@ namespace UI.Controls.Charts
             {
                 CardContainer.Children.Remove(CardContainer.Children.First(x => x is EmptyData));
             }
+
             var chatItemTypeCards = CardContainer.Children
-             .Where(control => control is ChartsItemTypeCard)
-             .Cast<ChartsItemTypeCard>()
-             .ToList();
+                .Where(control => control is ChartsItemTypeCard)
+                .Cast<ChartsItemTypeCard>()
+                .ToList();
 
             var existingCardsDict = chatItemTypeCards.ToDictionary(card => card.Data.Name, card => card);
             var controlsToRemove = chatItemTypeCards
@@ -776,12 +896,14 @@ namespace UI.Controls.Charts
                     }
                 }
             }
-            isRendering = false;
 
+            isRendering = false;
         }
+
         #endregion
 
         #region 渲染月份样式
+
         private void RenderMonthStyle()
         {
             var data = Data.ToList();
@@ -795,7 +917,8 @@ namespace UI.Controls.Charts
 
             var dataGrid = new Grid();
 
-            string[] week = [
+            string[] week =
+            [
                 Application.Current.Resources["Mon"] as string,
                 Application.Current.Resources["Tue"] as string,
                 Application.Current.Resources["Wed"] as string,
@@ -803,11 +926,9 @@ namespace UI.Controls.Charts
                 Application.Current.Resources["Fri"] as string,
                 Application.Current.Resources["Sat"] as string,
                 Application.Current.Resources["Sun"] as string
-
             ];
             for (int i = 0; i < 7; i++)
             {
-
                 dataGrid.ColumnDefinitions.Add(new ColumnDefinition()
                 {
                     Width = new GridLength(1, GridUnitType.Star)
@@ -906,6 +1027,7 @@ namespace UI.Controls.Charts
             {
                 col = date.Day + firstDayWeekNum - 2;
             }
+
             if (col > 6)
             {
                 row = (int)col / 7;
@@ -915,18 +1037,19 @@ namespace UI.Controls.Charts
                 {
                     dayWeekNum = 7;
                 }
+
                 col = dayWeekNum - 1;
-
-
             }
 
             res[0] = col;
             res[1] = row;
             return res;
         }
+
         #endregion
 
         #region 渲染柱形图
+
         private void SetColBorderActiveBg(int oldIndex, int newIndex)
         {
             if (!IsCanColumnSelect || _typeColBorderRectMap == null)
@@ -939,6 +1062,7 @@ namespace UI.Controls.Charts
                 var oldItem = _typeColBorderRectMap[oldIndex];
                 oldItem.Fill = new SolidColorBrush(Colors.Transparent);
             }
+
             if (_typeColBorderRectMap.ContainsKey(newIndex))
             {
                 var background = Application.Current.Resources["ThemeBrush"] as SolidColorBrush;
@@ -981,7 +1105,6 @@ namespace UI.Controls.Charts
 
             foreach (var item in Data)
             {
-
                 for (int i = 0; i < colValueCount; i++)
                 {
                     tempValueArr[i] += item.Values[i];
@@ -995,7 +1118,6 @@ namespace UI.Controls.Charts
                 }
 
                 total += item.Values.Sum();
-
             }
 
             if (DataMaximum > 0)
@@ -1009,6 +1131,7 @@ namespace UI.Controls.Charts
                     maxValue = tempValueArr.Max();
                 }
             }
+
             if (maxValue == 0)
             {
                 maxValue = 10;
@@ -1070,7 +1193,9 @@ namespace UI.Controls.Charts
                 _typeColBorderRectMap.Add(i, columnBorder);
 
                 //  列名
-                string colName = list[0].ColumnNames != null && list[0].ColumnNames.Length > 0 ? list[0].ColumnNames[i] : (i + NameIndexStart).ToString();
+                string colName = list[0].ColumnNames != null && list[0].ColumnNames.Length > 0
+                    ? list[0].ColumnNames[i]
+                    : (i + NameIndexStart).ToString();
                 //  绘制列名
                 TextBlock colNameText = new TextBlock();
                 colNameText.TextAlignment = TextAlignment.Center;
@@ -1107,6 +1232,7 @@ namespace UI.Controls.Charts
                             colValueRect.RadiusX = 4;
                             colValueRect.RadiusY = 4;
                         }
+
                         Canvas.SetLeft(colValueRect, i * columnBorderWidth + margin);
                         Canvas.SetBottom(colValueRect, colNameHeight);
 
@@ -1124,6 +1250,7 @@ namespace UI.Controls.Charts
                         });
                     }
                 }
+
                 var index = i;
 
                 columnBorder.PointerEntered += (e, c) =>
@@ -1131,14 +1258,14 @@ namespace UI.Controls.Charts
                     var s = valuesPopupList.OrderByDescending(m => m.Value).ToList();
                     if (s.Count > 1)
                     {
-                        s.Add(new ()
+                        s.Add(new()
                         {
                             Name = "Sum",
                             Text = Covervalue(s.Sum(x => x.Value)) + Unit,
                             Color = "#FF8A8A8A",
                         });
                     }
-                    
+
                     ColumnValuesInfoList = s;
                     ValuesPopupPlacementTarget = columnBorder;
                     IsShowValuesPopup = valuesPopupList.Count > 0;
@@ -1157,17 +1284,14 @@ namespace UI.Controls.Charts
                     if (ColumnSelectedIndex != index)
                     {
                         columnBorder.Fill = new SolidColorBrush(Colors.Transparent);
-
                     }
                 };
                 if (IsCanColumnSelect)
                 {
-                    columnBorder.PointerPressed += (e, c) =>
-                    {
-                        ColumnSelectedIndex = index;
-                    };
+                    columnBorder.PointerPressed += (e, c) => { ColumnSelectedIndex = index; };
                 }
             }
+
             //  调整列值 zindex
             foreach (var item in _typeColValueRectMap)
             {
@@ -1236,7 +1360,6 @@ namespace UI.Controls.Charts
                 StrokeThickness = 1,
                 StartPoint = new Point(colNameBottomMargin, midY),
                 EndPoint = new Point(canvasWidth - colNameBottomMargin - midValueTextSize.Width, midY),
-
             };
             _typeColumnCanvas.Children.Add(midValueLine);
 
@@ -1262,7 +1385,8 @@ namespace UI.Controls.Charts
                 StrokeDashArray = [2, 5],
                 StrokeThickness = 1,
             };
-            avgValueLine.StartPoint = new Point(colNameBottomMargin, canvasHeight - avgY + colNameBottomMargin + avgValueLine.StrokeThickness);
+            avgValueLine.StartPoint = new Point(colNameBottomMargin,
+                canvasHeight - avgY + colNameBottomMargin + avgValueLine.StrokeThickness);
             avgValueLine.EndPoint = new Point(canvasWidth - colNameBottomMargin - avgValueTextSize.Width,
                 canvasHeight - avgY + colNameBottomMargin + avgValueLine.StrokeThickness);
             _typeColumnCanvas.Children.Add(avgValueLine);
@@ -1280,6 +1404,7 @@ namespace UI.Controls.Charts
                     Text = Covervalue(item.Values.Sum()) + Unit
                 });
             }
+
             ColumnInfoList = infoList;
             isRendering = false;
         }
@@ -1287,6 +1412,7 @@ namespace UI.Controls.Charts
         #endregion
 
         #region 渲染雷达图
+
         private void RenderLadarStyle()
         {
             if (Data.Count() <= 2)
@@ -1295,6 +1421,7 @@ namespace UI.Controls.Charts
                 isRendering = false;
                 return;
             }
+
             //  最大值
             double total = 0;
             //  查找最大值
@@ -1308,7 +1435,6 @@ namespace UI.Controls.Charts
                 }
 
                 total += item.Values.Sum();
-
             }
             //maxValue = total;
 
@@ -1316,20 +1442,22 @@ namespace UI.Controls.Charts
             {
                 maxValue = DataMaximum;
             }
+
             var radar = new RadarChart();
-            radar.Labels = Data.Select(x => x.Name.Length > 4 ? 
-                x.Name.Substring(0,4) : x.Name).ToList();
+            radar.Labels = Data.Select(x => x.Name.Length > 4 ? x.Name.Substring(0, 4) : x.Name).ToList();
             radar.Values = Data.Select(x => x.Values.Sum()).ToList();
             radar.MaxValue = maxValue;
-            ToolTip.SetTip(radar,string.Join("\n",Data.
-                Select(x => x.Name + $" {Time.ToString((int)x.Values.Sum())}")));
+            ToolTip.SetTip(radar,
+                string.Join("\n", Data.Select(x => x.Name + $" {Time.ToString((int)x.Values.Sum())}")));
             RadarContainer.Child = radar;
-            
+
             isRendering = false;
         }
+
         #endregion
 
         #region 饼图
+
         private void RenderPieStyle()
         {
             if (_commonCanvas == null)
@@ -1337,6 +1465,7 @@ namespace UI.Controls.Charts
                 isRendering = false;
                 return;
             }
+
             _commonCanvas.Children.Clear();
             if (Data?.Count() == 0)
             {
@@ -1345,14 +1474,15 @@ namespace UI.Controls.Charts
                     RenderTransform = new TransformGroup
                     {
                         Children =
-                    [
-                        new TranslateTransform(-15, 0),
-                        new ScaleTransform(0.8, 0.8)
-                    ]
+                        [
+                            new TranslateTransform(-15, 0),
+                            new ScaleTransform(0.8, 0.8)
+                        ]
                     }
                 });
                 return;
             }
+
             var item = new ChartsItemTypePie();
             item.Width = _commonCanvas.Bounds.Width;
             item.Height = _commonCanvas.Bounds.Height;
@@ -1363,8 +1493,8 @@ namespace UI.Controls.Charts
 
             isRendering = false;
         }
-        #endregion
 
+        #endregion
 
 
         private string Covervalue(double value)
@@ -1399,6 +1529,5 @@ namespace UI.Controls.Charts
                 }
             };
         }
-
     }
 }
