@@ -397,7 +397,7 @@ namespace UI.ViewModels
                         Values = item.Values,
                         Color = category.Color
                     };
-                  
+
                     chartData.Add(dataItem);
                 }
             }
@@ -445,7 +445,7 @@ namespace UI.ViewModels
                 names[i] = Application.Current.Resources[$"{(i + 1)}Month"] as string;
             }
 
-            var list = await data.GetCategoryYearDataAsync(YearDate);                     
+            var list = await data.GetCategoryYearDataAsync(YearDate);
 
             foreach (var item in list)
             {
@@ -461,7 +461,7 @@ namespace UI.ViewModels
                         ColumnNames = names,
                         Color = category.Color
                     };
-                
+
                     chartData.Add(dataItem);
                 }
             }
@@ -722,7 +722,7 @@ namespace UI.ViewModels
                     bindModel.Tag = Time.ToString(item.Time);
                     bindModel.PopupText = item.AppModel?.File;
                     bindModel.Icon = item.AppModel?.IconFile;
-               
+                    bindModel.BadgeList = new List<ChartBadgeModel>();
                     if (item.AppModel.Category != null)
                     {
                         bindModel.BadgeList.Add(new ChartBadgeModel()
