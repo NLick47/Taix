@@ -7,9 +7,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Core.Models.Config;
+using ReactiveUI;
 using UI.Views;
 
 namespace UI.Servicers
@@ -56,29 +58,37 @@ namespace UI.Servicers
             }
 
         }
+        
+        private IDisposable? windowSizeSubscription;
 
         private void HandleWindowSizeChangedEvent()
         {
             if (mainWindow == null || mainWindow.IsWindowClosed) return;
-
-            mainWindow.SizeChanged -= MainWindow_SizeChanged;
-
+            
             var config = appConfig.GetConfig();
+            
+            windowSizeSubscription?.Dispose();
+            windowSizeSubscription = null;
             if (config.General.IsSaveWindowSize)
             {
-                //  保存窗口大小信息
-                mainWindow.SizeChanged += MainWindow_SizeChanged;
+                windowSizeSubscription = mainWindow.WhenAnyValue(x => x.Width, x => x.Height)
+                    .Throttle(TimeSpan.FromMilliseconds(1000 * 3)) 
+                    .ObserveOn(RxApp.MainThreadScheduler)
+                    .Subscribe(tuple =>
+                    {
+                        var (width, height) = tuple;
+                        var config = appConfig.GetConfig();
+                        if (config.General.IsSaveWindowSize)
+                        {
+                            config.General.WindowWidth = width;
+                            config.General.WindowHeight = height;
+                            appConfig.Save();
+                        }
+                    });
             }
         }
 
-        private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            var config = appConfig.GetConfig();
-            config.General.WindowWidth = mainWindow.Bounds.Width;
-            config.General.WindowHeight = mainWindow.Bounds.Height;
-            appConfig.Save();
-        }
-
+        
         public void Init()
         {
             var config = appConfig.GetConfig();
