@@ -161,8 +161,7 @@ namespace UI.Controls.Select
         public ICommand SetYearCommand { get; }
         public ICommand SetMonthCommand { get; }
         public ReactiveCommand<object, Unit> DoneCommand { get; }
-
-        private bool IsFirstClick = false;
+        
         private Border SelectContainer;
         private DateTime SelectedDay;
 
@@ -238,9 +237,7 @@ namespace UI.Controls.Select
 
         private void OnShowSelect(object obj)
         {
-            IsOpen = true;
-
-            IsFirstClick = true;
+            IsOpen = !IsOpen;
         }
 
         private void SelectContainer_Loaded(object sender, RoutedEventArgs e)
