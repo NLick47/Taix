@@ -1,29 +1,17 @@
-﻿using Avalonia;
-using Core;
-using SharedLibrary.Enums;
+﻿using SharedLibrary.Enums;
 using Core.Servicers.Interfaces;
 using SharedLibrary.Servicers;
 using SharedLibrary;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using SharedLibrary.Librarys;
-using System.Reflection;
-using UI.Servicers.Updater;
-using Avalonia.Controls.ApplicationLifetimes;
-using UI.Models;
-using UI.Controls.Window;
 
 namespace UI.Servicers
 {
     public class MainServicer : IMainServicer
     {
-        private readonly IMain main;
-        private readonly IThemeServicer themeServicer;
-        private readonly IAppContextMenuServicer appContextMenuServicer;
+        private readonly IMain _main;
+        private readonly IThemeServicer _themeServicer;
+        private readonly IAppContextMenuServicer _appContextMenuServicer;
         private readonly IWebSiteContextMenuServicer _webSiteContext;
         private readonly IStatusBarIconServicer _statusBarIconServicer;
         private readonly IAppConfig _config;
@@ -37,9 +25,9 @@ namespace UI.Servicers
             IWebSiteContextMenuServicer webSiteContext_,
             IAppConfig config_, ISystemInfrastructure systemInfrastructure_)
         {
-            this.main = main;
-            this.themeServicer = themeServicer;
-            this.appContextMenuServicer = appContextMenuServicer;
+            _main = main;
+            _themeServicer = themeServicer;
+            _appContextMenuServicer = appContextMenuServicer;
             _webSiteContext = webSiteContext_;
             _statusBarIconServicer = statusBarIconServicer_;
             _config = config_;
@@ -48,9 +36,15 @@ namespace UI.Servicers
         public Task Start(bool isSelfStart)
         {
             this.isSelfStart = isSelfStart;
-            main.OnStarted += Main_OnStarted;
-            main.OnConfigLoaded += ConfigLoaded;
-            return Task.WhenAll(main.Run(), _statusBarIconServicer.Init());
+            _main.OnStarted += Main_OnStarted;
+            _main.OnConfigLoaded += ConfigLoaded;
+            return Task.WhenAll(_main.Run(), _statusBarIconServicer.Init());
+        }
+
+        public async void DesignStart()
+        {
+            _main.OnStarted += Main_DesignStarted;
+            await _main.Run();
         }
 
         private void ConfigLoaded(object sender, EventArgs e)
@@ -60,12 +54,20 @@ namespace UI.Servicers
                 _systemInfrastructure.SetStartup(true);
             }
         }
+
+        private void Main_DesignStarted(object sender, EventArgs e)
+        {
+            SystemLanguage.InitializeLanguage(CultureCode.Auto);
+            _themeServicer.Init();
+            _appContextMenuServicer.Init();
+            _webSiteContext.Init();
+        }
         
         private void Main_OnStarted(object sender, EventArgs e)
         {
             SystemLanguage.InitializeLanguage((CultureCode)_config.GetConfig().General.Language);
-            themeServicer.Init();
-            appContextMenuServicer.Init();
+            _themeServicer.Init();
+            _appContextMenuServicer.Init();
             _webSiteContext.Init();
             if (!isSelfStart)
             {

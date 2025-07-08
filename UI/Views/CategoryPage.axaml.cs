@@ -1,13 +1,8 @@
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
-using Avalonia.ReactiveUI;
-using ReactiveUI;
 using System;
 using System.Collections.Specialized;
-using System.Reactive.Linq;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using ReactiveUI;
 using UI.Controls;
 using UI.ViewModels;
 
@@ -18,9 +13,10 @@ public partial class CategoryPage : TPage
     private CategoryPageViewModel _model;
     private IDisposable _editIsDirectoryMatchSubscription;
     private IDisposable _editDirectoriesSubscription;
-    public CategoryPage(CategoryPageViewModel model)
+    public CategoryPage()
     {
         InitializeComponent();
+        var model = ServiceLocator.GetRequiredService<CategoryPageViewModel>();
         _model = model;
         DataContext = model;
         _editIsDirectoryMatchSubscription = this.WhenAnyValue(x => x._model.EditIsDirectoryMath).Subscribe(HandleEditIsDirectoryMatchChange);

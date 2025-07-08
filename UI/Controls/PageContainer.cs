@@ -2,7 +2,6 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
-using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
@@ -178,7 +177,7 @@ namespace UI.Controls
             Type pageType = Type.GetType(ProjectName + ".Views." + Uri);
             if (pageType != null)
             {
-                page = App.ServiceProvider.GetRequiredService(pageType) as UserControl;
+                page = ServiceLocator.GetRequiredService(pageType) as UserControl;
             }
             var newPage = new PageModel()
             {

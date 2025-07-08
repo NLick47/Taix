@@ -1,15 +1,13 @@
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using UI.ViewModels;
 
 namespace UI.Views;
 
 public partial class SettingPage : UserControl
 {
-    public SettingPage(SettingPageViewModel model)
+    public SettingPage()
     {
         InitializeComponent();
-        DataContext = model;
+        DataContext = ServiceLocator.GetRequiredService<SettingPageViewModel>();
     }
 }

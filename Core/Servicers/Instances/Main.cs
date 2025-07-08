@@ -10,20 +10,10 @@ using Core.Models;
 using Core.Models.Config;
 using Core.Models.Config.Link;
 using Core.Servicers.Interfaces;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Timers;
+using Avalonia.Controls;
 using Microsoft.EntityFrameworkCore;
-using Core.Models.Data;
 
 namespace Core.Servicers.Instances
 {
@@ -119,10 +109,13 @@ namespace Core.Servicers.Instances
             _configProcessNameWhiteList = new List<string>();
             _configProcessRegexWhiteList = new List<string>();
 
-            sleepdiscover.SleepStatusChanged += Sleepdiscover_SleepStatusChanged;
-            appConfig.ConfigChanged += AppConfig_ConfigChanged;
-            _appTimer.OnAppDurationUpdated += _appTimer_OnAppDurationUpdated;
-            WebSocketEvent.OnWebLog += WebSocketEvent_OnWebLog;
+            if (!Design.IsDesignMode)
+            {
+                sleepdiscover.SleepStatusChanged += Sleepdiscover_SleepStatusChanged;
+                appConfig.ConfigChanged += AppConfig_ConfigChanged;
+                _appTimer.OnAppDurationUpdated += _appTimer_OnAppDurationUpdated;
+                WebSocketEvent.OnWebLog += WebSocketEvent_OnWebLog;
+            }
         }
 
         private void AppConfig_ConfigChanged(ConfigModel oldConfig, ConfigModel newConfig)
@@ -170,15 +163,18 @@ namespace Core.Servicers.Instances
                 _appConfig.Load();
                 config = _appConfig.GetConfig();
                 OnConfigLoaded?.Invoke(this,EventArgs.Empty);
-                UpdateConfigIgnoreProcess();
-                UpdateConfigProcessWhiteList();
 
-                //  初始化过滤器
-                _webFilter.Init();
+                if (!Design.IsDesignMode)
+                {
+                    UpdateConfigIgnoreProcess();
+                    UpdateConfigProcessWhiteList();
+                    //  初始化过滤器
+                    _webFilter.Init();
 
-                //  启动主服务
-                Start();
-
+                    //  启动主服务
+                    Start();
+                }
+                
                 OnStarted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception e)

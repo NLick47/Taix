@@ -1,14 +1,6 @@
 ﻿using Core.Models;
 using Core.Models.Db;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core.Librarys.SQLite
 {
@@ -53,7 +45,7 @@ namespace Core.Librarys.SQLite
         {
             optionsBuilder.UseSqlite($"Data Source={_dbFilePath}");
 #if DEBUG
-            optionsBuilder.LogTo(message => Debug.WriteLine(message));
+            optionsBuilder.LogTo(message => Console.WriteLine(message));
 #endif
         }
 

@@ -1,6 +1,3 @@
-using Avalonia;
-using Avalonia.Controls;
-using System.Linq;
 using UI.Controls.Window;
 
 namespace UI.Views

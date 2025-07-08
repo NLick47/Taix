@@ -1,64 +1,28 @@
+using System;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using SharedLibrary.Servicers;
-using Core.Librarys;
+using Avalonia.Threading;
+using Core.Servicers;
 using Core.Servicers.Instances;
 using Core.Servicers.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.IO;
+using SharedLibrary.Librarys;
+using SharedLibrary.Servicers;
+using UI.Controls.Window;
+using UI.Servicers;
+using UI.Servicers.Updater;
 using UI.ViewModels;
 using UI.Views;
-using SharedLibrary.Librarys;
-using System.Reflection;
-using Avalonia.Media;
-using UI.Servicers;
-using UI.Controls.Window;
-using Avalonia.Controls;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using System.Threading;
-using Core.Servicers;
-using UI.Models;
-using ReactiveUI;
-using Avalonia.Threading;
-using UI.Servicers.Updater;
-
-
 
 namespace UI
 {
     public partial class App : Application
     {
-        private  readonly ServiceProvider serviceProvider;
         private System.Threading.Mutex mutex;
-        private HideWindow keepaliveWindow;
-
-
-        public static ServiceProvider ServiceProvider => Instance.serviceProvider;
-        private static App Instance;
-
-        public App()
-        {
-            Instance = this;
-            var serviceCollection = new ServiceCollection();
-            CreatePlatformInitializer(serviceCollection);
-            ConfigureServices(serviceCollection);
-            serviceProvider = serviceCollection.BuildServiceProvider();
-        }
-
-       
-
         private void CreatePlatformInitializer(IServiceCollection services)
         {
-            //string platfromName = PlatformInfo.GetPlatformName();
-            //string dllPath = Path.Combine(AppContext.BaseDirectory, $"{platfromName}.dll");
-            //var assembly = Assembly.LoadFile(dllPath);
-            //var classType = assembly.GetType($"{platfromName}.WinPlatformInitializer");
-            //var Instance = Activator.CreateInstance(classType!);
-            //var methodInfo = classType!.GetMethod("Initialize");
-            //methodInfo!.Invoke(Instance, new object[] { services });
             IPlatformInitializer platformInitializer = null;
             #if WINDOWS
             platformInitializer = new Win.WinPlatformInitializer();
@@ -69,10 +33,7 @@ namespace UI
             
             platformInitializer.Initialize(services);
         }
-
         
-
-
         private void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<IAppTimerServicer, AppTimerServicer>();
@@ -143,7 +104,7 @@ namespace UI
             AvaloniaXamlLoader.Load(this);
         }
 
-        public override  async void OnFrameworkInitializationCompleted()
+        public override void OnFrameworkInitializationCompleted()
         {
             Dispatcher.UIThread.UnhandledException += (sender, e) =>
             {
@@ -160,17 +121,18 @@ namespace UI
                 Logger.Error("[Program crash]" + exception.Message);
                 Logger.Save(true);
             };
-         
+            var serviceCollection = new ServiceCollection();
+            CreatePlatformInitializer(serviceCollection);
+            ConfigureServices(serviceCollection);
+            ServiceLocator.Initialize(serviceCollection.BuildServiceProvider());
+
+            if (Design.IsDesignMode)
+            {
+                var main = ServiceLocator.GetService<IMainServicer>();
+                main.DesignStart();
+            }
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                if (Avalonia.Controls.Design.IsDesignMode)
-                {
-                    desktop.MainWindow = new MainWindow()
-                    {
-                        DataContext = App.ServiceProvider.GetService<MainViewModel>()
-                    };
-                    return;
-                }
                 OnStartup(this, Environment.GetCommandLineArgs());
                 desktop.Exit += (e, r) =>
                 {
@@ -188,7 +150,7 @@ namespace UI
             {
                 Environment.Exit(0);
             }
-            var main = serviceProvider.GetService<IMainServicer>();
+            var main = ServiceLocator.GetService<IMainServicer>();
 
             bool isSelfStart = false;
             if (args.Length > 1)

@@ -3,11 +3,8 @@ using Avalonia.Controls.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UI.Controls.Button;
 using Avalonia;
-using System.Windows.Input;
 using ReactiveUI;
 using Core.Models.Config;
 using System.Reflection;
@@ -19,12 +16,9 @@ using UI.Controls.Select;
 using System.IO;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
-using Avalonia.Threading;
 using SharedLibrary.Librarys;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using UI.Controls.Window;
-using UI.Models;
 using UI.Servicers;
 using UI.ViewModels;
 using SharedLibrary;
@@ -574,7 +568,7 @@ namespace UI.Controls.SettingPanel
                     });
                     if (result != null && result.Count > 0)
                     {
-                        var view = App.ServiceProvider.GetRequiredService<MainViewModel>();
+                        var view = ServiceLocator.GetRequiredService<MainViewModel>();
                         try
                         {
                             var data = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(result.First().Path.LocalPath))!;
@@ -584,7 +578,7 @@ namespace UI.Controls.SettingPanel
                                 return;
                             }
 
-                           var isConfirm = await App.ServiceProvider.GetRequiredService<IUIServicer>().ShowConfirmDialogAsync(
+                           var isConfirm = await ServiceLocator.GetRequiredService<IUIServicer>().ShowConfirmDialogAsync(
                                 Application.Current.FindResource("PleaseNote") as string,
                                 Application.Current.FindResource("ImportingOverwriteOriginal") as string);
 
@@ -612,7 +606,7 @@ namespace UI.Controls.SettingPanel
                 exportMenuItem.Header = Application.Current.FindResource("Export");
                 exportMenuItem.Click += async (e, c) =>
                 {
-                    var view = App.ServiceProvider.GetRequiredService<MainViewModel>();
+                    var view = ServiceLocator.GetRequiredService<MainViewModel>();
                     try
                     {
                         var deskLifettime =
