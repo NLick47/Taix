@@ -800,51 +800,55 @@ namespace Core.Servicers.Instances
         }
         public async Task<double[]> GetRangeTotalDataAsync(DateTime start, DateTime end)
         {
-            var endTime = start.AddDays(1).AddSeconds(-1);
+            var startDate = start.Date;
+            var endDate = end.Date;
+    
             using var db = new TaiDbContext();
 
-            if (start.Date == end.Date)
+            if (startDate == endDate)
             {
-
-                var data = await db.HoursLog
-                  .Where(log => log.DataTime >= start && log.DataTime <= endTime)
-                  .GroupBy(log => log.DataTime)
-                  .Select(g => new TimeDataModel
-                  {
-                      Total = g.Sum(log => log.Time),
-                      Time = g.Key
-                  })
-                  .ToArrayAsync();
-                double[] result = new double[24];
-                for (int i = 0; i < 24; i++)
+                // 处理单日24小时数据
+                var dayStart = startDate;
+                var dayEnd = dayStart.AddDays(1).AddTicks(-1);
+                
+                var hourlyData = await db.HoursLog
+                    .Where(log => log.DataTime >= dayStart && log.DataTime <= dayEnd)
+                    .GroupBy(log => new { log.DataTime.Year, log.DataTime.Month, log.DataTime.Day, log.DataTime.Hour })
+                    .Select(g => new 
+                    {
+                        Hour = g.Key.Hour,
+                        Total = g.Sum(log => log.Time)
+                    })
+                    .ToDictionaryAsync(x => x.Hour, x => x.Total);
+                
+                var result = new double[24];
+                for (int hour = 0; hour < 24; hour++)
                 {
-                    string hours = i < 10 ? "0" + i : i.ToString();
-                    var time = start.ToString($"yyyy-MM-dd {hours}:00:00");
-                    var log = data.Where(m => m.Time.ToString("yyyy-MM-dd HH:00:00") == time).FirstOrDefault();
-                    result[i] = log.Total;
+                    result[hour] = hourlyData.TryGetValue(hour, out var total) ? total : 0;
                 }
                 return result;
             }
             else
             {
-                //  获取日期
-                var ts = end.Date - start.Date;
-                int days = (int)ts.TotalDays + 1;
-                var data = await db.DailyLog
-                  .Where(log => log.Date >= start.Date.Date && log.Date <= end.Date.Date.AddDays(1).AddTicks(-1))
-                  .GroupBy(log => log.Date.Date)
-                  .Select(g => new TimeDataModel
-                  {
-                      Total = g.Sum(log => log.Time),
-                      Time = g.Key
-                  })
-                  .ToArrayAsync();
-                double[] result = new double[days];
-                for (int i = 0; i < days; i++)
+                // 处理多日数据
+                var daysCount = (int)(endDate - startDate).TotalDays + 1;
+                var dateRangeEnd = endDate.AddDays(1).AddTicks(-1);
+                
+                var dailyData = await db.DailyLog
+                    .Where(log => log.Date >= startDate && log.Date <= dateRangeEnd)
+                    .GroupBy(log => log.Date.Date)
+                    .Select(g => new 
+                    {
+                        Date = g.Key,
+                        Total = g.Sum(log => log.Time)
+                    })
+                    .ToDictionaryAsync(x => x.Date, x => x.Total);
+                
+                var result = new double[daysCount];
+                for (int i = 0; i < daysCount; i++)
                 {
-                    var time = start.Date.AddDays(i).ToString($"yyyy-MM-dd 00:00:00");
-                    var log = data.Where(m => m.Time.ToString("yyyy-MM-dd 00:00:00") == time).FirstOrDefault();
-                    result[i] = log.Total;
+                    var currentDate = startDate.AddDays(i);
+                    result[i] = dailyData.TryGetValue(currentDate, out var total) ? total : 0;
                 }
                 return result;
             }
