@@ -1,10 +1,5 @@
-### v1.0.1.3 
+### v1.0.1.4 
 #### 发布内容
-- 修复统计标签页按周/月/年视图点击日期搜索列表的NullReferenceException (nlick47/Taix#8) (#9)
-- 优化窗口大小记忆
-- 日期选择控件弹出层关闭调整
-- avalonia更新至11.3.2
-
-使用该版本需手动删除注册表项，终端运行 reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v "Taix" /f
-
-
+- 修复统计页当日汇总日期范围查询错误
+- 优化从托盘首次初始化窗口出现的卡顿
+- 开发环境下修复部分页面设计器崩溃问题
