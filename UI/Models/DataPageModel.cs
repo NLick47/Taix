@@ -1,102 +1,141 @@
-﻿using Avalonia.Controls;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Avalonia.Controls;
 using UI.Controls.Charts.Model;
 
-namespace UI.Models
+namespace UI.Models;
+
+public class DataPageModel : ModelBase
 {
-    public class DataPageModel : ModelBase
+    private ContextMenu AppContextMenu_;
+
+    private List<ChartsDataModel> Data_;
+
+    private DateTime DayDate_;
+
+    private List<ChartsDataModel> MonthData_;
+
+    private DateTime MonthDate_;
+    private ObservableCollection<string> TabbarData_;
+
+    private int TabbarSelectedIndex_;
+
+    private List<ChartsDataModel> YearData_;
+
+    private DateTime YearDate_;
+
+    /// <summary>
+    ///     tabbar data
+    /// </summary>
+    public ObservableCollection<string> TabbarData
     {
-        private ObservableCollection<string> TabbarData_;
-        /// <summary>
-        /// tabbar data
-        /// </summary>
-        public ObservableCollection<string> TabbarData
+        get => TabbarData_;
+        set
         {
-            get { return TabbarData_; }
-            set { TabbarData_ = value; OnPropertyChanged(); }
+            TabbarData_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private int TabbarSelectedIndex_;
-        /// <summary>
-        /// tabbar selected item index
-        /// </summary>
-        public int TabbarSelectedIndex
+    /// <summary>
+    ///     tabbar selected item index
+    /// </summary>
+    public int TabbarSelectedIndex
+    {
+        get => TabbarSelectedIndex_;
+        set
         {
-            get { return TabbarSelectedIndex_; }
-            set
-            {
-                TabbarSelectedIndex_ = value;
-                OnPropertyChanged();
-            }
+            TabbarSelectedIndex_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private List<ChartsDataModel> Data_;
-        /// <summary>
-        ///  data
-        /// </summary>
-        public List<ChartsDataModel> Data
+    /// <summary>
+    ///     data
+    /// </summary>
+    public List<ChartsDataModel> Data
+    {
+        get => Data_;
+        set
         {
-            get { return Data_; }
-            set { Data_ = value; OnPropertyChanged(); }
+            Data_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private List<ChartsDataModel> MonthData_;
-        /// <summary>
-        ///  MonthData
-        /// </summary>
-        public List<ChartsDataModel> MonthData
+    /// <summary>
+    ///     MonthData
+    /// </summary>
+    public List<ChartsDataModel> MonthData
+    {
+        get => MonthData_;
+        set
         {
-            get { return MonthData_; }
-            set { MonthData_ = value; OnPropertyChanged(); }
+            MonthData_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private List<ChartsDataModel> YearData_;
-        /// <summary>
-        ///  YearData
-        /// </summary>
-        public List<ChartsDataModel> YearData
+    /// <summary>
+    ///     YearData
+    /// </summary>
+    public List<ChartsDataModel> YearData
+    {
+        get => YearData_;
+        set
         {
-            get { return YearData_; }
-            set { YearData_ = value; OnPropertyChanged(); }
+            YearData_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private DateTime DayDate_;
-        /// <summary>
-        ///  date
-        /// </summary>
-        public DateTime DayDate
+    /// <summary>
+    ///     date
+    /// </summary>
+    public DateTime DayDate
+    {
+        get => DayDate_;
+        set
         {
-            get { return DayDate_; }
-            set { DayDate_ = value; OnPropertyChanged(); }
+            DayDate_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private DateTime MonthDate_;
-        /// <summary>
-        ///  date
-        /// </summary>
-        public DateTime MonthDate
+    /// <summary>
+    ///     date
+    /// </summary>
+    public DateTime MonthDate
+    {
+        get => MonthDate_;
+        set
         {
-            get { return MonthDate_; }
-            set { MonthDate_ = value; OnPropertyChanged(); }
+            MonthDate_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private DateTime YearDate_;
-        /// <summary>
-        ///  date
-        /// </summary>
-        public DateTime YearDate
+    /// <summary>
+    ///     date
+    /// </summary>
+    public DateTime YearDate
+    {
+        get => YearDate_;
+        set
         {
-            get { return YearDate_; }
-            set { YearDate_ = value; OnPropertyChanged(); }
+            YearDate_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private ContextMenu AppContextMenu_;
-        public ContextMenu AppContextMenu { get { return AppContextMenu_; } 
-            set { AppContextMenu_ = value; OnPropertyChanged(); } }
+    public ContextMenu AppContextMenu
+    {
+        get => AppContextMenu_;
+        set
+        {
+            AppContextMenu_ = value;
+            OnPropertyChanged();
+        }
     }
 }

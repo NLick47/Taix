@@ -1,161 +1,155 @@
-﻿using SharedLibrary.Enums;
+﻿using System.Diagnostics;
+using System.Timers;
+using SharedLibrary.Enums;
 using SharedLibrary.Event;
 using SharedLibrary.Models.AppObserver;
 using SharedLibrary.Servicers;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Timers;
+using Timer = System.Timers.Timer;
 
-namespace Core.Servicers.Instances
+namespace Core.Servicers.Instances;
+
+public class AppTimerServicer : IAppTimerServicer
 {
-    public class AppTimerServicer : IAppTimerServicer
+    private readonly IAppObserver _appObserver;
+    private string _activeProcess;
+
+    private Dictionary<string, AppData> _appData;
+    private int _appDuration;
+    private DateTime _endTime = DateTime.MinValue;
+
+    private bool _isStart;
+    private AppDurationUpdatedEventArgs _lastInvokeEventArgs;
+    private DateTime _startTime = DateTime.MinValue;
+    private Timer _timer;
+
+    public AppTimerServicer(IAppObserver appObserver_)
     {
-        public event AppTimerEventHandler OnAppDurationUpdated;
+        _appObserver = appObserver_;
+    }
 
-        private readonly IAppObserver _appObserver;
+    public event AppTimerEventHandler OnAppDurationUpdated;
 
-        private bool _isStart = false;
-        private int _appDuration = 0;
-        private DateTime _startTime = DateTime.MinValue;
-        private DateTime _endTime = DateTime.MinValue;
-        private string _activeProcess;
 
-        private Dictionary<string, AppData> _appData;
-        private System.Timers.Timer _timer;
-        private AppDurationUpdatedEventArgs _lastInvokeEventArgs;
+    public void Start()
+    {
+        if (_isStart) return;
 
-        public struct AppData
+        Init();
+
+        _isStart = true;
+        _appObserver.OnAppActiveChanged += AppObserver_OnAppActiveChanged;
+    }
+
+
+    public void Stop()
+    {
+        _isStart = false;
+        StopTimer();
+        _appObserver.OnAppActiveChanged -= AppObserver_OnAppActiveChanged;
+    }
+
+    public AppDurationUpdatedEventArgs GetAppDuration()
+    {
+        if (_appDuration > 0 && !string.IsNullOrEmpty(_activeProcess) && _appData.ContainsKey(_activeProcess))
         {
-            public AppInfo App { get; set; }
-            public WindowInfo Window { get; set; }
-
-        }
-        public AppTimerServicer(IAppObserver appObserver_)
-        {
-            _appObserver = appObserver_;
-
-        }
-
-        private void Init()
-        {
-            _appData = new Dictionary<string, AppData>();
-            _appDuration = 0;
-            _activeProcess = string.Empty;
-
-            _timer = new System.Timers.Timer();
-            _timer.Interval = 1000;
-            _timer.Elapsed += Timer_Elapsed;
+            var data = _appData[_activeProcess];
+            var args = new AppDurationUpdatedEventArgs(_appDuration, data.App, data.Window, _startTime, _endTime);
+            return args;
         }
 
+        return null;
+    }
 
+    private void Init()
+    {
+        _appData = new Dictionary<string, AppData>();
+        _appDuration = 0;
+        _activeProcess = string.Empty;
 
-        public void Start()
+        _timer = new Timer();
+        _timer.Interval = 1000;
+        _timer.Elapsed += Timer_Elapsed;
+    }
+
+    private void AppObserver_OnAppActiveChanged(object sender, AppActiveChangedEventArgs e)
+    {
+        var processName = e.App.Process;
+        var isStatistical = IsStatistical(e.App);
+
+        Debug.WriteLine(processName + " -> " + _activeProcess);
+        if (processName != _activeProcess)
         {
-            if (_isStart) { return; }
-
-            Init();
-
-            _isStart = true;
-            _appObserver.OnAppActiveChanged += AppObserver_OnAppActiveChanged;
-        }
-
-
-        public void Stop()
-        {
-            _isStart = false;
             StopTimer();
-            _appObserver.OnAppActiveChanged -= AppObserver_OnAppActiveChanged;
+            InvokeEvent();
+
+            if (isStatistical) StartTimer();
+
+            _activeProcess = e.App.Type == AppType.SystemComponent ? string.Empty : processName;
         }
 
-        private void AppObserver_OnAppActiveChanged(object sender, AppActiveChangedEventArgs e)
+        if (isStatistical)
         {
-            string processName = e.App.Process;
-            bool isStatistical = IsStatistical(e.App);
-
-            Debug.WriteLine(processName+ " -> " + _activeProcess);
-            if (processName != _activeProcess)
+            var data = new AppData
             {
-                StopTimer();
-                InvokeEvent();
+                App = e.App,
+                Window = e.Window
+            };
+            _appData[processName] = data;
+        }
+    }
 
-                if (isStatistical)
-                {
-                    StartTimer();
-                }
+    private void Timer_Elapsed(object sender, ElapsedEventArgs e)
+    {
+        _appDuration++;
+    }
 
-                _activeProcess = e.App.Type == AppType.SystemComponent ? string.Empty : processName;
+    private void StartTimer()
+    {
+        _timer.Start();
+        _startTime = DateTime.Now;
+        _appDuration = 0;
+    }
+
+    private void StopTimer()
+    {
+        _timer?.Stop();
+        _endTime = DateTime.Now;
+    }
+
+    private void InvokeEvent()
+    {
+        var info = GetAppDuration();
+        if (info != null)
+        {
+            if (_lastInvokeEventArgs?.ActiveTime.ToString() != _startTime.ToString() ||
+                _lastInvokeEventArgs?.EndTime.ToString() != _endTime.ToString())
+            {
+                Debug.WriteLine("【计时更新】" + info);
+                OnAppDurationUpdated?.Invoke(this, info);
+            }
+            else
+            {
+                Debug.WriteLine("【重复！！】" + _lastInvokeEventArgs + "，【now】" + info);
             }
 
-            if (isStatistical)
-            {
-                var data = new AppData()
-                {
-                    App = e.App,
-                    Window = e.Window,
-                };
-                _appData[processName] = data;
-            }
+            _lastInvokeEventArgs = info;
         }
+    }
 
-        private void Timer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            _appDuration++;
-        }
+    /// <summary>
+    ///     判断应用是否需要被统计
+    /// </summary>
+    /// <param name="app_"></param>
+    /// <returns>需要统计时返回 true </returns>
+    private bool IsStatistical(AppInfo app_)
+    {
+        return !string.IsNullOrEmpty(app_.Process) && app_.Type != AppType.SystemComponent &&
+               !string.IsNullOrEmpty(app_.ExecutablePath);
+    }
 
-        private void StartTimer()
-        {
-            _timer.Start();
-            _startTime = DateTime.Now;
-            _appDuration = 0;
-        }
-
-        private void StopTimer()
-        {
-            _timer?.Stop();
-            _endTime = DateTime.Now;
-        }
-
-        private void InvokeEvent()
-        {
-            var info = GetAppDuration();
-            if (info != null)
-            {
-                if (_lastInvokeEventArgs?.ActiveTime.ToString() != _startTime.ToString() || _lastInvokeEventArgs?.EndTime.ToString() != _endTime.ToString())
-                {
-                    Debug.WriteLine("【计时更新】" + info);
-                    OnAppDurationUpdated?.Invoke(this, info);
-                }
-                else
-                {
-                    Debug.WriteLine("【重复！！】" + _lastInvokeEventArgs + "，【now】" + info);
-                }
-                _lastInvokeEventArgs = info;
-            }
-        }
-
-        /// <summary>
-        /// 判断应用是否需要被统计
-        /// </summary>
-        /// <param name="app_"></param>
-        /// <returns>需要统计时返回 true </returns>
-        private bool IsStatistical(AppInfo app_)
-        {
-            return !string.IsNullOrEmpty(app_.Process) && app_.Type != AppType.SystemComponent && !string.IsNullOrEmpty(app_.ExecutablePath);
-        }
-
-        public AppDurationUpdatedEventArgs GetAppDuration()
-        {
-            if (_appDuration > 0 && !string.IsNullOrEmpty(_activeProcess) && _appData.ContainsKey(_activeProcess))
-            {
-                var data = _appData[_activeProcess];
-                var args = new AppDurationUpdatedEventArgs(_appDuration, data.App, data.Window, _startTime, _endTime);
-                return args;
-            }
-            return null;
-        }
+    public struct AppData
+    {
+        public AppInfo App { get; set; }
+        public WindowInfo Window { get; set; }
     }
 }

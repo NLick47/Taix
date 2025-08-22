@@ -8,6 +8,6 @@ public partial class WebSiteDetailPage : UserControl
     public WebSiteDetailPage()
     {
         InitializeComponent();
-        this.DataContext = ServiceLocator.GetRequiredService<WebSiteDetailPageViewModel>();
+        DataContext = ServiceLocator.GetRequiredService<WebSiteDetailPageViewModel>();
     }
 }

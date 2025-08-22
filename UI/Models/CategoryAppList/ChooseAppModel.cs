@@ -1,18 +1,12 @@
 ﻿using Core.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UI.Controls.Select;
 
-namespace UI.Models.CategoryAppList
+namespace UI.Models.CategoryAppList;
+
+public class ChooseAppModel
 {
-    public class ChooseAppModel
-    {
-        public bool IsChoosed { get; set; }
-        public AppModel App { get; set; }
-        public SelectItemModel Value { get; set; } = new SelectItemModel();
-        public bool Visibility { get; set; } = true;
-    }
+    public bool IsChoosed { get; set; }
+    public AppModel App { get; set; }
+    public SelectItemModel Value { get; set; } = new();
+    public bool Visibility { get; set; } = true;
 }

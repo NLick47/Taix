@@ -1,311 +1,307 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-					xmlns:system="clr-namespace:System;assembly=netstandard"
-					x:Class="SharedLibrary.Resources.Localization.StringResourcesEn"
+                    xmlns:system="clr-namespace:System;assembly=netstandard"
+                    x:Class="SharedLibrary.Resources.Localization.StringResourcesEn"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-	<system:String x:Key="Webpage">Webpage</system:String>
-	<system:String x:Key="Complete">Complete</system:String>
-	<system:String x:Key="Piece">Piece</system:String>
-	<system:String x:Key="Site">Site</system:String>
+    <system:String x:Key="Webpage">Webpage</system:String>
+    <system:String x:Key="Complete">Complete</system:String>
+    <system:String x:Key="Piece">Piece</system:String>
+    <system:String x:Key="Site">Site</system:String>
 
 
-	<system:String x:Key="SideOverview">Overview</system:String>
-	<system:String x:Key="SideStatistics">Chart</system:String>
-	<system:String x:Key="SideDetails">Details</system:String>
-	<system:String x:Key="SideSort">Category</system:String>
-	<system:String x:Key="SideSetting">Setting</system:String>
-	<system:String x:Key="Website">Website</system:String>
-	<system:String x:Key="App">App</system:String>
-	<system:String x:Key="Refresh">Refresh</system:String>
-	<system:String x:Key="Browse">Browse</system:String>
-	<system:String x:Key="ClassificationName">Category Name</system:String>
-	<system:String x:Key="ExCreateEdit">?Create:Edit</system:String>
-	<system:String x:Key="ExCreateUpdate">?Create:Update</system:String>
-	<system:String x:Key="NewCategory">NewCategory</system:String>
+    <system:String x:Key="SideOverview">Overview</system:String>
+    <system:String x:Key="SideStatistics">Chart</system:String>
+    <system:String x:Key="SideDetails">Details</system:String>
+    <system:String x:Key="SideSort">Category</system:String>
+    <system:String x:Key="SideSetting">Setting</system:String>
+    <system:String x:Key="Website">Website</system:String>
+    <system:String x:Key="App">App</system:String>
+    <system:String x:Key="Refresh">Refresh</system:String>
+    <system:String x:Key="Browse">Browse</system:String>
+    <system:String x:Key="ClassificationName">Category Name</system:String>
+    <system:String x:Key="ExCreateEdit">?Create:Edit</system:String>
+    <system:String x:Key="ExCreateUpdate">?Create:Update</system:String>
+    <system:String x:Key="NewCategory">NewCategory</system:String>
 
-	<system:String x:Key="MostFrequent">Most Frequent</system:String>
-	<system:String x:Key="ClassificationProportion">Category proportion</system:String>
+    <system:String x:Key="MostFrequent">Most Frequent</system:String>
+    <system:String x:Key="ClassificationProportion">Category proportion</system:String>
 
-	<system:String x:Key="Today">Today</system:String>
-	<system:String x:Key="More">More</system:String>
-
-
-
-	<!--base-->
-	<system:String x:Key="NoData">No data</system:String>
+    <system:String x:Key="Today">Today</system:String>
+    <system:String x:Key="More">More</system:String>
 
 
-	<!--window button Tip-->
-	<system:String x:Key="Back">Back</system:String>
-	<system:String x:Key="Minimization">Minimization</system:String>
-	<system:String x:Key="Maximize">Maximize</system:String>
-	<system:String x:Key="Restore">Restore</system:String>
-	<system:String x:Key="Close">Close</system:String>
+    <!--base-->
+    <system:String x:Key="NoData">No data</system:String>
 
 
-
-	<system:String x:Key="Hour">Hour</system:String>
-	<system:String x:Key="Total">Total</system:String>
-	<system:String x:Key="Usage">ApplicationCount</system:String>
-	<system:String x:Key="LongestUsageTime">Longest Usage Time</system:String>
-
-
-	<system:String x:Key="LongerTip">This application will no longer track usage duration</system:String>
-	<system:String x:Key="IgnoredText">Ignored</system:String>
-	<system:String x:Key="MatchREIgnoredText">This site data has been ignored by the regular expression</system:String>
-	<system:String x:Key="ApplicationAlias">Alias</system:String>
-	<system:String x:Key="ApplicationPName">Application Process Name</system:String>
-	<system:String x:Key="ApplicationDescription">Application Description</system:String>
-	<system:String x:Key="ApplicationFilePath">Application File Path</system:String>
-	<system:String x:Key="Classification">Category</system:String>
-
-	<system:String x:Key="LongerWebSiteTip">Data for this site will not be tracked</system:String>
-	<system:String x:Key="WebSiteTitle">Website Name</system:String>
-	<system:String x:Key="Domain">Domain</system:String>
-	<system:String x:Key="WebSiteClassification">Website Category</system:String>
-	<system:String x:Key="DurationStatistics">Duration Statistics</system:String>
-	<system:String x:Key="ViewDetails">View Details</system:String>
-	<system:String x:Key="MultipleWebsites">Websites</system:String>
-	<system:String x:Key="OpenWebPage">Open Webpage</system:String>
-	<system:String x:Key="CopyURL">Copy URL</system:String>
-	<system:String x:Key="CopyTitle">Copy Title</system:String>
-	<system:String x:Key="LogTime">Access Time</system:String>
-	<system:String x:Key="Duration">Browse Duration</system:String>
-
-	<system:String x:Key="IgnoreThisApplication">Ignore This App</system:String>
-	<system:String x:Key="IgnoreTheSite">Ignore this site</system:String>
-	<system:String x:Key="Unignore">Unignore</system:String>
-	<system:String x:Key="Relevance">Relevance</system:String>
-	<system:String x:Key="MonthlyOverview">Monthly Overview</system:String>
-	<system:String x:Key="ClearAppTheMonthData">Clear This Application's Data for This Month</system:String>
-	<system:String x:Key="ClearTheMonth">Clear This Month's Data</system:String>
-	<system:String x:Key="AccumulatedUsageDuringTheMonth">Accumulated Usage for This Month</system:String>
-	<system:String x:Key="ProportionDurationInTheMonth">Proportion of Duration in This Month</system:String>
-	<system:String x:Key="InvalidParameter">Invalid Parameter</system:String>
-
-	<system:String x:Key="Settings">Settings</system:String>
-	<system:String x:Key="DeleteData">Delete Data</system:String>
-	<system:String x:Key="From">From</system:String>
-	<system:String x:Key="To">To</system:String>
-	<system:String x:Key="Execute">Execute</system:String>
-	<system:String x:Key="OpenSource">Open Source</system:String>
-	<system:String x:Key="DeletedAndUnrecoverable">Deleted and Unrecoverable</system:String>
-	<system:String x:Key="ExportData">Export Data</system:String>
-	<system:String x:Key="Export">Export</system:String>
-	<system:String x:Key="Version">Version</system:String>
-	<system:String x:Key="ExportTo">Export as xlsx and csv formats</system:String>
-	<system:String x:Key="CheckUpdate">Check for Updates</system:String>
-	<system:String x:Key="Discuss">Discuss</system:String>
-	<system:String x:Key="PlugIn">Browser Statistics Plugin</system:String>
-	<system:String x:Key="ExternalDeclaration">External Resource Declaration</system:String>
-	<system:String x:Key="FromMicrosoft">From Microsoft</system:String>
-
-	<system:String x:Key="SelectiveApplication">Select App</system:String>
-	<system:String x:Key="SearchApplication">Search Application</system:String>
-
-	<system:String x:Key="AppClassification">App Category</system:String>
-	<system:String x:Key="AppList">Application List</system:String>
-	<system:String x:Key="Select">Select</system:String>
-	<system:String x:Key="RemoveFromCategory">Remove from Category</system:String>
-
-	<system:String x:Key="SelectSite">Select Site</system:String>
-	<system:String x:Key="Search">Search</system:String>
-	<system:String x:Key="UseRegularExpressions">Use Regular Expressions</system:String>
-	<system:String x:Key="Sitelist">Site List</system:String>
-
-	<system:String x:Key="SelectCategoryColors">Select Category Colors</system:String>
-	<system:String x:Key="PleaseEnterCategoryName">Please Enter Category Name</system:String>
-	<system:String x:Key="Icon">Icon</system:String>
-	<system:String x:Key="AddDirectory">Add Directory</system:String>
-	<system:String x:Key="Remove">Remove</system:String>
-
-	<system:String x:Key="Aggregate">Total</system:String>
-	<system:String x:Key="Month">month</system:String>
-
-	<system:String x:Key="Daily">Daily</system:String>
-	<system:String x:Key="Weekly">Weekly</system:String>
-	<system:String x:Key="Monthly">Monthly</system:String>
-	<system:String x:Key="Yearly">Yearly</system:String>
-	<system:String x:Key="LastWeek">Last Week</system:String>
-	<system:String x:Key="ThisWeek">This Week</system:String>
-	<system:String x:Key="DefaultView">Default View</system:String>
-	<system:String x:Key="SummaryView">Summary View</system:String>
-	<system:String x:Key="CategoryView">Category View</system:String>
-	<system:String x:Key="Uncategorized">Uncategorized</system:String>
-	
-	<system:String x:Key="ViewCategoryAppList">View Category App List</system:String>
-	<system:String x:Key="Edit">Edit</system:String>
-	<system:String x:Key="DeleteCategory">Delete Category</system:String>
-	<system:String x:Key="DirectoryMatch">Directory Match</system:String>
-	<system:String x:Key="CategoryAppCount">Category App Count</system:String>
-	<system:String x:Key="ViewWebsiteList">View Website List</system:String>
-
-	<system:String x:Key="General">General</system:String>
-	<system:String x:Key="Behavior">Behave</system:String>
-	<system:String x:Key="Data">Data</system:String>
-	<system:String x:Key="About">About</system:String>
-
-	<system:String x:Key="TimeRangeSelectionError">Time range selection error</system:String>
-	<system:String x:Key="DeleteConfirmation">Delete Confirmation</system:String>
-	<system:String x:Key="WantPerformAction">Do you want to perform this action?</system:String>
-	<system:String x:Key="OperationCompleted">Operation completed</system:String>
-	<system:String x:Key="DataExportCompleted">Data export completed</system:String>
-	<system:String x:Key="DataExportFailed">Data export failed</system:String>
-
-	<system:String x:Key="Year">year</system:String>
-	<system:String x:Key="Day">day</system:String>
-	
-	<system:String x:Key="Monday">Monday</system:String>
-	<system:String x:Key="Tuesday">Tuesday</system:String>
-	<system:String x:Key="Wednesday">Wednesday</system:String>
-	<system:String x:Key="Thursday">Thursday</system:String>
-	<system:String x:Key="Friday">Friday</system:String>
-	<system:String x:Key="Saturday">Saturday</system:String>
-	<system:String x:Key="Sunday">Sunday</system:String>
+    <!--window button Tip-->
+    <system:String x:Key="Back">Back</system:String>
+    <system:String x:Key="Minimization">Minimization</system:String>
+    <system:String x:Key="Maximize">Maximize</system:String>
+    <system:String x:Key="Restore">Restore</system:String>
+    <system:String x:Key="Close">Close</system:String>
 
 
-	<system:String x:Key="WantDeleteCategory">Are you sure you want to delete this category?</system:String>
-	<system:String x:Key="CategoryDeleted">Category has been deleted</system:String>
-	<system:String x:Key="CategoryNameExists">Category name already exists</system:String>
-	<system:String x:Key="ColoreExists">Color already exists, please choose a different one</system:String>
-	<system:String x:Key="CreationCompleted">Creation completed</system:String>
-	<system:String x:Key="NoChangesMade">No changes made</system:String>
-	<system:String x:Key="Updated">Updated</system:String>
-	<system:String x:Key="DirectoryExists">Directory already exists</system:String>
-	<system:String x:Key="Added">Added</system:String>
-	<system:String x:Key="AdditionFailed">Addition failed, please retry</system:String>
-	<system:String x:Key="CategoryCannotEmpty">Category name cannot be empty</system:String>
-	<system:String x:Key="SelectCategoryIcon">Please select a category icon</system:String>
-	<system:String x:Key="CategoryColor">Please set a category color</system:String>
-	<system:String x:Key="IconFileCannotExceed">Icon file cannot exceed 1MB</system:String>
-	<system:String x:Key="OperationFailedRetry">Operation failed, please retr</system:String>
+    <system:String x:Key="Hour">Hour</system:String>
+    <system:String x:Key="Total">Total</system:String>
+    <system:String x:Key="Usage">ApplicationCount</system:String>
+    <system:String x:Key="LongestUsageTime">Longest Usage Time</system:String>
 
 
+    <system:String x:Key="LongerTip">This application will no longer track usage duration</system:String>
+    <system:String x:Key="IgnoredText">Ignored</system:String>
+    <system:String x:Key="MatchREIgnoredText">This site data has been ignored by the regular expression</system:String>
+    <system:String x:Key="ApplicationAlias">Alias</system:String>
+    <system:String x:Key="ApplicationPName">Application Process Name</system:String>
+    <system:String x:Key="ApplicationDescription">Application Description</system:String>
+    <system:String x:Key="ApplicationFilePath">Application File Path</system:String>
+    <system:String x:Key="Classification">Category</system:String>
 
-	<system:String x:Key="1Month">Jan</system:String>
-	<system:String x:Key="2Month">Feb</system:String>
-	<system:String x:Key="3Month">Mar</system:String>
-	<system:String x:Key="4Month">Apr</system:String>
-	<system:String x:Key="5Month">May</system:String>
-	<system:String x:Key="6Month">Jun</system:String>
-	<system:String x:Key="7Month">Jul</system:String>
-	<system:String x:Key="8Month">Aug</system:String>
-	<system:String x:Key="9Month">Sep</system:String>
-	<system:String x:Key="10Month">Oct</system:String>
-	<system:String x:Key="11Month">Nov</system:String>
-	<system:String x:Key="12Month">Dec</system:String>
-	
-	<system:String x:Key="StartApplication">Start Application</system:String>
-	<system:String x:Key="CopyApplicationProcessName">Copy Application Process Name</system:String>
-	<system:String x:Key="CopyApplicationFilePath">Copy Application File Path</system:String>
-	<system:String x:Key="OpenApplicationDirectory">Open Application Directory</system:String>
-	<system:String x:Key="ClearStatistics">Clear Statistics</system:String>
-	<system:String x:Key="SetCategory">Set Category</system:String>
-	<system:String x:Key="EditAlias">Edit Alias</system:String>
-	<system:String x:Key="RemovedApplicationFromWhitelist">Application Removed from Whitelist</system:String>
-	<system:String x:Key="AddedToWhitelist">Added to Whitelist</system:String>
-	<system:String x:Key="UpdateAlias">Update Alias</system:String>
-	<system:String x:Key="EnterAlias">Enter Alias</system:String>
-	<system:String x:Key="AliasMaxLengthTip">Alias Maximum Length is {0} Characters</system:String>
-	<system:String x:Key="AliasUpdated">Alias Updated</system:String>
-	<system:String x:Key="AddAssociation">Add Association</system:String>
-	<system:String x:Key="AddWhitelist">Add to Whitelist</system:String>
-	<system:String x:Key="ApplicationFileExist">The Application File Does Not Seem to Exist</system:String>
-	<system:String x:Key="ApplicationExist"> The application seems not to exist</system:String>
-	<system:String x:Key="RemoveWhitelist">Remove from Whitelist</system:String>
-	
-	<system:String x:Key="IgnoringApplicationCancelled">Ignoring This Application {0} Cancelled</system:String>
-	<system:String x:Key="ApplicationNowIgnored">This Application {0} is Now Ignored</system:String>
-	
-	<system:String x:Key="UnignoredDomain">Unignored domain {0}</system:String>
-	<system:String x:Key="IgnoredDomain">Ignored domain {0}</system:String>
-	
-	<system:String x:Key="OpenWebsite">Open Website in Browser</system:String>
-	<system:String x:Key="IgnoreWebsite">Ignore This Website</system:String>
-	<system:String x:Key="UnignoreSite">Unignore This Site</system:String>
-	<system:String x:Key="IgnoreSite">Ignore This Site</system:String>
+    <system:String x:Key="LongerWebSiteTip">Data for this site will not be tracked</system:String>
+    <system:String x:Key="WebSiteTitle">Website Name</system:String>
+    <system:String x:Key="Domain">Domain</system:String>
+    <system:String x:Key="WebSiteClassification">Website Category</system:String>
+    <system:String x:Key="DurationStatistics">Duration Statistics</system:String>
+    <system:String x:Key="ViewDetails">View Details</system:String>
+    <system:String x:Key="MultipleWebsites">Websites</system:String>
+    <system:String x:Key="OpenWebPage">Open Webpage</system:String>
+    <system:String x:Key="CopyURL">Copy URL</system:String>
+    <system:String x:Key="CopyTitle">Copy Title</system:String>
+    <system:String x:Key="LogTime">Access Time</system:String>
+    <system:String x:Key="Duration">Browse Duration</system:String>
 
-	<system:String x:Key="CopyDomain">Copy Domain</system:String>
-	
-	<system:String x:Key="Confirm">Confirm</system:String>
-	
-		
-	<system:String x:Key="Mon">Mon</system:String>
-	<system:String x:Key="Tue">Tue</system:String>
-	<system:String x:Key="Wed">Wed</system:String>
-	<system:String x:Key="Thu">Thu</system:String>
-	<system:String x:Key="Fri">Fri</system:String>
-	<system:String x:Key="Sat">Sat</system:String>
-	<system:String x:Key="Sun">Sun</system:String>
-	
-	<system:String x:Key="LongDayTips">The longest day was on the {0}th, using {1}</system:String>
-	
-	<system:String x:Key="ClearConfirmation">Clear Confirmation</system:String>
-	<system:String x:Key="ClearAllStatisticsApplicationTip">Are you sure you want to clear all statistics for this application?</system:String>
-	<system:String x:Key="ClearAllStatisticsSiteTip">Are you sure you want to clear all statistics for this site?</system:String>
-	<system:String x:Key="WantClearData">Are you sure you want to clear the data for {0}-{1}?</system:String>
-	
-	<system:String x:Key="Processing">Processing</system:String>
-	<system:String x:Key="Cleared">Cleared</system:String>
-	
-	<system:String x:Key="Add">Add</system:String>
-	<system:String x:Key="CannotBeEmpty">cannot be empty</system:String>
-	<system:String x:Key="AlreadyExists">already exists</system:String>
-	<system:String x:Key="CopyContent">Copy Content</system:String>
-	<system:String x:Key="Import">Import</system:String>
-	
-	<system:String x:Key="InvalidFileContent">Invalid file content</system:String>
-	<system:String x:Key="ImportCompleted">Import completed</system:String>
-	<system:String x:Key="PleaseNote">Please note</system:String>
-	<system:String x:Key="ImportingOverwriteOriginal">Importing will overwrite the original configuration</system:String>
-	<system:String x:Key="ExportFailed">Export failed</system:String>
-	<system:String x:Key="ExportCompleted">Export completed</system:String>
+    <system:String x:Key="IgnoreThisApplication">Ignore This App</system:String>
+    <system:String x:Key="IgnoreTheSite">Ignore this site</system:String>
+    <system:String x:Key="Unignore">Unignore</system:String>
+    <system:String x:Key="Relevance">Relevance</system:String>
+    <system:String x:Key="MonthlyOverview">Monthly Overview</system:String>
+    <system:String x:Key="ClearAppTheMonthData">Clear This Application's Data for This Month</system:String>
+    <system:String x:Key="ClearTheMonth">Clear This Month's Data</system:String>
+    <system:String x:Key="AccumulatedUsageDuringTheMonth">Accumulated Usage for This Month</system:String>
+    <system:String x:Key="ProportionDurationInTheMonth">Proportion of Duration in This Month</system:String>
+    <system:String x:Key="InvalidParameter">Invalid Parameter</system:String>
 
+    <system:String x:Key="Settings">Settings</system:String>
+    <system:String x:Key="DeleteData">Delete Data</system:String>
+    <system:String x:Key="From">From</system:String>
+    <system:String x:Key="To">To</system:String>
+    <system:String x:Key="Execute">Execute</system:String>
+    <system:String x:Key="OpenSource">Open Source</system:String>
+    <system:String x:Key="DeletedAndUnrecoverable">Deleted and Unrecoverable</system:String>
+    <system:String x:Key="ExportData">Export Data</system:String>
+    <system:String x:Key="Export">Export</system:String>
+    <system:String x:Key="Version">Version</system:String>
+    <system:String x:Key="ExportTo">Export as xlsx and csv formats</system:String>
+    <system:String x:Key="CheckUpdate">Check for Updates</system:String>
+    <system:String x:Key="Discuss">Discuss</system:String>
+    <system:String x:Key="PlugIn">Browser Statistics Plugin</system:String>
+    <system:String x:Key="ExternalDeclaration">External Resource Declaration</system:String>
+    <system:String x:Key="FromMicrosoft">From Microsoft</system:String>
 
+    <system:String x:Key="SelectiveApplication">Select App</system:String>
+    <system:String x:Key="SearchApplication">Search Application</system:String>
 
-	<system:String x:Key="UnexpectedError">An unexpected error has occurred in Taix!</system:String>
-	<system:String x:Key="Log">log</system:String>
-	<system:String x:Key="SincerelyCrash">We sincerely apologize for this inconvenience! The crash</system:String>
-	<system:String x:Key="LocateFileExplorer">Locate the log file in File Explorer</system:String>
-	<system:String x:Key="PleaseSubmit">has been saved. If possible, please submit it to the developers for investigation. Thank you very much!</system:String>
-	<system:String x:Key="HowSubmitLog">How to Submit the Log to the Developers?</system:String>
-	<system:String x:Key="ViaThe">1. Via the </system:String>
-	<system:String x:Key="OpenInBrowser">Open in browse</system:String>
-	
-	
-	<system:String x:Key="ExportDaily">daily</system:String>
-	<system:String x:Key="ExportTimePeriod">time period</system:String>
-	<system:String x:Key="AppliedStatistics">application statistics</system:String>
-	<system:String x:Key="WebsiteStatistics">website statistics</system:String>
+    <system:String x:Key="AppClassification">App Category</system:String>
+    <system:String x:Key="AppList">Application List</system:String>
+    <system:String x:Key="Select">Select</system:String>
+    <system:String x:Key="RemoveFromCategory">Remove from Category</system:String>
 
-	<system:String x:Key="Column1">Time Period</system:String>
-	<system:String x:Key="Column2">Application</system:String>
-	<system:String x:Key="Column3">Description</system:String>
-	<system:String x:Key="Column4">Duration</system:String>
-	<system:String x:Key="Column5">Category</system:String>
-	<system:String x:Key="Column6">Date</system:String>
-	<system:String x:Key="Column7">Time</system:String>
-	<system:String x:Key="Column8">Title</system:String>
-	<system:String x:Key="Column9">Website</system:String>
+    <system:String x:Key="SelectSite">Select Site</system:String>
+    <system:String x:Key="Search">Search</system:String>
+    <system:String x:Key="UseRegularExpressions">Use Regular Expressions</system:String>
+    <system:String x:Key="Sitelist">Site List</system:String>
 
-	<system:String x:Key="Ignore">Ignore</system:String>
+    <system:String x:Key="SelectCategoryColors">Select Category Colors</system:String>
+    <system:String x:Key="PleaseEnterCategoryName">Please Enter Category Name</system:String>
+    <system:String x:Key="Icon">Icon</system:String>
+    <system:String x:Key="AddDirectory">Add Directory</system:String>
+    <system:String x:Key="Remove">Remove</system:String>
+
+    <system:String x:Key="Aggregate">Total</system:String>
+    <system:String x:Key="Month">month</system:String>
+
+    <system:String x:Key="Daily">Daily</system:String>
+    <system:String x:Key="Weekly">Weekly</system:String>
+    <system:String x:Key="Monthly">Monthly</system:String>
+    <system:String x:Key="Yearly">Yearly</system:String>
+    <system:String x:Key="LastWeek">Last Week</system:String>
+    <system:String x:Key="ThisWeek">This Week</system:String>
+    <system:String x:Key="DefaultView">Default View</system:String>
+    <system:String x:Key="SummaryView">Summary View</system:String>
+    <system:String x:Key="CategoryView">Category View</system:String>
+    <system:String x:Key="Uncategorized">Uncategorized</system:String>
+
+    <system:String x:Key="ViewCategoryAppList">View Category App List</system:String>
+    <system:String x:Key="Edit">Edit</system:String>
+    <system:String x:Key="DeleteCategory">Delete Category</system:String>
+    <system:String x:Key="DirectoryMatch">Directory Match</system:String>
+    <system:String x:Key="CategoryAppCount">Category App Count</system:String>
+    <system:String x:Key="ViewWebsiteList">View Website List</system:String>
+
+    <system:String x:Key="General">General</system:String>
+    <system:String x:Key="Behavior">Behave</system:String>
+    <system:String x:Key="Data">Data</system:String>
+    <system:String x:Key="About">About</system:String>
+
+    <system:String x:Key="TimeRangeSelectionError">Time range selection error</system:String>
+    <system:String x:Key="DeleteConfirmation">Delete Confirmation</system:String>
+    <system:String x:Key="WantPerformAction">Do you want to perform this action?</system:String>
+    <system:String x:Key="OperationCompleted">Operation completed</system:String>
+    <system:String x:Key="DataExportCompleted">Data export completed</system:String>
+    <system:String x:Key="DataExportFailed">Data export failed</system:String>
+
+    <system:String x:Key="Year">year</system:String>
+    <system:String x:Key="Day">day</system:String>
+
+    <system:String x:Key="Monday">Monday</system:String>
+    <system:String x:Key="Tuesday">Tuesday</system:String>
+    <system:String x:Key="Wednesday">Wednesday</system:String>
+    <system:String x:Key="Thursday">Thursday</system:String>
+    <system:String x:Key="Friday">Friday</system:String>
+    <system:String x:Key="Saturday">Saturday</system:String>
+    <system:String x:Key="Sunday">Sunday</system:String>
 
 
-	<system:String x:Key="NewVersionAvailable">New Version Available</system:String>
-	<system:String x:Key="WantGoDownloadPage">Do you want to go to the download page for the latest version？</system:String>
-	<system:String x:Key="NoUpdateAvailable">You are already using the latest version.</system:String>
-	<system:String x:Key="UpdateCheckFailed">Update check failed, please check your network.</system:String>
-	
-	
-	<system:String x:Key="Cancel">Cancel</system:String>
-	<system:String x:Key="RestoreSystemCategory">Restore System Category</system:String>
-	
-	<system:String x:Key="ChooseColor">Choose color</system:String>
-	<system:String x:Key="CustomColor">Custom color</system:String>
-	<system:String x:Key="SelectIcon">Select icon</system:String>
-	<system:String x:Key="CustomPicture">Custom picture</system:String>
-	
+    <system:String x:Key="WantDeleteCategory">Are you sure you want to delete this category?</system:String>
+    <system:String x:Key="CategoryDeleted">Category has been deleted</system:String>
+    <system:String x:Key="CategoryNameExists">Category name already exists</system:String>
+    <system:String x:Key="ColoreExists">Color already exists, please choose a different one</system:String>
+    <system:String x:Key="CreationCompleted">Creation completed</system:String>
+    <system:String x:Key="NoChangesMade">No changes made</system:String>
+    <system:String x:Key="Updated">Updated</system:String>
+    <system:String x:Key="DirectoryExists">Directory already exists</system:String>
+    <system:String x:Key="Added">Added</system:String>
+    <system:String x:Key="AdditionFailed">Addition failed, please retry</system:String>
+    <system:String x:Key="CategoryCannotEmpty">Category name cannot be empty</system:String>
+    <system:String x:Key="SelectCategoryIcon">Please select a category icon</system:String>
+    <system:String x:Key="CategoryColor">Please set a category color</system:String>
+    <system:String x:Key="IconFileCannotExceed">Icon file cannot exceed 1MB</system:String>
+    <system:String x:Key="OperationFailedRetry">Operation failed, please retr</system:String>
 
-	<system:String x:Key="Open">Open</system:String>
-	<system:String x:Key="Exit">Exit</system:String>
+
+    <system:String x:Key="1Month">Jan</system:String>
+    <system:String x:Key="2Month">Feb</system:String>
+    <system:String x:Key="3Month">Mar</system:String>
+    <system:String x:Key="4Month">Apr</system:String>
+    <system:String x:Key="5Month">May</system:String>
+    <system:String x:Key="6Month">Jun</system:String>
+    <system:String x:Key="7Month">Jul</system:String>
+    <system:String x:Key="8Month">Aug</system:String>
+    <system:String x:Key="9Month">Sep</system:String>
+    <system:String x:Key="10Month">Oct</system:String>
+    <system:String x:Key="11Month">Nov</system:String>
+    <system:String x:Key="12Month">Dec</system:String>
+
+    <system:String x:Key="StartApplication">Start Application</system:String>
+    <system:String x:Key="CopyApplicationProcessName">Copy Application Process Name</system:String>
+    <system:String x:Key="CopyApplicationFilePath">Copy Application File Path</system:String>
+    <system:String x:Key="OpenApplicationDirectory">Open Application Directory</system:String>
+    <system:String x:Key="ClearStatistics">Clear Statistics</system:String>
+    <system:String x:Key="SetCategory">Set Category</system:String>
+    <system:String x:Key="EditAlias">Edit Alias</system:String>
+    <system:String x:Key="RemovedApplicationFromWhitelist">Application Removed from Whitelist</system:String>
+    <system:String x:Key="AddedToWhitelist">Added to Whitelist</system:String>
+    <system:String x:Key="UpdateAlias">Update Alias</system:String>
+    <system:String x:Key="EnterAlias">Enter Alias</system:String>
+    <system:String x:Key="AliasMaxLengthTip">Alias Maximum Length is {0} Characters</system:String>
+    <system:String x:Key="AliasUpdated">Alias Updated</system:String>
+    <system:String x:Key="AddAssociation">Add Association</system:String>
+    <system:String x:Key="AddWhitelist">Add to Whitelist</system:String>
+    <system:String x:Key="ApplicationFileExist">The Application File Does Not Seem to Exist</system:String>
+    <system:String x:Key="ApplicationExist"> The application seems not to exist</system:String>
+    <system:String x:Key="RemoveWhitelist">Remove from Whitelist</system:String>
+
+    <system:String x:Key="IgnoringApplicationCancelled">Ignoring This Application {0} Cancelled</system:String>
+    <system:String x:Key="ApplicationNowIgnored">This Application {0} is Now Ignored</system:String>
+
+    <system:String x:Key="UnignoredDomain">Unignored domain {0}</system:String>
+    <system:String x:Key="IgnoredDomain">Ignored domain {0}</system:String>
+
+    <system:String x:Key="OpenWebsite">Open Website in Browser</system:String>
+    <system:String x:Key="IgnoreWebsite">Ignore This Website</system:String>
+    <system:String x:Key="UnignoreSite">Unignore This Site</system:String>
+    <system:String x:Key="IgnoreSite">Ignore This Site</system:String>
+
+    <system:String x:Key="CopyDomain">Copy Domain</system:String>
+
+    <system:String x:Key="Confirm">Confirm</system:String>
+
+
+    <system:String x:Key="Mon">Mon</system:String>
+    <system:String x:Key="Tue">Tue</system:String>
+    <system:String x:Key="Wed">Wed</system:String>
+    <system:String x:Key="Thu">Thu</system:String>
+    <system:String x:Key="Fri">Fri</system:String>
+    <system:String x:Key="Sat">Sat</system:String>
+    <system:String x:Key="Sun">Sun</system:String>
+
+    <system:String x:Key="LongDayTips">The longest day was on the {0}th, using {1}</system:String>
+
+    <system:String x:Key="ClearConfirmation">Clear Confirmation</system:String>
+    <system:String x:Key="ClearAllStatisticsApplicationTip">Are you sure you want to clear all statistics for this application?</system:String>
+    <system:String x:Key="ClearAllStatisticsSiteTip">Are you sure you want to clear all statistics for this site?</system:String>
+    <system:String x:Key="WantClearData">Are you sure you want to clear the data for {0}-{1}?</system:String>
+
+    <system:String x:Key="Processing">Processing</system:String>
+    <system:String x:Key="Cleared">Cleared</system:String>
+
+    <system:String x:Key="Add">Add</system:String>
+    <system:String x:Key="CannotBeEmpty">cannot be empty</system:String>
+    <system:String x:Key="AlreadyExists">already exists</system:String>
+    <system:String x:Key="CopyContent">Copy Content</system:String>
+    <system:String x:Key="Import">Import</system:String>
+
+    <system:String x:Key="InvalidFileContent">Invalid file content</system:String>
+    <system:String x:Key="ImportCompleted">Import completed</system:String>
+    <system:String x:Key="PleaseNote">Please note</system:String>
+    <system:String x:Key="ImportingOverwriteOriginal">Importing will overwrite the original configuration</system:String>
+    <system:String x:Key="ExportFailed">Export failed</system:String>
+    <system:String x:Key="ExportCompleted">Export completed</system:String>
+
+
+    <system:String x:Key="UnexpectedError">An unexpected error has occurred in Taix!</system:String>
+    <system:String x:Key="Log">log</system:String>
+    <system:String x:Key="SincerelyCrash">We sincerely apologize for this inconvenience! The crash</system:String>
+    <system:String x:Key="LocateFileExplorer">Locate the log file in File Explorer</system:String>
+    <system:String x:Key="PleaseSubmit">has been saved. If possible, please submit it to the developers for investigation. Thank you very much!</system:String>
+    <system:String x:Key="HowSubmitLog">How to Submit the Log to the Developers?</system:String>
+    <system:String x:Key="ViaThe">1. Via the </system:String>
+    <system:String x:Key="OpenInBrowser">Open in browse</system:String>
+
+
+    <system:String x:Key="ExportDaily">daily</system:String>
+    <system:String x:Key="ExportTimePeriod">time period</system:String>
+    <system:String x:Key="AppliedStatistics">application statistics</system:String>
+    <system:String x:Key="WebsiteStatistics">website statistics</system:String>
+
+    <system:String x:Key="Column1">Time Period</system:String>
+    <system:String x:Key="Column2">Application</system:String>
+    <system:String x:Key="Column3">Description</system:String>
+    <system:String x:Key="Column4">Duration</system:String>
+    <system:String x:Key="Column5">Category</system:String>
+    <system:String x:Key="Column6">Date</system:String>
+    <system:String x:Key="Column7">Time</system:String>
+    <system:String x:Key="Column8">Title</system:String>
+    <system:String x:Key="Column9">Website</system:String>
+
+    <system:String x:Key="Ignore">Ignore</system:String>
+
+
+    <system:String x:Key="NewVersionAvailable">New Version Available</system:String>
+    <system:String x:Key="WantGoDownloadPage">Do you want to go to the download page for the latest version？</system:String>
+    <system:String x:Key="NoUpdateAvailable">You are already using the latest version.</system:String>
+    <system:String x:Key="UpdateCheckFailed">Update check failed, please check your network.</system:String>
+
+
+    <system:String x:Key="Cancel">Cancel</system:String>
+    <system:String x:Key="RestoreSystemCategory">Restore System Category</system:String>
+
+    <system:String x:Key="ChooseColor">Choose color</system:String>
+    <system:String x:Key="CustomColor">Custom color</system:String>
+    <system:String x:Key="SelectIcon">Select icon</system:String>
+    <system:String x:Key="CustomPicture">Custom picture</system:String>
+
+
+    <system:String x:Key="Open">Open</system:String>
+    <system:String x:Key="Exit">Exit</system:String>
 </ResourceDictionary>

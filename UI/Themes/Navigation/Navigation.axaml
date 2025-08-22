@@ -1,37 +1,35 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="using:UI.Controls.Navigation">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:UI.Controls.Navigation">
 
-	<ControlTheme x:Key="{x:Type controls:Navigation}" 
-				  TargetType="controls:Navigation">
+    <ControlTheme x:Key="{x:Type controls:Navigation}"
+                  TargetType="controls:Navigation">
 
-		<Setter Property="MinWidth" Value="44"/>
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="UseLayoutRounding" Value="True"/>
-		<Setter Property="Template">
-			<ControlTemplate>
-				<Grid Margin="10">
-					<Grid.RowDefinitions>
-						<RowDefinition Height="Auto"/>
-						<RowDefinition Height="*"/>
-						<RowDefinition Height="Auto"/>
-					</Grid.RowDefinitions>
-					<ContentPresenter Content="{TemplateBinding TopExtContent}"/>
-					<Grid  Grid.Row="1" Background="Transparent" x:Name="MenuGrid">
-						<Border x:Name="ActiveBlock" Width="5" Height="25"
-								ZIndex="10"
-								CornerRadius="2" Background="{DynamicResource ThemeBrush}" HorizontalAlignment="Left"
-								VerticalAlignment="Top"
-								>
-						</Border>
-						<ScrollViewer VerticalScrollBarVisibility="Auto">
-							<StackPanel x:Name="ItemsPanel"/>
-						</ScrollViewer>
-					</Grid>
-					<ContentPresenter Content="{TemplateBinding BottomExtContent}"
-									  Grid.Row="2"/>
-				</Grid>
-			</ControlTemplate>
-		</Setter>
-	</ControlTheme>
+        <Setter Property="MinWidth" Value="44" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <ContentPresenter Content="{TemplateBinding TopExtContent}" />
+                    <Grid Grid.Row="1" Background="Transparent" x:Name="MenuGrid">
+                        <Border x:Name="ActiveBlock" Width="5" Height="25"
+                                ZIndex="10"
+                                CornerRadius="2" Background="{DynamicResource ThemeBrush}" HorizontalAlignment="Left"
+                                VerticalAlignment="Top" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="ItemsPanel" />
+                        </ScrollViewer>
+                    </Grid>
+                    <ContentPresenter Content="{TemplateBinding BottomExtContent}"
+                                      Grid.Row="2" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
 </ResourceDictionary>

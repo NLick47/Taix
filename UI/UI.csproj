@@ -1,130 +1,130 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0</TargetFramework>
-		<Nullable>enable</Nullable>
-		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-		<ApplicationManifest>app.manifest</ApplicationManifest>
-		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-		<PublishTrimmed>true</PublishTrimmed>
-		<TrimMode>full</TrimMode>
-		<AssemblyName>Taix</AssemblyName>
-		<Version>$(APP_VERSION)</Version>
-		<ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
-	</PropertyGroup>
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <PublishTrimmed>true</PublishTrimmed>
+        <TrimMode>full</TrimMode>
+        <AssemblyName>Taix</AssemblyName>
+        <Version>$(APP_VERSION)</Version>
+        <ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
+    </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND ($(RuntimeIdentifier) == 'win-x64' Or $(RuntimeIdentifier) == 'win-x86')">
-		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
-	</PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Release' AND ($(RuntimeIdentifier) == 'win-x64' Or $(RuntimeIdentifier) == 'win-x86')">
+        <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+    </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('windows'))">
-		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
-	</PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('windows'))">
+        <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+    </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'linux-x64'">
-		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
-	</PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'linux-x64'">
+        <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+    </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('linux'))">
-		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
-	</PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('linux'))">
+        <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+    </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'osx-x64'">
-		<DefineConstants>$(DefineConstants);MACOS</DefineConstants>
-	</PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(RuntimeIdentifier) == 'osx-x64'">
+        <DefineConstants>$(DefineConstants);MACOS</DefineConstants>
+    </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('osx'))">
-		<DefineConstants>$(DefineConstants);MACOS</DefineConstants>
-	</PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('osx'))">
+        <DefineConstants>$(DefineConstants);MACOS</DefineConstants>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<TrimmerRootAssembly Include="Taix" />
-		<TrimmerRootAssembly Include="Core" />
-		<TrimmerRootAssembly Include="SharedLibrary" />
-		<TrimmerRootAssembly Include="CsvHelper" />
-	</ItemGroup>
+    <ItemGroup>
+        <TrimmerRootAssembly Include="Taix"/>
+        <TrimmerRootAssembly Include="Core"/>
+        <TrimmerRootAssembly Include="SharedLibrary"/>
+        <TrimmerRootAssembly Include="CsvHelper"/>
+    </ItemGroup>
 
-	<ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
-		<TrimmerRootAssembly Include="Microsoft.Win32.TaskScheduler" />
-		<TrimmerRootAssembly Include="Microsoft.Win32.SystemEvents" />
-		<TrimmerRootAssembly Include="IconExtractor" />
-	</ItemGroup>
-	
-	<ItemGroup>
-		<AvaloniaResource Include="Resources\Emoji\(*).png" />
-		
-		<AvaloniaResource Include="Resources\Fonts\Segoe Fluent Icons.ttf">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</AvaloniaResource>
-		
-		<AvaloniaResource Include="Resources\Icons\*.ico" />
-		<AvaloniaResource Include="Resources\Icons\defaultIcon.png" />
-	</ItemGroup>
+    <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
+        <TrimmerRootAssembly Include="Microsoft.Win32.TaskScheduler"/>
+        <TrimmerRootAssembly Include="Microsoft.Win32.SystemEvents"/>
+        <TrimmerRootAssembly Include="IconExtractor"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\Core\Core.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <AvaloniaResource Include="Resources\Emoji\(*).png"/>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Release' AND ($(RuntimeIdentifier) == 'win-x64' OR $(RuntimeIdentifier) == 'win-x86')">
-		
-		<ProjectReference Include="..\Platform\Win\Win.csproj" />
-	</ItemGroup>
+        <AvaloniaResource Include="Resources\Fonts\Segoe Fluent Icons.ttf">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </AvaloniaResource>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('windows'))">
-		<ProjectReference Include="..\Platform\Win\Win.csproj" />
-	</ItemGroup>
+        <AvaloniaResource Include="Resources\Icons\*.ico"/>
+        <AvaloniaResource Include="Resources\Icons\defaultIcon.png"/>
+    </ItemGroup>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)' == 'linux-x64'">
-		<ProjectReference Include="..\Platform\Linux\Linux.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Core\Core.csproj"/>
+    </ItemGroup>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('linux'))">
-		<ProjectReference Include="..\Platform\Linux\Linux.csproj" />
-	</ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Release' AND ($(RuntimeIdentifier) == 'win-x64' OR $(RuntimeIdentifier) == 'win-x86')">
 
-	<ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)' == 'osx-x64'">
-		<ProjectReference Include="..\Platform\Mac\Mac.csproj" />
-	</ItemGroup>
+        <ProjectReference Include="..\Platform\Win\Win.csproj"/>
+    </ItemGroup>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('osx'))">
-		<ProjectReference Include="..\Platform\Mac\Mac.csproj" />
-	</ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('windows'))">
+        <ProjectReference Include="..\Platform\Win\Win.csproj"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<UpToDateCheckInput Remove="Themes\Navigation\NavigationItem.axaml" />
-	</ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)' == 'linux-x64'">
+        <ProjectReference Include="..\Platform\Linux\Linux.csproj"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<UpToDateCheckInput Remove="Views\IndexPage.axaml" />
-	</ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('linux'))">
+        <ProjectReference Include="..\Platform\Linux\Linux.csproj"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<UpToDateCheckInput Remove="Views\DetailPage.axaml" />
-	</ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(RuntimeIdentifier)' == 'osx-x64'">
+        <ProjectReference Include="..\Platform\Mac\Mac.csproj"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<UpToDateCheckInput Remove="Themes\Base\Img.axaml" />
-	</ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug' AND $([MSBuild]::IsOSPlatform('osx'))">
+        <ProjectReference Include="..\Platform\Mac\Mac.csproj"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeCard.axaml" />
-	</ItemGroup>
+    <ItemGroup>
+        <UpToDateCheckInput Remove="Themes\Navigation\NavigationItem.axaml"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeMonth.axaml" />
-	</ItemGroup>
+    <ItemGroup>
+        <UpToDateCheckInput Remove="Views\IndexPage.axaml"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<Compile Update="Views\Dialogs\ColorPickerDialog.axaml.cs">
-			<DependentUpon>ColorPickerDialog.axaml</DependentUpon>
-		</Compile>
-	</ItemGroup>
+    <ItemGroup>
+        <UpToDateCheckInput Remove="Views\DetailPage.axaml"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<UpToDateCheckInput Remove="Themes\Base\IconSelect.axaml" />
-	</ItemGroup>
+    <ItemGroup>
+        <UpToDateCheckInput Remove="Themes\Base\Img.axaml"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<UpToDateCheckInput Remove="Views\ChartPage.axaml" />
-	</ItemGroup>
+    <ItemGroup>
+        <UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeCard.axaml"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeMonth.axaml"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Update="Views\Dialogs\ColorPickerDialog.axaml.cs">
+            <DependentUpon>ColorPickerDialog.axaml</DependentUpon>
+        </Compile>
+    </ItemGroup>
+
+    <ItemGroup>
+        <UpToDateCheckInput Remove="Themes\Base\IconSelect.axaml"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <UpToDateCheckInput Remove="Views\ChartPage.axaml"/>
+    </ItemGroup>
 </Project>

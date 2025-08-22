@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace SharedLibrary.Enums;
 
-namespace SharedLibrary.Enums
+public enum CultureCode : sbyte
 {
-    public enum CultureCode : sbyte
-    {
-        Auto = 0,
-        ZhCn = 1,
-        EnUs = 2
-    }
+    Auto = 0,
+    ZhCn = 1,
+    EnUs = 2
 }

@@ -1,24 +1,21 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		xmlns:base="using:UI.Controls.Base"
-        xmlns:controls="using:UI.Controls.List">
- 
-  <ControlTheme x:Key="{x:Type controls:BaseList}" TargetType="controls:BaseList">
-	 <Setter Property="UseLayoutRounding" Value="True"/>
-	  <Setter Property="Background" Value="Transparent"/>
-    <Setter Property="Template">
-      <ControlTemplate>
-		  <Border Background="{TemplateBinding Background}" x:Name="Border">
-			  <Grid>
-				  <ScrollViewer x:Name="ScrollViewer"  VerticalScrollBarVisibility="Hidden">
-					  <StackPanel x:Name="Container">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:UI.Controls.List">
 
-					  </StackPanel>
-				  </ScrollViewer>
-			  </Grid>
+    <ControlTheme x:Key="{x:Type controls:BaseList}" TargetType="controls:BaseList">
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}" x:Name="Border">
+                    <Grid>
+                        <ScrollViewer x:Name="ScrollViewer" VerticalScrollBarVisibility="Hidden">
+                            <StackPanel x:Name="Container" />
+                        </ScrollViewer>
+                    </Grid>
 
-		  </Border>
-      </ControlTemplate>
-    </Setter>
-  </ControlTheme>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
 </ResourceDictionary>

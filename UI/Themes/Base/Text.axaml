@@ -1,16 +1,16 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="using:UI.Controls.Base">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:UI.Controls.Base">
 
- 
-  <ControlTheme x:Key="{x:Type controls:Text}" TargetType="controls:Text">
-    <Setter Property="Template">
-      <ControlTemplate>
-		  <Border  Background="{TemplateBinding Background}">
-			  <TextBlock 
-				  Text="{Binding TextValue, RelativeSource={RelativeSource TemplatedParent}}"/>
-		  </Border>
-      </ControlTemplate>
-    </Setter>
-  </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type controls:Text}" TargetType="controls:Text">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}">
+                    <TextBlock
+                        Text="{Binding TextValue, RelativeSource={RelativeSource TemplatedParent}}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
 </ResourceDictionary>

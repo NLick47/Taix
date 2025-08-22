@@ -1,112 +1,110 @@
 <control:TPage xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="650"
-			  xmlns:Charts="using:UI.Controls.Charts"
-			 xmlns:Tabbar="using:UI.Controls.Tabbar"
-			xmlns:DatePickerBar="using:UI.Controls.DatePickerBar"
-			  xmlns:select="using:UI.Controls.Select"
-			  xmlns:control="using:UI.Controls"
-			 xmlns:vm="using:UI.ViewModels"
-			 x:DataType="vm:DataPageViewModel"
-			 IsFillPage="True"
-             x:Class="UI.Views.DataPage">
-	<Grid Margin="20">
-		<Grid.RowDefinitions>
-			<RowDefinition Height="auto"/>
-			<RowDefinition Height="auto"/>
-			<RowDefinition Height="*"/>
-		</Grid.RowDefinitions>
-		<StackPanel Orientation="Horizontal" Margin="0,5,0,20" >
-			<TextBlock Text="{DynamicResource SideDetails}"
-					   FontSize="18"
-					   VerticalAlignment="Center"/>
-			<select:Select Margin="10,0,0,0"
-						   VerticalAlignment="Top"
-						   Padding="10,5"
-						   IsShowIcon="False"
-						   SelectedItem="{Binding ShowType,Mode=TwoWay}"
-						   Options="{Binding ShowTypeOptions}"/>
-		</StackPanel>
-		<Tabbar:Tabbar
-					   HorizontalAlignment="Left"
-					   Grid.Row="1"
-					   Data="{Binding TabbarData}"
-					   SelectedIndex="{Binding TabbarSelectedIndex,Mode=TwoWay}"/>
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+               xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+               xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+               mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="650"
+               xmlns:Charts="using:UI.Controls.Charts"
+               xmlns:Tabbar="using:UI.Controls.Tabbar"
+               xmlns:select="using:UI.Controls.Select"
+               xmlns:control="using:UI.Controls"
+               xmlns:vm="using:UI.ViewModels"
+               x:DataType="vm:DataPageViewModel"
+               IsFillPage="True"
+               x:Class="UI.Views.DataPage">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Margin="0,5,0,20">
+            <TextBlock Text="{DynamicResource SideDetails}"
+                       FontSize="18"
+                       VerticalAlignment="Center" />
+            <select:Select Margin="10,0,0,0"
+                           VerticalAlignment="Top"
+                           Padding="10,5"
+                           IsShowIcon="False"
+                           SelectedItem="{Binding ShowType,Mode=TwoWay}"
+                           Options="{Binding ShowTypeOptions}" />
+        </StackPanel>
+        <Tabbar:Tabbar
+            HorizontalAlignment="Left"
+            Grid.Row="1"
+            Data="{Binding TabbarData}"
+            SelectedIndex="{Binding TabbarSelectedIndex,Mode=TwoWay}" />
 
-		<TabControl
-			   Grid.Row="2"
-			   SelectedIndex="{Binding TabbarSelectedIndex}"
-			   BorderThickness="0"
-			   Margin="0,13,0,0"
-			   Padding="0"
-			   Background="Transparent">
-			<TabControl.Styles>
-				<Style Selector="TabItem">
-					<Setter Property="Template">
-						<Setter.Value>
-							<ControlTemplate>
-							</ControlTemplate>
-						</Setter.Value>
-					</Setter>
-				</Style>
-			</TabControl.Styles>
-			<TabItem>
-				<Grid>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="auto"/>
-						<RowDefinition Height="*"/>
+        <TabControl
+            Grid.Row="2"
+            SelectedIndex="{Binding TabbarSelectedIndex}"
+            BorderThickness="0"
+            Margin="0,13,0,0"
+            Padding="0"
+            Background="Transparent">
+            <TabControl.Styles>
+                <Style Selector="TabItem">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate />
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </TabControl.Styles>
+            <TabItem>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="*" />
 
-					</Grid.RowDefinitions>
-					<select:DateSelect Date="{Binding DayDate,Mode=TwoWay}"/>
+                    </Grid.RowDefinitions>
+                    <select:DateSelect Date="{Binding DayDate,Mode=TwoWay}" />
 
-					<Charts:Charts IsShowBadge="True"
-								   IsSearch="True" Grid.Row="1"
-								   ItemMenu="{Binding AppContextMenu}"
-								   Data="{Binding Data}" ChartsType="List"
-								   Margin="0,20,0,0"
-								   ClickCommand="{Binding ToDetailCommand}"/>
-				</Grid>
-			</TabItem>
-			<TabItem>
-				<Grid>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="auto"/>
-						<RowDefinition Height="*"/>
-					</Grid.RowDefinitions>
-					<select:DateSelect Date="{Binding MonthDate,Mode=TwoWay}"
-									   SelectType="Month"/>
-					<Charts:Charts IsShowBadge="True"
-								   IsSearch="True"
-								   Grid.Row="1"
-								   ItemMenu="{Binding AppContextMenu}"
-								   Data="{Binding MonthData}"
-								   ChartsType="List"
-								   Margin="0,20,0,0"
-								   ClickCommand="{Binding ToDetailCommand}"/>
-				</Grid>
-			</TabItem>
-			<TabItem>
-				<Grid>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="auto"/>
-						<RowDefinition Height="*"/>
+                    <Charts:Charts IsShowBadge="True"
+                                   IsSearch="True" Grid.Row="1"
+                                   ItemMenu="{Binding AppContextMenu}"
+                                   Data="{Binding Data}" ChartsType="List"
+                                   Margin="0,20,0,0"
+                                   ClickCommand="{Binding ToDetailCommand}" />
+                </Grid>
+            </TabItem>
+            <TabItem>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <select:DateSelect Date="{Binding MonthDate,Mode=TwoWay}"
+                                       SelectType="Month" />
+                    <Charts:Charts IsShowBadge="True"
+                                   IsSearch="True"
+                                   Grid.Row="1"
+                                   ItemMenu="{Binding AppContextMenu}"
+                                   Data="{Binding MonthData}"
+                                   ChartsType="List"
+                                   Margin="0,20,0,0"
+                                   ClickCommand="{Binding ToDetailCommand}" />
+                </Grid>
+            </TabItem>
+            <TabItem>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="*" />
 
-					</Grid.RowDefinitions>
+                    </Grid.RowDefinitions>
 
-					<select:DateSelect Date="{Binding YearDate,Mode=TwoWay}"
-									   SelectType="Year"/>
+                    <select:DateSelect Date="{Binding YearDate,Mode=TwoWay}"
+                                       SelectType="Year" />
 
-					<Charts:Charts IsShowBadge="True" IsSearch="True" Grid.Row="1"
-								   ItemMenu="{Binding AppContextMenu}"
-								   Data="{Binding YearData}"
-								   ChartsType="List"
-								   Margin="0,20,0,0"
-								   ClickCommand="{Binding ToDetailCommand}"/>
-				</Grid>
-			</TabItem>
-		</TabControl>
+                    <Charts:Charts IsShowBadge="True" IsSearch="True" Grid.Row="1"
+                                   ItemMenu="{Binding AppContextMenu}"
+                                   Data="{Binding YearData}"
+                                   ChartsType="List"
+                                   Margin="0,20,0,0"
+                                   ClickCommand="{Binding ToDetailCommand}" />
+                </Grid>
+            </TabItem>
+        </TabControl>
 
-	</Grid>
+    </Grid>
 </control:TPage>

@@ -1,139 +1,129 @@
-﻿using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Interactivity;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
 
-namespace UI.Controls.Base
+namespace UI.Controls.Base;
+
+public class View : ContentControl
 {
-    public class View : ContentControl
+    public static readonly DirectProperty<View, string> ConditionProperty =
+        AvaloniaProperty.RegisterDirect<View, string>(
+            nameof(Condition),
+            o => o.Condition,
+            (o, v) => o.Condition = v);
+
+    public static readonly DirectProperty<View, object> ValueProperty =
+        AvaloniaProperty.RegisterDirect<View, object>(
+            nameof(Value),
+            o => o.Value,
+            (o, v) => o.Value = v);
+
+    private string _condition;
+
+    private object _value;
+
+    public View()
     {
-        private string _condition;
-        public string Condition
+        Loaded += View_Loaded;
+        Unloaded += View_Unloaded;
+    }
+
+    public string Condition
+    {
+        get => _condition;
+        set => SetAndRaise(ConditionProperty, ref _condition, value);
+    }
+
+    public object Value
+    {
+        get => _value;
+        set => SetAndRaise(ValueProperty, ref _value, value);
+    }
+
+    protected override Type StyleKeyOverride => typeof(View);
+
+    private void View_Loaded(object sender, RoutedEventArgs e)
+    {
+        Handle();
+    }
+
+    private void View_Unloaded(object sender, RoutedEventArgs e)
+    {
+        Loaded -= View_Loaded;
+        Unloaded -= View_Unloaded;
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == ValueProperty)
         {
-            get => _condition;
-            set => SetAndRaise(ConditionProperty, ref _condition, value);
+            var control = change.Sender as View;
+            control.Handle();
         }
-        public static readonly DirectProperty<View, string> ConditionProperty =
-            AvaloniaProperty.RegisterDirect<View, string>(
-                nameof(Condition),
-                o => o.Condition,
-                (o, v) => o.Condition = v);
+    }
 
-        private object _value;
-        public object Value
+    private void Handle()
+    {
+        try
         {
-            get => _value;
-            set => SetAndRaise(ValueProperty, ref _value, value);
-        }
-        public static readonly DirectProperty<View, object> ValueProperty =
-            AvaloniaProperty.RegisterDirect<View, object>(
-                nameof(Value),
-                o => o.Value,
-                (o, v) => o.Value = v);
+            if (string.IsNullOrEmpty(Condition) && Value == null) return;
 
-        protected override Type StyleKeyOverride => typeof(View);
-
-        public View()
-        {
-            Loaded += View_Loaded;
-            Unloaded += View_Unloaded;
-        }
-
-        private void View_Loaded(object sender, RoutedEventArgs e)
-        {
-            Handle();
-        }
-
-        private void View_Unloaded(object sender, RoutedEventArgs e)
-        {
-            Loaded -= View_Loaded;
-            Unloaded -= View_Unloaded;
-        }
-
-        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-        {
-            base.OnPropertyChanged(change);
-            if (change.Property == ValueProperty)
+            var isShow = false;
+            if (string.IsNullOrEmpty(Condition))
             {
-                var control = change.Sender as View;
-                control.Handle();
+                if ((bool)Value) isShow = true;
             }
-        }
-
-        private void Handle()
-        {
-            try
+            else
             {
-                if (string.IsNullOrEmpty(Condition) && Value == null)
+                if (Condition.IndexOf("=") != -1)
                 {
-                    return;
+                    var conditionVal = Condition.Substring(Condition.IndexOf("=") + 1);
+                    var value = Value == null ? string.Empty : Value.ToString();
+                    isShow = Condition.Contains("!") ? conditionVal != value : conditionVal == value;
                 }
-
-                bool isShow = false;
-                if (string.IsNullOrEmpty(Condition))
+                else if (Condition.IndexOf("not null") != -1)
                 {
-                    if ((bool)Value)
+                    isShow = Value != null;
+                }
+                else if (Condition.IndexOf("null") != -1)
+                {
+                    isShow = Value == null;
+                }
+                else if (Condition.IndexOf("not empty") != -1)
+                {
+                    isShow = Value switch
                     {
-                        isShow = true;
-                    }
+                        null => false,
+                        IList<object> m => m.Count != 0,
+                        IList n => n.Count != 0,
+                        _ => !string.IsNullOrEmpty(Value.ToString())
+                    };
+                }
+                else if (Condition.IndexOf("empty") != -1)
+                {
+                    isShow = Value switch
+                    {
+                        null => true,
+                        IList<object> m => m.Count == 0,
+                        IList n => n.Count == 0,
+                        _ => string.IsNullOrEmpty(Value.ToString())
+                    };
                 }
                 else
                 {
-                    if (Condition.IndexOf("=") != -1)
-                    {
-                        string conditionVal = Condition.Substring(Condition.IndexOf("=") + 1);
-                        string value = (Value == null ? string.Empty : Value.ToString());
-                        isShow = Condition.Contains("!") ? conditionVal != value : conditionVal == value;
-                    }
-                    else if (Condition.IndexOf("not null") != -1)
-                    {
-
-                        isShow = Value != null;
-                    }
-                    else if (Condition.IndexOf("null") != -1)
-                    {
-
-                        isShow = Value == null;
-                    }
-                    else if (Condition.IndexOf("not empty") != -1)
-                    {
-                        isShow = Value switch
-                        {
-                            null => false,
-                            IList<object> m => m.Count != 0,
-                            IList n => n.Count != 0,
-                            _ => !string.IsNullOrEmpty(Value.ToString())
-                        };
-
-                    }
-                    else if (Condition.IndexOf("empty") != -1)
-                    {
-                        isShow = Value switch
-                        {
-                            null => true,
-                            IList<object> m => m.Count == 0,
-                            IList n => n.Count == 0,
-                            _ => string.IsNullOrEmpty(Value.ToString())
-                        };
-                    }
-                    else
-                    {
-                        isShow = Condition == (Value != null ? Value.ToString() : "");
-                    }
+                    isShow = Condition == (Value != null ? Value.ToString() : "");
                 }
-                IsVisible = isShow;
             }
-            catch (Exception ex)
-            {
-                IsVisible = false;
-            }
+
+            IsVisible = isShow;
+        }
+        catch (Exception ex)
+        {
+            IsVisible = false;
         }
     }
 }

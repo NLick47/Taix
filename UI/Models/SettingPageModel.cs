@@ -1,50 +1,124 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace UI.Models
+namespace UI.Models;
+
+public class SettingPageModel : UINotifyPropertyChanged
 {
-    public class SettingPageModel : UINotifyPropertyChanged
+    private bool CheckUpdateBtnVisibility_ = true;
+    private object data;
+
+    private DateTime DelDataEndMonthDate_;
+
+
+    private DateTime DelDataStartMonthDate_;
+
+    private DateTime ExportDataEndMonthDate_;
+
+    private DateTime ExportDataStartMonthDate_;
+
+    private ObservableCollection<string> TabbarData_;
+
+    private int TabbarSelectedIndex_;
+
+    private string version;
+
+    public object Data
     {
-        private object data;
-        public object Data { get { return data; }
-            set { data = value; OnPropertyChanged(); } }
+        get => data;
+        set
+        {
+            data = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private ObservableCollection<string> TabbarData_;
-        /// <summary>
-        /// tabbar data
-        /// </summary>
-        public ObservableCollection<string> TabbarData { get { return TabbarData_; } set { TabbarData_ = value; OnPropertyChanged(); } }
+    /// <summary>
+    ///     tabbar data
+    /// </summary>
+    public ObservableCollection<string> TabbarData
+    {
+        get => TabbarData_;
+        set
+        {
+            TabbarData_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private int TabbarSelectedIndex_;
-        /// <summary>
-        /// tabbar selected item index
-        /// </summary>
-        public int TabbarSelectedIndex { get { return TabbarSelectedIndex_; } set { TabbarSelectedIndex_ = value; OnPropertyChanged(); } }
+    /// <summary>
+    ///     tabbar selected item index
+    /// </summary>
+    public int TabbarSelectedIndex
+    {
+        get => TabbarSelectedIndex_;
+        set
+        {
+            TabbarSelectedIndex_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private string version;
-        /// <summary>
-        /// 软件版本号
-        /// </summary>
-        public string Version { get { return version; } set { version = value; OnPropertyChanged(); } }
+    /// <summary>
+    ///     软件版本号
+    /// </summary>
+    public string Version
+    {
+        get => version;
+        set
+        {
+            version = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private bool CheckUpdateBtnVisibility_ = true;
-        public bool CheckUpdateBtnVisibility { get { return CheckUpdateBtnVisibility_; } set { CheckUpdateBtnVisibility_ = value; OnPropertyChanged(); } }
+    public bool CheckUpdateBtnVisibility
+    {
+        get => CheckUpdateBtnVisibility_;
+        set
+        {
+            CheckUpdateBtnVisibility_ = value;
+            OnPropertyChanged();
+        }
+    }
 
+    public DateTime DelDataStartMonthDate
+    {
+        get => DelDataStartMonthDate_;
+        set
+        {
+            DelDataStartMonthDate_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private DateTime DelDataStartMonthDate_;
-        public DateTime DelDataStartMonthDate { get { return DelDataStartMonthDate_; } set { DelDataStartMonthDate_ = value; OnPropertyChanged(); } }
+    public DateTime DelDataEndMonthDate
+    {
+        get => DelDataEndMonthDate_;
+        set
+        {
+            DelDataEndMonthDate_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private DateTime DelDataEndMonthDate_;
-        public DateTime DelDataEndMonthDate { get { return DelDataEndMonthDate_; } set { DelDataEndMonthDate_ = value; OnPropertyChanged(); } }
+    public DateTime ExportDataStartMonthDate
+    {
+        get => ExportDataStartMonthDate_;
+        set
+        {
+            ExportDataStartMonthDate_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private DateTime ExportDataStartMonthDate_;
-        public DateTime ExportDataStartMonthDate { get { return ExportDataStartMonthDate_; } set { ExportDataStartMonthDate_ = value; OnPropertyChanged(); } }
-
-        private DateTime ExportDataEndMonthDate_;
-        public DateTime ExportDataEndMonthDate { get { return ExportDataEndMonthDate_; } set { ExportDataEndMonthDate_ = value; OnPropertyChanged(); } }
+    public DateTime ExportDataEndMonthDate
+    {
+        get => ExportDataEndMonthDate_;
+        set
+        {
+            ExportDataEndMonthDate_ = value;
+            OnPropertyChanged();
+        }
     }
 }

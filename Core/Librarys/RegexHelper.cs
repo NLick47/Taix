@@ -1,32 +1,26 @@
-﻿using SharedLibrary.Librarys;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
+using SharedLibrary.Librarys;
 
-namespace Core.Librarys
+namespace Core.Librarys;
+
+public static class RegexHelper
 {
-    public static class RegexHelper
+    /// <summary>
+    ///     是否正则匹配成功
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="pattern"></param>
+    /// <returns></returns>
+    public static bool IsMatch(string input, string pattern)
     {
-        /// <summary>
-        /// 是否正则匹配成功
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="pattern"></param>
-        /// <returns></returns>
-        public static bool IsMatch(string input, string pattern)
+        try
         {
-            try
-            {
-                return Regex.IsMatch(input, pattern);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("正则表达式错误。" + ex.ToString());
-                return false;
-            }
+            return Regex.IsMatch(input, pattern);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("正则表达式错误。" + ex);
+            return false;
         }
     }
 }

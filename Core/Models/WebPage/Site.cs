@@ -1,33 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Core.Models.WebPage;
 
-namespace Core.Models.WebPage
+public class Site
 {
-    public class Site
+    public static Site Empty = new()
     {
-        public string Title { get; set; }
-        public string Url { get; set; }
-        public override string ToString()
-        {
-            return $"Title:{Title},Url:{Url}";
-        }
+        Title = string.Empty,
+        Url = string.Empty
+    };
 
-        public static Site Empty = new Site()
+    public Site(Site site = null)
+    {
+        if (site != null)
         {
-            Title = string.Empty,
-            Url = string.Empty
-        };
-
-        public Site(Site site = null)
-        {
-            if (site != null)
-            {
-                Title = site.Title;
-                Url = site.Url;
-            }
+            Title = site.Title;
+            Url = site.Url;
         }
+    }
+
+    public string Title { get; set; }
+    public string Url { get; set; }
+
+    public override string ToString()
+    {
+        return $"Title:{Title},Url:{Url}";
     }
 }

@@ -1,13 +1,7 @@
 ﻿using Avalonia.Controls;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace SharedLibrary.Resources.Localization
+namespace SharedLibrary.Resources.Localization;
+
+public class StringResourcesEn : ResourceDictionary
 {
-    public class StringResourcesEn : ResourceDictionary
-    {
-    }
 }

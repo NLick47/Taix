@@ -1,23 +1,16 @@
-﻿using SharedLibrary.Servicers;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SharedLibrary.Servicers;
 
-namespace Win
+namespace Win;
+
+public class WinPlatformInitializer : IPlatformInitializer
 {
-    public class WinPlatformInitializer : IPlatformInitializer
+    public void Initialize(IServiceCollection services)
     {
-        public void Initialize(IServiceCollection services)
-        {
-            services.AddSingleton<ISleepdiscover, WinSleepdiscover>();
-            services.AddSingleton<IAppObserver, WinAppObserver>();
-            services.AddSingleton<IAppManager, WinAppManager>();
-            services.AddSingleton<IWindowManager, WindowManager>();
-            services.AddSingleton<ISystemInfrastructure, WinSystemInfrastructure>();
-        }
+        services.AddSingleton<ISleepdiscover, WinSleepdiscover>();
+        services.AddSingleton<IAppObserver, WinAppObserver>();
+        services.AddSingleton<IAppManager, WinAppManager>();
+        services.AddSingleton<IWindowManager, WindowManager>();
+        services.AddSingleton<ISystemInfrastructure, WinSystemInfrastructure>();
     }
 }

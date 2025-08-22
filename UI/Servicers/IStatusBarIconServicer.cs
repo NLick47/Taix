@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace UI.Servicers
+namespace UI.Servicers;
+
+public interface IStatusBarIconServicer
 {
-    public interface IStatusBarIconServicer
-    {
-        /// <summary>
-        /// 初始化状态栏图标
-        /// </summary>
-        Task Init();
+    /// <summary>
+    ///     初始化状态栏图标
+    /// </summary>
+    Task Init();
 
-        /// <summary>
-        /// 显示主窗口
-        /// </summary>
-        void ShowMainWindow();
-    }
+    /// <summary>
+    ///     显示主窗口
+    /// </summary>
+    void ShowMainWindow();
 }

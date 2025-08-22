@@ -1,113 +1,90 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Core.Librarys;
 
-namespace Core.Librarys
+public class Time
 {
-    public class Time
+    public static string ToHoursString(double seconds)
     {
-        public static string ToHoursString(double seconds)
-        {
-            double hours = seconds / 60 / 60;
+        var hours = seconds / 60 / 60;
 
-            if (hours > 0.1)
-            {
-                return hours.ToString("f2");
-            }
-            else
-            {
-                return "0";
-            }
-        }
-        public static string ToString(int seconds)
-        {
-            if (seconds < 60)
-            {
-                return seconds + "s";
-            }
-            else
-            {
-                double minutes = (double)seconds / 60;
-                if (minutes < 60)
-                {
-                    if (minutes != (int)minutes)
-                    {
-                        double pointNumber = minutes - (int)minutes;
-                        int seconds_ = (int)(pointNumber * 60);
-                        return (int)minutes + "m" + (seconds_ > 0 ? seconds_ + "s" : "");
-                    }
+        if (hours > 0.1) return hours.ToString("f2");
 
-                    return minutes + "m";
-                }
-                else
-                {
-                    double hours = (double)minutes / 60;
-                    if (hours != (int)hours)
-                    {
-                        double pointNumber = hours - (int)hours;
-                        int minutes_ = (int)(pointNumber * 60);
-                        return (int)hours + "h" + (minutes_ > 0 ? minutes_ + "m" : "");
-                    }
-                    return hours + "h";
-                }
+        return "0";
+    }
+
+    public static string ToString(int seconds)
+    {
+        if (seconds < 60) return seconds + "s";
+
+        var minutes = (double)seconds / 60;
+        if (minutes < 60)
+        {
+            if (minutes != (int)minutes)
+            {
+                var pointNumber = minutes - (int)minutes;
+                var seconds_ = (int)(pointNumber * 60);
+                return (int)minutes + "m" + (seconds_ > 0 ? seconds_ + "s" : "");
             }
+
+            return minutes + "m";
         }
 
-        public static DateTime[] GetThisWeekDate()
+        var hours = minutes / 60;
+        if (hours != (int)hours)
         {
-            DateTime weekStartDate = DateTime.Now, weekEndDate = DateTime.Now;
-            if (DateTime.Now.DayOfWeek == DayOfWeek.Monday)
-            {
-                weekStartDate = DateTime.Now.Date;
-                weekEndDate = DateTime.Now.Date.AddDays(6);
-            }
-            else
-            {
-                int weekNum = (int)DateTime.Now.DayOfWeek;
-                if (weekNum == 0)
-                {
-                    weekNum = 7;
-                }
-                weekNum -= 1;
-                weekStartDate = DateTime.Now.Date.AddDays(-weekNum);
-                weekEndDate = weekStartDate.Date.AddDays(6);
-            }
-            return new[] { weekStartDate, weekEndDate };
+            var pointNumber = hours - (int)hours;
+            var minutes_ = (int)(pointNumber * 60);
+            return (int)hours + "h" + (minutes_ > 0 ? minutes_ + "m" : "");
         }
 
-        public static DateTime[] GetLastWeekDate()
+        return hours + "h";
+    }
+
+    public static DateTime[] GetThisWeekDate()
+    {
+        DateTime weekStartDate = DateTime.Now, weekEndDate = DateTime.Now;
+        if (DateTime.Now.DayOfWeek == DayOfWeek.Monday)
         {
-            DateTime weekStartDate = DateTime.Now, weekEndDate = DateTime.Now;
-
-            int weekNum = (int)DateTime.Now.DayOfWeek;
-            if (weekNum == 0)
-            {
-                weekNum = 7;
-            }
-
-
-            weekStartDate = DateTime.Now.Date.AddDays(-6 - weekNum);
-            weekEndDate = weekStartDate.AddDays(6);
-
-            return new[] { weekStartDate, weekEndDate };
+            weekStartDate = DateTime.Now.Date;
+            weekEndDate = DateTime.Now.Date.AddDays(6);
+        }
+        else
+        {
+            var weekNum = (int)DateTime.Now.DayOfWeek;
+            if (weekNum == 0) weekNum = 7;
+            weekNum -= 1;
+            weekStartDate = DateTime.Now.Date.AddDays(-weekNum);
+            weekEndDate = weekStartDate.Date.AddDays(6);
         }
 
-        public static DateTime[] GetMonthDate(DateTime date)
-        {
-            var dateStart = new DateTime(date.Year, date.Month, 1);
-            var dateEnd = new DateTime(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month));
+        return new[] { weekStartDate, weekEndDate };
+    }
 
-            return new[] { dateStart, dateEnd };
-        }
+    public static DateTime[] GetLastWeekDate()
+    {
+        DateTime weekStartDate = DateTime.Now, weekEndDate = DateTime.Now;
 
-        public static DateTime[] GetYearDate(DateTime date)
-        {
-            var dateStart = new DateTime(date.Year, 1, 1, 0, 0, 0);
-            var dateEnd = new DateTime(date.Year, 12, DateTime.DaysInMonth(date.Year, 12), 23, 59, 59);
-            return new[] { dateStart, dateEnd };
+        var weekNum = (int)DateTime.Now.DayOfWeek;
+        if (weekNum == 0) weekNum = 7;
 
-        }
+
+        weekStartDate = DateTime.Now.Date.AddDays(-6 - weekNum);
+        weekEndDate = weekStartDate.AddDays(6);
+
+        return new[] { weekStartDate, weekEndDate };
+    }
+
+    public static DateTime[] GetMonthDate(DateTime date)
+    {
+        var dateStart = new DateTime(date.Year, date.Month, 1);
+        var dateEnd = new DateTime(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month));
+
+        return new[] { dateStart, dateEnd };
+    }
+
+    public static DateTime[] GetYearDate(DateTime date)
+    {
+        var dateStart = new DateTime(date.Year, 1, 1, 0, 0, 0);
+        var dateEnd = new DateTime(date.Year, 12, DateTime.DaysInMonth(date.Year, 12), 23, 59, 59);
+        return new[] { dateStart, dateEnd };
     }
 }

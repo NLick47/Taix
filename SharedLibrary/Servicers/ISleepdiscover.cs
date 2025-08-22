@@ -1,26 +1,21 @@
 ﻿using SharedLibrary.Event;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace SharedLibrary.Servicers
+namespace SharedLibrary.Servicers;
+
+public interface ISleepdiscover
 {
-    public interface ISleepdiscover
-    {
-        /// <summary>
-        /// 启动
-        /// </summary>
-        void Start();
-        /// <summary>
-        /// 停止
-        /// </summary>
-        void Stop();
+    /// <summary>
+    ///     启动
+    /// </summary>
+    void Start();
 
-        /// <summary>
-        /// 休眠状态发生更改
-        /// </summary>
-        event SleepdiscoverEventHandler SleepStatusChanged;
-    }
+    /// <summary>
+    ///     停止
+    /// </summary>
+    void Stop();
+
+    /// <summary>
+    ///     休眠状态发生更改
+    /// </summary>
+    event SleepdiscoverEventHandler SleepStatusChanged;
 }

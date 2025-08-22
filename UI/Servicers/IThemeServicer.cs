@@ -1,25 +1,17 @@
-﻿using Avalonia.Controls;
+﻿using System;
 using Avalonia.Styling;
-using Core.Servicers.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UI.Views;
 
-namespace UI.Servicers
-{
-    public interface IThemeServicer
-    {
-        void Init();
-        void LoadTheme(ThemeVariant theme, bool isRefresh = false);
-        void SetMainWindow(MainWindow mainWindow);
+namespace UI.Servicers;
 
-        /// <summary>
-        /// 切换主题时发生
-        /// </summary>
-        event EventHandler OnThemeChanged;
-    }
+public interface IThemeServicer
+{
+    void Init();
+    void LoadTheme(ThemeVariant theme, bool isRefresh = false);
+    void SetMainWindow(MainWindow mainWindow);
+
+    /// <summary>
+    ///     切换主题时发生
+    /// </summary>
+    event EventHandler OnThemeChanged;
 }

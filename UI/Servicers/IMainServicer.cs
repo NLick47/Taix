@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace UI.Servicers
+namespace UI.Servicers;
+
+public interface IMainServicer
 {
-    public interface IMainServicer
-    {
-        Task Start(bool isSelfStart);
-        
-        void DesignStart();
-    }
+    Task Start(bool isSelfStart);
+
+    void DesignStart();
 }

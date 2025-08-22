@@ -1,79 +1,77 @@
 <Window xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="450"
-			 d:DesignHeight="480"
-			 Height="480"
-			 Background="Transparent"
-			 BorderBrush="Transparent"
-			 BorderThickness="0"
-			 ExtendClientAreaToDecorationsHint="True"
-			 ExtendClientAreaChromeHints="NoChrome"
-			 WindowStartupLocation="CenterOwner"
-			 CanResize="False"
-			 Width="450"
-			 xmlns:button="using:UI.Controls.Button"
-			xmlns:controls="using:UI.Controls.Window"
-			xmlns:dialog="UI.Views.Dialogs"
-             x:Class="UI.Views.Dialogs.ColorPickerDialog">
-	<Border
-		BorderThickness="0"
-		BorderBrush="{DynamicResource WindowBorderBrush}">
-		<StackPanel
-		Background="{DynamicResource Background }" x:Name="WindowContent">
-			<Grid
-				   x:Name="TitleBar"
-				   Panel.ZIndex="999"
-				   Height="{DynamicResource WindowTitleBarHeight}"
-				   VerticalAlignment="Top">
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="Auto"></ColumnDefinition>
-					<ColumnDefinition Width="*"></ColumnDefinition>
-				</Grid.ColumnDefinitions>
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="450"
+        d:DesignHeight="480"
+        Height="480"
+        Background="Transparent"
+        BorderBrush="Transparent"
+        BorderThickness="0"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Width="450"
+        xmlns:button="using:UI.Controls.Button"
+        x:Class="UI.Views.Dialogs.ColorPickerDialog">
+    <Border
+        BorderThickness="0"
+        BorderBrush="{DynamicResource WindowBorderBrush}">
+        <StackPanel
+            Background="{DynamicResource Background }" x:Name="WindowContent">
+            <Grid
+                x:Name="TitleBar"
+                Panel.ZIndex="999"
+                Height="{DynamicResource WindowTitleBarHeight}"
+                VerticalAlignment="Top">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-				<Grid Grid.Column="0"
-					  Panel.ZIndex="3">
-					<StackPanel Orientation="Horizontal" Margin="15,0,0,0"
-								VerticalAlignment="Center"
-								HorizontalAlignment="Center">
-						<button:IconButton Width="0"
-										   VerticalAlignment="Center"
-										   ToolTip.Tip="{DynamicResource Back}"
-										   FontSize="10"
-										   x:Name="BackBtn"
-										   Icon="Back" />
+                <Grid Grid.Column="0"
+                      Panel.ZIndex="3">
+                    <StackPanel Orientation="Horizontal" Margin="15,0,0,0"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <button:IconButton Width="0"
+                                           VerticalAlignment="Center"
+                                           ToolTip.Tip="{DynamicResource Back}"
+                                           FontSize="10"
+                                           x:Name="BackBtn"
+                                           Icon="Back" />
 
 
-						<TextBlock VerticalAlignment="Center" Text="ColorPicker"
-								   Foreground="{DynamicResource DefaultTextBrush}"
-								   Margin="15,0,0,0"/>
-					</StackPanel>
+                        <TextBlock VerticalAlignment="Center" Text="ColorPicker"
+                                   Foreground="{DynamicResource DefaultTextBrush}"
+                                   Margin="15,0,0,0" />
+                    </StackPanel>
 
 
-				</Grid>
-				<Grid Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
-										
-					  Panel.ZIndex="3">
-					<StackPanel Orientation="Horizontal">
-						<button:IconButton
-							ToolTip.Tip="{DynamicResource Close}"
-							Width="46"
-							Height="32"
-							FontSize="10"
-							PointerPressed="Close_Click"
-							Icon="ChromeClose"
-							IsVisible="True"/>
+                </Grid>
+                <Grid Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
 
-					</StackPanel>
-				</Grid>
-			</Grid>
+                      Panel.ZIndex="3">
+                    <StackPanel Orientation="Horizontal">
+                        <button:IconButton
+                            ToolTip.Tip="{DynamicResource Close}"
+                            Width="46"
+                            Height="32"
+                            FontSize="10"
+                            PointerPressed="Close_Click"
+                            Icon="ChromeClose"
+                            IsVisible="True" />
 
-			<ColorPicker x:Name="picker" VerticalAlignment="Top" />
-			<button:Button
-				HorizontalAlignment="Right" Margin="0,0,20,0"
-				Content="{DynamicResource Confirm}" Click="OkButton_Click" 
-				Width="100"/>
-		</StackPanel>
-	</Border>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <ColorPicker x:Name="picker" VerticalAlignment="Top" />
+            <button:Button
+                HorizontalAlignment="Right" Margin="0,0,20,0"
+                Content="{DynamicResource Confirm}" Click="OkButton_Click"
+                Width="100" />
+        </StackPanel>
+    </Border>
 </Window>

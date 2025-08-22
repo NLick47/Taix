@@ -1,48 +1,48 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-	
-        xmlns:controls="using:UI.Controls.Charts">
-	
-	<ControlTheme x:Key="{x:Type controls:ChartItemTypeColumn}"
-				  TargetType="controls:ChartItemTypeColumn">
-		<Styles>
-			<Style Selector="controls|ChartItemTypeColumn /template/ Border#ValueContainer">
-				<Setter Property="Transitions">
-					<BrushTransition Property="Background" Duration="0.2"/>
-				</Setter>
-			</Style>
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 
-			<Style Selector="controls|ChartItemTypeColumn:pointerover /template/ Border#ValueContainer">
-				<Setter Property="Background" Value="#7FF1F1F1"/>
-			</Style>
-		</Styles>
-		
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Template">
-			<ControlTemplate>
-				<Grid x:Name="Normal" Background="{TemplateBinding Background}" >
-					<Grid.RowDefinitions>
-						<RowDefinition Height="*"/>
-						<RowDefinition Height="30"/>
-					</Grid.RowDefinitions>
+                    xmlns:controls="using:UI.Controls.Charts">
 
-					<Border x:Name="ValueContainer" Background="Transparent" >
-						<Rectangle
-						x:Name="ValueBlockObj"
-							RadiusX="4"
-							RadiusY="4"
-							Fill="#cccccc"
-							Width="{Binding ElementName=ValueContainer,Path=Bounds.Width}"
-									VerticalAlignment="Bottom"
-									HorizontalAlignment="Center" />
-					</Border>
+    <ControlTheme x:Key="{x:Type controls:ChartItemTypeColumn}"
+                  TargetType="controls:ChartItemTypeColumn">
+        <Styles>
+            <Style Selector="controls|ChartItemTypeColumn /template/ Border#ValueContainer">
+                <Setter Property="Transitions">
+                    <BrushTransition Property="Background" Duration="0.2" />
+                </Setter>
+            </Style>
 
-					<TextBlock Grid.Row="1" FontSize="12"
-								   HorizontalAlignment="Center" Margin="0,10,0,0"
-								   Text="{TemplateBinding ColumnName}"
-								   Foreground="#FF8A8A8A" />
-				</Grid>
-			</ControlTemplate>
-		</Setter>
-	</ControlTheme>
+            <Style Selector="controls|ChartItemTypeColumn:pointerover /template/ Border#ValueContainer">
+                <Setter Property="Background" Value="#7FF1F1F1" />
+            </Style>
+        </Styles>
+
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid x:Name="Normal" Background="{TemplateBinding Background}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="30" />
+                    </Grid.RowDefinitions>
+
+                    <Border x:Name="ValueContainer" Background="Transparent">
+                        <Rectangle
+                            x:Name="ValueBlockObj"
+                            RadiusX="4"
+                            RadiusY="4"
+                            Fill="#cccccc"
+                            Width="{Binding ElementName=ValueContainer,Path=Bounds.Width}"
+                            VerticalAlignment="Bottom"
+                            HorizontalAlignment="Center" />
+                    </Border>
+
+                    <TextBlock Grid.Row="1" FontSize="12"
+                               HorizontalAlignment="Center" Margin="0,10,0,0"
+                               Text="{TemplateBinding ColumnName}"
+                               Foreground="#FF8A8A8A" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
 </ResourceDictionary>

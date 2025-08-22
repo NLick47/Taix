@@ -1,12 +1,5 @@
-﻿using SharedLibrary.Models.AppObserver;
-using Core.Models.WebPage;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Core.Models.WebPage;
 
-namespace Core.Event
-{
-    public delegate void WebServerEventHandler(NotifyWeb args);
-}
+namespace Core.Event;
+
+public delegate void WebServerEventHandler(NotifyWeb args);

@@ -1,12 +1,11 @@
 using UI.Controls.Window;
 
-namespace UI.Views
+namespace UI.Views;
+
+public partial class MainWindow : DefaultWindow
 {
-    public partial class MainWindow : DefaultWindow
+    public MainWindow()
     {
-        public MainWindow()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

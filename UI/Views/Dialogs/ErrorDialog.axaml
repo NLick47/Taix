@@ -3,43 +3,52 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" Height="372"
-		Width="390" CanResize="False"
-		WindowStartupLocation="CenterScreen"
+        Width="390" CanResize="False"
+        WindowStartupLocation="CenterScreen"
         x:Class="UI.ErrorDialog"
         Title="ErrorDialog">
-	<Grid Margin="10">
-		<StackPanel>
-			<Image x:Name="IconGray" Width="120"
-				HorizontalAlignment="Center" VerticalAlignment="Top" Source="/Resources/Icons/ghost_gray (320).ico" >
+    <Grid Margin="10">
+        <StackPanel>
+            <Image x:Name="IconGray" Width="120"
+                   HorizontalAlignment="Center" VerticalAlignment="Top" Source="/Resources/Icons/ghost_gray (320).ico">
 
-				<Image.Effect>
-					<DropShadowDirectionEffect BlurRadius="10" Direction="0" ShadowDepth="0" Color="Black" Opacity="0.1"/>
-				</Image.Effect>
-				<Image.RenderTransform>
-					<TranslateTransform Y="0"/>
-				</Image.RenderTransform>
-			</Image>
-			<Border Background="#f3f3f3" CornerRadius="6" Padding="10" Margin="0,-50,0,20">
-				<Border.Effect>
-					<DropShadowDirectionEffect BlurRadius="0" Direction="40" ShadowDepth="4" Color="#FFF7F7F7" Opacity="1"/>
-				</Border.Effect>
+                <Image.Effect>
+                    <DropShadowDirectionEffect BlurRadius="10" Direction="0" ShadowDepth="0" Color="Black"
+                                               Opacity="0.1" />
+                </Image.Effect>
+                <Image.RenderTransform>
+                    <TranslateTransform Y="0" />
+                </Image.RenderTransform>
+            </Image>
+            <Border Background="#f3f3f3" CornerRadius="6" Padding="10" Margin="0,-50,0,20">
+                <Border.Effect>
+                    <DropShadowDirectionEffect BlurRadius="0" Direction="40" ShadowDepth="4" Color="#FFF7F7F7"
+                                               Opacity="1" />
+                </Border.Effect>
 
-				<StackPanel x:Name="Content">
-					<TextBlock Foreground="Gray" Text="{DynamicResource UnexpectedError}" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,0"/>
-					<TextBlock Foreground="Gray" TextWrapping="WrapWithOverflow"  FontSize="14" HorizontalAlignment="Center" Margin="0,10,0,0">
-						<Run Text="{DynamicResource SincerelyCrash}"/>
-						<HyperlinkButton ToolTip.Tip ="{DynamicResource LocateFileExplorer}" Click="LogHyperlinkClick" Foreground="Blue" Content="{DynamicResource Log}"/>
-						<Run Text="{DynamicResource PleaseSubmit}"/>
-					</TextBlock>
-					<TextBlock Foreground="Gray" Text="{DynamicResource HowSubmitLog}" FontSize="14" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                <StackPanel x:Name="Content">
+                    <TextBlock Foreground="Gray" Text="{DynamicResource UnexpectedError}" FontSize="14"
+                               FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,0" />
+                    <TextBlock Foreground="Gray" TextWrapping="WrapWithOverflow" FontSize="14"
+                               HorizontalAlignment="Center" Margin="0,10,0,0">
+                        <Run Text="{DynamicResource SincerelyCrash}" />
+                        <HyperlinkButton ToolTip.Tip="{DynamicResource LocateFileExplorer}" Click="LogHyperlinkClick"
+                                         Foreground="Blue" Content="{DynamicResource Log}" />
+                        <Run Text="{DynamicResource PleaseSubmit}" />
+                    </TextBlock>
+                    <TextBlock Foreground="Gray" Text="{DynamicResource HowSubmitLog}" FontSize="14" FontWeight="Bold"
+                               HorizontalAlignment="Left" Margin="0,10,0,0" />
 
-					<TextBlock Foreground="Gray" TextWrapping="WrapWithOverflow"  FontSize="14" HorizontalAlignment="Left" Margin="0,5,0,0">
-						<Run Text="{DynamicResource ViaThe}"/>
-						<HyperlinkButton Foreground="Blue" ToolTip.Tip="{DynamicResource OpenInBrowser}"
-										  Click="IssuesHyperlinkClick">Github Issues</HyperlinkButton>
-					</TextBlock>
-				</StackPanel>
-			</Border>
-		</StackPanel>
-	</Grid>
+                    <TextBlock Foreground="Gray" TextWrapping="WrapWithOverflow" FontSize="14"
+                               HorizontalAlignment="Left" Margin="0,5,0,0">
+                        <Run Text="{DynamicResource ViaThe}" />
+                        <HyperlinkButton Foreground="Blue" ToolTip.Tip="{DynamicResource OpenInBrowser}"
+                                         Click="IssuesHyperlinkClick">
+                            Github Issues
+                        </HyperlinkButton>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
 </Window>

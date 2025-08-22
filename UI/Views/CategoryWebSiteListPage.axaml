@@ -1,244 +1,254 @@
 <c:TPage xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-			 xmlns:base="using:UI.Controls.Base"
-			 xmlns:select="using:UI.Controls.Select"
-			 xmlns:input="using:UI.Controls.Input"
-			 xmlns:c="using:UI.Controls"
-			xmlns:Button="using:UI.Controls.Button"
-			xmlns:model="using:UI.ViewModels"
-			x:DataType="model:CategoryWebSiteListPageViewModel"
-			 Foreground="{DynamicResource StandardTextBrush}"  IsFillPage="True"
-             x:Class="UI.Views.CategoryWebSiteListPage">
-	<Grid>
-		<!--选择应用-->
-		<Grid IsVisible="{Binding ChooseVisibility}" ZIndex="2"
-			  Margin="0" HorizontalAlignment="Stretch"
-			  VerticalAlignment="Stretch">
-			<Border Background="Black" Opacity=".7"/>
-			<Border Background="{DynamicResource PopupBackgroundBrush}" CornerRadius="10"
-					BorderBrush="{DynamicResource PopupBorderBrush}" BorderThickness="1"
-					Margin="50" VerticalAlignment="Top">
-				<Grid>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="40"/>
-						<RowDefinition Height="auto"/>
-						<RowDefinition Height="*"/>
-						<RowDefinition Height="80"/>
+         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+         xmlns:base="using:UI.Controls.Base"
+         xmlns:select="using:UI.Controls.Select"
+         xmlns:input="using:UI.Controls.Input"
+         xmlns:c="using:UI.Controls"
+         xmlns:Button="using:UI.Controls.Button"
+         xmlns:model="using:UI.ViewModels"
+         x:DataType="model:CategoryWebSiteListPageViewModel"
+         Foreground="{DynamicResource StandardTextBrush}" IsFillPage="True"
+         x:Class="UI.Views.CategoryWebSiteListPage">
+    <Grid>
+        <!--选择应用-->
+        <Grid IsVisible="{Binding ChooseVisibility}" ZIndex="2"
+              Margin="0" HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch">
+            <Border Background="Black" Opacity=".7" />
+            <Border Background="{DynamicResource PopupBackgroundBrush}" CornerRadius="10"
+                    BorderBrush="{DynamicResource PopupBorderBrush}" BorderThickness="1"
+                    Margin="50" VerticalAlignment="Top">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="40" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="80" />
 
-					</Grid.RowDefinitions>
+                    </Grid.RowDefinitions>
 
-					<Grid>
-						<TextBlock Text="{DynamicResource SelectSite}" VerticalAlignment="Center" Margin="10,0,0,0"/>
-						<Button:IconButton Foreground="#ccc" Icon="ChromeClose"
-										   HorizontalAlignment="Right" FontSize="12" Margin="0,0,10,0" Command="{Binding ChooseCloseCommand}"/>
-					</Grid>
-					<Border Grid.Row="1">
-						<Grid RowDefinitions="Auto,Auto">
-							<input:InputBox Placeholder="{DynamicResource Search}" Margin="10" x:Name="SearchBox" Text="{Binding SearchInput,Mode=TwoWay}">
-								<Interaction.Behaviors>
-									<EventTriggerBehavior EventName="KeyUp">
-										<InvokeCommandAction Command="{Binding SearchCommand}"
-															   CommandParameter="{Binding #SearchBox.Text}" />
-									</EventTriggerBehavior>
-								</Interaction.Behaviors>
-							</input:InputBox>
-							<CheckBox HorizontalAlignment="Right" 
-									  Margin="0,0,10,0"
-									  Grid.Row="1"
-									  Foreground="Gray"
-									  Content="{DynamicResource UseRegularExpressions}" IsChecked="{Binding IsRegexSearch, Mode=TwoWay}" />
-						</Grid>
-						
-					</Border>
-					<ListBox  ItemsSource="{Binding WebSiteOptionList}"
-							 Margin="20,5" Grid.Row="2">
-						<ListBox.Styles>
-							<Style Selector="ListBox">
-								<Setter Property="Template">
-									<ControlTemplate>
-										<ScrollViewer>
-											<ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}"/>
-										</ScrollViewer>
-									</ControlTemplate>
-								</Setter>
-							</Style>
+                    <Grid>
+                        <TextBlock Text="{DynamicResource SelectSite}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                        <Button:IconButton Foreground="#ccc" Icon="ChromeClose"
+                                           HorizontalAlignment="Right" FontSize="12" Margin="0,0,10,0"
+                                           Command="{Binding ChooseCloseCommand}" />
+                    </Grid>
+                    <Border Grid.Row="1">
+                        <Grid RowDefinitions="Auto,Auto">
+                            <input:InputBox Placeholder="{DynamicResource Search}" Margin="10" x:Name="SearchBox"
+                                            Text="{Binding SearchInput,Mode=TwoWay}">
+                                <Interaction.Behaviors>
+                                    <EventTriggerBehavior EventName="KeyUp">
+                                        <InvokeCommandAction Command="{Binding SearchCommand}"
+                                                             CommandParameter="{Binding #SearchBox.Text}" />
+                                    </EventTriggerBehavior>
+                                </Interaction.Behaviors>
+                            </input:InputBox>
+                            <CheckBox HorizontalAlignment="Right"
+                                      Margin="0,0,10,0"
+                                      Grid.Row="1"
+                                      Foreground="Gray"
+                                      Content="{DynamicResource UseRegularExpressions}"
+                                      IsChecked="{Binding IsRegexSearch, Mode=TwoWay}" />
+                        </Grid>
 
-							<Style Selector="ListBoxItem">
-								<Setter Property="Template">
-									<ControlTemplate>
-										<Border>
-											<ContentPresenter ContentTemplate="{TemplateBinding ContentTemplate}"
-																		 Content="{TemplateBinding Content}"/>
-										</Border>
-									</ControlTemplate>
-								</Setter>
+                    </Border>
+                    <ListBox ItemsSource="{Binding WebSiteOptionList}"
+                             Margin="20,5" Grid.Row="2">
+                        <ListBox.Styles>
+                            <Style Selector="ListBox">
+                                <Setter Property="Template">
+                                    <ControlTemplate>
+                                        <ScrollViewer>
+                                            <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                        </ScrollViewer>
+                                    </ControlTemplate>
+                                </Setter>
+                            </Style>
 
-								<Style Selector="^:pointerover /template/ Border">
-									<Setter Property="Background" Value="Transparent" />
-								</Style>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="Template">
+                                    <ControlTemplate>
+                                        <Border>
+                                            <ContentPresenter ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                              Content="{TemplateBinding Content}" />
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter>
 
-								<Style Selector="^:selected /template/ Border">
-									<Setter Property="Background" Value="Transparent" />
-								</Style>
+                                <Style Selector="^:pointerover /template/ Border">
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
 
-								<Style Selector="^:pointerover /template/ Border ContentPresenter">
-									<Setter Property="Background" Value="Transparent" />
-								</Style>
+                                <Style Selector="^:selected /template/ Border">
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
 
-								<Style Selector="^:selected /template/ Border ContentPresenter">
-									<Setter Property="Background" Value="Transparent" />
-								</Style>
-							</Style>
+                                <Style Selector="^:pointerover /template/ Border ContentPresenter">
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
 
-						</ListBox.Styles>
+                                <Style Selector="^:selected /template/ Border ContentPresenter">
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
+                            </Style>
 
-						<ListBox.ItemsPanel>
-							<ItemsPanelTemplate>
-								<VirtualizingStackPanel/>
-							</ItemsPanelTemplate>
-						</ListBox.ItemsPanel>
+                        </ListBox.Styles>
 
-						<ListBox.ItemTemplate>
-							<DataTemplate>
-								<select:Option  HorizontalAlignment="Stretch" IsChecked="{Binding IsChecked,Mode=TwoWay}"
-												Value="{Binding OptionValue}"/>
-							</DataTemplate>
-						</ListBox.ItemTemplate>
-					</ListBox>
-					<Button:Button Grid.Row="3" HorizontalAlignment="Right"
-								   Content="{DynamicResource Complete}"
-								   Width="120" Margin="0,0,10,0" VerticalAlignment="Center"
-								   Command="{Binding ChoosedCommand}"/>
-				</Grid>
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
 
-				
-			</Border>
-		</Grid>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <select:Option HorizontalAlignment="Stretch"
+                                               IsChecked="{Binding IsChecked,Mode=TwoWay}"
+                                               Value="{Binding OptionValue}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Button:Button Grid.Row="3" HorizontalAlignment="Right"
+                                   Content="{DynamicResource Complete}"
+                                   Width="120" Margin="0,0,10,0" VerticalAlignment="Center"
+                                   Command="{Binding ChoosedCommand}" />
+                </Grid>
 
-		<Grid Margin="20">
-			<Grid.RowDefinitions>
-				<RowDefinition Height="auto"/>
-				<RowDefinition Height="auto"/>
-				<RowDefinition Height="*"/>
-			</Grid.RowDefinitions>
 
-			<StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-				<TextBlock FontSize="18"  Text="{DynamicResource WebSiteClassification}"/>
-				<base:Icon IconType="ChevronRightMed" Margin="10,0" FontSize="12" Foreground="#ccc"/>
-				<TextBlock FontSize="18"  Text="{Binding Category.Name}"/>
-			</StackPanel>
+            </Border>
+        </Grid>
 
-			<TextBlock Grid.Row="1" Text="{DynamicResource Sitelist}"/>
-			<Button:Button Grid.Row="1" Content="{DynamicResource Select}"
-						   HorizontalAlignment="Right" Width="150"
-						   Command="{Binding ShowChooseCommand}"/>
-			<base:View Grid.Row="2" Condition="empty"
-					   Value="{Binding CategoryWebSiteList}">
-				<base:EmptyData/>
-			</base:View>
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-			<ListBox Grid.Row="2" ItemsSource="{Binding CategoryWebSiteList}"
-					   SelectedItem="{Binding SelectedItem,Mode=TwoWay}" Margin="0,20,0,0">
-				<ListBox.ContextMenu>
-					<ContextMenu>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                <TextBlock FontSize="18" Text="{DynamicResource WebSiteClassification}" />
+                <base:Icon IconType="ChevronRightMed" Margin="10,0" FontSize="12" Foreground="#ccc" />
+                <TextBlock FontSize="18" Text="{Binding Category.Name}" />
+            </StackPanel>
 
-						<MenuItem Header="{DynamicResource RemoveFromCategory}" Command="{Binding DelCommand}" CommandParameter="{Binding SelectedItem}"/>
-					</ContextMenu>
-				</ListBox.ContextMenu>
-				<Interaction.Behaviors>
-					<EventTriggerBehavior EventName="PointerReleased">
-						<InvokeCommandAction Command="{Binding GotoDetailCommand}"
-											   CommandParameter="{Binding SelectedItem}" />
-					</EventTriggerBehavior>
-				</Interaction.Behaviors>
+            <TextBlock Grid.Row="1" Text="{DynamicResource Sitelist}" />
+            <Button:Button Grid.Row="1" Content="{DynamicResource Select}"
+                           HorizontalAlignment="Right" Width="150"
+                           Command="{Binding ShowChooseCommand}" />
+            <base:View Grid.Row="2" Condition="empty"
+                       Value="{Binding CategoryWebSiteList}">
+                <base:EmptyData />
+            </base:View>
 
-				<ListBox.Styles>
-					<Style Selector="ListBox">
-						<Setter Property="Template">
-							<ControlTemplate>
-								<ScrollViewer>
-									<ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
-								</ScrollViewer>
-							</ControlTemplate>
-						</Setter>
-					</Style>
+            <ListBox Grid.Row="2" ItemsSource="{Binding CategoryWebSiteList}"
+                     SelectedItem="{Binding SelectedItem,Mode=TwoWay}" Margin="0,20,0,0">
+                <ListBox.ContextMenu>
+                    <ContextMenu>
 
-					<Style Selector="ListBoxItem">
-						<Setter Property="Template">
-							<ControlTemplate>
-								<Grid>
-									<Border BorderBrush="{Binding ElementName=Border,Path=BorderBrush}"
-											BorderThickness="{Binding ElementName=Border,Path=BorderThickness}"  Background="{Binding ElementName=Border,Path=Background}" Margin="{Binding ElementName=Border,Path=Margin}" CornerRadius="{Binding ElementName=Border,Path=CornerRadius}">
-										<Border.Effect>
-											<DropShadowDirectionEffect Color="#f3f3f3" BlurRadius="1" Direction="300"
-																	   ShadowDepth="4" Opacity="0.15"  />
-										</Border.Effect>
-									</Border>
+                        <MenuItem Header="{DynamicResource RemoveFromCategory}" Command="{Binding DelCommand}"
+                                  CommandParameter="{Binding SelectedItem}" />
+                    </ContextMenu>
+                </ListBox.ContextMenu>
+                <Interaction.Behaviors>
+                    <EventTriggerBehavior EventName="PointerReleased">
+                        <InvokeCommandAction Command="{Binding GotoDetailCommand}"
+                                             CommandParameter="{Binding SelectedItem}" />
+                    </EventTriggerBehavior>
+                </Interaction.Behaviors>
 
-									<Border BorderBrush="Transparent" BorderThickness="2" x:Name="Border" Background="{DynamicResource StandardBackgroundBrush2}" Margin="0,0,0,10" Padding="15" CornerRadius="10">
+                <ListBox.Styles>
+                    <Style Selector="ListBox">
+                        <Setter Property="Template">
+                            <ControlTemplate>
+                                <ScrollViewer>
+                                    <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                </ScrollViewer>
+                            </ControlTemplate>
+                        </Setter>
+                    </Style>
 
-										<ContentPresenter ContentTemplate="{TemplateBinding ContentTemplate}"
-																 Content="{TemplateBinding Content}"/>
-									</Border>
-								</Grid>
-							</ControlTemplate>
-						</Setter>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="Template">
+                            <ControlTemplate>
+                                <Grid>
+                                    <Border BorderBrush="{Binding ElementName=Border,Path=BorderBrush}"
+                                            BorderThickness="{Binding ElementName=Border,Path=BorderThickness}"
+                                            Background="{Binding ElementName=Border,Path=Background}"
+                                            Margin="{Binding ElementName=Border,Path=Margin}"
+                                            CornerRadius="{Binding ElementName=Border,Path=CornerRadius}">
+                                        <Border.Effect>
+                                            <DropShadowDirectionEffect Color="#f3f3f3" BlurRadius="1" Direction="300"
+                                                                       ShadowDepth="4" Opacity="0.15" />
+                                        </Border.Effect>
+                                    </Border>
 
-						<Style Selector="^:pointerover /template/ Grid Border ContentPresenter">
-							<Setter Property="Background" Value="Transparent" />
-						</Style>
+                                    <Border BorderBrush="Transparent" BorderThickness="2" x:Name="Border"
+                                            Background="{DynamicResource StandardBackgroundBrush2}" Margin="0,0,0,10"
+                                            Padding="15" CornerRadius="10">
 
-						<Style Selector="^:pointerover /template/ Grid Border">
-							<Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
-						</Style>
-						<Style Selector="^:selected /template/ Grid Border ContentPresenter">
-							<Setter Property="Background" Value="Transparent" />
-						</Style>
-						<Style Selector="^:pointerover /template/ Grid Border ContentPresenter">
-							<Setter Property="Background" Value="Transparent" />
-						</Style>
+                                        <ContentPresenter ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                          Content="{TemplateBinding Content}" />
+                                    </Border>
+                                </Grid>
+                            </ControlTemplate>
+                        </Setter>
 
-						<Style Selector="^:pointerover /template/ Grid Border">
-							<Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
-						</Style>
-						<Style Selector="^:selected /template/ Grid Border ContentPresenter">
-							<Setter Property="Background" Value="Transparent" />
-						</Style>
-					
-					</Style>
-				</ListBox.Styles>
+                        <Style Selector="^:pointerover /template/ Grid Border ContentPresenter">
+                            <Setter Property="Background" Value="Transparent" />
+                        </Style>
 
-				<ListBox.ItemsPanel>
-					<ItemsPanelTemplate>
-						<VirtualizingStackPanel/>
-					</ItemsPanelTemplate>
-				</ListBox.ItemsPanel>
+                        <Style Selector="^:pointerover /template/ Grid Border">
+                            <Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
+                        </Style>
+                        <Style Selector="^:selected /template/ Grid Border ContentPresenter">
+                            <Setter Property="Background" Value="Transparent" />
+                        </Style>
+                        <Style Selector="^:pointerover /template/ Grid Border ContentPresenter">
+                            <Setter Property="Background" Value="Transparent" />
+                        </Style>
 
-				<ListBox.ItemTemplate>
-					<DataTemplate>
-						<Grid>
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="50"/>
-								<ColumnDefinition Width="auto"/>
-							</Grid.ColumnDefinitions>
-							<Border>
-								<base:Img Width="25" Height="25" URL="{Binding IconFile}"/>
-							</Border>
-							<Grid Grid.Column="1">
-								<TextBlock Margin="10,0,0,0" VerticalAlignment="Center"
-										   HorizontalAlignment="Center">
-									<Run Text="{Binding Title}"/>
-									<Run Text=" - "/>
-									<Run Text="{Binding Domain}"/>
-								</TextBlock>
-							</Grid>
-						</Grid>
-					</DataTemplate>
-				</ListBox.ItemTemplate>
-			</ListBox>
-		</Grid>
-	</Grid>
+                        <Style Selector="^:pointerover /template/ Grid Border">
+                            <Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
+                        </Style>
+                        <Style Selector="^:selected /template/ Grid Border ContentPresenter">
+                            <Setter Property="Background" Value="Transparent" />
+                        </Style>
+
+                    </Style>
+                </ListBox.Styles>
+
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="50" />
+                                <ColumnDefinition Width="auto" />
+                            </Grid.ColumnDefinitions>
+                            <Border>
+                                <base:Img Width="25" Height="25" URL="{Binding IconFile}" />
+                            </Border>
+                            <Grid Grid.Column="1">
+                                <TextBlock Margin="10,0,0,0" VerticalAlignment="Center"
+                                           HorizontalAlignment="Center">
+                                    <Run Text="{Binding Title}" />
+                                    <Run Text=" - " />
+                                    <Run Text="{Binding Domain}" />
+                                </TextBlock>
+                            </Grid>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+    </Grid>
 </c:TPage>

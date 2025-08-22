@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Specialized;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using ReactiveUI;
@@ -10,16 +11,18 @@ namespace UI.Views;
 
 public partial class CategoryPage : TPage
 {
+    private readonly IDisposable _editDirectoriesSubscription;
+    private readonly IDisposable _editIsDirectoryMatchSubscription;
     private CategoryPageViewModel _model;
-    private IDisposable _editIsDirectoryMatchSubscription;
-    private IDisposable _editDirectoriesSubscription;
+
     public CategoryPage()
     {
         InitializeComponent();
         var model = ServiceLocator.GetRequiredService<CategoryPageViewModel>();
         _model = model;
         DataContext = model;
-        _editIsDirectoryMatchSubscription = this.WhenAnyValue(x => x._model.EditIsDirectoryMath).Subscribe(HandleEditIsDirectoryMatchChange);
+        _editIsDirectoryMatchSubscription = this.WhenAnyValue(x => x._model.EditIsDirectoryMath)
+            .Subscribe(HandleEditIsDirectoryMatchChange);
 
         _editDirectoriesSubscription = this.WhenAnyValue(x => x._model.EditDirectories).Subscribe(val =>
         {
@@ -29,20 +32,13 @@ public partial class CategoryPage : TPage
 
     private void OnEditDirectoriesCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
     {
-        if (e.Action == NotifyCollectionChangedAction.Add)
-        {
-            this.viewer.ScrollToEnd();
-        }
-       
+        if (e.Action == NotifyCollectionChangedAction.Add) viewer.ScrollToEnd();
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
-        if(_model != null)
-        {
-            _model.IsEditError = false;
-        }
+        if (_model != null) _model.IsEditError = false;
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
@@ -61,13 +57,12 @@ public partial class CategoryPage : TPage
     {
         if (isDirectoryMatch)
         {
-            this.viewer.VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden;
-            this.viewer.ScrollToEnd();
+            viewer.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            viewer.ScrollToEnd();
         }
         else
         {
-            this.viewer.VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled;
+            viewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
         }
-
     }
 }

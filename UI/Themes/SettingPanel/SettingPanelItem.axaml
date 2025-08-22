@@ -1,63 +1,65 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:base="using:UI.Controls.Base"
-		xmlns:controls="using:UI.Controls.SettingPanel">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:base="using:UI.Controls.Base"
+                    xmlns:controls="using:UI.Controls.SettingPanel">
 
 
-	<ControlTheme x:Key="{x:Type controls:SettingPanelItem}" TargetType="controls:SettingPanelItem">
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Template">
-			<ControlTemplate>
-				<Border Background="{TemplateBinding Background}" Margin="15,16" 
-						x:Name="Border">
-					
-					<Grid>
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="8*"/>
-							<ColumnDefinition Width="2*"/>
-						</Grid.ColumnDefinitions>
+    <ControlTheme x:Key="{x:Type controls:SettingPanelItem}" TargetType="controls:SettingPanelItem">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}" Margin="15,16"
+                        x:Name="Border">
 
-						<Grid>
-							<StackPanel VerticalAlignment="Center" 
-										HorizontalAlignment="Left">
-								<StackPanel Orientation="Horizontal" >
-									<TextBlock Text="{TemplateBinding Name}" 
-											   FontSize="14" 
-											   Foreground="{DynamicResource StandardTextBrush}" 
-											   VerticalAlignment="Center"/>
-									<base:View Value="{TemplateBinding IsBeta}" VerticalAlignment="Center">
-										<Border ToolTip.Tip="该功能或选项处于测试阶段，可能会出现预料之外的问题" 
-												Cursor="Help" 
-												Background="{DynamicResource WarningBrush}" 
-												CornerRadius="8" 
-												Padding="10,3"
-											Margin="5,0,0,0">
-											<TextBlock Text="Beta" 
-													   FontSize="10" 
-													   Foreground="White" 
-													   VerticalAlignment="Center"/>
-										</Border>
-									</base:View>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="8*" />
+                            <ColumnDefinition Width="2*" />
+                        </Grid.ColumnDefinitions>
 
-								</StackPanel>
-								<base:View Value="{TemplateBinding Description}" Condition="not empty">
-									<TextBlock Text="{TemplateBinding Description}" FontSize="12" Margin="0,4,0,0" Foreground="{DynamicResource SubTextBrush}" VerticalAlignment="Center" TextWrapping="WrapWithOverflow"/>
-								</base:View>
-							</StackPanel>
-						</Grid>
-						<Grid Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
-							<Border HorizontalAlignment="Left">
-								<ContentPresenter HorizontalAlignment="Center"
-										VerticalAlignment="Center"
-										RecognizesAccessKey="True"
-										ContentTemplate="{TemplateBinding ContentTemplate}"
-									   Content="{TemplateBinding Content}"/>
-							</Border>
-						</Grid>
-					</Grid>
+                        <Grid>
+                            <StackPanel VerticalAlignment="Center"
+                                        HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{TemplateBinding Name}"
+                                               FontSize="14"
+                                               Foreground="{DynamicResource StandardTextBrush}"
+                                               VerticalAlignment="Center" />
+                                    <base:View Value="{TemplateBinding IsBeta}" VerticalAlignment="Center">
+                                        <Border ToolTip.Tip="该功能或选项处于测试阶段，可能会出现预料之外的问题"
+                                                Cursor="Help"
+                                                Background="{DynamicResource WarningBrush}"
+                                                CornerRadius="8"
+                                                Padding="10,3"
+                                                Margin="5,0,0,0">
+                                            <TextBlock Text="Beta"
+                                                       FontSize="10"
+                                                       Foreground="White"
+                                                       VerticalAlignment="Center" />
+                                        </Border>
+                                    </base:View>
 
-				</Border>
-			</ControlTemplate>
-		</Setter>
-	</ControlTheme>
+                                </StackPanel>
+                                <base:View Value="{TemplateBinding Description}" Condition="not empty">
+                                    <TextBlock Text="{TemplateBinding Description}" FontSize="12" Margin="0,4,0,0"
+                                               Foreground="{DynamicResource SubTextBrush}" VerticalAlignment="Center"
+                                               TextWrapping="WrapWithOverflow" />
+                                </base:View>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
+                            <Border HorizontalAlignment="Left">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  Content="{TemplateBinding Content}" />
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
 </ResourceDictionary>

@@ -1,69 +1,64 @@
-﻿using Avalonia;
+﻿using System;
+using Avalonia;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace UI.Controls.Toggle
+namespace UI.Controls.Toggle;
+
+public class Toggle : TemplatedControl
 {
-    public class Toggle : TemplatedControl
-    {
-        public event EventHandler ToggleChanged;
+    public static readonly StyledProperty<bool> IsCheckedProperty =
+        AvaloniaProperty.Register<Toggle, bool>(nameof(IsChecked));
 
-        public bool IsChecked
-        {
-            get { return GetValue(IsCheckedProperty); }
-            set { SetValue(IsCheckedProperty, value); }
-        }
-
-        public static readonly StyledProperty<bool> IsCheckedProperty =
-            AvaloniaProperty.Register<Toggle, bool>(nameof(IsChecked));
-
-        public ToggleTextPosition TextPosition
-        {
-            get { return GetValue(TextPositionProperty); }
-            set { SetValue(TextPositionProperty, value); }
-        }
-
-        public static readonly StyledProperty<ToggleTextPosition> TextPositionProperty =
+    public static readonly StyledProperty<ToggleTextPosition> TextPositionProperty =
         AvaloniaProperty.Register<Toggle, ToggleTextPosition>(nameof(IsChecked), ToggleTextPosition.Right);
 
-        public string OnText
-        {
-            get { return GetValue(OnTextProperty); }
-            set { SetValue(OnTextProperty, value); }
-        }
+    public static readonly StyledProperty<string> OnTextProperty =
+        AvaloniaProperty.Register<Toggle, string>(nameof(OnText), "On");
 
-        public static readonly StyledProperty<string> OnTextProperty =
-         AvaloniaProperty.Register<Toggle,string>(nameof(OnText), "On");
+    public static readonly StyledProperty<string> OffTextProperty =
+        AvaloniaProperty.Register<Toggle, string>(nameof(OffText), "Off");
 
-        public string OffText
-        {
-            get { return (string)GetValue(OffTextProperty); }
-            set { SetValue(OffTextProperty, value); }
-        }
+    public static readonly StyledProperty<string> TextProperty =
+        AvaloniaProperty.Register<Toggle, string>(nameof(Text));
 
-        public static readonly StyledProperty<string> OffTextProperty =
-          AvaloniaProperty.Register<Toggle,string>(nameof(OffText), "Off");
+    public bool IsChecked
+    {
+        get => GetValue(IsCheckedProperty);
+        set => SetValue(IsCheckedProperty, value);
+    }
 
-        public string Text
-        {
-            get { return (string)GetValue(TextProperty); }
-            set { SetValue(TextProperty, value); }
-        }
-        public static readonly StyledProperty<string> TextProperty =
-           AvaloniaProperty.Register<Toggle, string>(nameof(Text));
+    public ToggleTextPosition TextPosition
+    {
+        get => GetValue(TextPositionProperty);
+        set => SetValue(TextPositionProperty, value);
+    }
 
-        protected override void OnPointerPressed(PointerPressedEventArgs e)
-        {
-            base.OnPointerPressed(e);
-            IsChecked = !IsChecked;
-            ToggleChanged?.Invoke(this, EventArgs.Empty);
-        }
+    public string OnText
+    {
+        get => GetValue(OnTextProperty);
+        set => SetValue(OnTextProperty, value);
+    }
 
-        protected override Type StyleKeyOverride => typeof(Toggle);
+    public string OffText
+    {
+        get => (string)GetValue(OffTextProperty);
+        set => SetValue(OffTextProperty, value);
+    }
+
+    public string Text
+    {
+        get => (string)GetValue(TextProperty);
+        set => SetValue(TextProperty, value);
+    }
+
+    protected override Type StyleKeyOverride => typeof(Toggle);
+    public event EventHandler ToggleChanged;
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        IsChecked = !IsChecked;
+        ToggleChanged?.Invoke(this, EventArgs.Empty);
     }
 }

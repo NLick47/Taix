@@ -1,191 +1,194 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		xmlns:models="using:UI.Controls.Charts.Model"
-		xmlns:base="using:UI.Controls.Base"
-		xmlns:model="using:UI.Controls.Charts.Model"
-		xmlns:converter="using:UI.Controls.Converters"
-        xmlns:controls="using:UI.Controls.Charts">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:models="using:UI.Controls.Charts.Model"
+                    xmlns:base="using:UI.Controls.Base"
+                    xmlns:model="using:UI.Controls.Charts.Model"
+                    xmlns:converter="using:UI.Controls.Converters"
+                    xmlns:controls="using:UI.Controls.Charts">
 
 
-	<ControlTheme x:Key="{x:Type controls:ChartsItemTypeList}" TargetType="controls:ChartsItemTypeList">
-		<ControlTheme.Resources>
-			<converter:HextoColorConverter x:Key="HextoColorConverter"/>
-		</ControlTheme.Resources>
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Margin" Value="0,5"/>
-		<Styles>
-			<Style Selector="controls|ChartsItemTypeList">
-				<Style Selector="^[IsLoading=True]">
-					<Style Selector="^ /template/ Grid#Loading">
-						<Setter Property="IsVisible" Value="True"/>
-					</Style>
-					<Style Selector="^ /template/ Grid#Normal">
-						<Setter Property="IsVisible" Value="False"/>
-					</Style>
-				</Style>
+    <ControlTheme x:Key="{x:Type controls:ChartsItemTypeList}" TargetType="controls:ChartsItemTypeList">
+        <ControlTheme.Resources>
+            <converter:HextoColorConverter x:Key="HextoColorConverter" />
+        </ControlTheme.Resources>
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Margin" Value="0,5" />
+        <Styles>
+            <Style Selector="controls|ChartsItemTypeList">
+                <Style Selector="^[IsLoading=True]">
+                    <Style Selector="^ /template/ Grid#Loading">
+                        <Setter Property="IsVisible" Value="True" />
+                    </Style>
+                    <Style Selector="^ /template/ Grid#Normal">
+                        <Setter Property="IsVisible" Value="False" />
+                    </Style>
+                </Style>
 
-				<Style Selector="^[IsShowBadge=True]">
-					<Style Selector="^ /template/ ListBox#BadgeListView">
-						<Setter Property="IsVisible" Value="True"/>
-					</Style>
-				</Style>
+                <Style Selector="^[IsShowBadge=True]">
+                    <Style Selector="^ /template/ ListBox#BadgeListView">
+                        <Setter Property="IsVisible" Value="True" />
+                    </Style>
+                </Style>
 
-				<Style Selector="^ /template/ TextBlock#NameTextObj">
-					<Setter Property="Transitions">
-						<Transitions>
-							<BrushTransition Property="Foreground" Duration="0.3"/>
-						</Transitions>
-					</Setter>
-				</Style>
-
-
-				<Style Selector="^:pointerover /template/ TextBlock#NameTextObj">
-					<Setter Property="Foreground" Value="{DynamicResource ThemeColor}" />
-				</Style>
-
-				<Style Selector="^ /template/ Border#IconBorder">
-					<Setter Property="Transitions">
-						<Transitions>
-							<BrushTransition Property="BorderBrush" Duration="0.3"/>
-							<BrushTransition Property="Background" Duration="0.3"/>
-						</Transitions>
-					</Setter>
-				</Style>
-
-				<Style Selector="^:pointerover /template/ Border#IconBorder">
-					<Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
-					<Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}" />
-				</Style>
-			</Style>
-		</Styles>
-		<Setter Property="Template">
-
-			<ControlTemplate>
-				<Grid Background="{TemplateBinding Background}">
-					<Grid x:Name="Normal">
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="*"/>
-						</Grid.ColumnDefinitions>
-
-						<Border Margin="0,0,10,0" x:Name="IconBorder" BorderBrush="Transparent" BorderThickness="2"
-								Background="{DynamicResource ListItemIconBgBrush}" CornerRadius="6"  Width="50" Height="50"
-								HorizontalAlignment="Left">
-							<Image x:Name="IconObj" Width="{TemplateBinding IconSize}" Height="{TemplateBinding IconSize}"
-								   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-						</Border>
-
-						<StackPanel Grid.Column="1" x:Name="ValueContainer" VerticalAlignment="Center" >
-							<Grid>
-								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="auto"/>
-									<ColumnDefinition Width="auto"/>
-								</Grid.ColumnDefinitions>
-
-								<TextBlock  x:Name="NameTextObj"
-											Text="{Binding Data.Name,RelativeSource={RelativeSource TemplatedParent}}"
-											Foreground="{DynamicResource DefaultTextBrush}"
-											HorizontalAlignment="Left"
-											VerticalAlignment="Center" />
-
-								<ListBox  x:Name="BadgeListView" IsVisible="False" Grid.Column="1"
-										  ItemsSource="{Binding Data.BadgeList,RelativeSource={RelativeSource TemplatedParent}}"
-										  Margin="0,0,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" >
-									
-									<ListBox.Styles>
-										<Style Selector="ListBox">
-											<Setter Property="Template">
-												<ControlTemplate>
-													<Border>
-														<ItemsPresenter
-															ItemsPanel="{TemplateBinding ItemsPanel}" />
-													</Border>
-												</ControlTemplate>
-											</Setter>
-										</Style>
-
-										<Style Selector="ListBoxItem">
-											
-											<Setter  Property="Foreground" Value="White"/>
-											<Setter Property="Template">
-												<ControlTemplate>
-													<Border BorderBrush="Transparent"
-															BorderThickness="2" x:Name="Border"
-															x:DataType="model:ChartBadgeModel"
-															Background="{Binding Color,Converter={StaticResource HextoColorConverter}}"
-															Margin="5,0,0,0" Padding="6,4"
-															CornerRadius="6">
-														<ContentPresenter VerticalAlignment="Center"
-																		
-																		  ContentTemplate="{TemplateBinding ContentTemplate}"
-																		 Content="{TemplateBinding Content}"
-																		  HorizontalAlignment="Center"/>
-													</Border>
-												</ControlTemplate>
-											</Setter>
-										</Style>
-									</ListBox.Styles>
+                <Style Selector="^ /template/ TextBlock#NameTextObj">
+                    <Setter Property="Transitions">
+                        <Transitions>
+                            <BrushTransition Property="Foreground" Duration="0.3" />
+                        </Transitions>
+                    </Setter>
+                </Style>
 
 
-									<ListBox.ItemsPanel>
-										<ItemsPanelTemplate>
-											<WrapPanel/>
-										</ItemsPanelTemplate>
-									</ListBox.ItemsPanel>
+                <Style Selector="^:pointerover /template/ TextBlock#NameTextObj">
+                    <Setter Property="Foreground" Value="{DynamicResource ThemeColor}" />
+                </Style>
 
-									<ListBox.ItemTemplate>
-										<DataTemplate x:DataType="models:ChartBadgeModel">
+                <Style Selector="^ /template/ Border#IconBorder">
+                    <Setter Property="Transitions">
+                        <Transitions>
+                            <BrushTransition Property="BorderBrush" Duration="0.3" />
+                            <BrushTransition Property="Background" Duration="0.3" />
+                        </Transitions>
+                    </Setter>
+                </Style>
 
-											<WrapPanel Orientation="Horizontal">
-												<Border >
-													<TextBlock Text="{Binding Name}" FontSize="10"/>
-												</Border>
+                <Style Selector="^:pointerover /template/ Border#IconBorder">
+                    <Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
+                    <Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}" />
+                </Style>
+            </Style>
+        </Styles>
+        <Setter Property="Template">
 
-											</WrapPanel>
+            <ControlTemplate>
+                <Grid Background="{TemplateBinding Background}">
+                    <Grid x:Name="Normal">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
-										</DataTemplate>
-									</ListBox.ItemTemplate>
-								</ListBox>
-							</Grid>
-							<StackPanel Orientation="Horizontal" >
-								<Rectangle
-						x:Name="ValueBlockObj"
-							RadiusX="4"
-							RadiusY="4"
-							Fill="{DynamicResource ChartTypeListProgressBarBrush}"
-							Height="8"
-									VerticalAlignment="Center"
-									HorizontalAlignment="Left"
-                            />
+                        <Border Margin="0,0,10,0" x:Name="IconBorder" BorderBrush="Transparent" BorderThickness="2"
+                                Background="{DynamicResource ListItemIconBgBrush}" CornerRadius="6" Width="50"
+                                Height="50"
+                                HorizontalAlignment="Left">
+                            <Image x:Name="IconObj" Width="{TemplateBinding IconSize}"
+                                   Height="{TemplateBinding IconSize}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
 
-								<TextBlock x:Name="ValueTextObj" VerticalAlignment="Center" Foreground="{DynamicResource SubTextBrush}" FontSize="12" Margin="5,0,0,0"/>
-							</StackPanel>
+                        <StackPanel Grid.Column="1" x:Name="ValueContainer" VerticalAlignment="Center">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                </Grid.ColumnDefinitions>
 
-						</StackPanel>
-					</Grid>
+                                <TextBlock x:Name="NameTextObj"
+                                           Text="{Binding Data.Name,RelativeSource={RelativeSource TemplatedParent}}"
+                                           Foreground="{DynamicResource DefaultTextBrush}"
+                                           HorizontalAlignment="Left"
+                                           VerticalAlignment="Center" />
+
+                                <ListBox x:Name="BadgeListView" IsVisible="False" Grid.Column="1"
+                                         ItemsSource="{Binding Data.BadgeList,RelativeSource={RelativeSource TemplatedParent}}"
+                                         Margin="0,0,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+                                    <ListBox.Styles>
+                                        <Style Selector="ListBox">
+                                            <Setter Property="Template">
+                                                <ControlTemplate>
+                                                    <Border>
+                                                        <ItemsPresenter
+                                                            ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter>
+                                        </Style>
+
+                                        <Style Selector="ListBoxItem">
+
+                                            <Setter Property="Foreground" Value="White" />
+                                            <Setter Property="Template">
+                                                <ControlTemplate>
+                                                    <Border BorderBrush="Transparent"
+                                                            BorderThickness="2" x:Name="Border"
+                                                            x:DataType="model:ChartBadgeModel"
+                                                            Background="{Binding Color,Converter={StaticResource HextoColorConverter}}"
+                                                            Margin="5,0,0,0" Padding="6,4"
+                                                            CornerRadius="6">
+                                                        <ContentPresenter VerticalAlignment="Center"
+
+                                                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                          Content="{TemplateBinding Content}"
+                                                                          HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter>
+                                        </Style>
+                                    </ListBox.Styles>
 
 
-					<Grid x:Name="Loading" IsVisible="False">
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="auto"/>
-							<ColumnDefinition Width="*"/>
-						</Grid.ColumnDefinitions>
+                                    <ListBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ListBox.ItemsPanel>
 
-						<base:Placeholder Margin="0,0,10,0" CornerRadius="6"  Width="50" Height="50" HorizontalAlignment="Left"/>
-						<StackPanel  Grid.Column="1"  VerticalAlignment="Center" >
-							<Rectangle
-										RadiusX="0"
-										RadiusY="0"
-										Fill="{DynamicResource PlaceholderRectBgBrush}"
-										Height="8"
-												VerticalAlignment="Center"
-												HorizontalAlignment="Stretch"/>
-						</StackPanel>
-					</Grid>
-				</Grid>
-			</ControlTemplate>
-		</Setter>
-	</ControlTheme>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:ChartBadgeModel">
+
+                                            <WrapPanel Orientation="Horizontal">
+                                                <Border>
+                                                    <TextBlock Text="{Binding Name}" FontSize="10" />
+                                                </Border>
+
+                                            </WrapPanel>
+
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                            <StackPanel Orientation="Horizontal">
+                                <Rectangle
+                                    x:Name="ValueBlockObj"
+                                    RadiusX="4"
+                                    RadiusY="4"
+                                    Fill="{DynamicResource ChartTypeListProgressBarBrush}"
+                                    Height="8"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Left" />
+
+                                <TextBlock x:Name="ValueTextObj" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource SubTextBrush}" FontSize="12" Margin="5,0,0,0" />
+                            </StackPanel>
+
+                        </StackPanel>
+                    </Grid>
+
+
+                    <Grid x:Name="Loading" IsVisible="False">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <base:Placeholder Margin="0,0,10,0" CornerRadius="6" Width="50" Height="50"
+                                          HorizontalAlignment="Left" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <Rectangle
+                                RadiusX="0"
+                                RadiusY="0"
+                                Fill="{DynamicResource PlaceholderRectBgBrush}"
+                                Height="8"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
 
 
 </ResourceDictionary>

@@ -8,6 +8,6 @@ public partial class CategoryWebSiteListPage : TPage
     public CategoryWebSiteListPage()
     {
         InitializeComponent();
-        this.DataContext = ServiceLocator.GetRequiredService<CategoryWebSiteListPageViewModel>();
+        DataContext = ServiceLocator.GetRequiredService<CategoryWebSiteListPageViewModel>();
     }
 }

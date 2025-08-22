@@ -1,114 +1,198 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UI.Controls;
 using UI.Controls.Base;
 using UI.Controls.Navigation.Models;
 using UI.Controls.Window;
 
-namespace UI.Models
+namespace UI.Models;
+
+public class MainWindowModel : UINotifyPropertyChanged
 {
-    public class MainWindowModel : UINotifyPropertyChanged
+    private ObservableCollection<NavigationItemModel> _items;
+
+    private object Data_;
+
+    private List<string> IndexUriList_;
+
+    private bool IsShowNavigation_ = true;
+
+    private bool IsShowTitleBar_;
+
+    private bool IsShowToast_;
+
+    private double NavigationWidth_ = 220;
+
+
+    private NavigationItemModel NavSelectedItem_;
+
+    private PageContainer PageContainer_;
+    private IServiceProvider ServiceProvider_;
+
+    private string Title_;
+
+
+    private string ToastContent_;
+    private IconTypes ToastIcon_;
+
+    private ToastType ToastType_;
+
+    private string Uri_;
+
+    public IServiceProvider ServiceProvider
     {
-        private IServiceProvider ServiceProvider_;
-
-        public IServiceProvider ServiceProvider
+        get => ServiceProvider_;
+        set
         {
-            get { return ServiceProvider_; }
-            set { ServiceProvider_ = value; OnPropertyChanged(); }
+            ServiceProvider_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private string Uri_;
-        public string Uri
+    public string Uri
+    {
+        get => Uri_;
+        set
         {
-            get { return Uri_; }
-            set { Uri_ = value; OnPropertyChanged(); }
+            Uri_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private object Data_;
-        /// <summary>
-        /// 页面传递数据
-        /// </summary>
-        public object Data
+    /// <summary>
+    ///     页面传递数据
+    /// </summary>
+    public object Data
+    {
+        get => Data_;
+        set
         {
-            get { return Data_; }
-            set { Data_ = value; OnPropertyChanged(); }
+            Data_ = value;
+            OnPropertyChanged();
         }
-        private ObservableCollection<NavigationItemModel> _items;
-        public ObservableCollection<NavigationItemModel> Items
+    }
+
+    public ObservableCollection<NavigationItemModel> Items
+    {
+        get => _items;
+        set
         {
-            get => _items;
-            set
+            if (_items != value)
             {
-                if (_items != value)
-                {
-                    _items = value;
-                    OnPropertyChanged();
-                }
+                _items = value;
+                OnPropertyChanged();
             }
         }
+    }
 
-        private double NavigationWidth_ = 220;
-
-        public double NavigationWidth
+    public double NavigationWidth
+    {
+        get => NavigationWidth_;
+        set
         {
-            get { return NavigationWidth_; }
-            set { NavigationWidth_ = value; OnPropertyChanged(); }
+            NavigationWidth_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private bool IsShowNavigation_ = true;
-        public bool IsShowNavigation
+    public bool IsShowNavigation
+    {
+        get => IsShowNavigation_;
+        set
         {
-            get { return IsShowNavigation_; }
-            set { IsShowNavigation_ = value; OnPropertyChanged(); }
+            IsShowNavigation_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private string Title_;
-        public string Title
+    public string Title
+    {
+        get => Title_;
+        set
         {
-            get { return Title_; }
-            set { Title_ = value; OnPropertyChanged(); }
+            Title_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private bool IsShowTitleBar_ = false;
-        public bool IsShowTitleBar
+    public bool IsShowTitleBar
+    {
+        get => IsShowTitleBar_;
+        set
         {
-            get { return IsShowTitleBar_; }
-            set { IsShowTitleBar_ = value; OnPropertyChanged(); }
+            IsShowTitleBar_ = value;
+            OnPropertyChanged();
         }
+    }
 
-
-        private NavigationItemModel NavSelectedItem_;
-        public NavigationItemModel NavSelectedItem
+    public NavigationItemModel NavSelectedItem
+    {
+        get => NavSelectedItem_;
+        set
         {
-            get { return NavSelectedItem_; }
-            set { NavSelectedItem_ = value; OnPropertyChanged(); }
+            NavSelectedItem_ = value;
+            OnPropertyChanged();
         }
+    }
 
-        private PageContainer PageContainer_;
-        public PageContainer PageContainer { get { return PageContainer_; } set { PageContainer_ = value; OnPropertyChanged(); } }
-
-        private List<string> IndexUriList_;
-        public List<string> IndexUriList { get { return IndexUriList_; } set { IndexUriList_ = value; OnPropertyChanged(); } }
-
-
-        private string ToastContent_;
-        public string ToastContent { get { return ToastContent_; } set { ToastContent_ = value; OnPropertyChanged(); } }
-
-        private bool IsShowToast_ = false;
-        public bool IsShowToast { get { return IsShowToast_; } set { IsShowToast_ = value; OnPropertyChanged(); } }
-        private IconTypes ToastIcon_;
-        public IconTypes ToastIcon { get { return ToastIcon_; } set { ToastIcon_ = value; OnPropertyChanged(); } }
-
-        private ToastType ToastType_;
-        public ToastType ToastType
+    public PageContainer PageContainer
+    {
+        get => PageContainer_;
+        set
         {
-            get { return ToastType_; }
-            set { ToastType_ = value; OnPropertyChanged(); }
+            PageContainer_ = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public List<string> IndexUriList
+    {
+        get => IndexUriList_;
+        set
+        {
+            IndexUriList_ = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string ToastContent
+    {
+        get => ToastContent_;
+        set
+        {
+            ToastContent_ = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsShowToast
+    {
+        get => IsShowToast_;
+        set
+        {
+            IsShowToast_ = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public IconTypes ToastIcon
+    {
+        get => ToastIcon_;
+        set
+        {
+            ToastIcon_ = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public ToastType ToastType
+    {
+        get => ToastType_;
+        set
+        {
+            ToastType_ = value;
+            OnPropertyChanged();
         }
     }
 }

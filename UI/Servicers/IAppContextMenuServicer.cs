@@ -1,15 +1,9 @@
 ﻿using Avalonia.Controls;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace UI.Servicers
+namespace UI.Servicers;
+
+public interface IAppContextMenuServicer
 {
-    public interface IAppContextMenuServicer
-    {
-        void Init();
-        ContextMenu GetContextMenu();
-    }
+    void Init();
+    ContextMenu GetContextMenu();
 }

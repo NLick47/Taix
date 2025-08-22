@@ -1,37 +1,34 @@
-﻿using Avalonia;
+﻿using System;
+using Avalonia;
 using Avalonia.ReactiveUI;
-using SharedLibrary.Librarys;
-using Microsoft.EntityFrameworkCore.Metadata;
-using System;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 
-namespace UI
+namespace UI;
+
+internal sealed class Program
 {
-    internal sealed class Program
+    // Initialization code. Don't use any Avalonia, third-party APIs or any
+    // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
+    // yet and stuff might break.
+    [STAThread]
+    public static void Main(string[] args)
     {
-        // Initialization code. Don't use any Avalonia, third-party APIs or any
-        // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
-        // yet and stuff might break.
-        [STAThread]
-        public static void Main(string[] args)
-        {
 //#if DEBUG
 //            DebugMovePlatfromDll();
 //#endif
-            BuildAvaloniaApp()
-           .StartWithClassicDesktopLifetime(args);
-        }
+        BuildAvaloniaApp()
+            .StartWithClassicDesktopLifetime(args);
+    }
 
-        // Avalonia configuration, don't remove; also used by visual designer.
-        public static AppBuilder BuildAvaloniaApp()
-            => AppBuilder.Configure<App>()
-                .UsePlatformDetect()
-                .LogToTrace()
-                .UseReactiveUI();
+    // Avalonia configuration, don't remove; also used by visual designer.
+    public static AppBuilder BuildAvaloniaApp()
+    {
+        return AppBuilder.Configure<App>()
+            .UsePlatformDetect()
+            .LogToTrace()
+            .UseReactiveUI();
+    }
 
-//#if DEBUG
+    //#if DEBUG
 //        private static void DebugMovePlatfromDll()
 //        {
 //            var platformName = PlatformInfo.GetPlatformName();
@@ -55,5 +52,4 @@ namespace UI
 //            File.Copy(targetFilePath, Path.Combine(AppContext.BaseDirectory, dll), true);
 //        }
 //#endif
-    }
 }

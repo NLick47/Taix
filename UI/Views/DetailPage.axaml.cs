@@ -8,6 +8,6 @@ public partial class DetailPage : UserControl
     public DetailPage()
     {
         InitializeComponent();
-        this.DataContext = ServiceLocator.GetService<DetailPageViewModel>();
+        DataContext = ServiceLocator.GetService<DetailPageViewModel>();
     }
 }

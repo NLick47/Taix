@@ -1,12 +1,6 @@
-﻿using SharedLibrary.Enums;
-using Core.Models.WebPage;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Core.Models.WebPage;
+using SharedLibrary.Enums;
 
-namespace Core.Event
-{
-    public delegate void BrowserObserverEventHandler(BrowserType browserType, Site site);
-}
+namespace Core.Event;
+
+public delegate void BrowserObserverEventHandler(BrowserType browserType, Site site);

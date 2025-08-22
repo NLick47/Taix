@@ -1,28 +1,28 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="using:UI.Controls.Base">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:UI.Controls.Base">
 
 
-	<ControlTheme x:Key="{x:Type controls:Placeholder}" TargetType="controls:Placeholder">
-		<Setter Property="Template">
-			<ControlTemplate>
-				<Border CornerRadius="{TemplateBinding CornerRadius}"
-						ClipToBounds ="True"
-						Background="{DynamicResource PlaceholderRectBgBrush}">
-					<Border x:Name="Flash" Background="{DynamicResource PlaceholderRectBgFlashBrush}" Width="10"
-							Height="{TemplateBinding Height}" Opacity=".5" RenderTransformOrigin="0,0.5">
-						<Border.Effect>
-							<BlurEffect Radius="30"/>
-						</Border.Effect>
-						<Border.RenderTransform>
-							<TransformGroup>
-								<TranslateTransform X="-10" />
-								<RotateTransform  Angle="15"/>
-							</TransformGroup>
-						</Border.RenderTransform>
-					</Border>
-				</Border>
-			</ControlTemplate>
-		</Setter>
-	</ControlTheme>
+    <ControlTheme x:Key="{x:Type controls:Placeholder}" TargetType="controls:Placeholder">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border CornerRadius="{TemplateBinding CornerRadius}"
+                        ClipToBounds="True"
+                        Background="{DynamicResource PlaceholderRectBgBrush}">
+                    <Border x:Name="Flash" Background="{DynamicResource PlaceholderRectBgFlashBrush}" Width="10"
+                            Height="{TemplateBinding Height}" Opacity=".5" RenderTransformOrigin="0,0.5">
+                        <Border.Effect>
+                            <BlurEffect Radius="30" />
+                        </Border.Effect>
+                        <Border.RenderTransform>
+                            <TransformGroup>
+                                <TranslateTransform X="-10" />
+                                <RotateTransform Angle="15" />
+                            </TransformGroup>
+                        </Border.RenderTransform>
+                    </Border>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
 </ResourceDictionary>

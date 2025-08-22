@@ -1,70 +1,67 @@
 <ui:DefaultWindow xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:UI.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="UI.Views.MainWindow"
-		xmlns:base="using:UI.Controls.Base"
-		 xmlns:ui="using:UI.Controls.Window"
-        x:DataType="vm:MainViewModel"
-        IconSource="/Resources/Icons/tai32.ico"
-        xmlns:na="using:UI.Controls.Navigation"
-		xmlns:control="using:UI.Controls"
-		PageContainer="{Binding PageContainer}"
-		xmlns:i="using:Avalonia.Xaml.Interactivity"
-		xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
-		IsShowToast="{Binding IsShowToast,Mode=TwoWay}"
-		ToastContent="{Binding ToastContent,Mode=TwoWay}"
-        ToastIcon="{Binding ToastIcon}"
-        ToastType="{Binding ToastType}"
-		Height="553" Width="815" MinHeight="553" MinWidth="814"
-        Title="{Binding Title}">
-	<Interaction.Behaviors>
-		<EventTriggerBehavior EventName="Loaded">
-			<InvokeCommandAction
-				Command="{Binding LoadDefaultPage}" />
-		</EventTriggerBehavior>
-	</Interaction.Behaviors>
-	
-	<Grid>
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="Auto"/>
-			<ColumnDefinition Width="*"/>
-		</Grid.ColumnDefinitions>
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:vm="using:UI.ViewModels"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+                  x:Class="UI.Views.MainWindow"
+                  xmlns:ui="using:UI.Controls.Window"
+                  x:DataType="vm:MainViewModel"
+                  IconSource="/Resources/Icons/tai32.ico"
+                  xmlns:na="using:UI.Controls.Navigation"
+                  xmlns:control="using:UI.Controls"
+                  PageContainer="{Binding PageContainer}"
+                  xmlns:i="using:Avalonia.Xaml.Interactivity"
+                  xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
+                  IsShowToast="{Binding IsShowToast,Mode=TwoWay}"
+                  ToastContent="{Binding ToastContent,Mode=TwoWay}"
+                  ToastIcon="{Binding ToastIcon}"
+                  ToastType="{Binding ToastType}"
+                  Height="553" Width="815" MinHeight="553" MinWidth="814"
+                  Title="{Binding Title}">
+    <Interaction.Behaviors>
+        <EventTriggerBehavior EventName="Loaded">
+            <InvokeCommandAction
+                Command="{Binding LoadDefaultPage}" />
+        </EventTriggerBehavior>
+    </Interaction.Behaviors>
 
-		<na:Navigation x:Name="Navigation" Margin="0,32,0,0" Width="80"
-					   Data="{Binding Items,Mode=TwoWay}"
-					   SelectedItem="{Binding NavSelectedItem,Mode=TwoWay}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-			<i:Interaction.Behaviors>
-				<ia:EventTriggerBehavior EventName="OnSelected">
-					<ia:InvokeCommandAction Command="{Binding OnSelectedCommand}"
-										   CommandParameter="{Binding #Navigation}"
-										   />
-				</ia:EventTriggerBehavior>
-			</i:Interaction.Behaviors>
+        <na:Navigation x:Name="Navigation" Margin="0,32,0,0" Width="80"
+                       Data="{Binding Items,Mode=TwoWay}"
+                       SelectedItem="{Binding NavSelectedItem,Mode=TwoWay}">
 
-			<na:Navigation.BottomExtContent>
-				<na:NavigationItem Icon="Settings"
-								   Title="{DynamicResource SideSetting}"
-								   Uri="SettingsPage"
-								   Command="{Binding GotoPageCommand}"
-								   CommandParameter="SettingPage"/>
-			</na:Navigation.BottomExtContent>
-		</na:Navigation>
+            <i:Interaction.Behaviors>
+                <ia:EventTriggerBehavior EventName="OnSelected">
+                    <ia:InvokeCommandAction Command="{Binding OnSelectedCommand}"
+                                            CommandParameter="{Binding #Navigation}" />
+                </ia:EventTriggerBehavior>
+            </i:Interaction.Behaviors>
 
-		<Border Grid.Column="1" Background="{DynamicResource WindowContentBackground}" Margin="0,40,10,10"
-				CornerRadius="5"
-				BorderThickness="1,1,1,1"
-				BorderBrush="{DynamicResource WindowContentBorder}" ClipToBounds="True">
-			<control:PageContainer IndexUriList="{Binding IndexUriList}"
-								Instance="{Binding PageContainer,Mode=TwoWay}"
-								   Uri="{Binding Uri,Mode=TwoWay}"
-								   Title="{Binding Title,Mode=TwoWay}" />
-		</Border>
-	</Grid>
+            <na:Navigation.BottomExtContent>
+                <na:NavigationItem Icon="Settings"
+                                   Title="{DynamicResource SideSetting}"
+                                   Uri="SettingsPage"
+                                   Command="{Binding GotoPageCommand}"
+                                   CommandParameter="SettingPage" />
+            </na:Navigation.BottomExtContent>
+        </na:Navigation>
+
+        <Border Grid.Column="1" Background="{DynamicResource WindowContentBackground}" Margin="0,40,10,10"
+                CornerRadius="5"
+                BorderThickness="1,1,1,1"
+                BorderBrush="{DynamicResource WindowContentBorder}" ClipToBounds="True">
+            <control:PageContainer IndexUriList="{Binding IndexUriList}"
+                                   Instance="{Binding PageContainer,Mode=TwoWay}"
+                                   Uri="{Binding Uri,Mode=TwoWay}"
+                                   Title="{Binding Title,Mode=TwoWay}" />
+        </Border>
+    </Grid>
 
 
 </ui:DefaultWindow>
-

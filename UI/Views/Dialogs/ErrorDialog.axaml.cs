@@ -1,11 +1,8 @@
-using Avalonia;
+using System;
+using System.Diagnostics;
+using System.IO;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System;
-using System.IO;
 
 namespace UI;
 
@@ -18,24 +15,20 @@ public partial class ErrorDialog : Window
 
     private void LogHyperlinkClick(object sender, RoutedEventArgs e)
     {
-        string loggerName = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                     "Log", DateTime.Now.ToString("yyyy-MM-dd") + ".log");
-        if (File.Exists(loggerName))
-        {
-            System.Diagnostics.Process.Start("explorer.exe", "/select, " + loggerName);
-        }
+        var loggerName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
+            "Log", DateTime.Now.ToString("yyyy-MM-dd") + ".log");
+        if (File.Exists(loggerName)) Process.Start("explorer.exe", "/select, " + loggerName);
     }
 
     private void IssuesHyperlinkClick(object sender, RoutedEventArgs e)
     {
         try
         {
-            Process.Start(new ProcessStartInfo("https://github.com/NLick47/Taix/issues/new") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo("https://github.com/NLick47/Taix/issues/new")
+                { UseShellExecute = true });
         }
         catch (Exception)
         {
-
-
         }
     }
 

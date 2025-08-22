@@ -1,47 +1,96 @@
-﻿using Core.Models.Db;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Core.Models.Db;
 using UI.Controls.Select;
 
-namespace UI.Models
+namespace UI.Models;
+
+public class CategoryWebSiteListPageModel : ModelBase
 {
-    public class CategoryWebSiteListPageModel : ModelBase
+    private WebSiteCategoryModel Category_;
+
+    private ObservableCollection<WebSiteModel> CategoryWebSiteList_;
+    private bool ChooseVisibility_;
+
+    private string SearchInput_;
+
+    private WebSiteModel SelectedItem_;
+
+    private List<OptionModel> WebSiteOptionList_;
+
+    public bool ChooseVisibility
     {
-        public class OptionModel
+        get => ChooseVisibility_;
+        set
         {
-            public bool IsChecked { get; set; }
-            public WebSiteModel WebSite { get; set; }
-            public SelectItemModel OptionValue { get; set; } = new SelectItemModel();
+            ChooseVisibility_ = value;
+            OnPropertyChanged();
         }
-        private bool ChooseVisibility_ = false;
-        public bool ChooseVisibility { get { return ChooseVisibility_; } set { ChooseVisibility_ = value; OnPropertyChanged(); } }
+    }
 
-        private WebSiteModel SelectedItem_;
-        public WebSiteModel SelectedItem { get { return SelectedItem_; } set { SelectedItem_ = value; OnPropertyChanged(); } }
+    public WebSiteModel SelectedItem
+    {
+        get => SelectedItem_;
+        set
+        {
+            SelectedItem_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private string SearchInput_;
-        public string SearchInput { get { return SearchInput_; } set { SearchInput_ = value; OnPropertyChanged(); } }
+    public string SearchInput
+    {
+        get => SearchInput_;
+        set
+        {
+            SearchInput_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private ObservableCollection<WebSiteModel> CategoryWebSiteList_;
-        /// <summary>
-        /// 分类站点列表
-        /// </summary>
-        public ObservableCollection<WebSiteModel> CategoryWebSiteList { get { return CategoryWebSiteList_; } set { CategoryWebSiteList_ = value; OnPropertyChanged(); } }
+    /// <summary>
+    ///     分类站点列表
+    /// </summary>
+    public ObservableCollection<WebSiteModel> CategoryWebSiteList
+    {
+        get => CategoryWebSiteList_;
+        set
+        {
+            CategoryWebSiteList_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private WebSiteCategoryModel Category_;
-        /// <summary>
-        /// 当前分类
-        /// </summary>
-        public WebSiteCategoryModel Category { get { return Category_; } set { Category_ = value; OnPropertyChanged(); } }
+    /// <summary>
+    ///     当前分类
+    /// </summary>
+    public WebSiteCategoryModel Category
+    {
+        get => Category_;
+        set
+        {
+            Category_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private List<OptionModel> WebSiteOptionList_;
-        /// <summary>
-        /// 站点可选列表
-        /// </summary>
-        public List<OptionModel> WebSiteOptionList { get { return WebSiteOptionList_; } set { WebSiteOptionList_ = value; OnPropertyChanged(); } }
+    /// <summary>
+    ///     站点可选列表
+    /// </summary>
+    public List<OptionModel> WebSiteOptionList
+    {
+        get => WebSiteOptionList_;
+        set
+        {
+            WebSiteOptionList_ = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public class OptionModel
+    {
+        public bool IsChecked { get; set; }
+        public WebSiteModel WebSite { get; set; }
+        public SelectItemModel OptionValue { get; set; } = new();
     }
 }

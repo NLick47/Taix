@@ -1,160 +1,155 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:base="using:UI.Controls.Base"
-        xmlns:list="using:UI.Controls.List"
-        xmlns:controls="using:UI.Controls.DatePickerBar">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:base="using:UI.Controls.Base"
+                    xmlns:list="using:UI.Controls.List"
+                    xmlns:controls="using:UI.Controls.DatePickerBar">
 
-	<ControlTheme x:Key="{x:Type controls:DatePickerBar}"  TargetType="controls:DatePickerBar">
-		<Styles>
-			<Style Selector="controls|DatePickerBar[ShowType=Year]">
-				<Style Selector="^ /template/ Grid#ItemSelect">
-					<Setter Property="IsVisible" Value="False"/>
-				</Style>
-			</Style>
+    <ControlTheme x:Key="{x:Type controls:DatePickerBar}" TargetType="controls:DatePickerBar">
+        <Styles>
+            <Style Selector="controls|DatePickerBar[ShowType=Year]">
+                <Style Selector="^ /template/ Grid#ItemSelect">
+                    <Setter Property="IsVisible" Value="False" />
+                </Style>
+            </Style>
 
-			<Style Selector="controls|DatePickerBar:pointerover  /template/ Border#Date">
-				<Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}"/>
-			</Style>
+            <Style Selector="controls|DatePickerBar:pointerover  /template/ Border#Date">
+                <Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}" />
+            </Style>
 
-			<Style Selector="controls|DatePickerBar[IsShowDatePickerPopup=True]  /template/ base|Icon#PopupIcon">
-				<Setter Property="RenderTransform" Value="rotate(-180deg)"/>
-				<Setter Property="Foreground" Value="{DynamicResource ThemeColor}"/>
-			</Style>
-		</Styles>
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Template">
-			<ControlTemplate>
-				<Border>
-					<StackPanel>
-						<Grid  x:Name="header">
-							<Border
-								 Width="{Binding ElementName=Date,Path=Bounds.Width}"
-								 Height="{Binding ElementName=Date,Path=Bounds.Height}"
-								 Background="{Binding ElementName=Date,Path=Background}"
-								 CornerRadius="{Binding ElementName=Date,Path=CornerRadius}"
-								 Padding="{Binding ElementName=Date,Path=Padding}"
-								 Margin="{Binding ElementName=Date,Path=Margin}"
-                                    
-								 HorizontalAlignment="Left"
-                                   >
-								<Border.Effect>
-									<DropShadowDirectionEffect Color="#d8d2d2"
-															   BlurRadius="1"
-															   Direction="300"
-															   ShadowDepth="4"
-															   Opacity="0.1"/>
+            <Style Selector="controls|DatePickerBar[IsShowDatePickerPopup=True]  /template/ base|Icon#PopupIcon">
+                <Setter Property="RenderTransform" Value="rotate(-180deg)" />
+                <Setter Property="Foreground" Value="{DynamicResource ThemeColor}" />
+            </Style>
+        </Styles>
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border>
+                    <StackPanel>
+                        <Grid x:Name="header">
+                            <Border
+                                Width="{Binding ElementName=Date,Path=Bounds.Width}"
+                                Height="{Binding ElementName=Date,Path=Bounds.Height}"
+                                Background="{Binding ElementName=Date,Path=Background}"
+                                CornerRadius="{Binding ElementName=Date,Path=CornerRadius}"
+                                Padding="{Binding ElementName=Date,Path=Padding}"
+                                Margin="{Binding ElementName=Date,Path=Margin}"
 
-								</Border.Effect>
-							</Border>
-							<Border
-							   x:Name="Date"
-							   Background="{DynamicResource StandardBackgroundBrush}"
-							   Padding="15,8"
-							   CornerRadius="12"
-							   Margin="0,0,0,10"
-							   HorizontalAlignment="Left"
-							   ToolTip.Tip="{DynamicResource Select}">
-								<StackPanel Orientation="Horizontal" >
-									<base:Icon x:Name="DateIcon" Margin="0,0,5,0" IconType="Calendar"
-											   Foreground="{DynamicResource StandardTextBrush}"
-											   VerticalAlignment="Center"
-											   HorizontalAlignment="Right"/>
+                                HorizontalAlignment="Left">
+                                <Border.Effect>
+                                    <DropShadowDirectionEffect Color="#d8d2d2"
+                                                               BlurRadius="1"
+                                                               Direction="300"
+                                                               ShadowDepth="4"
+                                                               Opacity="0.1" />
 
-									<TextBlock Foreground="{DynamicResource StandardTextBrush}"
-											   FontSize="15" Text="{TemplateBinding SelectedDateString}"
-											   Margin="0,0" VerticalAlignment="Center"
-											   HorizontalAlignment="Left"/>
-									<base:Icon x:Name="PopupIcon" Width="25" Height="25"
-											   Margin="10,0,0,0" FontSize="10" IconType="ChevronDown" 
-											   VerticalAlignment="Center" HorizontalAlignment="Right">
-										<base:Icon.RenderTransform>
-											<RotateTransform Angle="0" CenterX="12.5" CenterY="12.5"/>
-										</base:Icon.RenderTransform>
+                                </Border.Effect>
+                            </Border>
+                            <Border
+                                x:Name="Date"
+                                Background="{DynamicResource StandardBackgroundBrush}"
+                                Padding="15,8"
+                                CornerRadius="12"
+                                Margin="0,0,0,10"
+                                HorizontalAlignment="Left"
+                                ToolTip.Tip="{DynamicResource Select}">
+                                <StackPanel Orientation="Horizontal">
+                                    <base:Icon x:Name="DateIcon" Margin="0,0,5,0" IconType="Calendar"
+                                               Foreground="{DynamicResource StandardTextBrush}"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Right" />
 
-										<base:Icon.Transitions>
-											<Transitions>
-												<TransformOperationsTransition 
-													Property="RenderTransform"
-													Duration="0.18"/>
+                                    <TextBlock Foreground="{DynamicResource StandardTextBrush}"
+                                               FontSize="15" Text="{TemplateBinding SelectedDateString}"
+                                               Margin="0,0" VerticalAlignment="Center"
+                                               HorizontalAlignment="Left" />
+                                    <base:Icon x:Name="PopupIcon" Width="25" Height="25"
+                                               Margin="10,0,0,0" FontSize="10" IconType="ChevronDown"
+                                               VerticalAlignment="Center" HorizontalAlignment="Right">
+                                        <base:Icon.RenderTransform>
+                                            <RotateTransform Angle="0" CenterX="12.5" CenterY="12.5" />
+                                        </base:Icon.RenderTransform>
 
-												<BrushTransition Property="Foreground" Duration="0.18"/>
-											</Transitions>
-										</base:Icon.Transitions>
-									</base:Icon>
-								</StackPanel>
+                                        <base:Icon.Transitions>
+                                            <Transitions>
+                                                <TransformOperationsTransition
+                                                    Property="RenderTransform"
+                                                    Duration="0.18" />
 
-								<Border.Transitions>
-									<Transitions>
-										<BrushTransition Property="Background" Duration="0.18"/>
-									
-									</Transitions>
-								</Border.Transitions>
-							</Border>
+                                                <BrushTransition Property="Foreground" Duration="0.18" />
+                                            </Transitions>
+                                        </base:Icon.Transitions>
+                                    </base:Icon>
+                                </StackPanel>
 
-							<Popup
-								   x:Name="DatePickerPopup"
-								   IsOpen="{TemplateBinding IsShowDatePickerPopup}"
-								   Placement="Bottom"
-								   PlacementTarget="{Binding ElementName=Date}" >
-								<Border
-									   Background="{DynamicResource StandardBackgroundBrush2}"
-									   CornerRadius="12"
-									   Padding="10"
-									   Margin="10">
-									<Border.Effect>
-										<DropShadowDirectionEffect BlurRadius="10"
-																   ShadowDepth="0"
-																   Direction="0"
-																   Color="Gray"
-																   Opacity=".2"/>
-									</Border.Effect>
+                                <Border.Transitions>
+                                    <Transitions>
+                                        <BrushTransition Property="Background" Duration="0.18" />
 
-									<Grid>
-										<Path
-											Width="15"
-											Height="15"
-										  Data="M 0 15 L 7.5 7.5 L 15 15"
-										  Fill="{DynamicResource StandardBackgroundBrush2}"
-										  Stroke="{DynamicResource StandardBackgroundBrush2}"
-										  StrokeThickness="1"
-										  VerticalAlignment="Top"
-										  HorizontalAlignment="Left"
-										  Margin="0,-25,0,0"/>
-										<StackPanel Orientation="Horizontal">
-											<StackPanel >
-												<TextBlock Text="年份" HorizontalAlignment="Center"/>
-												<list:BaseList x:Name="YearsList" Height="120" Margin="0,5,0,0">
+                                    </Transitions>
+                                </Border.Transitions>
+                            </Border>
 
-												</list:BaseList>
-											</StackPanel>
-											<StackPanel x:Name="MonthSelect" Margin="10,0,0,0" IsVisible="False">
-												<TextBlock Text="{DynamicResource Month}" HorizontalAlignment="Center"/>
-												<list:BaseList x:Name="MonthsList" Height="120" Margin="0,5,0,0" 
-															   HorizontalAlignment="Center">
+                            <Popup
+                                x:Name="DatePickerPopup"
+                                IsOpen="{TemplateBinding IsShowDatePickerPopup}"
+                                Placement="Bottom"
+                                PlacementTarget="{Binding ElementName=Date}">
+                                <Border
+                                    Background="{DynamicResource StandardBackgroundBrush2}"
+                                    CornerRadius="12"
+                                    Padding="10"
+                                    Margin="10">
+                                    <Border.Effect>
+                                        <DropShadowDirectionEffect BlurRadius="10"
+                                                                   ShadowDepth="0"
+                                                                   Direction="0"
+                                                                   Color="Gray"
+                                                                   Opacity=".2" />
+                                    </Border.Effect>
 
-												</list:BaseList>
-											</StackPanel>
-										</StackPanel>
+                                    <Grid>
+                                        <Path
+                                            Width="15"
+                                            Height="15"
+                                            Data="M 0 15 L 7.5 7.5 L 15 15"
+                                            Fill="{DynamicResource StandardBackgroundBrush2}"
+                                            Stroke="{DynamicResource StandardBackgroundBrush2}"
+                                            StrokeThickness="1"
+                                            VerticalAlignment="Top"
+                                            HorizontalAlignment="Left"
+                                            Margin="0,-25,0,0" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <StackPanel>
+                                                <TextBlock Text="年份" HorizontalAlignment="Center" />
+                                                <list:BaseList x:Name="YearsList" Height="120" Margin="0,5,0,0" />
+                                            </StackPanel>
+                                            <StackPanel x:Name="MonthSelect" Margin="10,0,0,0" IsVisible="False">
+                                                <TextBlock Text="{DynamicResource Month}" HorizontalAlignment="Center" />
+                                                <list:BaseList x:Name="MonthsList" Height="120" Margin="0,5,0,0"
+                                                               HorizontalAlignment="Center" />
+                                            </StackPanel>
+                                        </StackPanel>
 
-									</Grid>
-								</Border>
-							</Popup>
-						</Grid>
+                                    </Grid>
+                                </Border>
+                            </Popup>
+                        </Grid>
 
-						<Grid x:Name="ItemSelect">		
-							<Border Background="{DynamicResource StandardBackgroundBrush}" 
-									Padding="10" CornerRadius="10" Margin="0,10,0,0">
-								<ScrollViewer x:Name="ScrollViewer" VerticalScrollBarVisibility="Disabled"
-											  HorizontalScrollBarVisibility="Hidden">
-									<StackPanel
-									Orientation="Horizontal"
-									x:Name="Container"/>
-								</ScrollViewer>
-							</Border>
-						</Grid>
-					</StackPanel>
-				</Border>
-			</ControlTemplate>
-		</Setter>
-	</ControlTheme>
+                        <Grid x:Name="ItemSelect">
+                            <Border Background="{DynamicResource StandardBackgroundBrush}"
+                                    Padding="10" CornerRadius="10" Margin="0,10,0,0">
+                                <ScrollViewer x:Name="ScrollViewer" VerticalScrollBarVisibility="Disabled"
+                                              HorizontalScrollBarVisibility="Hidden">
+                                    <StackPanel
+                                        Orientation="Horizontal"
+                                        x:Name="Container" />
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
 </ResourceDictionary>

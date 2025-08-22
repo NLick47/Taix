@@ -1,161 +1,166 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		xmlns:button="using:UI.Controls.Button"
-        xmlns:controls="using:UI.Controls.Base">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:button="using:UI.Controls.Button"
+                    xmlns:controls="using:UI.Controls.Base">
 
 
-	<ControlTheme x:Key="{x:Type controls:IconSelect}" TargetType="controls:IconSelect">
-		<Setter Property="Background" Value="Transparent"/>
-		<Setter Property="Width" Value="80"/>
-		<Setter Property="Height" Value="80"/>
-		<Setter Property="Template">
-			<ControlTemplate>
-				<Border Background="{TemplateBinding Background}"
-						BorderBrush="#f7f8fa" CornerRadius="10" BorderThickness="2"
-						Width="{TemplateBinding Width}"
-						Height="{TemplateBinding Height}">
+    <ControlTheme x:Key="{x:Type controls:IconSelect}" TargetType="controls:IconSelect">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Width" Value="80" />
+        <Setter Property="Height" Value="80" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="#f7f8fa" CornerRadius="10" BorderThickness="2"
+                        Width="{TemplateBinding Width}"
+                        Height="{TemplateBinding Height}">
 
-					<Interaction.Behaviors>
-						<EventTriggerBehavior EventName="PointerPressed">
-							<InvokeCommandAction
-								Command="{Binding ShowSelectCommand,RelativeSource={RelativeSource TemplatedParent}}" />
-						</EventTriggerBehavior>
-					</Interaction.Behaviors>
+                    <Interaction.Behaviors>
+                        <EventTriggerBehavior EventName="PointerPressed">
+                            <InvokeCommandAction
+                                Command="{Binding ShowSelectCommand,RelativeSource={RelativeSource TemplatedParent}}" />
+                        </EventTriggerBehavior>
+                    </Interaction.Behaviors>
 
-					<Grid>
-						<controls:Img HorizontalAlignment="Center"
-								   VerticalAlignment="Center" URL="{TemplateBinding URL}" Width="30" Height="30"/>
+                    <Grid>
+                        <controls:Img HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" URL="{TemplateBinding URL}" Width="30" Height="30" />
 
-						<Popup
-									 x:Name="Popup"
-									 Placement="Bottom"
-									 IsOpen="{TemplateBinding IsOpen}">
+                        <Popup
+                            x:Name="Popup"
+                            Placement="Bottom"
+                            IsOpen="{TemplateBinding IsOpen}">
 
-							<Border
-								   x:Name="SelectContainer"
-								   CornerRadius="10"
-									BorderBrush="{DynamicResource PopupBorderBrush}"
-									BorderThickness="1"
-								   Background="{DynamicResource PopupBackgroundBrush}"
-								   Padding="10" Width="275" MaxHeight="300" Margin="10">
-								<Border.Effect>
-									<DropShadowDirectionEffect BlurRadius="10"
-															   ShadowDepth="2" Direction="315" Color="Gray" Opacity=".3"/>
-								</Border.Effect>
+                            <Border
+                                x:Name="SelectContainer"
+                                CornerRadius="10"
+                                BorderBrush="{DynamicResource PopupBorderBrush}"
+                                BorderThickness="1"
+                                Background="{DynamicResource PopupBackgroundBrush}"
+                                Padding="10" Width="275" MaxHeight="300" Margin="10">
+                                <Border.Effect>
+                                    <DropShadowDirectionEffect BlurRadius="10"
+                                                               ShadowDepth="2" Direction="315" Color="Gray"
+                                                               Opacity=".3" />
+                                </Border.Effect>
 
-								<Grid>
-									<Grid.RowDefinitions>
-										<RowDefinition Height="auto"/>
-										<RowDefinition Height="*"/>
-										<RowDefinition Height="auto"/>
-									</Grid.RowDefinitions>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="auto" />
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="auto" />
+                                    </Grid.RowDefinitions>
 
-									<TextBlock Text="{DynamicResource SelectIcon}" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{DynamicResource DefaultTextBrush}"/>
+                                    <TextBlock Text="{DynamicResource SelectIcon}" VerticalAlignment="Center"
+                                               HorizontalAlignment="Left"
+                                               Foreground="{DynamicResource DefaultTextBrush}" />
 
-									<ScrollViewer  Grid.Row="1" VerticalScrollBarVisibility="Auto">
-										<ListBox Grid.Row="1"
-												 ItemsSource="{TemplateBinding Icons}"
-												 SelectedItem="{TemplateBinding URL,Mode=TwoWay}"
-												 Margin="0,10,0,0"
-												 ScrollViewer.HorizontalScrollBarVisibility="Disabled" >
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                        <ListBox
+                                            ItemsSource="{TemplateBinding Icons}"
+                                            SelectedItem="{TemplateBinding URL,Mode=TwoWay}"
+                                            Margin="0,10,0,0"
+                                            ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 
 
-											<ListBox.Styles>
-												<Style Selector="ListBox">
-													<Setter Property="Template">
-														<ControlTemplate>
-															<Border>
-																<ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
-															</Border>
-														</ControlTemplate>
-													</Setter>
-												</Style>
+                                            <ListBox.Styles>
+                                                <Style Selector="ListBox">
+                                                    <Setter Property="Template">
+                                                        <ControlTemplate>
+                                                            <Border>
+                                                                <ItemsPresenter
+                                                                    ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter>
+                                                </Style>
 
-												<Style Selector="ListBoxItem">
-													<Setter Property="Template">
-														<ControlTemplate>
-															<Border BorderBrush="Transparent"
-																	BorderThickness="2" x:Name="Border"
-																	Background="Transparent" Margin="0,0,0,0"
-																	Padding="0" Width="35" Height="35" CornerRadius="5">
+                                                <Style Selector="ListBoxItem">
+                                                    <Setter Property="Template">
+                                                        <ControlTemplate>
+                                                            <Border BorderBrush="Transparent"
+                                                                    BorderThickness="2" x:Name="Border"
+                                                                    Background="Transparent" Margin="0,0,0,0"
+                                                                    Padding="0" Width="35" Height="35" CornerRadius="5">
 
-																<ContentPresenter x:Name="Icon" VerticalAlignment="Center"
-																				  ContentTemplate="{TemplateBinding ContentTemplate}"
-																				  Content="{TemplateBinding Content}"
-																				  HorizontalAlignment="Center">
-															
-																	<ContentPresenter.Transitions>
-																		<Transitions>
-																			<TransformOperationsTransition Property="RenderTransform" Duration="0.35"/>
-																		</Transitions>
-																	</ContentPresenter.Transitions>
-																</ContentPresenter>
-															</Border>
-														</ControlTemplate>
-													</Setter>
+                                                                <ContentPresenter x:Name="Icon"
+                                                                    VerticalAlignment="Center"
+                                                                    ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                    Content="{TemplateBinding Content}"
+                                                                    HorizontalAlignment="Center">
 
-													<Style Selector="^:pointerover">
-														<Style Selector="^ /template/ Border#Border">
-															<Setter  Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
-															
-														</Style>
-														<Style Selector="^ /template/ Border ContentPresenter">
-															<Setter  Property="Background" Value="Transparent"/>
-														</Style>
-													</Style>
+                                                                    <ContentPresenter.Transitions>
+                                                                        <Transitions>
+                                                                            <TransformOperationsTransition
+                                                                                Property="RenderTransform"
+                                                                                Duration="0.35" />
+                                                                        </Transitions>
+                                                                    </ContentPresenter.Transitions>
+                                                                </ContentPresenter>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter>
 
-													<Style Selector="^ /template/ Border ContentPresenter">
-														<Setter  Property="RenderTransform" Value="scale(0.8)">
+                                                    <Style Selector="^:pointerover">
+                                                        <Style Selector="^ /template/ Border#Border">
+                                                            <Setter Property="Background"
+                                                                    Value="{DynamicResource HoverBackgroundBrush}" />
 
-														</Setter>
-													</Style>
+                                                        </Style>
+                                                        <Style Selector="^ /template/ Border ContentPresenter">
+                                                            <Setter Property="Background" Value="Transparent" />
+                                                        </Style>
+                                                    </Style>
 
-													<Style Selector="^:selected">
-														<Style Selector="^ /template/ Border#Border">
-															 <Setter  Property="Background" Value="{DynamicResource ThemeBrush}"/>
-														</Style>
+                                                    <Style Selector="^ /template/ Border ContentPresenter">
+                                                        <Setter Property="RenderTransform" Value="scale(0.8)" />
+                                                    </Style>
 
-														<Style Selector="^ /template/ Border ContentPresenter">
-															<Setter  Property="Background" Value="Transparent"/>
-														</Style>
+                                                    <Style Selector="^:selected">
+                                                        <Style Selector="^ /template/ Border#Border">
+                                                            <Setter Property="Background"
+                                                                    Value="{DynamicResource ThemeBrush}" />
+                                                        </Style>
 
-														<Style Selector="^ /template/ Border ContentPresenter">
-															<Setter  Property="RenderTransform" Value="scale(1)">
-																
-															</Setter>
-														</Style>
-													</Style>
-												</Style>
-											</ListBox.Styles>
+                                                        <Style Selector="^ /template/ Border ContentPresenter">
+                                                            <Setter Property="Background" Value="Transparent" />
+                                                        </Style>
 
-											<ListBox.ItemsPanel>
-												<ItemsPanelTemplate>
-													<WrapPanel/>
-												</ItemsPanelTemplate>
-											</ListBox.ItemsPanel>
+                                                        <Style Selector="^ /template/ Border ContentPresenter">
+                                                            <Setter Property="RenderTransform" Value="scale(1)" />
+                                                        </Style>
+                                                    </Style>
+                                                </Style>
+                                            </ListBox.Styles>
 
-											<ListBox.ItemTemplate>
-												<DataTemplate>
-													<WrapPanel Orientation="Horizontal">
-														<Border>
-															<controls:Img URL="{Binding}" Width="25" Height="25"/>
-														</Border>
-													</WrapPanel>
-												</DataTemplate>
-											</ListBox.ItemTemplate>
-										</ListBox>
-									</ScrollViewer>
+                                            <ListBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel />
+                                                </ItemsPanelTemplate>
+                                            </ListBox.ItemsPanel>
 
-									<button:Button Grid.Row="2" Icon="Photo" HorizontalAlignment="Right" 
-												   Command="{Binding FileSelectCommand,RelativeSource={RelativeSource TemplatedParent}}" 
-												   Content="{DynamicResource CustomPicture}" Width="120"/>
-								</Grid>
-							</Border>
-						</Popup>
-					</Grid>
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <WrapPanel Orientation="Horizontal">
+                                                        <Border>
+                                                            <controls:Img URL="{Binding}" Width="25" Height="25" />
+                                                        </Border>
+                                                    </WrapPanel>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </ScrollViewer>
 
-				</Border>
-			</ControlTemplate>
-		</Setter>
-	</ControlTheme>
+                                    <button:Button Grid.Row="2" Icon="Photo" HorizontalAlignment="Right"
+                                                   Command="{Binding FileSelectCommand,RelativeSource={RelativeSource TemplatedParent}}"
+                                                   Content="{DynamicResource CustomPicture}" Width="120" />
+                                </Grid>
+                            </Border>
+                        </Popup>
+                    </Grid>
+
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
 </ResourceDictionary>

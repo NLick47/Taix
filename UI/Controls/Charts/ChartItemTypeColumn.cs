@@ -1,104 +1,94 @@
-﻿using Avalonia;
+﻿using System;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
-using Avalonia.Input;
 using Avalonia.Interactivity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UI.Base.Color;
 
-namespace UI.Controls.Charts
+namespace UI.Controls.Charts;
+
+public class ChartItemTypeColumn : TemplatedControl
 {
-    public class ChartItemTypeColumn : TemplatedControl
+    public static readonly StyledProperty<double> MaxValueProperty =
+        AvaloniaProperty.Register<ChartItemTypeColumn, double>(nameof(MaxValue));
+
+    public static readonly StyledProperty<double> ValueProperty =
+        AvaloniaProperty.Register<ChartItemTypeColumn, double>(nameof(Value));
+
+    public static readonly StyledProperty<string> ColorProperty =
+        AvaloniaProperty.Register<ChartItemTypeColumn, string>(nameof(Color));
+
+    public static readonly StyledProperty<string> ColumnNameProperty =
+        AvaloniaProperty.Register<ChartItemTypeColumn, string>(nameof(ColumnName));
+
+
+    private readonly bool isRendering = false;
+    private bool IsAddEvent;
+    private Rectangle ValueBlockObj;
+    private Border ValueContainer;
+
+    public ChartItemTypeColumn()
     {
-        public double MaxValue
-        {
-            get { return GetValue(MaxValueProperty); }
-            set { SetValue(MaxValueProperty, value); }
-        }
-        public static readonly StyledProperty<double> MaxValueProperty =
-            AvaloniaProperty.Register<ChartItemTypeColumn,double>(nameof(MaxValue));
+        Unloaded += ChartItemTypeColumn_Unloaded;
+    }
 
-        public double Value
-        {
-            get { return GetValue(ValueProperty); }
-            set { SetValue(ValueProperty, value); }
-        }
-        public static readonly StyledProperty<double> ValueProperty =
-             AvaloniaProperty.Register<ChartItemTypeColumn, double>(nameof(Value));
+    public double MaxValue
+    {
+        get => GetValue(MaxValueProperty);
+        set => SetValue(MaxValueProperty, value);
+    }
 
-        public string Color
-        {
-            get { return GetValue(ColorProperty); }
-            set { SetValue(ColorProperty, value); }
-        }
-        public static readonly StyledProperty<string> ColorProperty =
-            AvaloniaProperty.Register<ChartItemTypeColumn,string>(nameof(Color));
+    public double Value
+    {
+        get => GetValue(ValueProperty);
+        set => SetValue(ValueProperty, value);
+    }
 
-        public string ColumnName
-        {
-            get { return GetValue(ColumnNameProperty); }
-            set { SetValue(ColumnNameProperty, value); }
-        }
-        public static readonly StyledProperty<string> ColumnNameProperty =
-            AvaloniaProperty.Register<ChartItemTypeColumn,string>(nameof(ColumnName));
+    public string Color
+    {
+        get => GetValue(ColorProperty);
+        set => SetValue(ColorProperty, value);
+    }
 
+    public string ColumnName
+    {
+        get => GetValue(ColumnNameProperty);
+        set => SetValue(ColumnNameProperty, value);
+    }
 
-        private bool isRendering = false;
-        private Rectangle ValueBlockObj;
-        private Border ValueContainer;
-        private bool IsAddEvent = false;
+    protected override Type StyleKeyOverride => typeof(ChartItemTypeColumn);
 
-        protected override Type StyleKeyOverride => typeof(ChartItemTypeColumn);
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+        ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
+        ValueContainer = e.NameScope.Get<Border>("ValueContainer");
+        if (!IsAddEvent) Loaded += ChartItemTypeColumn_Loaded;
+    }
 
-        public ChartItemTypeColumn()
-        {
-            Unloaded += ChartItemTypeColumn_Unloaded;
-        }
+    private void ChartItemTypeColumn_Unloaded(object sender, RoutedEventArgs e)
+    {
+        Loaded -= ChartItemTypeColumn_Loaded;
+        Unloaded -= ChartItemTypeColumn_Unloaded;
+    }
 
-        protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
-        {
-            base.OnApplyTemplate(e);
-            ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
-            ValueContainer = e.NameScope.Get<Border>("ValueContainer");
-            if (!IsAddEvent)
-            {
-                Loaded += ChartItemTypeColumn_Loaded;
-            }
-        }
+    private void ChartItemTypeColumn_Loaded(object sender, RoutedEventArgs e)
+    {
+        Render();
+        IsAddEvent = true;
+    }
 
-        private void ChartItemTypeColumn_Unloaded(object sender, RoutedEventArgs e)
-        {
-            Loaded -= ChartItemTypeColumn_Loaded;
-            Unloaded -= ChartItemTypeColumn_Unloaded;
-        }
+    private void Render()
+    {
+        if (isRendering) return;
 
-        private void ChartItemTypeColumn_Loaded(object sender, RoutedEventArgs e)
-        {
-            Render();
-            IsAddEvent = true;
-        }
+        if (!string.IsNullOrEmpty(Color)) ValueBlockObj.Fill = Colors.GetFromString(Color);
+        Update();
+    }
 
-        private void Render()
-        {
-            if (isRendering)
-            {
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(Color))
-            {
-                ValueBlockObj.Fill = Colors.GetFromString(Color);
-            }
-            Update();
-        }
-        public void Update()
-        {
-            ValueBlockObj.Height = (Value / MaxValue) * (ValueContainer.Bounds.Height);
-        }
+    public void Update()
+    {
+        ValueBlockObj.Height = Value / MaxValue * ValueContainer.Bounds.Height;
     }
 }

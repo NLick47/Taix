@@ -1,36 +1,84 @@
-﻿using Core.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using Core.Models;
 using UI.Models.CategoryAppList;
+using CategoryModel = UI.Models.Category.CategoryModel;
 
-namespace UI.Models
+namespace UI.Models;
+
+public class CategoryAppListPageModel : ModelBase
 {
-    public class CategoryAppListPageModel : ModelBase
+    private List<ChooseAppModel> AppList_;
+    private CategoryModel Category_;
+
+    //private List<AppModel> ChooseAppList_;
+    //public List<AppModel> ChooseAppList { get { return ChooseAppList_; } set { ChooseAppList_ = value; OnPropertyChanged(); } }
+
+    private bool ChooseVisibility_;
+    private List<AppModel> Data_;
+
+    private string SearchInput_;
+
+    private AppModel SelectedItem_;
+
+    public bool IsSystemCategory => Category_.Data.ID == 0;
+
+    public CategoryModel Category
     {
-        private UI.Models.Category.CategoryModel Category_;
+        get => Category_;
+        set
+        {
+            Category_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        public bool IsSystemCategory => Category_.Data.ID == 0;
-        public UI.Models.Category.CategoryModel Category { get { return Category_; } set { Category_ = value; OnPropertyChanged(); } }
-        private List<AppModel> Data_;
+    public List<AppModel> Data
+    {
+        get => Data_;
+        set
+        {
+            Data_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        public List<AppModel> Data { get { return Data_; } set { Data_ = value; OnPropertyChanged(); } }
+    public List<ChooseAppModel> AppList
+    {
+        get => AppList_;
+        set
+        {
+            AppList_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private List<ChooseAppModel> AppList_;
-        public List<ChooseAppModel> AppList { get { return AppList_; } set { AppList_ = value; OnPropertyChanged(); } }
+    public bool ChooseVisibility
+    {
+        get => ChooseVisibility_;
+        set
+        {
+            ChooseVisibility_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        //private List<AppModel> ChooseAppList_;
-        //public List<AppModel> ChooseAppList { get { return ChooseAppList_; } set { ChooseAppList_ = value; OnPropertyChanged(); } }
+    public AppModel SelectedItem
+    {
+        get => SelectedItem_;
+        set
+        {
+            SelectedItem_ = value;
+            OnPropertyChanged();
+        }
+    }
 
-        private bool ChooseVisibility_ = false;
-        public bool ChooseVisibility { get { return ChooseVisibility_; } set { ChooseVisibility_ = value; OnPropertyChanged(); } }
-
-        private AppModel SelectedItem_;
-        public AppModel SelectedItem { get { return SelectedItem_; } set { SelectedItem_ = value; OnPropertyChanged(); } }
-
-        private string SearchInput_;
-        public string SearchInput { get { return SearchInput_; } set { SearchInput_ = value; OnPropertyChanged(); } }
+    public string SearchInput
+    {
+        get => SearchInput_;
+        set
+        {
+            SearchInput_ = value;
+            OnPropertyChanged();
+        }
     }
 }

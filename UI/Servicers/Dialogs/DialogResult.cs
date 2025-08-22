@@ -1,31 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
-namespace UI.Servicers.Dialogs
+namespace UI.Servicers.Dialogs;
+
+public class DialogResult : IDialogResult
 {
-    public class DialogResult : IDialogResult
+    public DialogResult()
     {
-        public IDictionary<object, object?> Parameters { get; private set; } = new Dictionary<object,object?>();
-
-
-        public ButtonResult Result { get; private set; }
-
-        public DialogResult()
-        {
-        }
-
-        public DialogResult(ButtonResult result)
-        {
-            Result = result;
-        }
-
-        public DialogResult(ButtonResult result, IDictionary<object, object?> parameters)
-        {
-            Result = result;
-            Parameters = parameters;
-        }
     }
+
+    public DialogResult(ButtonResult result)
+    {
+        Result = result;
+    }
+
+    public DialogResult(ButtonResult result, IDictionary<object, object?> parameters)
+    {
+        Result = result;
+        Parameters = parameters;
+    }
+
+    public IDictionary<object, object?> Parameters { get; } = new Dictionary<object, object?>();
+
+
+    public ButtonResult Result { get; }
 }

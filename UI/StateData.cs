@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace UI;
 
-namespace UI
+internal static class StateData
 {
-    internal static class StateData
-    {
-        internal static string ThemeColor { get; set; }
-    }
+    internal static string ThemeColor { get; set; }
 }
