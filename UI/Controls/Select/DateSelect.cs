@@ -1,13 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reactive;
 using System.Windows.Input;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Interactivity;
 using ReactiveUI;
 using SharedLibrary;
 
@@ -16,14 +11,14 @@ namespace UI.Controls.Select;
 public class DayModel
 {
     public DateTime Day { get; set; }
-
-    public string DayText => Day.Day.ToString();
-
-    public bool IsToday => Day.Date == DateTime.Now.Date;
-
+   
     public bool IsOut => Day.Date > DateTime.Now.Date;
-
+    
+    public bool IsToday => Day.Date == DateTime.Now.Date;
+    
+    
     public bool IsDisabled { get; set; }
+    public bool IsSelected { get; set; }
 }
 
 public class DateSelect : TemplatedControl
@@ -52,12 +47,6 @@ public class DateSelect : TemplatedControl
             o => o.Month,
             (o, v) => o.Month = v);
 
-    public static readonly DirectProperty<DateSelect, DayModel> DayProperty =
-        AvaloniaProperty.RegisterDirect<DateSelect, DayModel>(
-            nameof(Day),
-            o => o.Day,
-            (o, v) => o.Day = v);
-
     public static readonly DirectProperty<DateSelect, string> DateStrProperty =
         AvaloniaProperty.RegisterDirect<DateSelect, string>(
             nameof(DateStr),
@@ -76,35 +65,28 @@ public class DateSelect : TemplatedControl
             o => o.IsOpen,
             (o, v) => o.IsOpen = v);
 
-    private DateTime _date;
-
+    private DateTime _date = DateTime.Now;
     private string _dateStr = string.Empty;
-
-    private DayModel _day;
-
     private List<DayModel> _days = new();
-
     private bool _isOpen;
-
     private int _month;
-
     private DateSelectType _selectType;
-
     private int _year;
-
-    private Border SelectContainer;
-    private DateTime SelectedDay;
 
     public DateSelect()
     {
-        ShowSelectCommand = ReactiveCommand.Create<object>(OnShowSelect);
+        ShowSelectCommand = ReactiveCommand.Create(OnShowSelect);
         SetYearCommand = ReactiveCommand.Create<object>(OnSetYear);
         SetMonthCommand = ReactiveCommand.Create<object>(OnSetMonth);
+        SelectDayCommand = ReactiveCommand.Create<DayModel>(OnSelectDay);
         DoneCommand = ReactiveCommand.Create<object>(OnDone);
-        Year = Date.Year;
-        Month = Date.Month;
-        SelectedDay = Date.Date;
+        _year = _date.Year;
+        _month = _date.Month;
+        
+        this.GetObservable(SelectTypeProperty).Subscribe(_ => UpdateDays());
     }
+
+ 
 
     protected override Type StyleKeyOverride => typeof(DateSelect);
 
@@ -117,25 +99,47 @@ public class DateSelect : TemplatedControl
     public DateTime Date
     {
         get => _date;
-        set => SetAndRaise(DateProperty, ref _date, value);
+        set
+        {
+            if (SetAndRaise(DateProperty, ref _date, value))
+            {
+                UpdateDateStr();
+                UpdateDays();
+            }
+        }
+    }
+    
+    
+    private void OnDone(object obj)
+    {
+        var day = string.IsNullOrEmpty(DateStr) ? DateStr : "1";
+        Date = new DateTime(Year, Month,  int.Parse(day));
+        UpdateDateStr();
+        IsOpen = false;
     }
 
     public int Year
     {
         get => _year;
-        set => SetAndRaise(YearProperty, ref _year, value);
+        set
+        {
+            if (SetAndRaise(YearProperty, ref _year, value))
+            {
+                UpdateDays();
+            }
+        }
     }
 
     public int Month
     {
         get => _month;
-        set => SetAndRaise(MonthProperty, ref _month, value);
-    }
-
-    public DayModel Day
-    {
-        get => _day;
-        set => SetAndRaise(DayProperty, ref _day, value);
+        set
+        {
+            if (SetAndRaise(MonthProperty, ref _month, Math.Clamp(value, 1, 12)))
+            {
+                UpdateDays();
+            }
+        }
     }
 
     public string DateStr
@@ -149,6 +153,8 @@ public class DateSelect : TemplatedControl
         get => _days;
         set => SetAndRaise(DaysProperty, ref _days, value);
     }
+    
+    
 
     public bool IsOpen
     {
@@ -159,76 +165,79 @@ public class DateSelect : TemplatedControl
     public ICommand ShowSelectCommand { get; }
     public ICommand SetYearCommand { get; }
     public ICommand SetMonthCommand { get; }
-    public ReactiveCommand<object, Unit> DoneCommand { get; }
-
-
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-        if (change.Property == DateProperty) OnDateChanged(change);
-    }
-
-    private static void OnDateChanged(AvaloniaPropertyChangedEventArgs e)
-    {
-        var control = e.Sender as DateSelect;
-        control.Year = control.Date.Year;
-        control.Month = control.Date.Month;
-        control.SelectedDay = control.Date.Date;
-    }
-
-
-    private void OnDone(object obj)
-    {
-        Date = new DateTime(Year, Month, Day != null ? int.Parse(Day.DayText) : 1);
-        if (Day != null) SelectedDay = Day.Day;
-
-        UpdateDateStr();
-
-        IsOpen = false;
-    }
-
-
-    private void OnSetMonth(object obj)
-    {
-        var newMonth = Month + int.Parse(obj.ToString());
-        if (newMonth < 1 || newMonth > 12) return;
-
-        Month = newMonth;
-
-        UpdateDays();
-    }
-
-
-    private void OnSetYear(object obj)
-    {
-        var newYear = Year + int.Parse(obj.ToString());
-        if (newYear < 2020 || newYear > DateTime.Now.Year) return;
-
-        Year = newYear;
-        UpdateDays();
-    }
-
-    private void OnShowSelect(object obj)
-    {
-        IsOpen = !IsOpen;
-    }
-
-    private void SelectContainer_Loaded(object sender, RoutedEventArgs e)
-    {
-        Debug.WriteLine("加载");
-    }
+    public ICommand SelectDayCommand { get; }
+    
+    public ICommand DoneCommand { get; set; }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
-        SelectContainer = e.NameScope.Get<Border>("SelectContainer");
-
         UpdateDays();
-
         UpdateDateStr();
     }
 
+    private void OnShowSelect()
+    {
+        IsOpen = !IsOpen;
+        if (IsOpen)
+        {
+            Year = Date.Year;
+            Month = Date.Month;
+            UpdateDays();
+        }
+    }
+
+    private void OnSetYear(object? delta)
+    {
+        if (int.TryParse(delta?.ToString(), out int year))
+        {
+            var newYear = Year + year;
+            if (newYear >= 2020 && newYear <= DateTime.Now.Year)
+            {
+                Year = newYear;
+            }
+        }
+    }
+
+    private void OnSetMonth(object delta)
+    {
+        if (int.TryParse(delta?.ToString(), out int month))
+        {
+            var newMonth = Month + month;
+            if (newMonth is >= 1 and <= 12)
+            {
+                Month = newMonth;
+            }
+        }
+    }
+
+    private void OnSelectDay(DayModel? dayModel)
+    {
+        if (dayModel == null || dayModel.IsDisabled) return;
+        
+        Date = dayModel.Day;
+        IsOpen = false;
+    }
+    
     private void UpdateDays()
+    {
+        switch (SelectType)
+        {
+            case DateSelectType.Date:
+                UpdateDateDays();
+                break;
+            case DateSelectType.Month:
+                UpdateMonthDays();
+                break;
+            case DateSelectType.Year:
+                UpdateYearDays();
+                break;
+        }
+    }
+    
+    
+
+    private void UpdateDateDays()
     {
         var list = new List<DayModel>();
 
@@ -236,41 +245,102 @@ public class DateSelect : TemplatedControl
         var startWeekNum = (int)startDay.DayOfWeek;
         startWeekNum = startWeekNum == 0 ? 7 : startWeekNum;
         startWeekNum -= 1;
-
-        //  该月天数
+        
         var days = DateTime.DaysInMonth(Year, Month);
-        //  该月最后一天的日期
-        var lastDay = new DateTime(Year, Month, days);
 
         var preAppendDays = new List<DayModel>();
-        //  需要向前补日期
         for (var i = startWeekNum; i > 0; i--)
         {
             var date = startDay.AddDays(-i);
             preAppendDays.Add(new DayModel
             {
-                Day = date.Date,
+                Day = date,
                 IsDisabled = true
             });
         }
 
         list.AddRange(preAppendDays);
-
-        //  当月日期
-        for (var i = 1; i < days + 1; i++) list.Add(new DayModel { Day = new DateTime(Year, Month, i).Date });
+        
+        for (var i = 1; i < days + 1; i++) list.Add(new DayModel
+        {
+            Day = new DateTime(Year, Month, i)
+        });
 
         Days = list;
-        Day = list.Where(m => m.Day == SelectedDay).FirstOrDefault();
     }
+
+
 
     private void UpdateDateStr()
     {
-        var culture = SystemLanguage.CurrentCultureInfo;
-        DateStr = Date.ToString("d", culture);
-        if (Date.Date == DateTime.Now.Date) DateStr = Application.Current.Resources["Today"] as string;
+        if (SelectType == DateSelectType.Date && 
+            Date.Day == DateTime.Now.Day)
+        {
+            DateStr = (Application.Current!.Resources["Today"] as string)!;
+            return;
+        }
 
-        if (SelectType == DateSelectType.Month)
-            DateStr = Date.ToString("Y", culture);
-        else if (SelectType == DateSelectType.Year) DateStr = Date.ToString("yyyy", culture);
+        try
+        {
+            var culture = SystemLanguage.CurrentCultureInfo;
+            DateStr = SelectType switch
+            {
+                DateSelectType.Month => Date.ToString("Y", culture),
+                DateSelectType.Year => Date.ToString("yyyy", culture),
+                _ => Date.ToString("d", culture)
+            };
+        }
+        catch
+        {
+            DateStr = SelectType switch
+            {
+                DateSelectType.Month => Date.ToString("MMMM yyyy"),
+                DateSelectType.Year => Date.ToString("yyyy"),
+                _ => Date.ToString("d")
+            };
+        }
+    }
+    
+    
+    private void UpdateMonthDays()
+    {
+        var list = new List<DayModel>();
+        var currentYear = Year;
+        
+        for (int month = 1; month <= 12; month++)
+        {
+            var monthDate = new DateTime(currentYear, month, 1);
+            var isSelectedMonth = month == Date.Month && currentYear == Date.Year;
+            
+            list.Add(new DayModel
+            {
+                Day = monthDate,
+                IsSelected = isSelectedMonth,
+                IsDisabled = month > DateTime.Now.Month 
+            });
+        }
+
+        Days = list;
+    }
+    
+    private void UpdateYearDays()
+    {
+        var list = new List<DayModel>();
+        var startYear = 2020; // 最近20年
+        var endYear = DateTime.Now.Year;
+        
+        for (int year = startYear; year <= endYear; year++)
+        {
+            var yearDate = new DateTime(year, 1, 1);
+            var isSelectedYear = year == Date.Year;
+            
+            list.Add(new DayModel
+            {
+                Day = yearDate,
+                IsSelected = isSelectedYear
+            });
+        }
+
+        Days = list;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reactive;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Transformation;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using ReactiveUI;
 using UI.Controls.Base;
 using UI.Controls.Input;
@@ -428,11 +430,14 @@ public class DefaultWindow : Avalonia.Controls.Window
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
+    
+        // 处理标题栏拖动
         if (titleBar.Bounds.Contains(e.GetCurrentPoint(null).Position)
             && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
     }
 
+    
     #region sys command
 
     public static ReactiveCommand<Unit, Unit> MinimizeWindowCommand { get; private set; }

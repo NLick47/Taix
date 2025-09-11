@@ -2,7 +2,7 @@
 
 public enum DateSelectType
 {
-    Day,
+    Date,
     Month,
     Year
 }
