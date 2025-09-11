@@ -11,12 +11,7 @@ namespace UI.Controls.Select;
 public class DayModel
 {
     public DateTime Day { get; set; }
-   
     public bool IsOut => Day.Date > DateTime.Now.Date;
-    
-    public bool IsToday => Day.Date == DateTime.Now.Date;
-    
-    
     public bool IsDisabled { get; set; }
     public bool IsSelected { get; set; }
 }

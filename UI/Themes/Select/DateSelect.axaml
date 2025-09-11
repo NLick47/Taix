@@ -134,22 +134,8 @@
                     <Style Selector="Border:pointerover">
                         <Setter Property="Background" Value="{DynamicResource ThemeColor}"/>
                     </Style>
-                    
-                    <Style Selector="Border:disabled TextBlock">
-                        <Setter Property="Foreground"
-                                Value="{DynamicResource DisabledTextBrush}" />
-                    </Style>
                 </Border.Styles>
                 
-                <Border.IsEnabled>
-                    <MultiBinding
-                        Converter="{StaticResource MultiValueToBoolConverter}">
-                        <Binding Path="IsOut" />
-                        <Binding Path="IsDisabled" />
-                    </MultiBinding>
-                </Border.IsEnabled>
-            
-              
                 <TextBlock x:DataType="controls:DayModel"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
@@ -446,8 +432,6 @@
                                                 </ItemsControl.ItemsPanel>
                                                 
                                             </ItemsControl>
-                                            
-                                           
                                         </Grid>
                                     </Border>
                                 </Grid>
