@@ -2,3 +2,4 @@
 #### 发布内容
 - 优化日期选择选择控件
 - 加入TabSwitch，部分下拉选切换为TabSwitch
+- avalonia更新至11.3.8
