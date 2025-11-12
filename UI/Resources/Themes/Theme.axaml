@@ -145,6 +145,12 @@
             <!--提示颜色-->
             <Color x:Key="WarningColor">#FFC408</Color>
             <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+            
+            <SolidColorBrush x:Key="GrayDark" Color="#4a4a4a" />
+            
+            <Color x:Key="TabOptionTextColor">#9CA3AF</Color>
+            <Color x:Key="TabOptionTextCheckedColor">White</Color>
+            <Color x:Key="TabOptionHoverColor">#555555</Color>
         </ResourceDictionary>
 
 
@@ -291,6 +297,12 @@
             <!--提示颜色-->
             <Color x:Key="WarningColor">#FFC408</Color>
             <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+            
+            <SolidColorBrush x:Key="GrayDark" Color="#f8fafc" />
+            
+            <Color x:Key="TabOptionTextColor">#4b5563</Color>
+            <Color x:Key="TabOptionTextCheckedColor">#111827</Color>
+            <Color x:Key="TabOptionHoverColor">#f9fafb</Color>
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

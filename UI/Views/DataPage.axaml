@@ -21,9 +21,8 @@
             <TextBlock Text="{DynamicResource SideDetails}"
                        FontSize="18"
                        VerticalAlignment="Center" />
-            <select:Select Margin="10,0,0,0"
+            <select:TabSwitch Margin="10,0,0,0"
                            VerticalAlignment="Top"
-                           Padding="10,5"
                            IsShowIcon="False"
                            SelectedItem="{Binding ShowType,Mode=TwoWay}"
                            Options="{Binding ShowTypeOptions}" />

@@ -17,6 +17,8 @@
         <ResourceInclude Source="/Themes/Select/DateSelect.axaml" />
         <ResourceInclude Source="/Themes/Select/Select.axaml" />
         <ResourceInclude Source="/Themes/Select/Option.axaml" />
+        <ResourceInclude Source="/Themes/Select/TabSwitch.axaml" />
+        <ResourceInclude Source="/Themes/Select/TabOption.axaml" />
 
 
         <ResourceInclude Source="/Themes/SettingPanel/SettingPanel.axaml" />

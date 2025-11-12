@@ -1,0 +1,21 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:base="using:UI.Controls.Base"
+                    xmlns:controls="using:UI.Controls.Select">
+
+    <ControlTheme x:Key="{x:Type controls:TabSwitch}" TargetType="controls:TabSwitch">
+        <Setter Property="Background" Value="{DynamicResource GrayDark}" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        CornerRadius="12"
+                        Padding="{TemplateBinding Padding}">
+                    <StackPanel x:Name="ItemsContainer"
+                                Orientation="Horizontal"
+                                Spacing="4" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

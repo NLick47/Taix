@@ -36,7 +36,7 @@ public class Option : TemplatedControl
 
     public SelectItemModel Value
     {
-        get => (SelectItemModel)GetValue(ValueProperty);
+        get => GetValue(ValueProperty);
         set => SetValue(ValueProperty, value);
     }
 

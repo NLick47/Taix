@@ -1,0 +1,61 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:select="clr-namespace:UI.Controls.Select"
+                    xmlns:base="clr-namespace:UI.Controls.Base">
+    
+   
+
+    <ControlTheme x:Key="{x:Type select:TabOption}" TargetType="select:TabOption">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource TabOptionTextColor}" />
+        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border CornerRadius="{TemplateBinding CornerRadius}" 
+                        Background="{TemplateBinding Background}" 
+                        Padding="{TemplateBinding Padding}"
+                        Cursor="Hand">
+                    <Grid ColumnDefinitions="Auto,*" HorizontalAlignment="Center">
+                        <!-- 图标 - 使用绑定控制显示 -->
+                        <Border Grid.Column="0" 
+                                Margin="0,0,8,0" 
+                                x:Name="Img"
+                                IsVisible="{Binding $parent[select:TabOption].IsShowIcon}">
+                            <base:Img
+                                URL="{Binding $parent[select:TabOption].Value.Img}"
+                                Width="16" 
+                                Height="16"
+                                VerticalAlignment="Center" />
+                        </Border>
+
+                        <!-- 文字 -->
+                        <TextBlock Grid.Column="1"
+                                Text="{Binding $parent[select:TabOption].Value.Name}"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center"
+                                Foreground="{TemplateBinding Foreground}"
+                                FontWeight="Normal" />
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        
+        <Styles>
+            <Style Selector="select|TabOption">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Foreground" Value="{DynamicResource TabOptionTextColor}" />
+            </Style>
+            
+            <Style Selector="select|TabOption[IsChecked=True]">
+                <Setter Property="Background" Value="{DynamicResource ThemeColor}" />
+                <Setter Property="Foreground" Value="{DynamicResource TabOptionTextCheckedColor}" />
+            </Style>
+        
+          
+        </Styles>
+    </ControlTheme>
+</ResourceDictionary>
