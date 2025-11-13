@@ -10,137 +10,137 @@ namespace UI.Models;
 
 public class DetailPageModel : UINotifyPropertyChanged
 {
-    private AppModel App_;
-    private ContextMenu AppContextMenu_;
+    private AppModel? _app;
+    private ContextMenu _appContextMenu;
 
-    private bool BlockBtnVisibility_;
+    private bool _blockBtnVisibility;
 
-    private bool CancelBlockBtnVisibility_ = true;
+    private bool _cancelBlockBtnVisibility = true;
 
-    private SelectItemModel Category_;
+    private SelectItemModel _category;
 
-    private List<SelectItemModel> Categorys_;
+    private List<SelectItemModel> _categorys;
 
 
     //  图表数据
-    private List<ChartsDataModel> ChartData_;
-    private DateTime ChartDate_;
-    private List<ChartsDataModel> Data_;
-    private double DataMaximum_;
+    private List<ChartsDataModel> _chartData;
+    private DateTime _chartDate;
+    private List<ChartsDataModel> _data;
+    private double _dataMaximum;
 
-    private DateTime Date_;
+    private DateTime _date;
 
 
-    private bool IsIgnore_;
-    private bool IsLoading_;
-    private bool IsRegexIgnore_;
+    private bool _isIgnore;
+    private bool _isLoading;
+    private bool _isRegexIgnore;
 
-    private List<AppModel> LinkApps_;
+    private List<AppModel> _linkApps;
 
-    private string LongDay_;
+    private string _longDay;
 
-    private DateTime MonthDate_;
+    private DateTime _monthDate;
 
-    private int NameIndexStart_;
+    private int _nameIndexStart;
 
-    private string Ratio_;
+    private string _ratio;
 
-    private SelectItemModel SelectedWeek_;
+    private SelectItemModel _selectedWeek;
 
-    private ObservableCollection<string> TabbarData_;
+    private ObservableCollection<string> _tabbarData;
 
-    private int TabbarSelectedIndex_;
+    private int _tabbarSelectedIndex;
 
-    private string TodayTime_;
+    private string _todayTime;
 
-    private string Total_;
-    private string WeekDateStr_;
+    private string _total;
+    private string _weekDateStr;
 
-    private List<SelectItemModel> WeekOptions_;
+    private List<SelectItemModel> _weekOptions;
 
-    private DateTime YearDate_;
+    private DateTime _yearDate;
 
-    private string Yesterday_;
+    private string _yesterday;
 
     /// <summary>
     ///     data
     /// </summary>
     public List<ChartsDataModel> Data
     {
-        get => Data_;
+        get => _data;
         set
         {
-            Data_ = value;
+            _data = value;
             OnPropertyChanged();
         }
     }
 
-    public AppModel App
+    public AppModel? App
     {
-        get => App_;
+        get => _app;
         set
         {
-            App_ = value;
+            _app = value;
             OnPropertyChanged();
         }
     }
 
     public bool IsLoading
     {
-        get => IsLoading_;
+        get => _isLoading;
         set
         {
-            IsLoading_ = value;
+            _isLoading = value;
             OnPropertyChanged();
         }
     }
 
     public string Total
     {
-        get => Total_;
+        get => _total;
         set
         {
-            Total_ = value;
+            _total = value;
             OnPropertyChanged();
         }
     }
 
     public string Ratio
     {
-        get => Ratio_;
+        get => _ratio;
         set
         {
-            Ratio_ = value;
+            _ratio = value;
             OnPropertyChanged();
         }
     }
 
     public DateTime Date
     {
-        get => Date_;
+        get => _date;
         set
         {
-            Date_ = value;
+            _date = value;
             OnPropertyChanged();
         }
     }
 
     public string LongDay
     {
-        get => LongDay_;
+        get => _longDay;
         set
         {
-            LongDay_ = value;
+            _longDay = value;
             OnPropertyChanged();
         }
     }
 
     public bool IsIgnore
     {
-        get => IsIgnore_;
+        get => _isIgnore;
         set
         {
-            IsIgnore_ = value;
+            _isIgnore = value;
             if (IsIgnore)
             {
                 BlockBtnVisibility = false;
@@ -158,20 +158,20 @@ public class DetailPageModel : UINotifyPropertyChanged
 
     public bool BlockBtnVisibility
     {
-        get => BlockBtnVisibility_;
+        get => _blockBtnVisibility;
         set
         {
-            BlockBtnVisibility_ = value;
+            _blockBtnVisibility = value;
             OnPropertyChanged();
         }
     }
 
     public bool CancelBlockBtnVisibility
     {
-        get => CancelBlockBtnVisibility_;
+        get => _cancelBlockBtnVisibility;
         set
         {
-            CancelBlockBtnVisibility_ = value;
+            _cancelBlockBtnVisibility = value;
             OnPropertyChanged();
         }
     }
@@ -181,10 +181,10 @@ public class DetailPageModel : UINotifyPropertyChanged
     /// </summary>
     public string TodayTime
     {
-        get => TodayTime_;
+        get => _todayTime;
         set
         {
-            TodayTime_ = value;
+            _todayTime = value;
             OnPropertyChanged();
         }
     }
@@ -194,10 +194,10 @@ public class DetailPageModel : UINotifyPropertyChanged
     /// </summary>
     public string Yesterday
     {
-        get => Yesterday_;
+        get => _yesterday;
         set
         {
-            Yesterday_ = value;
+            _yesterday = value;
             OnPropertyChanged();
         }
     }
@@ -207,10 +207,10 @@ public class DetailPageModel : UINotifyPropertyChanged
     /// </summary>
     public List<SelectItemModel> Categorys
     {
-        get => Categorys_;
+        get => _categorys;
         set
         {
-            Categorys_ = value;
+            _categorys = value;
             OnPropertyChanged();
         }
     }
@@ -220,20 +220,20 @@ public class DetailPageModel : UINotifyPropertyChanged
     /// </summary>
     public SelectItemModel Category
     {
-        get => Category_;
+        get => _category;
         set
         {
-            Category_ = value;
+            _category = value;
             OnPropertyChanged();
         }
     }
 
     public List<ChartsDataModel> ChartData
     {
-        get => ChartData_;
+        get => _chartData;
         set
         {
-            ChartData_ = value;
+            _chartData = value;
             OnPropertyChanged();
         }
     }
@@ -243,10 +243,10 @@ public class DetailPageModel : UINotifyPropertyChanged
     /// </summary>
     public ObservableCollection<string> TabbarData
     {
-        get => TabbarData_;
+        get => _tabbarData;
         set
         {
-            TabbarData_ = value;
+            _tabbarData = value;
             OnPropertyChanged();
         }
     }
@@ -256,90 +256,90 @@ public class DetailPageModel : UINotifyPropertyChanged
     /// </summary>
     public int TabbarSelectedIndex
     {
-        get => TabbarSelectedIndex_;
+        get => _tabbarSelectedIndex;
         set
         {
-            TabbarSelectedIndex_ = value;
+            _tabbarSelectedIndex = value;
             OnPropertyChanged();
         }
     }
 
     public string WeekDateStr
     {
-        get => WeekDateStr_;
+        get => _weekDateStr;
         set
         {
-            WeekDateStr_ = value;
+            _weekDateStr = value;
             OnPropertyChanged();
         }
     }
 
     public DateTime ChartDate
     {
-        get => ChartDate_;
+        get => _chartDate;
         set
         {
-            ChartDate_ = value;
+            _chartDate = value;
             OnPropertyChanged();
         }
     }
 
     public List<SelectItemModel> WeekOptions
     {
-        get => WeekOptions_;
+        get => _weekOptions;
         set
         {
-            WeekOptions_ = value;
+            _weekOptions = value;
             OnPropertyChanged();
         }
     }
 
     public SelectItemModel SelectedWeek
     {
-        get => SelectedWeek_;
+        get => _selectedWeek;
         set
         {
-            SelectedWeek_ = value;
+            _selectedWeek = value;
             OnPropertyChanged();
         }
     }
 
     public DateTime MonthDate
     {
-        get => MonthDate_;
+        get => _monthDate;
         set
         {
-            MonthDate_ = value;
+            _monthDate = value;
             OnPropertyChanged();
         }
     }
 
     public DateTime YearDate
     {
-        get => YearDate_;
+        get => _yearDate;
         set
         {
-            YearDate_ = value;
+            _yearDate = value;
             OnPropertyChanged();
         }
     }
 
     public int NameIndexStart
     {
-        get => NameIndexStart_;
+        get => _nameIndexStart;
         set
         {
-            NameIndexStart_ = value;
+            _nameIndexStart = value;
             OnPropertyChanged();
         }
     }
 
     public double DataMaximum
     {
-        get => DataMaximum_;
+        get => _dataMaximum;
         set
         {
-            DataMaximum_ = value;
+            _dataMaximum = value;
             OnPropertyChanged();
         }
     }
@@ -349,10 +349,10 @@ public class DetailPageModel : UINotifyPropertyChanged
     /// </summary>
     public List<AppModel> LinkApps
     {
-        get => LinkApps_;
+        get => _linkApps;
         set
         {
-            LinkApps_ = value;
+            _linkApps = value;
             OnPropertyChanged();
         }
     }
@@ -362,10 +362,10 @@ public class DetailPageModel : UINotifyPropertyChanged
     /// </summary>
     public bool IsRegexIgnore
     {
-        get => IsRegexIgnore_;
+        get => _isRegexIgnore;
         set
         {
-            IsRegexIgnore_ = value;
+            _isRegexIgnore = value;
             OnPropertyChanged();
         }
     }
@@ -375,10 +375,10 @@ public class DetailPageModel : UINotifyPropertyChanged
     /// </summary>
     public ContextMenu AppContextMenu
     {
-        get => AppContextMenu_;
+        get => _appContextMenu;
         set
         {
-            AppContextMenu_ = value;
+            _appContextMenu = value;
             OnPropertyChanged();
         }
     }

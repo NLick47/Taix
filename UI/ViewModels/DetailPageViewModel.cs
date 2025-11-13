@@ -551,7 +551,7 @@ public class DetailPageViewModel : DetailPageModel
     private async Task LoadDayData()
     {
         DataMaximum = 3600;
-
+        if(App == null) return;
         var list = await data.GetAppDayDataAsync(App.ID, ChartDate);
 
         var chartData = new List<ChartsDataModel>();
