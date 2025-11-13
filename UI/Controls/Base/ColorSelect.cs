@@ -167,6 +167,18 @@ public class ColorSelect : TemplatedControl
     {
         base.OnApplyTemplate(e);
         SelectContainer = e.NameScope.Get<Border>("SelectContainer");
+        
+        var listBox = e.NameScope.Get<ListBox>("listBox");
+        listBox.SelectionChanged += OnListBoxSelectionChanged;
+    }
+    
+    private  void OnListBoxSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.Count > 0 && e.AddedItems[0] is string selectedColor)
+        {
+            Color = selectedColor;
+            IsOpen = false;
+        }
     }
 
 
