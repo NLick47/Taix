@@ -108,6 +108,13 @@ public class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        Logger.Configure(options =>
+        {
+            options.MaxLogFileAgeDays = 16;
+            options.SaveThreshold = 100;
+            options.AutoSaveInterval = 1000 * 60 * 10; 
+        });
+
         Dispatcher.UIThread.UnhandledException += (sender, e) =>
         {
             Logger.Error("[Program crash] " + e.Exception.Message);
