@@ -79,7 +79,21 @@ public class ColorSelect : TemplatedControl
 
     private void OnWindowPointerPressed(object sender, PointerPressedEventArgs e)
     {
-        IsOpen = false;
+        var source = e.Source as Control;
+        if (source != null && SelectContainer != null)
+        {
+            var isClickInside = SelectContainer.IsPointerOver || 
+                                SelectContainer.FindDescendantOfType<Control>()?.IsPointerOver == true;
+        
+            if (!isClickInside)
+            {
+                IsOpen = false;
+            }
+        }
+        else
+        {
+            IsOpen = false;
+        }
     }
 
     private void OnShowSelect(object obj)
