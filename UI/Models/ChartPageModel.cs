@@ -10,84 +10,95 @@ namespace UI.Models;
 
 public class ChartPageModel : ModelBase
 {
-    private ContextMenu AppContextMenu_;
-    private string AppCount_;
+    private ContextMenu _appContextMenu;
+    private string _appCount;
 
-    private SelectItemModel ChartDataMode_;
+    private SelectItemModel _chartDataMode;
 
-    private int ColumnSelectedIndex_ = -1;
-    private List<ChartsDataModel> Data_;
+    private int _columnSelectedIndex = -1;
+    private List<ChartsDataModel> _data;
 
-    private double DataMaximum_;
-    private DateTime Date_;
-    private List<ChartsDataModel> DayHoursData_;
-    private string DayHoursSelectedTime_;
-    private string DiffAppCountType_;
-    private string DiffAppCountValue_;
+    private double _dataMaximum;
+    private DateTime _date;
+    private List<ChartsDataModel> _dayHoursData;
+    private string _dayHoursSelectedTime;
+    private string _diffAppCountType;
+    private string _diffAppCountValue;
 
-    private string DiffTotalTimeType_;
-    private string DiffTotalTimeValue_;
-    private bool IsCanColumnSelect_ = true;
-    private bool IsChartStack_ = true;
-    private double LastWebPageCount_;
-    private double LastWebSiteCount_;
+    private string _diffTotalTimeType;
+    private string _diffTotalTimeValue;
+    private bool _isCanColumnSelect = true;
+    private bool _isChartStack = true;
+    private double _lastWebPageCount;
+    private double _lastWebSiteCount;
 
-    private double LastWebTotalTime_;
+    private double _lastWebTotalTime;
 
-    private DateTime MonthDate_;
+    private DateTime _monthDate;
 
-    private int NameIndexStart_;
+    private int _nameIndexStart;
 
-    private List<ChartsDataModel> RadarData_;
+    private List<ChartsDataModel> _radarData;
 
-    private SelectItemModel SelectedWeek_;
+    private SelectItemModel _selectedWeek;
 
-    private ObservableCollection<string> TabbarData_;
+    private ObservableCollection<string> _tabbarData;
 
-    private int TabbarSelectedIndex_;
+    private int _tabbarSelectedIndex;
 
-    private AppModel Top1App_;
+    private AppModel _top1App;
 
-    private List<ChartsDataModel> TopData_;
+    private List<ChartsDataModel> _topData;
 
-    private string TopHours_;
+    private string _topHours;
 
-    private string TotalHours_;
+    private string _totalHours;
 
-    private List<ChartsDataModel> WebBrowseStatisticsData_;
+    private List<ChartsDataModel> _webBrowseStatisticsData;
 
     //private SelectItemModel ShowType_;
     /// <summary>
     ///     展示数据类型（0=应用/1=网页）
     /// </summary>
     //public SelectItemModel ShowType { get { return ShowType_; } set { ShowType_ = value; OnPropertyChanged(); } }
-    private List<ChartsDataModel> WebCategoriesPieData_;
+    private List<ChartsDataModel> _webCategoriesPieData;
 
-    private int WebColSelectedIndex_ = -1;
-    private double WebPageCount_;
-    private ContextMenu WebSiteContextMenu_;
-    private double WebSiteCount_;
+    private int _webColSelectedIndex = -1;
+    private double _webPageCount;
+    private ContextMenu _webSiteContextMenu;
+    private double _webSiteCount;
 
-    private List<ChartsDataModel> WebSitesColSelectedData_;
+    private List<ChartsDataModel> _webSitesColSelectedData;
 
-    private string WebSitesColSelectedTimeText_;
+    private string _webSitesColSelectedTimeText;
 
-    private List<ChartsDataModel> WebSitesTopData_;
-    private double WebTotalTime_;
+    private List<ChartsDataModel> _webSitesTopData;
+    private double _webTotalTime;
 
-    private string WebTotalTimeText_;
-    private string WeekDateStr_;
+    private string _webTotalTimeText;
+    private string _weekDateStr;
 
-    private List<SelectItemModel> WeekOptions_;
+    private List<SelectItemModel> _weekOptions;
 
-    private DateTime YearDate_;
+    private DateTime _yearDate;
+    
+    private List<TrendDataPoint> _trendChartDataPoints;
+    public List<TrendDataPoint> TrendChartDataPoints
+    {
+        get => _trendChartDataPoints;
+        set
+        {
+            _trendChartDataPoints = value;
+            OnPropertyChanged();
+        }
+    }
 
     public List<ChartsDataModel> Data
     {
-        get => Data_;
+        get => _data;
         set
         {
-            Data_ = value;
+            _data = value;
             OnPropertyChanged();
         }
     }
@@ -97,10 +108,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public ObservableCollection<string> TabbarData
     {
-        get => TabbarData_;
+        get => _tabbarData;
         set
         {
-            TabbarData_ = value;
+            _tabbarData = value;
             OnPropertyChanged();
         }
     }
@@ -110,140 +121,140 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public int TabbarSelectedIndex
     {
-        get => TabbarSelectedIndex_;
+        get => _tabbarSelectedIndex;
         set
         {
-            TabbarSelectedIndex_ = value;
+            _tabbarSelectedIndex = value;
             OnPropertyChanged();
         }
     }
 
     public string WeekDateStr
     {
-        get => WeekDateStr_;
+        get => _weekDateStr;
         set
         {
-            WeekDateStr_ = value;
+            _weekDateStr = value;
             OnPropertyChanged();
         }
     }
 
     public DateTime Date
     {
-        get => Date_;
+        get => _date;
         set
         {
-            Date_ = value;
+            _date = value;
             OnPropertyChanged();
         }
     }
 
     public List<SelectItemModel> WeekOptions
     {
-        get => WeekOptions_;
+        get => _weekOptions;
         set
         {
-            WeekOptions_ = value;
+            _weekOptions = value;
             OnPropertyChanged();
         }
     }
 
     public SelectItemModel SelectedWeek
     {
-        get => SelectedWeek_;
+        get => _selectedWeek;
         set
         {
-            SelectedWeek_ = value;
+            _selectedWeek = value;
             OnPropertyChanged();
         }
     }
 
     public DateTime MonthDate
     {
-        get => MonthDate_;
+        get => _monthDate;
         set
         {
-            MonthDate_ = value;
+            _monthDate = value;
             OnPropertyChanged();
         }
     }
 
     public DateTime YearDate
     {
-        get => YearDate_;
+        get => _yearDate;
         set
         {
-            YearDate_ = value;
+            _yearDate = value;
             OnPropertyChanged();
         }
     }
 
     public int NameIndexStart
     {
-        get => NameIndexStart_;
+        get => _nameIndexStart;
         set
         {
-            NameIndexStart_ = value;
+            _nameIndexStart = value;
             OnPropertyChanged();
         }
     }
 
     public List<ChartsDataModel> TopData
     {
-        get => TopData_;
+        get => _topData;
         set
         {
-            TopData_ = value;
+            _topData = value;
             OnPropertyChanged();
         }
     }
 
     public double DataMaximum
     {
-        get => DataMaximum_;
+        get => _dataMaximum;
         set
         {
-            DataMaximum_ = value;
+            _dataMaximum = value;
             OnPropertyChanged();
         }
     }
 
     public ContextMenu AppContextMenu
     {
-        get => AppContextMenu_;
+        get => _appContextMenu;
         set
         {
-            AppContextMenu_ = value;
+            _appContextMenu = value;
             OnPropertyChanged();
         }
     }
 
     public string TotalHours
     {
-        get => TotalHours_;
+        get => _totalHours;
         set
         {
-            TotalHours_ = value;
+            _totalHours = value;
             OnPropertyChanged();
         }
     }
 
     public string TopHours
     {
-        get => TopHours_;
+        get => _topHours;
         set
         {
-            TopHours_ = value;
+            _topHours = value;
             OnPropertyChanged();
         }
     }
 
     public string AppCount
     {
-        get => AppCount_;
+        get => _appCount;
         set
         {
-            AppCount_ = value;
+            _appCount = value;
             OnPropertyChanged();
         }
     }
@@ -253,10 +264,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public int ColumnSelectedIndex
     {
-        get => ColumnSelectedIndex_;
+        get => _columnSelectedIndex;
         set
         {
-            ColumnSelectedIndex_ = value;
+            _columnSelectedIndex = value;
             OnPropertyChanged();
         }
     }
@@ -266,10 +277,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public List<ChartsDataModel> DayHoursData
     {
-        get => DayHoursData_;
+        get => _dayHoursData;
         set
         {
-            DayHoursData_ = value;
+            _dayHoursData = value;
             OnPropertyChanged();
         }
     }
@@ -279,10 +290,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public string DayHoursSelectedTime
     {
-        get => DayHoursSelectedTime_;
+        get => _dayHoursSelectedTime;
         set
         {
-            DayHoursSelectedTime_ = value;
+            _dayHoursSelectedTime = value;
             OnPropertyChanged();
         }
     }
@@ -292,10 +303,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public bool IsCanColumnSelect
     {
-        get => IsCanColumnSelect_;
+        get => _isCanColumnSelect;
         set
         {
-            IsCanColumnSelect_ = value;
+            _isCanColumnSelect = value;
             OnPropertyChanged();
         }
     }
@@ -305,10 +316,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public SelectItemModel ChartDataMode
     {
-        get => ChartDataMode_;
+        get => _chartDataMode;
         set
         {
-            ChartDataMode_ = value;
+            _chartDataMode = value;
             OnPropertyChanged();
         }
     }
@@ -318,10 +329,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public List<ChartsDataModel> RadarData
     {
-        get => RadarData_;
+        get => _radarData;
         set
         {
-            RadarData_ = value;
+            _radarData = value;
             OnPropertyChanged();
         }
     }
@@ -331,10 +342,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public bool IsChartStack
     {
-        get => IsChartStack_;
+        get => _isChartStack;
         set
         {
-            IsChartStack_ = value;
+            _isChartStack = value;
             OnPropertyChanged();
         }
     }
@@ -344,10 +355,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public AppModel Top1App
     {
-        get => Top1App_;
+        get => _top1App;
         set
         {
-            Top1App_ = value;
+            _top1App = value;
             OnPropertyChanged();
         }
     }
@@ -357,10 +368,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public string DiffTotalTimeType
     {
-        get => DiffTotalTimeType_;
+        get => _diffTotalTimeType;
         set
         {
-            DiffTotalTimeType_ = value;
+            _diffTotalTimeType = value;
             OnPropertyChanged();
         }
     }
@@ -370,10 +381,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public string DiffAppCountType
     {
-        get => DiffAppCountType_;
+        get => _diffAppCountType;
         set
         {
-            DiffAppCountType_ = value;
+            _diffAppCountType = value;
             OnPropertyChanged();
         }
     }
@@ -383,10 +394,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public string DiffTotalTimeValue
     {
-        get => DiffTotalTimeValue_;
+        get => _diffTotalTimeValue;
         set
         {
-            DiffTotalTimeValue_ = value;
+            _diffTotalTimeValue = value;
             OnPropertyChanged();
         }
     }
@@ -396,10 +407,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public string DiffAppCountValue
     {
-        get => DiffAppCountValue_;
+        get => _diffAppCountValue;
         set
         {
-            DiffAppCountValue_ = value;
+            _diffAppCountValue = value;
             OnPropertyChanged();
         }
     }
@@ -409,10 +420,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public List<ChartsDataModel> WebCategoriesPieData
     {
-        get => WebCategoriesPieData_;
+        get => _webCategoriesPieData;
         set
         {
-            WebCategoriesPieData_ = value;
+            _webCategoriesPieData = value;
             OnPropertyChanged();
         }
     }
@@ -422,10 +433,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public List<ChartsDataModel> WebBrowseStatisticsData
     {
-        get => WebBrowseStatisticsData_;
+        get => _webBrowseStatisticsData;
         set
         {
-            WebBrowseStatisticsData_ = value;
+            _webBrowseStatisticsData = value;
             OnPropertyChanged();
         }
     }
@@ -435,10 +446,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public string WebTotalTimeText
     {
-        get => WebTotalTimeText_;
+        get => _webTotalTimeText;
         set
         {
-            WebTotalTimeText_ = value;
+            _webTotalTimeText = value;
             OnPropertyChanged();
         }
     }
@@ -448,10 +459,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public double WebTotalTime
     {
-        get => WebTotalTime_;
+        get => _webTotalTime;
         set
         {
-            WebTotalTime_ = value;
+            _webTotalTime = value;
             OnPropertyChanged();
         }
     }
@@ -461,10 +472,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public double WebSiteCount
     {
-        get => WebSiteCount_;
+        get => _webSiteCount;
         set
         {
-            WebSiteCount_ = value;
+            _webSiteCount = value;
             OnPropertyChanged();
         }
     }
@@ -474,10 +485,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public double WebPageCount
     {
-        get => WebPageCount_;
+        get => _webPageCount;
         set
         {
-            WebPageCount_ = value;
+            _webPageCount = value;
             OnPropertyChanged();
         }
     }
@@ -487,10 +498,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public double LastWebTotalTime
     {
-        get => LastWebTotalTime_;
+        get => _lastWebTotalTime;
         set
         {
-            LastWebTotalTime_ = value;
+            _lastWebTotalTime = value;
             OnPropertyChanged();
         }
     }
@@ -500,10 +511,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public double LastWebSiteCount
     {
-        get => LastWebSiteCount_;
+        get => _lastWebSiteCount;
         set
         {
-            LastWebSiteCount_ = value;
+            _lastWebSiteCount = value;
             OnPropertyChanged();
         }
     }
@@ -513,10 +524,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public double LastWebPageCount
     {
-        get => LastWebPageCount_;
+        get => _lastWebPageCount;
         set
         {
-            LastWebPageCount_ = value;
+            _lastWebPageCount = value;
             OnPropertyChanged();
         }
     }
@@ -526,10 +537,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public List<ChartsDataModel> WebSitesTopData
     {
-        get => WebSitesTopData_;
+        get => _webSitesTopData;
         set
         {
-            WebSitesTopData_ = value;
+            _webSitesTopData = value;
             OnPropertyChanged();
         }
     }
@@ -539,10 +550,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public int WebColSelectedIndex
     {
-        get => WebColSelectedIndex_;
+        get => _webColSelectedIndex;
         set
         {
-            WebColSelectedIndex_ = value;
+            _webColSelectedIndex = value;
             OnPropertyChanged();
         }
     }
@@ -552,10 +563,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public List<ChartsDataModel> WebSitesColSelectedData
     {
-        get => WebSitesColSelectedData_;
+        get => _webSitesColSelectedData;
         set
         {
-            WebSitesColSelectedData_ = value;
+            _webSitesColSelectedData = value;
             OnPropertyChanged();
         }
     }
@@ -565,10 +576,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public string WebSitesColSelectedTimeText
     {
-        get => WebSitesColSelectedTimeText_;
+        get => _webSitesColSelectedTimeText;
         set
         {
-            WebSitesColSelectedTimeText_ = value;
+            _webSitesColSelectedTimeText = value;
             OnPropertyChanged();
         }
     }
@@ -578,10 +589,10 @@ public class ChartPageModel : ModelBase
     /// </summary>
     public ContextMenu WebSiteContextMenu
     {
-        get => WebSiteContextMenu_;
+        get => _webSiteContextMenu;
         set
         {
-            WebSiteContextMenu_ = value;
+            _webSiteContextMenu = value;
             OnPropertyChanged();
         }
     }

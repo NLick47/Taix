@@ -19,44 +19,50 @@
     </UserControl.ContextMenu>
 
     <StackPanel Margin="20">
-        <StackPanel Orientation="Horizontal" Margin="0,5,0,20">
-            <TextBlock Text="{DynamicResource SideStatistics}" FontSize="18" VerticalAlignment="Center" />
-            <select:TabSwitch Margin="10,0,0,0" VerticalAlignment="Top"
-                           IsShowIcon="False" SelectedItem="{Binding ShowType,Mode=TwoWay}"
-                           Options="{Binding ShowTypeOptions}" />
-        </StackPanel>
-        <Tabbar:Tabbar Data="{Binding TabbarData}"
-                       SelectedIndex="{Binding TabbarSelectedIndex,Mode=TwoWay}"
+        <Grid  ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                <TextBlock Text="{DynamicResource SideStatistics}" FontSize="18" VerticalAlignment="Center" />
+                <select:TabSwitch Margin="10,0,0,0" VerticalAlignment="Top"
+                                  IsShowIcon="False" SelectedItem="{Binding ShowType,Mode=TwoWay}"
+                                  Options="{Binding ShowTypeOptions}" />
+            </StackPanel>
+            
+            <StackPanel Grid.Column="1"  Orientation="Horizontal">
+                <Tabbar:Tabbar  Data="{Binding TabbarData}"
+                               SelectedIndex="{Binding TabbarSelectedIndex,Mode=TwoWay}"/>
+            
+                <Border VerticalAlignment="Top">
+                    <Grid  Margin="15,0,20,0" >
+                        <base:View Condition="0" Value="{Binding TabbarSelectedIndex}">
+                            <select:DateSelect Date="{Binding Date,Mode=TwoWay}" />
+                        </base:View>
 
-                       HorizontalAlignment="Left" />
+                        <base:View Condition="1" Value="{Binding TabbarSelectedIndex}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <select:Select IsShowIcon="False" SelectedItem="{Binding SelectedWeek,Mode=TwoWay}"
+                                               Options="{Binding WeekOptions}" />
+                                <!-- <TextBlock Foreground="{DynamicResource DefaultTextBrush}" Margin="20,0,0,0" -->
+                                <!--            FontSize="14" Text="{Binding WeekDateStr}" -->
+                                <!--            VerticalAlignment="Center" /> -->
+                            </StackPanel>
+                        </base:View>
 
-        <Border Margin="0,15,0,0">
-            <Grid>
-                <base:View Condition="0" Value="{Binding TabbarSelectedIndex}">
-                    <select:DateSelect Date="{Binding Date,Mode=TwoWay}" />
-                </base:View>
+                        <base:View Condition="2" Value="{Binding TabbarSelectedIndex}">
+                            <select:DateSelect Date="{Binding MonthDate,Mode=TwoWay}" SelectType="Month" />
 
-                <base:View Condition="1" Value="{Binding TabbarSelectedIndex}">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <select:Select IsShowIcon="False" SelectedItem="{Binding SelectedWeek,Mode=TwoWay}"
-                                       Options="{Binding WeekOptions}" />
-                        <TextBlock Foreground="{DynamicResource DefaultTextBrush}" Margin="20,0,0,0"
-                                   FontSize="14" Text="{Binding WeekDateStr}"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
-                </base:View>
+                        </base:View>
 
-                <base:View Condition="2" Value="{Binding TabbarSelectedIndex}">
-                    <select:DateSelect Date="{Binding MonthDate,Mode=TwoWay}" SelectType="Month" />
+                        <base:View Condition="3" Value="{Binding TabbarSelectedIndex}">
+                            <select:DateSelect Date="{Binding YearDate,Mode=TwoWay}" SelectType="Year" />
 
-                </base:View>
+                        </base:View>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Grid>
+        
 
-                <base:View Condition="3" Value="{Binding TabbarSelectedIndex}">
-                    <select:DateSelect Date="{Binding YearDate,Mode=TwoWay}" SelectType="Year" />
-
-                </base:View>
-            </Grid>
-        </Border>
+      
 
         <TabControl
             SelectedIndex="{Binding ShowType.Id}"
@@ -241,23 +247,38 @@
                             </Grid>
                         </Border>
                     </Grid>
+                    
+                    <Border
+                        Margin="0,10,0,0"
+                            Background="{DynamicResource SettingPanelBgBrush}" Padding="5" CornerRadius="10">
+                        <charts:TrendChart
+                            HorizontalAlignment="Stretch"
+                            YAxisLabelInterval = "3"
+                            DataPoints="{Binding TrendChartDataPoints}"
+                            LineBrush="{DynamicResource ThemeBrush}"   x:Name="TrendChartControl"
+                            Height="280" />
+                    </Border>
 
                     <WrapPanel Margin="-10">
+                  
                         <Grid Margin="10,0,0,0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
-
-                            <Border Grid.Row="1" Margin="0,20,0,0"
+                            <select:TabSwitch Grid.Row="0" 
+                                              Margin="0,20,0,0"
+                                              Padding="3,0"
+                                              Height="38"
+                                              IsShowIcon="False"
+                                              SelectedItem="{Binding ChartDataMode,Mode=TwoWay}"
+                                              Options="{Binding ChartDataModeOptions}" />
+                            <Border Grid.Row="1" Margin="0,10,0,0"
                                     Width="680"
                                     HorizontalAlignment="Left"
                                     Background="{DynamicResource SettingPanelBgBrush}" Padding="20" CornerRadius="10">
                                 <StackPanel>
-                                    <select:TabSwitch Padding="3,0" Height="38"
-                                                   IsShowIcon="False"
-                                                   SelectedItem="{Binding ChartDataMode,Mode=TwoWay}"
-                                                   Options="{Binding ChartDataModeOptions}" />
+                                 
                                     <charts:Charts IsStack="{Binding IsChartStack}" Height="310"
                                                    ColumnSelectedIndex="{Binding ColumnSelectedIndex,Mode=TwoWay}"
                                                    IsShowTotal="False" DataMaximum="{Binding DataMaximum}"

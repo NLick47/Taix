@@ -112,7 +112,139 @@ public class ChartPageViewModel : ChartPageModel
     private async void InitializeAsync()
     {
         await LoadDayData();
+        await LoadTrendChartData(); 
     }
+    
+    /// <summary>
+    /// 加载趋势图数据
+    /// </summary>
+    private async Task LoadTrendChartData()
+    {
+      
+        await Task.Run(async () =>
+        {
+            var trendData = new List<TrendDataPoint>();
+            if (TabbarSelectedIndex == 0)
+            {
+                await LoadDailyTrendData(trendData);
+            }
+            else if (TabbarSelectedIndex == 1)
+            {
+                await LoadWeeklyTrendData(trendData);
+            }
+            else if (TabbarSelectedIndex == 2)
+            {
+                await LoadMonthlyTrendData(trendData);
+            }
+            else if (TabbarSelectedIndex == 3)
+            {
+                await LoadYearlyTrendData(trendData);
+            }
+
+            Dispatcher.UIThread.Post(() => { TrendChartDataPoints  = trendData; });
+        });
+    }
+    
+    private async Task LoadDailyTrendData(List<TrendDataPoint> trendDataPoints)
+    {
+        var hourlyData = await data.GetRangeTotalDataAsync(Date, Date);
+        
+        for (int i = 0; i < 24; i++)
+        {
+            double value = 0;
+            if (i < hourlyData.Length)
+            {
+                value = hourlyData[i];
+            }
+            
+            trendDataPoints.Add(new TrendDataPoint 
+            { 
+                Label = i.ToString(), 
+                Value = value 
+            });
+        }
+    }
+    
+    
+    private async Task LoadWeeklyTrendData(List<TrendDataPoint> trendDataPoints)
+    {
+        var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek
+            ? Time.GetThisWeekDate()
+            : Time.GetLastWeekDate();
+            
+        var dailyData = await data.GetRangeTotalDataAsync(weekDateArr[0], weekDateArr[1]);
+        
+        string[] dayNames = 
+        {
+            ResourceStrings.Monday, 
+            ResourceStrings.Tuesday, 
+            ResourceStrings.Wednesday, 
+            ResourceStrings.Thursday,
+            ResourceStrings.Friday, 
+            ResourceStrings.Saturday, 
+            ResourceStrings.Sunday
+        };
+        
+        for (int i = 0; i < 7; i++)
+        {
+            double value = 0;
+            if (i < dailyData.Length)
+            {
+                value = dailyData[i];
+            }
+            
+            trendDataPoints.Add(new TrendDataPoint 
+            { 
+                Label = dayNames[i], 
+                Value = value 
+            });
+        }
+    }
+    
+    
+    private async Task LoadMonthlyTrendData(List<TrendDataPoint> trendDataPoints)
+    {
+        var dateArr = Time.GetMonthDate(MonthDate);
+        var daysInMonth = DateTime.DaysInMonth(MonthDate.Year, MonthDate.Month);
+        var dailyData = await data.GetRangeTotalDataAsync(dateArr[0], dateArr[1]);
+        
+        for (int i = 0; i < daysInMonth; i++)
+        {
+            double value = 0;
+            if (i < dailyData.Length)
+            {
+                value = dailyData[i];
+            }
+            
+            trendDataPoints.Add(new TrendDataPoint 
+            { 
+                Label = (i + 1).ToString(), 
+                Value = value 
+            });
+        }
+    }
+    
+    
+    private async Task LoadYearlyTrendData(List<TrendDataPoint> trendDataPoints)
+    {
+        var monthlyData = await data.GetMonthTotalDataAsync(YearDate);
+        
+        for (int i = 0; i < 12; i++)
+        {
+            double value = 0;
+            if (i < monthlyData.Length)
+            {
+                value = monthlyData[i];
+            }
+            
+            trendDataPoints.Add(new TrendDataPoint 
+            { 
+                Label = (i + 1).ToString(), 
+                Value = value 
+            });
+        }
+    }
+
 
     public override void Dispose()
     {
@@ -120,6 +252,7 @@ public class ChartPageViewModel : ChartPageModel
         PropertyChanged -= ChartPageVM_PropertyChanged;
         Data = null;
         TopData = null;
+        TrendChartDataPoints = null; 
     }
 
     private void OnTodetailCommand(object obj)
@@ -157,17 +290,40 @@ public class ChartPageViewModel : ChartPageModel
 
     private async void ChartPageVM_PropertyChanged(object sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(Date)) await LoadDayData();
+        if (e.PropertyName == nameof(Date))
+        {
+            await LoadDayData();
+            await LoadTrendChartData();
+        }
         if (e.PropertyName == nameof(TabbarSelectedIndex))
         {
             IsCanColumnSelect = true;
             await LoadData();
+            await LoadTrendChartData(); 
         }
 
-        if (e.PropertyName == nameof(SelectedWeek)) await LoadWeekData();
-        if (e.PropertyName == nameof(MonthDate)) await LoadMonthlyData();
-        if (e.PropertyName == nameof(YearDate)) await LoadYearData();
-        if (e.PropertyName == nameof(ColumnSelectedIndex)) await LoadSelectedColData();
+        if (e.PropertyName == nameof(SelectedWeek)) 
+        {
+            await LoadWeekData();
+            await LoadTrendChartData();
+        }
+
+        if (e.PropertyName == nameof(MonthDate))
+        {
+            await LoadMonthlyData();
+            await LoadTrendChartData();
+        }
+
+        if (e.PropertyName == nameof(YearDate))
+        {
+            await LoadYearData();
+            await LoadTrendChartData();
+        }
+
+        if (e.PropertyName == nameof(ColumnSelectedIndex))
+        {
+            await LoadSelectedColData();
+        }
         if (e.PropertyName == nameof(ChartDataMode))
         {
             if (ChartDataMode.Id == 1)
