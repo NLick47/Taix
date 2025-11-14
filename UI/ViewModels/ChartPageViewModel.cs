@@ -282,9 +282,9 @@ public class ChartPageViewModel : ChartPageModel
         }
     }
 
-    private Task OnRefreshCommand(object obj)
+    private async Task OnRefreshCommand(object obj)
     {
-        return LoadData();
+        await LoadData();
     }
 
 
@@ -337,27 +337,34 @@ public class ChartPageViewModel : ChartPageModel
     }
 
 
-    private Task LoadData()
+    private async Task LoadData()
     {
         if (TabbarSelectedIndex == 0)
         {
             NameIndexStart = 0;
 
-            return LoadDayData();
+            await LoadDayData();
         }
 
-        if (TabbarSelectedIndex == 1) return LoadWeekData();
+        if (TabbarSelectedIndex == 1)
+        {
+            await LoadWeekData();
+        }
 
         if (TabbarSelectedIndex == 2)
         {
             NameIndexStart = 1;
 
-            return LoadMonthlyData();
+            await LoadMonthlyData();
         }
 
-        if (TabbarSelectedIndex == 3) return LoadYearData();
+        if (TabbarSelectedIndex == 3)
+        {
+            await LoadYearData();
+        }
 
-        return LoadSelectedColData();
+        await LoadSelectedColData();
+        await LoadTrendChartData();
     }
 
     /// <summary>
