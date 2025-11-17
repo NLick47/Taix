@@ -13,7 +13,6 @@ namespace UI.Controls.Charts
 {
     public class TrendChart : Control
     {
-        // 依赖属性
         public static readonly StyledProperty<IList<TrendDataPoint>> DataPointsProperty =
             AvaloniaProperty.Register<TrendChart, IList<TrendDataPoint>>(nameof(DataPoints));
 
@@ -83,8 +82,7 @@ namespace UI.Controls.Charts
 
         public static readonly StyledProperty<bool> ShowTooltipProperty =
             AvaloniaProperty.Register<TrendChart, bool>(nameof(ShowTooltip), true);
-
-        // 私有字段
+        
         private Point _mousePosition = new Point(double.NaN, double.NaN);
         private int _hoveredIndex = -1;
         private bool _isMouseOver = false;
@@ -95,7 +93,6 @@ namespace UI.Controls.Charts
         private Rect _chartRect;
         private bool _needsAnimationReset = true;
 
-        // 构造函数
         public TrendChart()
         {
             // 动画定时器
@@ -113,7 +110,6 @@ namespace UI.Controls.Charts
             });
         }
 
-        // 属性
         public IList<TrendDataPoint> DataPoints
         {
             get => GetValue(DataPointsProperty);
@@ -322,59 +318,57 @@ namespace UI.Controls.Charts
         private string ConvertSecondsToTimeString(double seconds)
         {
             int totalSeconds = (int)seconds;
-            
+    
             if (totalSeconds < 60)
             {
-                return $"{totalSeconds}秒";
+                return $"{totalSeconds}s";
             }
             else if (totalSeconds < 3600)
             {
                 int minutes = totalSeconds / 60;
                 int remainingSeconds = totalSeconds % 60;
-                return remainingSeconds > 0 ? $"{minutes}分{remainingSeconds}秒" : $"{minutes}分";
+                return remainingSeconds > 0 ? $"{minutes}m {remainingSeconds}s" : $"{minutes}m";
             }
             else
             {
                 int hours = totalSeconds / 3600;
                 int remainingMinutes = (totalSeconds % 3600) / 60;
                 int remainingSeconds = totalSeconds % 60;
-                
+        
                 if (remainingMinutes > 0 && remainingSeconds > 0)
-                    return $"{hours}时{remainingMinutes}分{remainingSeconds}秒";
+                    return $"{hours}h {remainingMinutes}m {remainingSeconds}s";
                 else if (remainingMinutes > 0)
-                    return $"{hours}时{remainingMinutes}分";
+                    return $"{hours}h {remainingMinutes}m";
                 else if (remainingSeconds > 0)
-                    return $"{hours}时{remainingSeconds}秒";
+                    return $"{hours}h {remainingSeconds}s";
                 else
-                    return $"{hours}时";
+                    return $"{hours}h";
             }
         }
-        
+
         private string ConvertSecondsToYAxisLabel(double seconds)
         {
             int totalSeconds = (int)seconds;
-            
+    
             if (totalSeconds < 60)
             {
-                return $"{totalSeconds}秒";
+                return $"{totalSeconds}s";
             }
             else if (totalSeconds < 3600)
             {
-                return $"{totalSeconds / 60}分";
+                return $"{totalSeconds / 60}m";
             }
             else
             {
                 int hours = totalSeconds / 3600;
                 int minutes = (totalSeconds % 3600) / 60;
-                
-                // 如果分钟数为0，只显示小时
+        
                 if (minutes == 0)
-                    return $"{hours}时";
-                // 如果小时数较大，只显示小时
+                    return $"{hours}h";
                 else if (hours >= 5)
-                    return $"{hours}时";
+                    return $"{hours}h";
                 else
-                    return $"{hours}时{minutes}分";
+                    return $"{hours}h {minutes}m";
             }
         }
         
