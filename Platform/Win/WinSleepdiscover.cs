@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-using System.Drawing;
-using Avalonia.Threading;
+﻿using Avalonia.Threading;
 using Microsoft.Win32;
 using SharedLibrary.Enums;
 using SharedLibrary.Event;
@@ -9,333 +7,329 @@ using SharedLibrary.Servicers;
 
 namespace Win;
 
-public class WinSleepdiscover : ISleepdiscover
+public class WinSleepdiscover : ISleepdiscover, IDisposable
 {
-    private static readonly nint _hookKeyboardId = nint.Zero;
-    private static readonly nint _hookMouseId = nint.Zero;
-
-    //  键盘钩子
+   
+    private long _lastActivityTicks; 
+    private int _statusInt;        
+    private long _soundStartTimeTicks; 
+    
+    private nint _keyboardHookId = nint.Zero;
+    private nint _mouseHookId = nint.Zero;
     private readonly Win32API.LowLevelKeyboardProc _keyboardProc;
-
-
-    //  鼠标钩子
     private readonly Win32API.LowLevelKeyboardProc _mouseProc;
-
-    private int _emptyPointNum;
-
-    private Point _lastPoint;
-    private nint _mouseHook;
-
-    /// <summary>
-    ///     播放声音开始时间
-    /// </summary>
-    private DateTime _playSoundStartTime;
-
-    /// <summary>
-    ///     最后一次按键时间
-    /// </summary>
-    private DateTime _pressKeyboardLastTime;
-
-    private SleepStatus _status = SleepStatus.Wake;
-
-    private DispatcherTimer _timer;
-
-    public WinSleepdiscover()
-    {
-        SystemEvents.PowerModeChanged += OnPowerModeChanged;
-        SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
-
-        _keyboardProc = HookCallback;
-        _mouseProc = HookMouseCallback;
-    }
+    
+#if DEBUG
+    private const int ActivityCheckInterval = 30;      // 活动检测间隔
+    private const int InactiveThresholdMinutes = 1;    // 无操作判定阈值
+    private const int MaxSoundDurationHours = 2;       // 最大声音持续时间
+#else
+    private const int ActivityCheckInterval = 30;     
+    private const int InactiveThresholdMinutes = 5;    
+    private const int MaxSoundDurationHours = 2;     
+#endif
+    
+   
 
     public event SleepdiscoverEventHandler SleepStatusChanged;
 
+    public WinSleepdiscover()
+    {
+        // 初始化原子状态
+        Interlocked.Exchange(ref _lastActivityTicks, DateTime.Now.Ticks);
+        Interlocked.Exchange(ref _statusInt, (int)SleepStatus.Wake);
+        Interlocked.Exchange(ref _soundStartTimeTicks, 0);
+        
+        // 初始化钩子回调
+        _keyboardProc = HookKeyboardCallback;
+        _mouseProc = HookMouseCallback;
+        
+        // 注册系统事件
+        SystemEvents.PowerModeChanged += OnPowerModeChanged;
+        SystemEvents.SessionSwitch += OnSessionSwitch;
+    }
+
+ 
     public void Start()
     {
-        StartTimer();
-
-        _lastPoint = Win32API.GetCursorPosition();
-        _playSoundStartTime = DateTime.MinValue;
-        _pressKeyboardLastTime = DateTime.Now;
-
-        //  设置键盘钩子
-        Win32API.SetKeyboardHook(_keyboardProc);
-    }
-
-    public void Stop()
-    {
-        StopTimer();
-    }
-
-    private void StartTimer()
-    {
-        StopTimer();
-        _timer = new DispatcherTimer();
-        _timer.Interval = new TimeSpan(0, 5, 0);
-        _timer.Tick += Timer_Tick;
-        _timer.Start();
-    }
-
-    private void StopTimer()
-    {
-        if (_timer != null)
+        // 清理可能残留的旧钩子
+        CleanupHooks();
+        
+        // 设置输入设备钩子
+        _keyboardHookId = Win32API.SetKeyboardHook(_keyboardProc);
+        _mouseHookId = Win32API.SetMouseHook(_mouseProc);
+        
+        // 重置活动时间
+        Interlocked.Exchange(ref _lastActivityTicks, DateTime.Now.Ticks);
+        
+  
+        StartActivityTimer();
+        
+        // 确保状态正确
+        var currentStatus = (SleepStatus)Interlocked.CompareExchange(
+            ref _statusInt, 
+            (int)SleepStatus.Wake, 
+            (int)SleepStatus.Sleep
+        );
+        
+        if (currentStatus != SleepStatus.Wake)
         {
-            _timer.Tick -= Timer_Tick;
-            _timer.Stop();
+            OnStatusChanged(SleepStatus.Wake);
         }
     }
 
-    private void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
+ 
+    public void Stop()
     {
-        if (e.Reason == SessionSwitchReason.RemoteDisconnect || e.Reason == SessionSwitchReason.ConsoleDisconnect)
-            //  与这台设备远程桌面连接断开
-            if (_status == SleepStatus.Wake)
+        StopActivityTimer();
+        CleanupHooks();
+        Interlocked.Exchange(ref _statusInt, (int)SleepStatus.Wake);
+    }
+
+    
+    public void Dispose()
+    {
+        Stop();
+        SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        SystemEvents.SessionSwitch -= OnSessionSwitch;
+    }
+
+    #region 原子状态操作
+
+  
+    private void UpdateActivityTime()
+    {
+        Interlocked.Exchange(ref _lastActivityTicks, DateTime.Now.Ticks);
+    }
+
+   
+    private DateTime GetLastActivityTime()
+    {
+        return new DateTime(Interlocked.Read(ref _lastActivityTicks));
+    }
+
+   
+    private SleepStatus GetStatus()
+    {
+        return (SleepStatus)Interlocked.CompareExchange(ref _statusInt, 0, 0);
+    }
+
+   
+    private void SetStatus(SleepStatus newStatus)
+    {
+        var oldStatus = (SleepStatus)Interlocked.CompareExchange(
+            ref _statusInt, 
+            (int)newStatus, 
+            (int)GetStatus()
+        );
+        
+        if (oldStatus != newStatus)
+        {
+            OnStatusChanged(newStatus);
+        }
+    }
+
+ 
+    private void SetSoundStartTime(DateTime time)
+    {
+        Interlocked.Exchange(ref _soundStartTimeTicks, time.Ticks);
+    }
+
+ 
+    private DateTime? GetSoundStartTime()
+    {
+        var ticks = Interlocked.Read(ref _soundStartTimeTicks);
+        return ticks > 0 ? new DateTime(ticks) : (DateTime?)null;
+    }
+
+   
+    private void OnStatusChanged(SleepStatus status)
+    {
+        Logger.Info(status == SleepStatus.Sleep ? "进入睡眠状态" : "系统唤醒");
+        SleepStatusChanged?.Invoke(status);
+    }
+
+    #endregion
+
+    #region 钩子回调处理
+
+    private nint HookKeyboardCallback(int nCode, nint wParam, nint lParam)
+    {
+        if (nCode >= 0 && wParam == Win32API.WM_KEYDOWN)
+        {
+            UpdateActivityTime();
+            
+            // 如果当前处于睡眠状态，唤醒系统
+            if (GetStatus() == SleepStatus.Sleep)
             {
-                Logger.Warn("与这台设备远程桌面连接断开");
-                Sleep();
+                Logger.Info("键盘活动 - 唤醒系统");
+                SetStatus(SleepStatus.Wake);
             }
+        }
+        
+        return Win32API.CallNextHookEx(_keyboardHookId, nCode, wParam, lParam);
     }
 
     private nint HookMouseCallback(int nCode, nint wParam, nint lParam)
     {
-        if (nCode >= 0 && _status == SleepStatus.Sleep)
-            if (wParam == Win32API.WM_LBUTTONDBLCLK || wParam == Win32API.WM_WHEEL)
-            {
-                Logger.Info("鼠标唤醒");
-
-                Wake();
-            }
-
-        return Win32API.CallNextHookEx(_hookMouseId, nCode, wParam, lParam);
-    }
-
-    private nint HookCallback(
-        int nCode, nint wParam, nint lParam)
-    {
-        if (nCode >= 0 && wParam == Win32API.WM_KEYDOWN)
+        if (nCode >= 0)
         {
-            if (_status == SleepStatus.Sleep)
+            bool isMouseActive = wParam == Win32API.WM_MOUSEMOVE ||
+                                 wParam == Win32API.WM_LBUTTONDOWN ||
+                                 wParam == Win32API.WM_RBUTTONDOWN ||
+                                 wParam == Win32API.WM_MBUTTONDOWN ||
+                                 wParam == Win32API.WM_MOUSEWHEEL;
+            
+            if (isMouseActive)
             {
-                Logger.Info("键盘唤醒");
-
-                Wake();
-            }
-            else
-            {
-                _playSoundStartTime = DateTime.MinValue;
-                _pressKeyboardLastTime = DateTime.Now;
+                UpdateActivityTime();
+                
+                if (GetStatus() == SleepStatus.Sleep)
+                {
+                    Logger.Info("鼠标活动 - 唤醒系统");
+                    SetStatus(SleepStatus.Wake);
+                }
             }
         }
-
-        return Win32API.CallNextHookEx(_hookKeyboardId, nCode, wParam, lParam);
+        
+        return Win32API.CallNextHookEx(_mouseHookId, nCode, wParam, lParam);
     }
+
+    #endregion
+
+    #region 系统事件处理
 
     private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
     {
         switch (e.Mode)
         {
             case PowerModes.Suspend:
-                //  电脑休眠
-                if (_status == SleepStatus.Wake)
+                Logger.Info("系统进入休眠状态");
+                // 如果我们检测到系统休眠，也标记为睡眠状态
+                if (GetStatus() == SleepStatus.Wake)
                 {
-                    Logger.Info("设备已休眠");
-
-                    Sleep();
+                    SetStatus(SleepStatus.Sleep);
                 }
-
                 break;
+                
             case PowerModes.Resume:
-                //  电脑恢复
-                if (_status == SleepStatus.Sleep)
+                Logger.Info("系统从休眠恢复");
+                // 系统恢复时，标记为唤醒状态
+                if (GetStatus() == SleepStatus.Sleep)
                 {
-                    Logger.Info("设备已恢复");
-
-                    Wake();
+                    UpdateActivityTime();  // 重置活动时间
+                    SetStatus(SleepStatus.Wake);
                 }
-
                 break;
         }
     }
 
-
-    #region 指示当前是否处于睡眠状态
-
-    /// <summary>
-    ///     指示当前是否处于睡眠状态
-    /// </summary>
-    /// <returns>睡眠返回true</returns>
-    private async Task<bool> IsSleepAsync()
+    private void OnSessionSwitch(object sender, SessionSwitchEventArgs e)
     {
-        var point = Win32API.GetCursorPosition();
-
-        if (point.X + point.Y == 0)
+        if (e.Reason == SessionSwitchReason.RemoteDisconnect || 
+            e.Reason == SessionSwitchReason.ConsoleDisconnect)
         {
-            _emptyPointNum++;
-
-            if (_emptyPointNum == 2)
+            Logger.Warn("会话切换: 远程桌面连接断开");
+            if (GetStatus() == SleepStatus.Wake)
             {
-                _emptyPointNum = 0;
-                return true;
+                SetStatus(SleepStatus.Sleep);
             }
         }
 
-        var isActive = await IsActiveAsync();
-        if (isActive) return false;
-
-        //  鼠标和键盘都没有操作时判断是否在播放声音
-
-        //  持续30秒检测当前是否在播放声音
-        var isPlaySound = await IsPlaySoundAsync();
-
-        if (!isPlaySound)
-            //  没有声音判定为睡眠状态
-            return true;
-
-        //  在播放声音
-        if (_playSoundStartTime == DateTime.MinValue)
+        else if (e.Reason == SessionSwitchReason.RemoteConnect || 
+                 e.Reason == SessionSwitchReason.ConsoleConnect)
         {
-            //  第一次记录声音开始时间
-            _playSoundStartTime = DateTime.Now;
-            return false;
+            Logger.Info("会话切换: 远程桌面连接建立");
+            if (GetStatus() == SleepStatus.Sleep)
+            {
+                SetStatus(SleepStatus.Wake);
+            }
         }
-
-        //  声音播放超过两个小时视为睡眠状态
-        var timeSpan = DateTime.Now - _playSoundStartTime;
-
-        if (timeSpan.TotalHours >= 2)
-        {
-            //  重置声音开始时间
-            _playSoundStartTime = DateTime.MinValue;
-            return true;
-        }
-
-        return false;
     }
 
     #endregion
 
-    private async void Timer_Tick(object sender, EventArgs e)
+    #region 活动检测与状态管理
+
+    private void StartActivityTimer()
     {
-        Debug.WriteLine("检测");
-        var isSleep = await IsSleepAsync();
-        if (isSleep)
-            Sleep();
-        else
-            _timer.Start();
+        StopActivityTimer();
+        
+        var timer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(ActivityCheckInterval)
+        };
+        
+        timer.Tick += (s, e) => CheckActivityStatus();
+        timer.Start();
     }
 
-    private void Sleep()
+    private void StopActivityTimer()
     {
-        if (_status == SleepStatus.Sleep) return;
-
-        //  卸载事件
-        SystemEvents.SessionSwitch -= SystemEvents_SessionSwitch;
-
-        //  停止离开检测计时器
-        StopTimer();
-
-        _status = SleepStatus.Sleep;
-
-        //  设置鼠标钩子
-        Win32API.SetMouseHook(_mouseProc);
-
-        //  状态通知
-        SleepStatusChanged?.Invoke(_status);
+        
     }
 
-    private void Wake()
+    private void CheckActivityStatus()
     {
-        if (_status == SleepStatus.Wake) return;
-        try
+        // 只在唤醒状态下检查是否应该进入睡眠
+        if (GetStatus() != SleepStatus.Wake) 
+            return;
+        
+        if (ShouldEnterSleep())
         {
-            //  注册事件
-            SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
-
-            _status = SleepStatus.Wake;
-
-            //  卸载鼠标钩子
-            Win32API.UnhookWindowsHookEx(_mouseHook);
-
-            //  启动离开检测
-            StartTimer();
-
-
-            //  重置声音播放时间
-            _playSoundStartTime = DateTime.MinValue;
-
-            //  重置鼠标坐标
-            _lastPoint = Win32API.GetCursorPosition();
-
-            //  状态通知
-            SleepStatusChanged?.Invoke(_status);
-        }
-        catch (Exception e)
-        {
-            Logger.Error(e.ToString());
+            SetStatus(SleepStatus.Sleep);
         }
     }
 
-    /// <summary>
-    ///     指示当前是否在播放声音（持续30秒检测）
-    /// </summary>
-    /// <returns>播放返回true</returns>
-    private async Task<bool> IsPlaySoundAsync()
+   
+    private bool ShouldEnterSleep()
     {
-        for (var time = 30; time > 0; time--)
+        // 检查用户是否长时间无操作
+        var idleTime = DateTime.Now - GetLastActivityTime();
+        if (idleTime.TotalMinutes < InactiveThresholdMinutes)
+            return false;
+        
+        // 检查是否在播放声音
+        if (Win32API.IsWindowsPlayingSound())
         {
-            if (Win32API.IsWindowsPlayingSound()) return true;
-            Debug.WriteLine(time);
-            await Task.Delay(1000);
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    ///     指示当前是否处于活跃状态（持续30秒检测）
-    /// </summary>
-    /// <returns>活跃返回true</returns>
-    private async Task<bool> IsActiveAsync()
-    {
-        var result = false;
-
-        await Task.Run(async () =>
-        {
-            //  持续30秒
-            var time = 30;
-
-            while (time > 0)
+            // 首次检测到有声音，记录开始时间
+            if (!GetSoundStartTime().HasValue)
             {
-                var point = Win32API.GetCursorPosition();
-                var isMouseMove = _lastPoint.ToString() != point.ToString();
-                var isKeyboardActive = !IsKeyboardOuttime();
-
-                if (isMouseMove || isKeyboardActive)
-                {
-                    _lastPoint = Win32API.GetCursorPosition();
-                    result = true;
-                    break;
-                }
-
-                time--;
-                Debug.WriteLine(time);
-                await Task.Delay(1000);
+                SetSoundStartTime(DateTime.Now);
+                return false;
             }
-        });
-        return result;
+            
+            // 检查声音持续时间
+            var soundDuration = DateTime.Now - GetSoundStartTime().Value;
+            if (soundDuration.TotalHours < MaxSoundDurationHours)
+                return false;
+            
+            // 声音持续超过阈值，重置计时器
+            SetSoundStartTime(DateTime.MinValue);
+        }
+        else
+        {
+            // 没有声音，重置声音计时器
+            SetSoundStartTime(DateTime.MinValue);
+        }
+        
+        return true;  // 无操作且无声音，可以进入睡眠
     }
 
-    /// <summary>
-    ///     指示是否键盘行为超时（超过10分钟）
-    /// </summary>
-    /// <returns>超时返回true</returns>
-    private bool IsKeyboardOuttime()
+    private void CleanupHooks()
     {
-        var timeSpan = DateTime.Now - _pressKeyboardLastTime;
-#if DEBUG
-        return timeSpan.TotalSeconds >= 10;
-#endif
-        return timeSpan.TotalMinutes >= 10;
+        if (_keyboardHookId != nint.Zero)
+        {
+            Win32API.UnhookWindowsHookEx(_keyboardHookId);
+            _keyboardHookId = nint.Zero;
+        }
+        
+        if (_mouseHookId != nint.Zero)
+        {
+            Win32API.UnhookWindowsHookEx(_mouseHookId);
+            _mouseHookId = nint.Zero;
+        }
     }
+
+    #endregion
 }

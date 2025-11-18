@@ -15,6 +15,7 @@ public static class Win32API
 
     public const uint PROCESS_QUERY_INFORMATION = 0x400;
     public const uint PROCESS_VM_READ = 0x010;
+   
 
     [DllImport("user32.dll")]
     public static extern nint GetForegroundWindow();
@@ -258,11 +259,24 @@ public static class Win32API
     private const int WH_KEYBOARD_LL = 13;
     public const int WM_KEYDOWN = 0x0100;
     private const int WH_MOUSE_LL = 14;
-    public const int WM_LBUTTONDBLCLK = 0x202;
-    public const int WM_WHEEL = 0x20a;
-    public const int WM_KEYUP = 0x101;
-    public const int WM_SYSKEYDOWN = 0x104;
-    public const int WM_SYSKEYUP = 0x105;
+    
+    #region 鼠标消息
+    public const int WM_MOUSEMOVE = 0x0200;
+    public const int WM_LBUTTONDOWN = 0x0201;
+    public const int WM_LBUTTONUP = 0x0202;
+    public const int WM_RBUTTONDOWN = 0x0204;
+    public const int WM_RBUTTONUP = 0x0205;
+    public const int WM_RBUTTONDBLCLK = 0x0206;
+    public const int WM_MBUTTONDOWN = 0x0207;
+    public const int WM_MBUTTONUP = 0x0208;
+    public const int WM_MBUTTONDBLCLK = 0x0209;
+    public const int WM_MOUSEWHEEL = 0x020A;
+    public const int WM_XBUTTONDOWN = 0x020B;
+    public const int WM_XBUTTONUP = 0x020C;
+    public const int WM_XBUTTONDBLCLK = 0x020D;
+    
+
+    #endregion
 
     /// <summary>
     ///     设置键盘钩子
@@ -355,4 +369,7 @@ public static class Win32API
     }
 
     #endregion
+
+
+    
 }
