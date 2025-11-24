@@ -62,7 +62,7 @@ public class DefaultWindow : Avalonia.Controls.Window
     private Button.Button CancelBtn, ConfirmBtn, InputModalCancelBtn, InputModalConfirmBtn;
     private InputBox InputModalInputBox;
     private Func<string, bool> InputModalValidFnc;
-    private string InputValue;
+    private string? InputValue;
     private bool IsDialogConfirm;
     private bool IsShowConfirmDialog, IsShowInputModal;
 
@@ -289,7 +289,7 @@ public class DefaultWindow : Avalonia.Controls.Window
         ToastGrid.PointerPressed -= ToastGrid_MouseLeftButtonDown;
     }
 
-    public Task<string> ShowInputModalAsync(string title_, string message_, string value_, Func<string, bool> validFnc_)
+    public Task<string?> ShowInputModalAsync(string title_, string message_, string value_, Func<string, bool> validFnc_)
     {
         IsShowInputModal = true;
         ToastGrid.IsVisible = true;

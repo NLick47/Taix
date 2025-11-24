@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using Core.Librarys.SQLite;
 using Core.Models;
 using Core.Servicers.Interfaces;
@@ -9,12 +10,18 @@ namespace Core.Servicers.Instances;
 
 public class AppData : IAppData
 {
-    private readonly object _locker = new();
-    private List<AppModel> _apps;
+    private readonly ConcurrentDictionary<int, AppModel> _appsById;
+    private readonly ConcurrentDictionary<string, AppModel> _appsByName;
+
+    public AppData()
+    {
+        _appsById = new ConcurrentDictionary<int, AppModel>();
+        _appsByName = new ConcurrentDictionary<string, AppModel>();
+    }
 
     public List<AppModel> GetAllApps()
     {
-        return _apps;
+        return _appsById.Values.ToList();
     }
 
     public async Task LoadAsync()
@@ -22,7 +29,7 @@ public class AppData : IAppData
         Debug.WriteLine("加载app开始");
         using (var db = new TaiDbContext())
         {
-            _apps = await (from app in db.App
+            var apps = await (from app in db.App
                 join category in db.Categorys
                     on app.CategoryID equals category.ID into categoryGroup
                 from n in categoryGroup.DefaultIfEmpty()
@@ -38,13 +45,21 @@ public class AppData : IAppData
                     Alias = app.Alias,
                     TotalTime = app.TotalTime
                 }).ToListAsync();
+
+            // 清空现有数据
+            _appsById.Clear();
+            _appsByName.Clear();
+
+            // 批量添加
+            foreach (var app in apps)
+            {
+                _appsById[app.ID] = app;
+                _appsByName[app.Name] = app;
+            }
         }
     }
 
-    /// <summary>
-    ///     更新app数据，要先调用GetApp获得后更改并传回才有效
-    /// </summary>
-    /// <param name="app"></param>
+
     public void UpdateApp(AppModel app_)
     {
         try
@@ -62,6 +77,18 @@ public class AppData : IAppData
                     app.CategoryID = app_.CategoryID;
                     app.Alias = app_.Alias;
                     db.SaveChanges();
+                    
+                    if (_appsById.TryGetValue(app_.ID, out var existingApp))
+                    {
+                        if (existingApp.Name != app_.Name)
+                        {
+                            _appsByName.TryRemove(existingApp.Name, out _);
+                            _appsByName[app_.Name] = app_;
+                        }
+                        
+                        // 更新对象属性
+                        UpdateAppProperties(existingApp, app_);
+                    }
                 }
             }
         }
@@ -73,47 +100,60 @@ public class AppData : IAppData
 
     public AppModel GetApp(string name)
     {
-        lock (_locker)
-        {
-            return _apps.Where(m => m.Name == name).FirstOrDefault();
-        }
+        _appsByName.TryGetValue(name, out var app);
+        return app;
     }
 
     public AppModel GetApp(int id)
     {
-        lock (_locker)
-        {
-            return _apps.Where(m => m.ID == id).FirstOrDefault();
-        }
+        _appsById.TryGetValue(id, out var app);
+        return app;
     }
 
     public void AddApp(AppModel app)
     {
-        lock (_locker)
+        if (_appsByName.TryAdd(app.Name, app))
         {
-            if (_apps.Where(m => m.Name == app.Name).Any()) return;
             try
             {
                 using (var db = new TaiDbContext())
                 {
                     var r = db.App.Add(app);
                     var res = db.SaveChanges();
-                    if (res > 0) _apps.Add(app);
+                    if (res > 0)
+                    {
+                        _appsById[app.ID] = app;
+                    }
+                    else
+                    {
+                        _appsByName.TryRemove(app.Name, out _);
+                    }
                 }
             }
             catch (Exception e)
             {
+                _appsByName.TryRemove(app.Name, out _);
                 Logger.Error(e.ToString());
             }
         }
     }
 
-
     public List<AppModel> GetAppsByCategoryID(int categoryID)
     {
-        lock (_locker)
-        {
-            return _apps.Where(m => m.CategoryID == categoryID).ToList();
-        }
+        return _appsById.Values
+            .Where(m => m.CategoryID == categoryID)
+            .ToList();
+    }
+
+    private void UpdateAppProperties(AppModel target, AppModel source)
+    {
+        target.TotalTime = source.TotalTime;
+        target.IconFile = source.IconFile;
+        target.Name = source.Name;
+        target.Description = source.Description;
+        target.File = source.File;
+        target.CategoryID = source.CategoryID;
+        target.Alias = source.Alias;
+        target.Category = source.Category;
     }
 }
