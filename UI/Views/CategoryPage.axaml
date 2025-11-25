@@ -280,7 +280,7 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <WrapPanel Orientation="Vertical">
-                                        <Border Width="160" Height="160">
+                                        <Border Width="150" Height="150">
                                             <Grid>
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="50" />
