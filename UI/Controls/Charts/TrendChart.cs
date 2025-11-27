@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using Avalonia;
@@ -84,7 +85,7 @@ namespace UI.Controls.Charts
             AvaloniaProperty.Register<TrendChart, bool>(nameof(ShowTooltip), true);
         
         private Point _mousePosition = new Point(double.NaN, double.NaN);
-        private int _hoveredIndex = -1;
+        private int _hoveredDataIndex = -1;
         private bool _isMouseOver = false;
         private readonly DispatcherTimer _animationTimer;
         private readonly List<Point> _animatedPoints = new List<Point>();
@@ -251,10 +252,11 @@ namespace UI.Controls.Charts
         public override void Render(DrawingContext context)
         {
             base.Render(context);
-            
+           
             if (DataPoints == null || DataPoints.Count == 0)
                 return;
-            
+            var bounds = new Rect(0, 0, Bounds.Width, Bounds.Height);
+            context.FillRectangle(Brushes.Transparent, bounds);
             var size = Bounds.Size;
             _chartRect = new Rect(Margin, Margin, size.Width - Margin * 2, size.Height - Margin * 2);
             
@@ -284,7 +286,7 @@ namespace UI.Controls.Charts
             DrawData(context, _chartRect);
             
             // 绘制悬停提示
-            if (ShowTooltip && _isMouseOver && _hoveredIndex >= 0 && _hoveredIndex < DataPoints.Count)
+            if (ShowTooltip && _isMouseOver && _hoveredDataIndex >= 0 && _hoveredDataIndex < DataPoints.Count)
             {
                 DrawTooltip(context, _chartRect);
             }
@@ -499,8 +501,8 @@ namespace UI.Controls.Charts
             for (int i = 0; i < _animatedPoints.Count; i++)
             {
                 var point = _animatedPoints[i];
-                var size = i == _hoveredIndex ? HoverPointSize : PointSize;
-                var brush = i == _hoveredIndex ? Brushes.White : LineBrush;
+                var size = i == _hoveredDataIndex ? HoverPointSize : PointSize;
+                var brush = i == _hoveredDataIndex ? Brushes.White : LineBrush;
                 
                 context.DrawEllipse(brush, null, point, size, size);
             }
@@ -508,11 +510,12 @@ namespace UI.Controls.Charts
         
         private void DrawTooltip(DrawingContext context, Rect chartRect)
         {
-            if (_hoveredIndex < 0 || _hoveredIndex >= DataPoints.Count)
+            if (_hoveredDataIndex < 0 || _hoveredDataIndex >= DataPoints.Count)
                 return;
             
-            var point = _animatedPoints[_hoveredIndex];
-            var data = DataPoints[_hoveredIndex];
+            var pointX = _animatedPoints[_hoveredDataIndex].X;
+            var data = DataPoints[_hoveredDataIndex];
+
             
             // 使用完整的时间格式转换
             var timeString = ConvertSecondsToTimeString(data.Value);
@@ -538,18 +541,19 @@ namespace UI.Controls.Charts
             
             // 计算提示框位置
             double tooltipX, tooltipY;
-            bool isOnRight = point.X < Bounds.Width / 2;
+            bool isOnRight = pointX < Bounds.Width / 2;
             
+          
             if (isOnRight)
             {
-                tooltipX = point.X + 10;
+                tooltipX = pointX + 10;
             }
             else
             {
-                tooltipX = point.X - textWidth - padding * 2 - 10;
+                tooltipX = pointX - textWidth - padding * 2 - 10; 
             }
             
-            tooltipY = point.Y - textHeight - padding * 2;
+            tooltipY = _mousePosition.Y - textHeight - padding * 2;
             
             // 确保提示框在图表区域内
             tooltipX = Math.Max(Margin, Math.Min(tooltipX, Bounds.Width - Margin - textWidth - padding * 2));
@@ -579,24 +583,24 @@ namespace UI.Controls.Charts
             {
                 if (isOnRight)
                 {
-                    ctx.BeginFigure(new Point(point.X + 5, point.Y), false);
-                    ctx.LineTo(new Point(tooltipX - 5, point.Y));
-                    ctx.LineTo(new Point(tooltipX, point.Y - arrowSize / 2));
-                    ctx.LineTo(new Point(tooltipX - 5, point.Y + arrowSize / 2));
-                    ctx.LineTo(new Point(point.X + 5, point.Y));
+                    ctx.BeginFigure(new Point(pointX, _mousePosition.Y), false);
+                    ctx.LineTo(new Point(tooltipX - 5, _mousePosition.Y)); 
+                    ctx.LineTo(new Point(tooltipX, _mousePosition.Y - arrowSize / 2)); 
+                    ctx.LineTo(new Point(tooltipX - 5, _mousePosition.Y + arrowSize / 2)); 
+                    ctx.LineTo(new Point(pointX, _mousePosition.Y));
                 }
                 else
                 {
-                    ctx.BeginFigure(new Point(point.X - 5, point.Y), false);
-                    ctx.LineTo(new Point(tooltipX + tooltipRect.Width + 5, point.Y));
-                    ctx.LineTo(new Point(tooltipX + tooltipRect.Width, point.Y - arrowSize / 2));
-                    ctx.LineTo(new Point(tooltipX + tooltipRect.Width + 5, point.Y + arrowSize / 2));
-                    ctx.LineTo(new Point(point.X - 5, point.Y));
+                    ctx.BeginFigure(new Point(pointX, _mousePosition.Y), false);
+                    ctx.LineTo(new Point(tooltipX + tooltipRect.Width + 5, _mousePosition.Y));
+                    ctx.LineTo(new Point(tooltipX + tooltipRect.Width, _mousePosition.Y - arrowSize / 2));
+                    ctx.LineTo(new Point(tooltipX + tooltipRect.Width + 5, _mousePosition.Y + arrowSize / 2));
+                    ctx.LineTo(new Point(pointX, _mousePosition.Y)); 
                 }
             }
             context.DrawGeometry(
-                new SolidColorBrush(Color.FromArgb(230, 31, 41, 55)), 
-                new Pen(new SolidColorBrush(Color.FromArgb(100, 129, 140, 248)), 1), 
+                new SolidColorBrush(Color.FromArgb(230, 31, 41, 55)),
+                new Pen(new SolidColorBrush(Color.FromArgb(100, 129, 140, 248)), 1),
                 arrowPath
             );
             
@@ -606,35 +610,46 @@ namespace UI.Controls.Charts
         protected override void OnPointerMoved(PointerEventArgs e)
         {
             base.OnPointerMoved(e);
-            
             _mousePosition = e.GetPosition(this);
             _isMouseOver = true;
             
             if (DataPoints == null || DataPoints.Count == 0 || _chartRect.Width <= 0)
-                return;
-            
-            // 计算最近的数据点
-            double minDistance = double.MaxValue;
-            int closestIndex = -1;
-            
-            for (int i = 0; i < _animatedPoints.Count; i++)
             {
-                var point = _animatedPoints[i];
-                var distance = Math.Sqrt(
-                    Math.Pow(point.X - _mousePosition.X, 2) + 
-                    Math.Pow(point.Y - _mousePosition.Y, 2)
-                );
-                
-                if (distance < minDistance && distance < 50) // 50像素的容差
+                if (_hoveredDataIndex != -1)
                 {
-                    minDistance = distance;
-                    closestIndex = i;
+                    _hoveredDataIndex = -1;
+                    InvalidateVisual();
                 }
+                return;
             }
             
-            if (closestIndex != _hoveredIndex)
+            if (_mousePosition.X < _chartRect.Left || _mousePosition.X > _chartRect.Right)
             {
-                _hoveredIndex = closestIndex;
+                if (_hoveredDataIndex != -1)
+                {
+                    _hoveredDataIndex = -1;
+                    InvalidateVisual();
+                }
+                return;
+            }
+            
+            int newHoveredIndex = -1;
+            if (DataPoints.Count == 1)
+            {
+                newHoveredIndex = 0;
+            }
+            else
+            {
+                double regionWidth = _chartRect.Width / DataPoints.Count;
+                // 计算鼠标位于第几个区域
+                int regionIndex = (int)((_mousePosition.X - _chartRect.Left) / regionWidth);
+                // 确保索引不越界
+                newHoveredIndex = Math.Max(0, Math.Min(regionIndex, DataPoints.Count - 1));
+            }
+            Debug.WriteLine("newHoveredIndex:" + newHoveredIndex);
+            if (newHoveredIndex != _hoveredDataIndex)
+            {
+                _hoveredDataIndex = newHoveredIndex;
                 InvalidateVisual();
             }
         }
@@ -643,7 +658,7 @@ namespace UI.Controls.Charts
         {
             base.OnPointerExited(e);
             _isMouseOver = false;
-            _hoveredIndex = -1;
+            _hoveredDataIndex = -1;
             InvalidateVisual();
         }
         
