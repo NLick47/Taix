@@ -301,17 +301,28 @@ public class DateSelect : TemplatedControl
     {
         var list = new List<DayModel>();
         var currentYear = Year;
-        
+        var now = DateTime.Now;
+
         for (int month = 1; month <= 12; month++)
         {
             var monthDate = new DateTime(currentYear, month, 1);
             var isSelectedMonth = month == Date.Month && currentYear == Date.Year;
+            bool isDisabled = false;
             
+            if (currentYear == now.Year)
+            {
+                isDisabled = month > now.Month;
+            }
+            else if (currentYear > now.Year)
+            {
+                isDisabled = true;
+            }
+
             list.Add(new DayModel
             {
                 Day = monthDate,
                 IsSelected = isSelectedMonth,
-                IsDisabled = month > DateTime.Now.Month 
+                IsDisabled = isDisabled
             });
         }
 
