@@ -50,11 +50,8 @@ public class CategoryPageModel : ModelBase
         get => _selectedAppCategoryItem;
         set
         {
-            if (value != null && value.Data != null)
-            {
-                _selectedAppCategoryItem = value;
-                OnPropertyChanged();
-            }
+            _selectedAppCategoryItem = value;
+            OnPropertyChanged();
         }
     }
 

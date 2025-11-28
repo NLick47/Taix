@@ -182,11 +182,13 @@
                                                          CommandParameter="{Binding SelectedAppCategoryItem}" />
 
                                 </EventTriggerBehavior>
-
-                                <EventTriggerBehavior EventName="ContextRequested">
+                                
+                                <EventTriggerBehavior EventName="SelectionChanged">
                                     <InvokeCommandAction Command="{Binding ListBoxContextRequestedCommand}"
                                                          CommandParameter="{Binding SelectedAppCategoryItem}" />
                                 </EventTriggerBehavior>
+
+                         
                             </Interaction.Behaviors>
 
                             <ListBox.ContextMenu>
@@ -274,7 +276,7 @@
 
                             <ListBox.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <WrapPanel />
+                                    <WrapPanel/>
                                 </ItemsPanelTemplate>
                             </ListBox.ItemsPanel>
 

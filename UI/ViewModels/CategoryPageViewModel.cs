@@ -95,6 +95,7 @@ public class CategoryPageViewModel : CategoryPageModel
     ///     目录菜单命令
     /// </summary>
     public ICommand DirectoriesCommand { get; private set; }
+    
 
     private Task OnRefresh(object obj)
     {
@@ -452,17 +453,11 @@ public class CategoryPageViewModel : CategoryPageModel
             if (!isConfirm) return;
 
             var category = _categorys.GetCategory(SelectedAppCategoryItem.Data.ID);
-            if (category == null)
+            if (category == null || category.ID == 0)
             {
-                _mainVm.Toast(Application.Current.Resources["CategoryNotFound"] as string, ToastType.Error);
                 return;
             }
-            
-            if (category.ID == 0) // 不能删除系统分类
-            {
-                _mainVm.Toast(Application.Current.Resources["CannotDeleteSystemCategory"] as string, ToastType.Error);
-                return;
-            }
+          
             
             await _categorys.DeleteAsync(category);
             
