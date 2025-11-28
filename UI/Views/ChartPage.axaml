@@ -556,7 +556,7 @@
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
 
-                                    <charts:Charts Width="100" Height="100" ChartsType="Pie"
+                                    <charts:Charts Width="200" Height="200" ChartsType="Pie"
                                                    Data="{Binding WebCategoriesPieData}"
                                                    VerticalAlignment="Center"
                                                    HorizontalAlignment="Left" />

@@ -14,33 +14,34 @@ namespace UI.Controls.Charts;
 
 public class ChartsItemTypePie : Canvas
 {
-    /// <summary>
-    ///     Data
-    /// </summary>
-    public static readonly DirectProperty<ChartsItemTypePie, List<ChartsDataModel>> DataProperty =
-        AvaloniaProperty.RegisterDirect<ChartsItemTypePie, List<ChartsDataModel>>(
+    public static readonly DirectProperty<ChartsItemTypePie, List<ChartsDataModel>?> DataProperty =
+        AvaloniaProperty.RegisterDirect<ChartsItemTypePie, List<ChartsDataModel>?>(
             nameof(Data),
             o => o.Data,
             (o, v) => o.Data = v);
 
-    /// <summary>
-    ///     最大值
-    /// </summary>
+ 
     public static readonly DirectProperty<ChartsItemTypePie, double> MaxValueProperty =
         AvaloniaProperty.RegisterDirect<ChartsItemTypePie, double>(
             nameof(MaxValue),
             o => o.MaxValue,
             (o, v) => o.MaxValue = v);
 
+
+    public static readonly StyledProperty<double> InnerRadiusProperty =
+        AvaloniaProperty.Register<ChartsItemTypePie, double>(nameof(InnerRadius), 60);
+
+
+    public static readonly StyledProperty<double> OuterRadiusProperty =
+        AvaloniaProperty.Register<ChartsItemTypePie, double>(nameof(OuterRadius), 80);
+
     private readonly List<Path> _paths = new();
-    private List<ChartsDataModel> _data = new();
-
+    private List<ChartsDataModel>? _data = new();
     private double _lastAngle = -Math.PI / 2;
-
     private double _maxValue;
-    private int _zIndex = 1;
+  
 
-    public List<ChartsDataModel> Data
+    public List<ChartsDataModel>? Data
     {
         get => _data;
         set => SetAndRaise(DataProperty, ref _data, value);
@@ -52,11 +53,29 @@ public class ChartsItemTypePie : Canvas
         set => SetAndRaise(MaxValueProperty, ref _maxValue, value);
     }
 
+    public double InnerRadius
+    {
+        get => GetValue(InnerRadiusProperty);
+        set => SetValue(InnerRadiusProperty, value);
+    }
+
+    public double OuterRadius
+    {
+        get => GetValue(OuterRadiusProperty);
+        set => SetValue(OuterRadiusProperty, value);
+    }
+
     protected override Type StyleKeyOverride => typeof(ChartsItemTypePie);
 
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
+        Render();
+    }
+
+    protected override void OnSizeChanged(SizeChangedEventArgs e)
+    {
+        base.OnSizeChanged(e);
         Render();
     }
 
@@ -80,25 +99,37 @@ public class ChartsItemTypePie : Canvas
     {
         _paths.Clear();
         Children.Clear();
+        
+        if (Data == null || Data.Count == 0)
+            return;
+        
+        if (Bounds.Width > 0 && Bounds.Height > 0)
+        {
+            double size = Math.Min(Bounds.Width, Bounds.Height);
+            if (GetValue(OuterRadiusProperty) == 80)
+                OuterRadius = size * 0.35;
+            if (GetValue(InnerRadiusProperty) == 60)
+                InnerRadius = size * 0.25;
+        }
+        
         MaxValue = Data.Sum(m => m.Value);
+        _lastAngle = -Math.PI / 2;
 
-        var i = 0;
         foreach (var item in Data)
         {
             var angle = item.Value / MaxValue * 360;
             var path = CreatePath(angle, Colors.GetFromString(item.Color));
-            //path.ToolTip = item.PopupText;
             path.PointerEntered += Path_PointerEntered;
             path.PointerExited += Path_PointerExited;
             _paths.Add(path);
             Children.Add(path);
-            i++;
         }
     }
 
     private void Path_PointerExited(object? sender, PointerEventArgs e)
     {
-        foreach (var p in _paths) p.Opacity = 1;
+        foreach (var p in _paths) 
+            p.Opacity = 1;
     }
 
     private void Path_PointerEntered(object? sender, PointerEventArgs e)
@@ -109,66 +140,63 @@ public class ChartsItemTypePie : Canvas
                 p.Opacity = .2;
     }
 
-    private Path CreatePath(double angle_, SolidColorBrush color_)
+    private Path CreatePath(double angle, SolidColorBrush color)
     {
         var path = new Path();
-
         var pathGeometry = new PathGeometry();
-        var Radius = Bounds.Height / 2;
-        //double Angle = angle_;
-        //Point startPoint = new Point(Radius, Radius);
 
-        //if (Angle >= 360)
-        //{
-        //    Angle = 359;
-        //}
-
-
-        var x = Math.Cos(_lastAngle) * Radius + Radius;
-        var y = Math.Sin(_lastAngle) * Radius + Radius;
-        var lin1 = new LineSegment { Point = new Point(x, y) };
-
-        _lastAngle += Math.PI * angle_ / 180;
-
-        x = Math.Cos(_lastAngle) * Radius + Radius;
-        y = Math.Sin(_lastAngle) * Radius + Radius;
-        //Point endPoint = ComputeCartesianCoordinate(Angle, Radius);
-        //endPoint.X += Radius;
-        //endPoint.Y += Radius;
-
-        //_lastX = endPoint.X;
-        //_lastY = endPoint.Y;
-        //Debug.WriteLine($"angle:{angle_},start:{startPoint},endpoint:{endPoint}");
-
-        var arcSeg = new ArcSegment
-        {
-            Size = new Size(Radius, Radius),
-            IsLargeArc = angle_ > 180,
-            SweepDirection = SweepDirection.Clockwise,
-            Point = new Point(x, y),
-            RotationAngle = angle_
-        };
-        var line2 = new LineSegment { Point = new Point(Radius, Radius) };
+        double centerX = Bounds.Width / 2;
+        double centerY = Bounds.Height / 2;
+        
+        double innerRadius = InnerRadius;
+        double outerRadius = OuterRadius;
+        
+        double startAngle = _lastAngle;
+        double sweepAngle = angle * Math.PI / 180;
+        double endAngle = startAngle + sweepAngle;
+        
+        double startInnerX = centerX + innerRadius * Math.Cos(startAngle);
+        double startInnerY = centerY + innerRadius * Math.Sin(startAngle);
+        double startOuterX = centerX + outerRadius * Math.Cos(startAngle);
+        double startOuterY = centerY + outerRadius * Math.Sin(startAngle);
+        
+        double endOuterX = centerX + outerRadius * Math.Cos(endAngle);
+        double endOuterY = centerY + outerRadius * Math.Sin(endAngle);
+        double endInnerX = centerX + innerRadius * Math.Cos(endAngle);
+        double endInnerY = centerY + innerRadius * Math.Sin(endAngle);
+        
         var fig = new PathFigure
         {
-            StartPoint = new Point(Radius, Radius),
-            Segments = new PathSegments { lin1, arcSeg, line2 },
-            IsClosed = false
+            StartPoint = new Point(startInnerX, startInnerY),
+            Segments = new PathSegments
+            {
+                new LineSegment(){Point = new Point(startOuterX, startOuterY)},
+                new ArcSegment
+                {
+                    Point = new Point(endOuterX, endOuterY),
+                    Size = new Size(outerRadius, outerRadius),
+                    SweepDirection = SweepDirection.Clockwise,
+                    IsLargeArc = angle > 180
+                },
+                new LineSegment(){Point = new Point(endInnerX, endInnerY)},
+                new ArcSegment
+                {
+                    Point = new Point(startInnerX, startInnerY),
+                    Size = new Size(innerRadius, innerRadius),
+                    SweepDirection = SweepDirection.CounterClockwise,
+                    IsLargeArc = angle > 180
+                }
+            },
+            IsClosed = true
         };
-        pathGeometry.Figures.Add(fig);
+        
+        pathGeometry.Figures!.Add(fig);
         path.Data = pathGeometry;
-        path.Fill = color_;
+        path.Fill = color;
+        path.Stroke = Brushes.Transparent; 
+        
+        _lastAngle = endAngle;
+        
         return path;
-    }
-
-    private Point ComputeCartesianCoordinate(double angle, double radius)
-    {
-        // convert to radians
-        var angleRad = Math.PI / 180.0 * (angle - 90);
-
-        var x = radius * Math.Cos(angleRad);
-        var y = radius * Math.Sin(angleRad);
-
-        return new Point(x, y);
     }
 }
