@@ -4,7 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AvaloniaVersion>11.3.8</AvaloniaVersion>
+        <AvaloniaVersion>11.3.9</AvaloniaVersion>
         <AvaloniaReactiveUIVersion>11.2.8</AvaloniaReactiveUIVersion>
         <AvaloniaXamlBehaviorsVersion>11.3.0.1</AvaloniaXamlBehaviorsVersion>
     </PropertyGroup>
