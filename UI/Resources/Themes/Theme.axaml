@@ -146,7 +146,7 @@
             <Color x:Key="WarningColor">#FFC408</Color>
             <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
             
-            <SolidColorBrush x:Key="GrayDark" Color="#4a4a4a" />
+            <SolidColorBrush x:Key="GrayDark" Color="#2e2e2e" />
             
             <Color x:Key="TabOptionTextColor">#9CA3AF</Color>
             <Color x:Key="TabOptionTextCheckedColor">White</Color>
@@ -298,7 +298,7 @@
             <Color x:Key="WarningColor">#FFC408</Color>
             <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
             
-            <SolidColorBrush x:Key="GrayDark" Color="#f8fafc" />
+            <SolidColorBrush x:Key="GrayDark" Color="#f0f0f0" />
             
             <Color x:Key="TabOptionTextColor">#4b5563</Color>
             <Color x:Key="TabOptionTextCheckedColor">#111827</Color>
