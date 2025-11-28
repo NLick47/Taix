@@ -4,54 +4,55 @@ using UI.Models.Category;
 
 namespace UI.Models;
 
+#nullable disable
 public class CategoryPageModel : ModelBase
 {
-    private ObservableCollection<CategoryModel> Data_;
+    private ObservableCollection<CategoryModel> _data;
 
-    private string EditColor_;
-    private string EditErrorText_;
+    private string _editColor;
+    private string _editErrorText;
 
-    private string EditIconFile_;
-    private bool EditIsDirectoryMath_;
+    private string _editIconFile;
+    private bool _editIsDirectoryMath;
 
-    private string EditName_;
-    private string EditSelectedDirectory_;
-
-
-    private bool EditVisibility_;
-
-    private bool IsCreate_;
-    private bool IsEditError_;
+    private string _editName;
+    private string _editSelectedDirectory;
 
 
-    private bool IsRightClickSelected_;
+    private bool _editVisibility;
 
-    private bool IsSysCategory_;
+    private bool _isCreate;
+    private bool _isEditError;
 
-    private CategoryModel SelectedAppCategoryItem_;
 
-    private WebCategoryModel SelectedWebCategoryItem_;
+    private bool _isRightClickSelected;
 
-    private ObservableCollection<WebCategoryModel> WebCategoryData_;
+    private bool _isSysCategory;
+
+    private CategoryModel _selectedAppCategoryItem;
+
+    private WebCategoryModel _selectedWebCategoryItem;
+
+    private ObservableCollection<WebCategoryModel> _webCategoryData;
 
     public ObservableCollection<CategoryModel> Data
     {
-        get => Data_;
+        get => _data;
         set
         {
-            Data_ = value;
+            _data = value;
             OnPropertyChanged();
         }
     }
 
     public CategoryModel SelectedAppCategoryItem
     {
-        get => SelectedAppCategoryItem_;
+        get => _selectedAppCategoryItem;
         set
         {
             if (value != null && value.Data != null)
             {
-                SelectedAppCategoryItem_ = value;
+                _selectedAppCategoryItem = value;
                 OnPropertyChanged();
             }
         }
@@ -59,10 +60,10 @@ public class CategoryPageModel : ModelBase
 
     public bool EditVisibility
     {
-        get => EditVisibility_;
+        get => _editVisibility;
         set
         {
-            EditVisibility_ = value;
+            _editVisibility = value;
             OnPropertyChanged();
         }
     }
@@ -72,10 +73,10 @@ public class CategoryPageModel : ModelBase
     /// </summary>
     public bool IsCreate
     {
-        get => IsCreate_;
+        get => _isCreate;
         set
         {
-            IsCreate_ = value;
+            _isCreate = value;
             OnPropertyChanged();
         }
     }
@@ -85,10 +86,10 @@ public class CategoryPageModel : ModelBase
     /// </summary>
     public string EditName
     {
-        get => EditName_;
+        get => _editName;
         set
         {
-            EditName_ = value;
+            _editName = value;
             OnPropertyChanged();
         }
     }
@@ -98,11 +99,14 @@ public class CategoryPageModel : ModelBase
     /// </summary>
     public string EditIconFile
     {
-        get => EditIconFile_;
+        get => _editIconFile;
         set
         {
-            EditIconFile_ = value;
-            OnPropertyChanged();
+            if (!string.IsNullOrEmpty(value))
+            {
+                _editIconFile = value;
+                OnPropertyChanged();
+            }
         }
     }
 
@@ -111,10 +115,10 @@ public class CategoryPageModel : ModelBase
     /// </summary>
     public bool EditIsDirectoryMath
     {
-        get => EditIsDirectoryMath_;
+        get => _editIsDirectoryMath;
         set
         {
-            EditIsDirectoryMath_ = value;
+            _editIsDirectoryMath = value;
             OnPropertyChanged();
         }
     }
@@ -129,80 +133,80 @@ public class CategoryPageModel : ModelBase
     /// </summary>
     public string EditSelectedDirectory
     {
-        get => EditSelectedDirectory_;
+        get => _editSelectedDirectory;
         set
         {
-            EditSelectedDirectory_ = value;
+            _editSelectedDirectory = value;
             OnPropertyChanged();
         }
     }
 
     public string EditErrorText
     {
-        get => EditErrorText_;
+        get => _editErrorText;
         set
         {
-            EditErrorText_ = value;
+            _editErrorText = value;
             OnPropertyChanged();
         }
     }
 
     public bool IsEditError
     {
-        get => IsEditError_;
+        get => _isEditError;
         set
         {
-            IsEditError_ = value;
+            _isEditError = value;
             OnPropertyChanged();
         }
     }
 
     public string EditColor
     {
-        get => EditColor_;
+        get => _editColor;
         set
         {
-            EditColor_ = value;
+            _editColor = value;
             OnPropertyChanged();
         }
     }
 
     public bool IsSelectedSysCategory
     {
-        get => IsRightClickSelected_;
+        get => _isRightClickSelected;
         set
         {
-            IsRightClickSelected_ = value;
+            _isRightClickSelected = value;
             OnPropertyChanged();
         }
     }
 
     public bool IsSysCategory
     {
-        get => IsSysCategory_;
+        get => _isSysCategory;
         set
         {
-            IsSysCategory_ = value;
+            _isSysCategory = value;
             OnPropertyChanged();
         }
     }
 
     public ObservableCollection<WebCategoryModel> WebCategoryData
     {
-        get => WebCategoryData_;
+        get => _webCategoryData;
         set
         {
-            WebCategoryData_ = value;
+            _webCategoryData = value;
             OnPropertyChanged();
         }
     }
 
     public WebCategoryModel SelectedWebCategoryItem
     {
-        get => SelectedWebCategoryItem_;
+        get => _selectedWebCategoryItem;
         set
         {
-            SelectedWebCategoryItem_ = value;
+            _selectedWebCategoryItem = value;
             OnPropertyChanged();
         }
     }

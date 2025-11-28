@@ -62,15 +62,15 @@ public class Img : TemplatedControl
     private async void Handle(string path)
     {
         if (string.IsNullOrEmpty(path)) return;
-        if (path.IndexOf("avares:") != -1)
-        {
-            Resource = new Bitmap(AssetLoader.Open(new Uri(path)));
-            return;
-        }
-
+        
         try
         {
-            var src = path.IndexOf(":") != -1 ? path : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
+            if (path.IndexOf("avares:", StringComparison.Ordinal) != -1)
+            {
+                Resource = new Bitmap(AssetLoader.Open(new Uri(path)));
+                return;
+            }
+            var src = path.IndexOf(":", StringComparison.Ordinal) != -1 ? path : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
             var desktop = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
             var storage = desktop.MainWindow.StorageProvider;
             var result = await storage.TryGetFileFromPathAsync(src);
@@ -78,6 +78,7 @@ public class Img : TemplatedControl
         }
         catch (Exception e)
         {
+            // ignored
         }
     }
 }

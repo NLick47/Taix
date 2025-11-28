@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Newtonsoft.Json;
+using SharedLibrary;
 
 namespace Core.Models;
 
@@ -57,6 +58,7 @@ public class CategoryModel
             ID = 0,
             IconFile = "avares://Taix/Resources/Icons/tai.ico",
             Color = "#E5F7F6F2",
+            Name = ResourceStrings.Uncategorized,
             IsDirectoryMath = false
         };
     }

@@ -14,6 +14,7 @@
          x:DataType="vm:CategoryPageViewModel"
          IsFillPage="True"
          x:Class="UI.Views.CategoryPage">
+  
     <Grid>
         <Grid
             ZIndex="2"
@@ -183,7 +184,7 @@
                                 </EventTriggerBehavior>
 
                                 <EventTriggerBehavior EventName="ContextRequested">
-                                    <InvokeCommandAction Command="{Binding ListBoxContextRequested}"
+                                    <InvokeCommandAction Command="{Binding ListBoxContextRequestedCommand}"
                                                          CommandParameter="{Binding SelectedAppCategoryItem}" />
                                 </EventTriggerBehavior>
                             </Interaction.Behaviors>
