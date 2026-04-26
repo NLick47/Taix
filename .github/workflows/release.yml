@@ -7,42 +7,92 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-windows:
     runs-on: windows-latest
     strategy:
       matrix:
-        cpu: [ x64, x86 ]
+        cpu: [ x64 ]
         kind: [ zip ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
       - name: Install .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
             8.0.x
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            taix-server
+            taix-monitor-windows
+
       - name: Set APP_VERSION environment variable
+        shell: pwsh
         run: |
           $appVersion = "${{ github.ref_name }}" -replace '^v', ''
           Add-Content -Path $env:GITHUB_ENV -Value "APP_VERSION=$appVersion"
-      - name: Build and Publish
+
+      - name: Build Rust taix-server
         run: |
-          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false ./UI/UI.csproj -o ./output/${{ matrix.cpu }}
+          cd taix-server
+          cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Build Rust taix-monitor-windows
+        run: |
+          cd taix-monitor-windows
+          cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Build and Publish .NET Client
+        run: |
+          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:DebugType=None -p:DebugSymbols=false Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
+
+      - name: Copy Rust binaries and scripts
+        shell: pwsh
+        run: |
+          $publishDir = "./output/${{ matrix.cpu }}"
+
+          # Copy Rust binaries
+          Copy-Item "taix-server/target/x86_64-pc-windows-msvc/release/taix-server.exe"       -Destination $publishDir -Force
+          Copy-Item "taix-monitor-windows/target/x86_64-pc-windows-msvc/release/taix-monitor-windows.exe" -Destination $publishDir -Force
+
+          # Copy install scripts
+          Copy-Item "script/install.ps1"   -Destination $publishDir -Force
+          Copy-Item "script/uninstall.ps1" -Destination $publishDir -Force
+
+      - name: Organize publish directory
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File ./script/organize-publish.ps1 -PublishDir ./output/${{ matrix.cpu }}
+
       - name: Compress build artifacts
+        shell: pwsh
         run: |
-          Compress-Archive -Path ./output/${{ matrix.cpu }}/* -DestinationPath ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip
-      - name: Upload build artifacts ${{ matrix.kind }}
+          $items = Get-ChildItem -Path ./output/${{ matrix.cpu }} | Select-Object -ExpandProperty FullName
+          Compress-Archive -Path $items -DestinationPath ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip -Force
+
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
           path: ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
+
       - name: Read release notes from file
         id: release-notes
         uses: juliangruber/read-file-action@v1
         with:
           path: release_notes.txt
+
       - name: Release
         uses: ncipollo/release-action@v1
         if: ${{ startsWith(github.ref, 'refs/tags/') }}

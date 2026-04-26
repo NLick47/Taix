@@ -4,23 +4,86 @@
 * text=auto
 
 ###############################################################################
-# Set default behavior for command prompt diff.
-#
-# This is need for earlier builds of msysgit that does not have it on by
-# default for csharp files.
-# Note: This is only used by command line
+# Force UTF-8 encoding for all text files to prevent garbled Chinese characters.
 ###############################################################################
-#*.cs     diff=csharp
+*.cs      text eol=crlf diff=csharp working-tree-encoding=UTF-8
+*.cshtml  text eol=crlf working-tree-encoding=UTF-8
+*.razor   text eol=crlf working-tree-encoding=UTF-8
+*.xaml    text eol=crlf working-tree-encoding=UTF-8
+*.xml     text eol=crlf working-tree-encoding=UTF-8
+*.json    text eol=crlf working-tree-encoding=UTF-8
+*.yml     text eol=lf   working-tree-encoding=UTF-8
+*.yaml    text eol=lf   working-tree-encoding=UTF-8
+*.md      text eol=lf   working-tree-encoding=UTF-8
+*.txt     text eol=lf   working-tree-encoding=UTF-8
+*.config  text eol=crlf working-tree-encoding=UTF-8
+*.props   text eol=crlf working-tree-encoding=UTF-8
+*.targets text eol=crlf working-tree-encoding=UTF-8
+*.sln     text eol=crlf working-tree-encoding=UTF-8
+*.csproj  text eol=crlf working-tree-encoding=UTF-8
+*.resx    text eol=crlf working-tree-encoding=UTF-8
+*.Designer.cs text eol=crlf working-tree-encoding=UTF-8
+*.sh      text eol=lf   working-tree-encoding=UTF-8
+*.ps1     text eol=crlf working-tree-encoding=UTF-8
+*.bat     text eol=crlf working-tree-encoding=UTF-8
+*.cmd     text eol=crlf working-tree-encoding=UTF-8
+*.js      text eol=lf   working-tree-encoding=UTF-8
+*.ts      text eol=lf   working-tree-encoding=UTF-8
+*.css     text eol=lf   working-tree-encoding=UTF-8
+*.html    text eol=lf   working-tree-encoding=UTF-8
+*.scss    text eol=lf   working-tree-encoding=UTF-8
+*.less    text eol=lf   working-tree-encoding=UTF-8
+*.vue     text eol=lf   working-tree-encoding=UTF-8
+*.rs      text eol=lf   working-tree-encoding=UTF-8
+*.toml    text eol=lf   working-tree-encoding=UTF-8
+
+###############################################################################
+# Binary files - do not modify line endings or encoding.
+###############################################################################
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.bmp     binary
+*.webp    binary
+*.exe     binary
+*.dll     binary
+*.pdb     binary
+*.mdb     binary
+*.snupkg  binary
+*.nupkg   binary
+*.zip     binary
+*.7z      binary
+*.rar     binary
+*.pdf     binary
+*.doc     binary
+*.docx    binary
+*.xls     binary
+*.xlsx    binary
+*.ttf     binary
+*.otf     binary
+*.woff    binary
+*.woff2   binary
+*.eot     binary
+*.mp3     binary
+*.mp4     binary
+*.avi     binary
+*.wav     binary
+*.db      binary
+*.sqlite  binary
+*.sqlite3 binary
 
 ###############################################################################
 # Set the merge driver for project and solution files
 #
-# Merging from the command prompt will add diff markers to the files if there
-# are conflicts (Merging from VS is not affected by the settings below, in VS
-# the diff markers are never inserted). Diff markers may cause the following 
-# file extensions to fail to load in VS. An alternative would be to treat
-# these files as binary and thus will always conflict and require user
-# intervention with every merge. To do so, just uncomment the entries below
+# Merging from the command prompt will add diff markers to the files if
+# there are conflicts (Merging from VS is not affected by the settings below,
+# in VS the diff markers are never inserted). Diff markers may cause the
+# following file extensions to fail to load in VS. An alternative would be
+# to treat these files as binary and thus will always conflict and require
+# user intervention with every merge. To do so, just uncomment the entries
+# below
 ###############################################################################
 #*.sln       merge=binary
 #*.csproj    merge=binary
@@ -36,19 +99,10 @@
 #*.wwaproj   merge=binary
 
 ###############################################################################
-# behavior for image files
-#
-# image files are treated as binary by default.
-###############################################################################
-#*.jpg   binary
-#*.png   binary
-#*.gif   binary
-
-###############################################################################
 # diff behavior for common document formats
-# 
+#
 # Convert binary document formats to text before diffing them. This feature
-# is only available from the command line. Turn it on by uncommenting the 
+# is only available from the command line. Turn it on by uncommenting the
 # entries below.
 ###############################################################################
 #*.doc   diff=astextplain

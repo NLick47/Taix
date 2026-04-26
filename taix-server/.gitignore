@@ -1,0 +1,19 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+# Cargo.lock
+# For binary applications like this one, Cargo.lock should usually be committed.
+# Uncomment the line above only if this package is converted to a library.
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# SQLite databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
