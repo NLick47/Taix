@@ -42,7 +42,11 @@ jobs:
       - name: Set APP_VERSION environment variable
         shell: pwsh
         run: |
-          $appVersion = "${{ github.ref_name }}" -replace '^v', ''
+          if ("${{ github.ref }}" -match '^refs/tags/v') {
+            $appVersion = "${{ github.ref_name }}" -replace '^v', ''
+          } else {
+            $appVersion = '0.0.0'
+          }
           Add-Content -Path $env:GITHUB_ENV -Value "APP_VERSION=$appVersion"
 
       - name: Build Rust taix-server
