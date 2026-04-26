@@ -27,9 +27,10 @@ jobs:
             8.0.x
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          targets: x86_64-pc-windows-msvc
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
