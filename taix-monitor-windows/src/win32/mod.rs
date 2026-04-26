@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod process;
+pub mod single_instance;
 pub mod window;
 
 use std::time::Duration;

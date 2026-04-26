@@ -7,22 +7,54 @@ param(
 $ErrorActionPreference = "Stop"
 $PublishDir = Resolve-Path $PublishDir
 
+# Files that must stay in root for self-contained app to run
+$rootFiles = @(
+    "Taix.exe",
+    "Taix.dll",
+    "Taix.deps.json",
+    "Taix.runtimeconfig.json"
+)
+
+$rootPatterns = @(
+    "hostfxr.dll",
+    "hostpolicy.dll",
+    "coreclr.dll",
+    "clrjit.dll",
+    "clrgc.dll",
+    "clretwrc.dll",
+    "mscordaccore*",
+    "mscordbi.dll",
+    "mscorrc.dll",
+    "System.IO.Compression.Native.dll",
+    "Microsoft.DiaSymReader.Native.*.dll",
+    "msquic.dll"
+)
+
+function ShouldKeepInRoot($fileName) {
+    if ($rootFiles -contains $fileName) { return $true }
+    foreach ($pattern in $rootPatterns) {
+        if ($fileName -like $pattern) { return $true }
+    }
+    return $false
+}
+
 # Create bin/ subdirectory
 $binDir = Join-Path $PublishDir "bin"
 New-Item -ItemType Directory -Force -Path $binDir | Out-Null
 Write-Host "Created bin directory: $binDir"
 
-# Move all third-party DLLs (exclude entry Taix.dll)
-$coreFiles = @("Taix.dll")
+# Move managed DLLs to bin/, keep runtime host files in root
 Get-ChildItem -Path $PublishDir -Filter "*.dll" -File | ForEach-Object {
-    if ($coreFiles -notcontains $_.Name) {
+    if (-not (ShouldKeepInRoot $_.Name)) {
         $dest = Join-Path $binDir $_.Name
         Move-Item -Path $_.FullName -Destination $dest -Force
         Write-Host "Moved DLL: $($_.Name) -> bin/"
+    } else {
+        Write-Host "Kept in root: $($_.Name)"
     }
 }
 
-# Move runtimes/ directory
+# Move runtimes/ directory to bin/
 $runDir = Join-Path $PublishDir "runtimes"
 if (Test-Path $runDir) {
     $destRunDir = Join-Path $binDir "runtimes"
@@ -95,4 +127,23 @@ foreach ($targetKey in $deps['targets'].Keys) {
 
 $deps | ConvertTo-Json -Depth 100 | Set-Content $depsFile -Encoding UTF8NoBOM
 Write-Host "Updated Taix.deps.json paths."
+
+# Remove debug/diagnostic files not needed in production
+$toRemove = @(
+    (Join-Path $PublishDir "createdump.exe"),
+    (Join-Path $binDir "createdump.exe")
+)
+foreach ($file in $toRemove) {
+    if (Test-Path $file) {
+        Remove-Item $file -Force
+        Write-Host "Removed: $file"
+    }
+}
+
+# Remove any leftover PDB or XML doc files
+Get-ChildItem -Path $PublishDir, $binDir -Recurse -Include "*.pdb", "*.xml" -File | ForEach-Object {
+    Remove-Item $_.FullName -Force
+    Write-Host "Removed: $($_.FullName)"
+}
+
 Write-Host "Publish directory organized successfully."

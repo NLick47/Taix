@@ -30,6 +30,11 @@ fn parse_data_dir(args: &[String]) -> Option<PathBuf> {
 async fn main() {
     logging::init();
 
+    if win32::single_instance::try_acquire("Global\\TaixMonitorSingleInstance").is_none() {
+        tracing::error!("[Taix.Monitor] Another instance is already running. Exiting.");
+        return;
+    }
+
     let args: Vec<String> = std::env::args().collect();
     let data_dir = parse_data_dir(&args);
 

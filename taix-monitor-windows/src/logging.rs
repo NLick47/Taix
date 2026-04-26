@@ -9,7 +9,13 @@ pub fn init() {
     let log_dir = exe_dir.join("Logs");
     std::fs::create_dir_all(&log_dir).ok();
 
-    let file_appender = tracing_appender::rolling::daily(&log_dir, "taix-monitor.log");
+    let file_appender = tracing_appender::rolling::RollingFileAppender::builder()
+        .rotation(tracing_appender::rolling::Rotation::DAILY)
+        .filename_prefix("taix-monitor")
+        .filename_suffix("log")
+        .max_log_files(31)
+        .build(&log_dir)
+        .expect("Failed to create rolling file appender");
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
     let _guard = Box::leak(Box::new(guard));
 

@@ -7,6 +7,7 @@ mod pipe;
 mod response;
 mod routes;
 mod services;
+mod single_instance;
 mod websocket_manager;
 
 use axum::Router;
@@ -34,9 +35,17 @@ async fn main() -> anyhow::Result<()> {
 
     let data_dir = parse_data_dir(&args, &exe_dir);
 
+    let _single_instance = single_instance::try_acquire("Global\\TaixServerSingleInstance")
+        .ok_or_else(|| anyhow::anyhow!("Another instance of taix-server is already running"))?;
+
     let log_dir = exe_dir.join("Logs");
     tokio::fs::create_dir_all(&log_dir).await?;
-    let file_appender = tracing_appender::rolling::daily(&log_dir, "taix-server.log");
+    let file_appender = tracing_appender::rolling::RollingFileAppender::builder()
+        .rotation(tracing_appender::rolling::Rotation::DAILY)
+        .filename_prefix("taix-server")
+        .filename_suffix("log")
+        .max_log_files(31)
+        .build(&log_dir)?;
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     let filter = tracing_subscriber::EnvFilter::try_from_default_env()
