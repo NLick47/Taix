@@ -48,12 +48,12 @@ public class Colors
     public struct IColor
     {
         /// <summary>
-        ///     颜色名称
+        /// 颜色名称
         /// </summary>
         public string Name;
 
         /// <summary>
-        ///     颜色
+        /// 颜色
         /// </summary>
         public string Color;
     }

@@ -1,46 +1,46 @@
 ﻿namespace Taix.Client.Shared.Models;
 
 /// <summary>
-///     应用信息模型
+/// 应用信息模型
 /// </summary>
-public class AppModel
+public record class AppModel
 {
-    public int ID { get; set; }
+    public int ID { get; init; }
 
     /// <summary>
-    ///     名称
+    /// 名称
     /// </summary>
-    public string? Name { get; set; }
+    public string? Name { get; init; }
 
     /// <summary>
-    ///     别名
+    /// 别名
     /// </summary>
-    public string? Alias { get; set; }
+    public string? Alias { get; init; }
 
     /// <summary>
-    ///     描述
+    /// 描述
     /// </summary>
-    public string? Description { get; set; }
+    public string? Description { get; init; }
 
     /// <summary>
-    ///     文件
+    /// 文件
     /// </summary>
-    public string? File { get; set; }
+    public string? File { get; init; }
 
     /// <summary>
-    ///     分类ID
+    /// 分类ID
     /// </summary>
-    public int CategoryID { get; set; }
+    public int CategoryID { get; init; }
 
     /// <summary>
-    ///     图标路径
+    /// 图标路径
     /// </summary>
-    public string? IconFile { get; set; }
+    public string? IconFile { get; init; }
 
     /// <summary>
-    ///     累计使用时长
+    /// 累计使用时长
     /// </summary>
-    public int TotalTime { get; set; }
+    public int TotalTime { get; init; }
 
-    public CategoryModel Category { get; set; }
+    public CategoryModel? Category { get; init; }
 }

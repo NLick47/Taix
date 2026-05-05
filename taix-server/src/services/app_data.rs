@@ -3,6 +3,7 @@ use tracing::{debug, info, warn};
 
 use crate::error::AppError;
 use crate::models::app::{AppModel, AppModelRow};
+use crate::models::category::CategoryModel;
 use crate::models::request::{CreateAppRequest, UpdateAppRequest};
 use crate::services::category::CategoryService;
 
@@ -14,22 +15,22 @@ impl AppDataService {
         let rows: Vec<AppModelRow> = sqlx::query_as(
             r#"
             SELECT a.* FROM AppModels a
-            LEFT JOIN CategoryModels c ON a.CategoryID = c.ID
             ORDER BY a.ID
             "#,
         )
         .fetch_all(pool)
         .await?;
 
-        let mut apps = Vec::new();
+        let categories: Vec<CategoryModel> = sqlx::query_as("SELECT * FROM CategoryModels")
+            .fetch_all(pool)
+            .await?;
+        let category_map: std::collections::HashMap<i64, CategoryModel> =
+            categories.into_iter().map(|c| (c.id, c)).collect();
+
+        let mut apps = Vec::with_capacity(rows.len());
         for row in rows {
             let category = if row.category_id > 0 {
-                sqlx::query_as::<_, crate::models::category::CategoryModel>(
-                    "SELECT * FROM CategoryModels WHERE ID = ?",
-                )
-                .bind(row.category_id)
-                .fetch_optional(pool)
-                .await?
+                category_map.get(&row.category_id).cloned()
             } else {
                 None
             };
@@ -61,7 +62,7 @@ impl AppDataService {
         match row {
             Some(row) => {
                 let category = if row.category_id > 0 {
-                    sqlx::query_as::<_, crate::models::category::CategoryModel>(
+                    sqlx::query_as::<_, CategoryModel>(
                         "SELECT * FROM CategoryModels WHERE ID = ?",
                     )
                     .bind(row.category_id)
@@ -101,7 +102,7 @@ impl AppDataService {
         match row {
             Some(row) => {
                 let category = if row.category_id > 0 {
-                    sqlx::query_as::<_, crate::models::category::CategoryModel>(
+                    sqlx::query_as::<_, CategoryModel>(
                         "SELECT * FROM CategoryModels WHERE ID = ?",
                     )
                     .bind(row.category_id)
@@ -209,7 +210,7 @@ impl AppDataService {
         .await?;
 
         if result.rows_affected() == 0 {
-            warn!("update_app: id={} not found, skip", id);
+            return Err(AppError::Business("应用不存在".to_string()));
         }
 
         Ok(())

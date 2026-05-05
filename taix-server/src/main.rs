@@ -8,12 +8,13 @@ mod response;
 mod routes;
 mod services;
 mod single_instance;
+mod utils;
 mod websocket_manager;
 
 use axum::Router;
 use sqlx::SqlitePool;
 use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::broadcast;
 use tower_http::cors::CorsLayer;
@@ -25,27 +26,53 @@ use routes::web_sentry::SentryState;
 use services::config::ConfigService;
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let args: Vec<String> = std::env::args().collect();
-
+async fn main() {
     let exe_dir = std::env::current_exe()
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()))
         .unwrap_or_else(|| std::env::current_dir().unwrap());
 
-    let data_dir = parse_data_dir(&args, &exe_dir);
+    let log_dir = exe_dir.join("Logs");
+
+    if let Err(e) = run(&exe_dir, &log_dir).await {
+        let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ");
+        let message = format!(
+            "[{}] ERROR taix_server: FATAL: {}\n",
+            now, e
+        );
+
+        // 同步写入当天的主日志文件，作为兜底记录
+        let today = chrono::Utc::now().format("%Y-%m-%d");
+        let log_path = log_dir.join(format!("taix-server.{}.log", today));
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+        {
+            use std::io::Write;
+            let _ = file.write_all(message.as_bytes());
+            let _ = file.flush();
+        }
+
+        eprintln!("{}", message);
+    }
+}
+
+async fn run(exe_dir: &Path, log_dir: &Path) -> anyhow::Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+
+    let data_dir = parse_data_dir(&args, exe_dir);
 
     let _single_instance = single_instance::try_acquire("Global\\TaixServerSingleInstance")
         .ok_or_else(|| anyhow::anyhow!("Another instance of taix-server is already running"))?;
 
-    let log_dir = exe_dir.join("Logs");
-    tokio::fs::create_dir_all(&log_dir).await?;
+    tokio::fs::create_dir_all(log_dir).await?;
     let file_appender = tracing_appender::rolling::RollingFileAppender::builder()
         .rotation(tracing_appender::rolling::Rotation::DAILY)
         .filename_prefix("taix-server")
         .filename_suffix("log")
         .max_log_files(31)
-        .build(&log_dir)?;
+        .build(log_dir)?;
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     let filter = tracing_subscriber::EnvFilter::try_from_default_env()
@@ -64,7 +91,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     // 捕获 panic 并记录到日志
-    let panic_log_dir = log_dir.clone();
+    let panic_log_dir = log_dir.to_path_buf();
     std::panic::set_hook(Box::new(move |info| {
         let payload = if let Some(s) = info.payload().downcast_ref::<&str>() {
             s.to_string()
@@ -80,32 +107,30 @@ async fn main() -> anyhow::Result<()> {
             "unknown location".to_string()
         };
 
-        let now = chrono::Local::now().format("%Y-%m-%dT%H:%M:%S%.3f%:z");
+        let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ");
         let message = format!(
             "[{}] ERROR taix_server: PANIC occurred at {}\n    payload: {}\n",
             now, location, payload
         );
 
-        // 同步写入 panic 日志文件，确保即使程序立即终止也能落盘
-        let panic_log_path = panic_log_dir.join("taix-server-panic.log");
+        // 同步写入当天的主日志文件，确保 panic 信息落盘（non-blocking appender 在 abort 时可能丢失）
+        let today = chrono::Utc::now().format("%Y-%m-%d");
+        let log_path = panic_log_dir.join(format!("taix-server.{}.log", today));
         if let Ok(mut file) = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
-            .open(&panic_log_path)
+            .open(&log_path)
         {
             use std::io::Write;
             let _ = file.write_all(message.as_bytes());
             let _ = file.flush();
         }
 
-        // 同时通过 tracing 输出
-        tracing::error!("PANIC occurred at {}: {}", location, payload);
-
         // 输出到 stderr，方便调试时直接看到
         eprintln!("{}", message);
     }));
 
-    let web_favicons_dir = data_dir.join("WebFavicons");
+    let web_favicons_dir = exe_dir.join("WebFavicons");
 
     let db_path = std::env::var("TAIX_DB_PATH")
         .map(PathBuf::from)
@@ -115,7 +140,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Using data dir: {}", data_dir.display());
     tracing::info!("Using web favicons dir: {}", web_favicons_dir.display());
 
-    let pool = db::init_db(db_path.to_str().unwrap()).await?;
+    let pool = db::init_db(db_path.to_str().unwrap(), "Asia/Shanghai").await?;
     let config_service = Arc::new(ConfigService::new(&data_dir));
 
     // 读取初始配置，决定 WebSocket 是否启动
@@ -136,12 +161,13 @@ async fn main() -> anyhow::Result<()> {
         tx,
         web_favicons_dir,
         semaphore: Arc::new(tokio::sync::Semaphore::new(16)),
+        config_service: config_service.clone(),
     });
 
     let app = create_app(pool.clone(), config_service, web_enabled_tx.clone());
 
     let addr: SocketAddr = std::env::var("TAIX_BIND")
-        .unwrap_or_else(|_| "0.0.0.0:5000".to_string())
+        .unwrap_or_else(|_| "127.0.0.1:37091".to_string())
         .parse()?;
 
     tracing::info!("Server listening on http://{}", addr);
@@ -152,6 +178,10 @@ async fn main() -> anyhow::Result<()> {
     tokio::spawn(websocket_manager::run(web_enabled_rx, sentry_state.clone()));
 
     tokio::spawn(pipe::start(sentry_state, pool.clone()));
+
+    tokio::spawn(services::app_timer::AppTimerService::run_cleanup_task(
+        pool.clone(),
+    ));
 
     http_server.await?;
 

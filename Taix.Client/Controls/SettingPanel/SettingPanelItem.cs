@@ -25,7 +25,7 @@ public class SettingPanelItem : ContentControl
     }
 
     /// <summary>
-    ///     是否显示beta标识
+    /// 是否显示beta标识
     /// </summary>
     public bool IsBeta
     {

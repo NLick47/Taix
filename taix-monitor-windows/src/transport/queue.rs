@@ -7,16 +7,18 @@ use tracing::{debug, error, info, warn};
 
 // 单条消息最大重试次数，约 25 秒退避
 const MAX_SEND_ATTEMPTS: u32 = 10;
+const CHANNEL_CAPACITY: usize = 256;
 
-pub struct ReliableMessageQueue {
-    tx: mpsc::UnboundedSender<Vec<u8>>,
+/// 尽力而为的消息队列。当内部 channel 满时会丢弃消息，调用者不应假设消息一定送达。
+pub struct MessageQueue {
+    tx: mpsc::Sender<Vec<u8>>,
     task: Option<tokio::task::JoinHandle<()>>,
     shutting_down: Arc<AtomicBool>,
 }
 
-impl ReliableMessageQueue {
+impl MessageQueue {
     pub fn new(mut transport: NamedPipeTransport) -> Self {
-        let (tx, mut rx) = mpsc::unbounded_channel::<Vec<u8>>();
+        let (tx, mut rx) = mpsc::channel::<Vec<u8>>(CHANNEL_CAPACITY);
         let shutting_down = Arc::new(AtomicBool::new(false));
         let shutting_down_task = Arc::clone(&shutting_down);
 
@@ -26,12 +28,12 @@ impl ReliableMessageQueue {
                     // 关机快路径，只试一次
                     if let Err(e) = try_send_once(&mut transport, &message).await {
                         debug!(
-                            "[ReliableMessageQueue] Fast-path send failed during shutdown: {}",
+                            "[MessageQueue] Fast-path send failed during shutdown: {}",
                             e
                         );
                     } else {
                         debug!(
-                            "[ReliableMessageQueue] Fast-path sent {} bytes during shutdown",
+                            "[MessageQueue] Fast-path sent {} bytes during shutdown",
                             message.len()
                         );
                     }
@@ -50,7 +52,7 @@ impl ReliableMessageQueue {
                 }
             }
 
-            debug!("[ReliableMessageQueue] Send loop ended");
+            debug!("[MessageQueue] Send loop ended");
         });
 
         Self {
@@ -60,9 +62,14 @@ impl ReliableMessageQueue {
         }
     }
 
+    /// 将消息入队。如果内部 channel 已满，消息会被静默丢弃。
     pub fn enqueue(&self, data: Vec<u8>) {
-        if let Err(e) = self.tx.send(data) {
-            tracing::warn!("[ReliableMessageQueue] Failed to enqueue message: {}", e);
+        match self.tx.try_send(data) {
+            Ok(()) => {}
+            Err(mpsc::error::TrySendError::Full(_)) => {
+                tracing::warn!("[MessageQueue] Channel full ({}), dropping message", CHANNEL_CAPACITY);
+            }
+            Err(mpsc::error::TrySendError::Closed(_)) => {}
         }
     }
 

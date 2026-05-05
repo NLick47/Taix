@@ -10,7 +10,7 @@ public class ChartsDataModel : UINotifyPropertyChanged
     private string Name_;
 
     /// <summary>
-    ///     名称
+    /// 名称
     /// </summary>
     public string Name
     {
@@ -23,57 +23,57 @@ public class ChartsDataModel : UINotifyPropertyChanged
     }
 
     /// <summary>
-    ///     值
+    /// 值
     /// </summary>
     public double Value { get; set; }
 
     /// <summary>
-    ///     列名
+    /// 列名
     /// </summary>
     public string Tag { get; set; }
 
     /// <summary>
-    ///     悬浮文本
+    /// 悬浮文本
     /// </summary>
     public string PopupText { get; set; }
 
     /// <summary>
-    ///     是否选中
+    /// 是否选中
     /// </summary>
     public bool IsSelected { get; set; }
 
     /// <summary>
-    ///     图标文件
+    /// 图标文件
     /// </summary>
     public string Icon { get; set; }
 
     /// <summary>
-    ///     时间（仅在类型为Month样式时有效）
+    /// 时间（仅在类型为Month样式时有效）
     /// </summary>
     public DateTime DateTime { get; set; }
 
     /// <summary>
-    ///     数据模型
+    /// 数据模型
     /// </summary>
     public object Data { get; set; }
 
     /// <summary>
-    ///     值
+    /// 值
     /// </summary>
     public double[] Values { get; set; }
 
     /// <summary>
-    ///     列名
+    /// 列名
     /// </summary>
     public string[] ColumnNames { get; set; }
 
     /// <summary>
-    ///     颜色
+    /// 颜色
     /// </summary>
     public string Color { get; set; }
 
     /// <summary>
-    ///     徽章
+    /// 徽章
     /// </summary>
     public List<ChartBadgeModel> BadgeList
     {
@@ -86,7 +86,7 @@ public class ChartsDataModel : UINotifyPropertyChanged
     }
 
     /// <summary>
-    ///     最大值
+    /// 最大值
     /// </summary>
     public double MaxValue { get; set; }
 }

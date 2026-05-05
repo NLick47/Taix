@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<linker>>
+    <assembly fullname="SkiaSharp" preserve="all" />
+    <assembly fullname="HarfBuzzSharp" preserve="all" />
+    <assembly fullname="Avalonia.Skia" preserve="all" />
+
+    <assembly fullname="ReactiveUI" preserve="all" />
+    <assembly fullname="ReactiveUI.Avalonia" preserve="all" />
+
+    <assembly fullname="Microsoft.Extensions.DependencyInjection" preserve="all" />
+    <assembly fullname="Microsoft.Extensions.DependencyInjection.Abstractions" preserve="all" />
+    <assembly fullname="Microsoft.Extensions.Http" preserve="all" />
+    <assembly fullname="Microsoft.Extensions.Options" preserve="all" />
+
+    <assembly fullname="Xaml.Behaviors" preserve="all" />
+
+    <assembly fullname="Taix" preserve="all" />
+</linker>

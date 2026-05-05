@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ReactiveUI;
+using ReactiveUI.Avalonia;
 using Taix.Client.Controls.Select;
 using Taix.Client.Logging;
 
@@ -35,7 +37,7 @@ public class ModelBase : UINotifyPropertyChanged
     }
 
     /// <summary>
-    ///     展示类型
+    /// 展示类型
     /// /// </summary>
     public SelectItemModel ShowType
     {
@@ -48,7 +50,7 @@ public class ModelBase : UINotifyPropertyChanged
     }
 
     /// <summary>
-    ///     展示类型选项
+    /// 展示类型选项
     /// </summary>
     public List<SelectItemModel> ShowTypeOptions { get; } =
     [
@@ -106,7 +108,7 @@ public class ModelBase : UINotifyPropertyChanged
         if (skipInitial) observable = observable.Skip(1);
 
         return observable
-            .ObserveOn(RxApp.MainThreadScheduler)
+            .ObserveOn(AvaloniaScheduler.Instance)
             .Do(_ => source.CancelAndResetLoadToken())
             .Select(value => Observable.FromAsync(async _ =>
             {
@@ -126,6 +128,16 @@ public class ModelBase : UINotifyPropertyChanged
             .Switch()
             .Subscribe()
             .DisposeWith(source.Disposables);
+    }
+
+    public virtual void OnNavigatedFrom()
+    {
+        CancelAndResetLoadToken();
+    }
+
+    public virtual Task OnNavigatedToAsync()
+    {
+        return Task.CompletedTask;
     }
 
     public virtual void Dispose()

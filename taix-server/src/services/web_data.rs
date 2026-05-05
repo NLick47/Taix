@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, TimeZone, Timelike, Utc};
+use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, Timelike, Utc};
 use sqlx::SqlitePool;
 use std::path::Path;
 use tracing::{debug, info, warn};
@@ -7,36 +7,15 @@ use crate::error::AppError;
 use crate::models::request::{AddUrlBrowseTimeRequest, UpdateSitesCategoryRequest};
 use crate::models::log::{ColumnDataModel, InfrastructureDataModel};
 use crate::models::web::{WebBrowseLogModel, WebSiteCategoryModel, WebSiteModel, WebUrlModel};
+use crate::services::config::ConfigService;
+use crate::utils::{last_day_of_month, parse_timezone, tz_date_to_utc_range, tz_naive_to_utc};
 
-#[derive(sqlx::FromRow)]
-struct BrowseLogRow {
-    id: i64,
-    url_id: i64,
-    log_time: DateTime<Utc>,
-    duration: i64,
-    site_id: i64,
-    #[sqlx(rename = "ws_id")]
-    ws_id: i64,
-    #[sqlx(rename = "Domain")]
-    ws_domain: String,
-    #[sqlx(rename = "ws_title")]
-    ws_title: Option<String>,
-    #[sqlx(rename = "ws_icon")]
-    ws_icon_file: Option<String>,
-    #[sqlx(rename = "wu_id")]
-    wu_id: i64,
-    #[sqlx(rename = "Url")]
-    wu_url: String,
-    #[sqlx(rename = "wu_title")]
-    wu_title: Option<String>,
-    #[sqlx(rename = "wu_icon")]
-    wu_icon_file: Option<String>,
-}
+
 
 pub struct WebDataService;
 
 impl WebDataService {
-    pub async fn add_url_browse_time(pool: &SqlitePool, req: AddUrlBrowseTimeRequest, favicons_dir: Option<&Path>) -> Result<(i64, i64), AppError> {
+    pub async fn add_url_browse_time(pool: &SqlitePool, req: AddUrlBrowseTimeRequest, favicons_dir: Option<&Path>, config_service: &ConfigService) -> Result<(i64, i64), AppError> {
         if req.url.is_empty() {
             debug!("add_url_browse_time: empty url");
             return Ok((0, 0));
@@ -49,24 +28,56 @@ impl WebDataService {
             debug!("add_url_browse_time: skip browser internal page url={}", req.url);
             return Ok((0, 0));
         }
+        if !req.url.starts_with("http://") && !req.url.starts_with("https://") {
+            debug!("add_url_browse_time: skip non-http url={}", req.url);
+            return Ok((0, 0));
+        }
+        // URL 忽略列表过滤
+        if config_service.should_ignore_url(&req.url).await {
+            debug!("add_url_browse_time: url ignored by config: {}", req.url);
+            return Ok((0, 0));
+        }
         debug!("add_url_browse_time: url={} duration={}", req.url, req.duration);
 
+        // 时间戳合法性校验：拒绝明显过去或未来的时间
+        if let Some(dt) = req.date_time {
+            if dt.year() < 2000 {
+                debug!("add_url_browse_time: skip invalid timestamp year={}", dt.year());
+                return Ok((0, 0));
+            }
+            let now_utc = Utc::now();
+            if dt > now_utc + Duration::minutes(5) {
+                warn!("add_url_browse_time: future timestamp {} (> now + 5min), rejecting", dt);
+                return Ok((0, 0));
+            }
+        }
+
         let mut current_req = req;
+        // 安全上限：单次上报时长不超过 4 小时，防止异常数据导致循环次数过多
+        const MAX_WEB_DURATION_SECS: i64 = 3600 * 4;
+        if current_req.duration > MAX_WEB_DURATION_SECS {
+            tracing::warn!(
+                "add_url_browse_time: duration {}s exceeds max {}s, truncating",
+                current_req.duration, MAX_WEB_DURATION_SECS
+            );
+            current_req.duration = MAX_WEB_DURATION_SECS;
+        }
 
-        loop {
-            let mut date_time = current_req.date_time
-                .map(|dt| Local.from_local_datetime(&dt).unwrap().with_timezone(&Utc))
-                .unwrap_or_else(|| Utc::now());
-
-          
-            if date_time.minute() == 59 && date_time.second() == 59 {
-                date_time = date_time + Duration::hours(1);
-                date_time = date_time.with_minute(0).unwrap().with_second(0).unwrap().with_nanosecond(0).unwrap();
+        let mut tx = pool.begin().await?;
+        let mut loop_count = 0;
+        let (result_site_id, result_url_id) = loop {
+            loop_count += 1;
+            if loop_count > 48 {
+                warn!("add_url_browse_time: loop exceeded 48 iterations, breaking to prevent infinite loop");
+                break (0, 0);
             }
 
+            let date_time = current_req.date_time.unwrap_or_else(|| Utc::now());
+
+          
             let log_time = date_time.with_minute(0).unwrap().with_second(0).unwrap().with_nanosecond(0).unwrap();
             let duration = current_req.duration;
-            let now_time_max = (60 - date_time.minute() as i64) * 60;
+            let now_time_max = (60 - date_time.minute() as i64) * 60 - date_time.second() as i64;
 
             let mut now_duration = duration;
             let mut next_duration = 0i64;
@@ -86,15 +97,15 @@ impl WebDataService {
 
             let site_id: i64 = {
                 let existing: Option<(i64,)> = sqlx::query_as("SELECT ID FROM WebSiteModels WHERE Domain = ?")
-                    .bind(&domain).fetch_optional(pool).await?;
+                    .bind(&domain).fetch_optional(&mut *tx).await?;
                 if let Some((id,)) = existing { id } else {
                     let default_category_id: i64 = sqlx::query_scalar(
                         "SELECT ID FROM WebSiteCategoryModels WHERE IsSystem = 1 LIMIT 1"
                     )
-                    .fetch_optional(pool).await?
+                    .fetch_optional(&mut *tx).await?
                     .unwrap_or(0);
                     sqlx::query("INSERT INTO WebSiteModels (Title, Domain, CategoryID) VALUES (?, ?, ?)")
-                        .bind(&site_title).bind(&domain).bind(default_category_id).execute(pool).await?.last_insert_rowid()
+                        .bind(&site_title).bind(&domain).bind(default_category_id).execute(&mut *tx).await?.last_insert_rowid()
                 }
             };
 
@@ -102,58 +113,65 @@ impl WebDataService {
 
             let url_id: i64 = {
                 let existing: Option<(i64,)> = sqlx::query_as("SELECT ID FROM WebUrlModels WHERE Url = ?")
-                    .bind(&current_req.url).fetch_optional(pool).await?;
+                    .bind(&current_req.url).fetch_optional(&mut *tx).await?;
                 if let Some((id,)) = existing { id } else {
                     sqlx::query("INSERT INTO WebUrlModels (Url, Title) VALUES (?, ?)")
-                        .bind(&current_req.url).bind(&url_title).execute(pool).await?.last_insert_rowid()
+                        .bind(&current_req.url).bind(&url_title).execute(&mut *tx).await?.last_insert_rowid()
                 }
             };
 
             let existing: Option<(i64, i64)> = sqlx::query_as("SELECT ID, Duration FROM WebBrowseLogModels WHERE LogTime = ? AND UrlId = ?")
-                .bind(log_time).bind(url_id).fetch_optional(pool).await?;
+                .bind(log_time).bind(url_id).fetch_optional(&mut *tx).await?;
 
-            if let Some((id, existing_duration)) = existing {
+            let actual_added = if let Some((id, existing_duration)) = existing {
                 let new_duration = (existing_duration + now_duration).min(3600);
                 let overflow = (existing_duration + now_duration) - new_duration;
                 if overflow > 0 {
                     next_duration += overflow;
                 }
                 sqlx::query("UPDATE WebBrowseLogModels SET Duration = ? WHERE ID = ?")
-                    .bind(new_duration).bind(id).execute(pool).await?;
+                    .bind(new_duration).bind(id).execute(&mut *tx).await?;
+                now_duration - overflow
             } else {
                 sqlx::query("INSERT INTO WebBrowseLogModels (UrlId, LogTime, Duration, SiteId) VALUES (?, ?, ?, ?)")
-                    .bind(url_id).bind(log_time).bind(now_duration).bind(site_id).execute(pool).await?;
-            }
+                    .bind(url_id).bind(log_time).bind(now_duration).bind(site_id).execute(&mut *tx).await?;
+                now_duration
+            };
 
-            sqlx::query("UPDATE WebSiteModels SET Duration = Duration + ? WHERE ID = ?")
-                .bind(now_duration).bind(site_id).execute(pool).await?;
+            if actual_added > 0 {
+                sqlx::query("UPDATE WebSiteModels SET Duration = Duration + ? WHERE ID = ?")
+                    .bind(actual_added).bind(site_id).execute(&mut *tx).await?;
+            }
 
             // 防止 Duration 无限累加
             sqlx::query("UPDATE WebSiteModels SET Duration = ? WHERE ID = ? AND Duration > ?")
-                .bind(3_153_600_000i64).bind(site_id).bind(3_153_600_000i64).execute(pool).await?;
+                .bind(3_153_600_000i64).bind(site_id).bind(3_153_600_000i64).execute(&mut *tx).await?;
 
             if next_duration > 0 {
                 current_req = AddUrlBrowseTimeRequest {
                     url: current_req.url.clone(),
                     title: current_req.title.clone(),
                     duration: next_duration,
-                    date_time: Some((log_time + Duration::hours(1)).with_timezone(&Local).naive_local()),
+                    date_time: Some(log_time + Duration::hours(1)),
                     icon_url: current_req.icon_url.clone(),
                 };
                 continue;
             }
 
-            if let (Some(icon_url), Some(dir)) = (current_req.icon_url, favicons_dir) {
-                let pool = pool.clone();
-                let icon_url = icon_url.clone();
-                let dir = dir.to_path_buf();
-                tokio::spawn(async move {
-                    let _ = save_icon(&icon_url, &dir, site_id, url_id, &pool).await;
-                });
-            }
+            break (site_id, url_id);
+        };
 
-            return Ok((site_id, url_id));
+        tx.commit().await?;
+
+        if let (Some(icon_url), Some(dir)) = (current_req.icon_url.clone(), favicons_dir) {
+            let pool = pool.clone();
+            let dir = dir.to_path_buf();
+            tokio::spawn(async move {
+                let _ = save_icon(&icon_url, &dir, result_site_id, result_url_id, &pool).await;
+            });
         }
+
+        Ok((result_site_id, result_url_id))
     }
 
     pub async fn get_web_sites(pool: &SqlitePool, category_id: Option<i64>) -> Result<Vec<WebSiteModel>, AppError> {
@@ -198,11 +216,10 @@ impl WebDataService {
 
     pub async fn update_web_site_category(pool: &SqlitePool, id: i64, data: WebSiteCategoryModel) -> Result<(), AppError> {
         info!("update_web_site_category: id={}", id);
-        let existing: Option<(i64,)> = sqlx::query_as("SELECT ID FROM WebSiteCategoryModels WHERE ID = ?")
+        let existing: Option<WebSiteCategoryModel> = sqlx::query_as("SELECT * FROM WebSiteCategoryModels WHERE ID = ?")
             .bind(id).fetch_optional(pool).await?;
         if existing.is_none() {
-            warn!("update_web_site_category: id={} not found, skip", id);
-            return Ok(());
+            return Err(AppError::Business("分类不存在".to_string()));
         }
         sqlx::query("UPDATE WebSiteCategoryModels SET Name = ?, IconFile = ?, Color = ? WHERE ID = ?")
             .bind(&data.name).bind(&data.icon_file).bind(&data.color).bind(id)
@@ -212,19 +229,45 @@ impl WebDataService {
 
     pub async fn delete_web_site_category(pool: &SqlitePool, id: i64) -> Result<(), AppError> {
         info!("delete_web_site_category: id={}", id);
+
+        let mut tx = pool.begin().await?;
+
         let existing: Option<WebSiteCategoryModel> = sqlx::query_as("SELECT * FROM WebSiteCategoryModels WHERE ID = ?")
-            .bind(id).fetch_optional(pool).await?;
-        if let Some(cat) = existing {
-            if cat.is_system {
-                warn!("delete_web_site_category: id={} is system, skip", id);
-                return Ok(());
-            }
-        } else {
-            warn!("delete_web_site_category: id={} not found, skip", id);
-            return Ok(());
+            .bind(id).fetch_optional(&mut *tx).await?;
+
+        let Some(existing) = existing else {
+            return Err(AppError::Business("分类不存在".to_string()));
+        };
+
+        if existing.is_system {
+            return Err(AppError::Business("系统分类不能删除".to_string()));
         }
-        sqlx::query("UPDATE WebSiteModels SET CategoryID = 0 WHERE CategoryID = ?").bind(id).execute(pool).await?;
-        sqlx::query("DELETE FROM WebSiteCategoryModels WHERE ID = ?").bind(id).execute(pool).await?;
+
+        let site_count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM WebSiteModels WHERE CategoryID = ?")
+                .bind(id)
+                .fetch_one(&mut *tx)
+                .await?;
+
+        if site_count > 0 {
+            let system_category_id: i64 =
+                sqlx::query_scalar("SELECT ID FROM WebSiteCategoryModels WHERE IsSystem = 1 LIMIT 1")
+                    .fetch_one(&mut *tx)
+                    .await?;
+
+            sqlx::query("UPDATE WebSiteModels SET CategoryID = ? WHERE CategoryID = ?")
+                .bind(system_category_id)
+                .bind(id)
+                .execute(&mut *tx)
+                .await?;
+        }
+
+        sqlx::query("DELETE FROM WebSiteCategoryModels WHERE ID = ?")
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
         Ok(())
     }
 
@@ -294,25 +337,38 @@ impl WebDataService {
         Ok(sites)
     }
 
-    pub async fn clear_web_data(pool: &SqlitePool, start: Option<NaiveDate>, end: Option<NaiveDate>, site_id: Option<i64>) -> Result<(), AppError> {
+    pub async fn clear_web_data(pool: &SqlitePool, start: Option<NaiveDate>, end: Option<NaiveDate>, site_id: Option<i64>, tz_id: &str) -> Result<(), AppError> {
         info!("clear_web_data: start={:?} end={:?} site_id={:?}", start, end, site_id);
         if let Some(sid) = site_id {
             sqlx::query("DELETE FROM WebBrowseLogModels WHERE SiteId = ?").bind(sid).execute(pool).await?;
-            sqlx::query("UPDATE WebSiteModels SET Duration = 0 WHERE ID = ?").bind(sid).execute(pool).await?;
+            sqlx::query(
+                "UPDATE WebSiteModels SET Duration = COALESCE((SELECT SUM(Duration) FROM WebBrowseLogModels WHERE SiteId = ?), 0) WHERE ID = ?"
+            )
+            .bind(sid)
+            .bind(sid)
+            .execute(pool)
+            .await?;
         } else if let (Some(start), Some(end)) = (start, end) {
             let end_dt = NaiveDateTime::new(
                 NaiveDate::from_ymd_opt(end.year(), end.month(), last_day_of_month(end.year(), end.month())).unwrap(),
                 chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap(),
             );
-            let utc_start = local_naive_to_utc(NaiveDateTime::new(start, chrono::NaiveTime::from_hms_opt(0,0,0).unwrap()));
-            let utc_end = local_naive_to_utc(end_dt);
+            let utc_start = tz_naive_to_utc(NaiveDateTime::new(start, chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap()), &parse_timezone(tz_id));
+            let utc_end = tz_naive_to_utc(end_dt, &parse_timezone(tz_id));
             sqlx::query("DELETE FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
                 .bind(utc_start).bind(utc_end).execute(pool).await?;
+
+            // 重算所有 WebSite 的 Duration，避免按日期范围清除后总计虚高
+            sqlx::query(
+                "UPDATE WebSiteModels SET Duration = COALESCE((SELECT SUM(Duration) FROM WebBrowseLogModels WHERE SiteId = WebSiteModels.ID), 0)"
+            )
+            .execute(pool)
+            .await?;
         }
         Ok(())
     }
 
-    pub async fn get_date_range_web_site_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, take: i64, skip: i64, is_time: bool) -> Result<Vec<WebSiteModel>, AppError> {
+    pub async fn get_date_range_web_site_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, take: i64, skip: i64, is_time: bool, tz_id: &str) -> Result<Vec<WebSiteModel>, AppError> {
         debug!("get_date_range_web_site_list: start={} end={} take={} skip={} is_time={}", start, end, take, skip, is_time);
         let (start, end) = if is_time {
             (NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(start.hour() as u32, 0, 0).unwrap()),
@@ -321,8 +377,8 @@ impl WebDataService {
             (NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap()),
              NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap()))
         };
-        let utc_start = local_naive_to_utc(start);
-        let utc_end = local_naive_to_utc(end);
+        let utc_start = tz_naive_to_utc(start, &parse_timezone(tz_id));
+        let utc_end = tz_naive_to_utc(end, &parse_timezone(tz_id));
 
         let base_query =
             r#"SELECT SiteId, SUM(Duration) as duration FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ? AND SiteId != 0 GROUP BY SiteId ORDER BY duration DESC"#;
@@ -354,12 +410,12 @@ impl WebDataService {
         Ok(count.0)
     }
 
-    pub async fn get_categories_statistics(pool: &SqlitePool, start: NaiveDate, end: NaiveDate) -> Result<Vec<InfrastructureDataModel>, AppError> {
+    pub async fn get_categories_statistics(pool: &SqlitePool, start: NaiveDate, end: NaiveDate, tz_id: &str) -> Result<Vec<InfrastructureDataModel>, AppError> {
         debug!("get_categories_statistics: start={} end={}", start, end);
         let start_dt = NaiveDateTime::new(start, chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_dt = NaiveDateTime::new(end, chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-        let utc_start = local_naive_to_utc(start_dt);
-        let utc_end = local_naive_to_utc(end_dt);
+        let utc_start = tz_naive_to_utc(start_dt, &parse_timezone(tz_id));
+        let utc_end = tz_naive_to_utc(end_dt, &parse_timezone(tz_id));
 
         let data: Vec<(i64, String, i64)> = sqlx::query_as(
             r#"SELECT wsc.ID, wsc.Name, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
@@ -385,12 +441,13 @@ impl WebDataService {
         Ok(result)
     }
 
-    pub async fn get_browse_data_statistics(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, site_id: i64) -> Result<Vec<InfrastructureDataModel>, AppError> {
+    pub async fn get_browse_data_statistics(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, site_id: i64, tz_id: &str) -> Result<Vec<InfrastructureDataModel>, AppError> {
         debug!("get_browse_data_statistics: start={} end={} site_id={}", start, end, site_id);
+        let tz = parse_timezone(tz_id);
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-        let utc_start = local_naive_to_utc(start_date);
-        let utc_end = local_naive_to_utc(end_date);
+        let utc_start = tz_naive_to_utc(start_date, &tz);
+        let utc_end = tz_naive_to_utc(end_date, &tz);
 
         let mut q = String::from("SELECT LogTime, SUM(Duration) as total FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?");
         if site_id > 0 { q.push_str(" AND SiteId = ?"); }
@@ -405,7 +462,10 @@ impl WebDataService {
         if start_date.date() == end_date.date() {
             for i in 0..24 {
                 let value = data.iter()
-                    .filter(|(t, _)| t.with_timezone(&Local).hour() as i64 == i)
+                    .filter(|(t, _)| {
+                        let h = t.with_timezone(&tz).hour();
+                        h as i64 == i
+                    })
                     .map(|(_, v)| *v)
                     .sum();
                 result.push(InfrastructureDataModel { id: i as i64, name: i.to_string(), value });
@@ -415,8 +475,7 @@ impl WebDataService {
             if days <= 31 {
                 for i in 0..days {
                     let date = start_date.date() + Duration::days(i);
-                    let day_start = local_naive_to_utc(NaiveDateTime::new(date, chrono::NaiveTime::from_hms_opt(0,0,0).unwrap()));
-                    let day_end = local_naive_to_utc(NaiveDateTime::new(date, chrono::NaiveTime::from_hms_opt(23,59,59).unwrap()));
+                    let (day_start, day_end) = tz_date_to_utc_range(date, &tz);
                     let value: i64 = data.iter().filter(|(t, _)| *t >= day_start && *t <= day_end).map(|(_, v)| v).sum();
                     result.push(InfrastructureDataModel { id: i as i64, name: i.to_string(), value });
                 }
@@ -425,8 +484,8 @@ impl WebDataService {
                     let month_start = NaiveDateTime::new(NaiveDate::from_ymd_opt(start_date.year(), (i+1) as u32, 1).unwrap(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
                     let month_end_day = last_day_of_month(start_date.year(), (i+1) as u32);
                     let month_end = NaiveDateTime::new(NaiveDate::from_ymd_opt(start_date.year(), (i+1) as u32, month_end_day).unwrap(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-                    let utc_month_start = local_naive_to_utc(month_start);
-                    let utc_month_end = local_naive_to_utc(month_end);
+                    let utc_month_start = tz_naive_to_utc(month_start, &tz);
+                    let utc_month_end = tz_naive_to_utc(month_end, &tz);
                     let value: i64 = data.iter().filter(|(t, _)| *t >= utc_month_start && *t <= utc_month_end).map(|(_, v)| v).sum();
                     result.push(InfrastructureDataModel { id: i as i64, name: i.to_string(), value });
                 }
@@ -435,12 +494,13 @@ impl WebDataService {
         Ok(result)
     }
 
-    pub async fn get_browse_data_by_category_statistics(pool: &SqlitePool, start: NaiveDate, end: NaiveDate) -> Result<Vec<ColumnDataModel>, AppError> {
+    pub async fn get_browse_data_by_category_statistics(pool: &SqlitePool, start: NaiveDate, end: NaiveDate, tz_id: &str) -> Result<Vec<ColumnDataModel>, AppError> {
         debug!("get_browse_data_by_category_statistics: start={} end={}", start, end);
+        let tz = parse_timezone(tz_id);
         let start_dt = NaiveDateTime::new(start, chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_dt = NaiveDateTime::new(end, chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-        let utc_start = local_naive_to_utc(start_dt);
-        let utc_end = local_naive_to_utc(end_dt);
+        let utc_start = tz_naive_to_utc(start_dt, &tz);
+        let utc_end = tz_naive_to_utc(end_dt, &tz);
 
         let categories: Vec<(i64, i64)> = sqlx::query_as(
             r#"SELECT COALESCE(ws.CategoryID, 0) as cat_id, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
@@ -464,7 +524,10 @@ impl WebDataService {
             for i in 0..24 {
                 for (cat_id, _) in &categories {
                     let duration: i64 = data.iter()
-                        .filter(|(cid, t, _)| *cid == *cat_id && t.with_timezone(&Local).hour() as i64 == i)
+                        .filter(|(cid, t, _)| {
+                            let h = t.with_timezone(&tz).hour();
+                            *cid == *cat_id && h as i64 == i
+                        })
                         .map(|(_, _, d)| d)
                         .sum();
                     if let Some(item) = result.iter_mut().find(|x| x.category_id == Some(*cat_id)) {
@@ -480,8 +543,7 @@ impl WebDataService {
                 }
                 for i in 0..days {
                     let date = start + Duration::days(i);
-                    let day_start = local_naive_to_utc(NaiveDateTime::new(date, chrono::NaiveTime::from_hms_opt(0,0,0).unwrap()));
-                    let day_end = local_naive_to_utc(NaiveDateTime::new(date, chrono::NaiveTime::from_hms_opt(23,59,59).unwrap()));
+                    let (day_start, day_end) = tz_date_to_utc_range(date, &tz);
                     for (cat_id, _) in &categories {
                         let duration: i64 = data.iter().filter(|(cid, t, _)| *cid == *cat_id && *t >= day_start && *t <= day_end).map(|(_, _, d)| d).sum();
                         if let Some(item) = result.iter_mut().find(|x| x.category_id == Some(*cat_id)) {
@@ -497,8 +559,8 @@ impl WebDataService {
                     let month_start = NaiveDateTime::new(NaiveDate::from_ymd_opt(start.year(), (i+1) as u32, 1).unwrap(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
                     let month_end_day = last_day_of_month(start.year(), (i+1) as u32);
                     let month_end = NaiveDateTime::new(NaiveDate::from_ymd_opt(start.year(), (i+1) as u32, month_end_day).unwrap(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-                    let utc_month_start = local_naive_to_utc(month_start);
-                    let utc_month_end = local_naive_to_utc(month_end);
+                    let utc_month_start = tz_naive_to_utc(month_start, &tz);
+                    let utc_month_end = tz_naive_to_utc(month_end, &tz);
                     for (cat_id, _) in &categories {
                         let duration: i64 = data.iter().filter(|(cid, t, _)| *cid == *cat_id && *t >= utc_month_start && *t <= utc_month_end).map(|(_, _, d)| d).sum();
                         if let Some(item) = result.iter_mut().find(|x| x.category_id == Some(*cat_id)) {
@@ -511,50 +573,51 @@ impl WebDataService {
         Ok(result)
     }
 
-    pub async fn get_browse_duration_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime) -> Result<i64, AppError> {
+    pub async fn get_browse_duration_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str) -> Result<i64, AppError> {
         debug!("get_browse_duration_total: start={} end={}", start, end);
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-        let utc_start = local_naive_to_utc(start_date);
-        let utc_end = local_naive_to_utc(end_date);
+        let utc_start = tz_naive_to_utc(start_date, &parse_timezone(tz_id));
+        let utc_end = tz_naive_to_utc(end_date, &parse_timezone(tz_id));
         let total: Option<i64> = sqlx::query_scalar("SELECT SUM(Duration) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
             .bind(utc_start).bind(utc_end).fetch_optional(pool).await?;
         Ok(total.unwrap_or(0))
     }
 
-    pub async fn get_browse_sites_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime) -> Result<i64, AppError> {
+    pub async fn get_browse_sites_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str) -> Result<i64, AppError> {
         debug!("get_browse_sites_total: start={} end={}", start, end);
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-        let utc_start = local_naive_to_utc(start_date);
-        let utc_end = local_naive_to_utc(end_date);
+        let utc_start = tz_naive_to_utc(start_date, &parse_timezone(tz_id));
+        let utc_end = tz_naive_to_utc(end_date, &parse_timezone(tz_id));
         let count: (i64,) = sqlx::query_as("SELECT COUNT(DISTINCT SiteId) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
             .bind(utc_start).bind(utc_end).fetch_one(pool).await?;
         Ok(count.0)
     }
 
-    pub async fn get_browse_pages_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime) -> Result<i64, AppError> {
+    pub async fn get_browse_pages_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str) -> Result<i64, AppError> {
         debug!("get_browse_pages_total: start={} end={}", start, end);
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-        let utc_start = local_naive_to_utc(start_date);
-        let utc_end = local_naive_to_utc(end_date);
+        let utc_start = tz_naive_to_utc(start_date, &parse_timezone(tz_id));
+        let utc_end = tz_naive_to_utc(end_date, &parse_timezone(tz_id));
         let count: (i64,) = sqlx::query_as("SELECT COUNT(DISTINCT UrlId) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
             .bind(utc_start).bind(utc_end).fetch_one(pool).await?;
         Ok(count.0)
     }
 
-    pub async fn get_browse_log_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, site_id: i64) -> Result<Vec<WebBrowseLogModel>, AppError> {
+    #[allow(non_snake_case)]
+    pub async fn get_browse_log_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, site_id: i64, tz_id: &str) -> Result<Vec<WebBrowseLogModel>, AppError> {
         debug!("get_browse_log_list: start={} end={} site_id={}", start, end, site_id);
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-        let utc_start = local_naive_to_utc(start_date);
-        let utc_end = local_naive_to_utc(end_date);
+        let utc_start = tz_naive_to_utc(start_date, &parse_timezone(tz_id));
+        let utc_end = tz_naive_to_utc(end_date, &parse_timezone(tz_id));
 
         let mut query = String::from(
             r#"SELECT wbl.ID, wbl.UrlId, wbl.LogTime, wbl.Duration, wbl.SiteId,
-            ws.ID as ws_id, ws.Domain, ws.Title as ws_title, ws.IconFile as ws_icon,
-            wu.ID as wu_id, wu.Url, wu.Title as wu_title, wu.IconFile as wu_icon
+            ws.Domain, ws.Title AS WsTitle, ws.IconFile AS WsIconFile,
+            wu.Url, wu.Title AS WuTitle, wu.IconFile AS WuIconFile
             FROM WebBrowseLogModels wbl
             JOIN WebUrlModels wu ON wbl.UrlId = wu.ID
             JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
@@ -564,6 +627,22 @@ impl WebDataService {
             query.push_str(" AND wbl.SiteId = ?");
         }
         query.push_str(" ORDER BY wbl.LogTime DESC");
+
+        #[derive(sqlx::FromRow)]
+        #[allow(non_snake_case)]
+        struct BrowseLogRow {
+            ID: i64,
+            UrlId: i64,
+            LogTime: DateTime<Utc>,
+            Duration: i64,
+            SiteId: i64,
+            Domain: String,
+            WsTitle: Option<String>,
+            WsIconFile: Option<String>,
+            Url: String,
+            WuTitle: Option<String>,
+            WuIconFile: Option<String>,
+        }
 
         let mut sql_query = sqlx::query_as::<_, BrowseLogRow>(&query)
             .bind(utc_start)
@@ -576,38 +655,38 @@ impl WebDataService {
         let mut result = Vec::new();
         for row in rows {
             result.push(WebBrowseLogModel {
-                id: row.id,
-                url_id: row.url_id,
-                log_time: row.log_time,
-                duration: row.duration,
-                site_id: row.site_id,
+                id: row.ID,
+                url_id: row.UrlId,
+                log_time: row.LogTime,
+                duration: row.Duration,
+                site_id: row.SiteId,
                 site: Some(WebSiteModel {
-                    id: row.ws_id,
-                    title: row.ws_title,
-                    domain: Some(row.ws_domain),
+                    id: row.SiteId,
+                    title: row.WsTitle,
+                    domain: Some(row.Domain),
                     alias: None,
                     category_id: 0,
-                    icon_file: row.ws_icon_file,
+                    icon_file: row.WsIconFile,
                     duration: 0,
                     category: None,
                 }),
                 url: Some(WebUrlModel {
-                    id: row.wu_id,
-                    title: row.wu_title,
-                    url: Some(row.wu_url),
-                    icon_file: row.wu_icon_file,
+                    id: row.UrlId,
+                    title: row.WuTitle,
+                    url: Some(row.Url),
+                    icon_file: row.WuIconFile,
                 }),
             });
         }
         Ok(result)
     }
 
-    pub async fn get_web_site_log_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime) -> Result<Vec<WebSiteModel>, AppError> {
+    pub async fn get_web_site_log_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str) -> Result<Vec<WebSiteModel>, AppError> {
         debug!("get_web_site_log_list: start={} end={}", start, end);
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-        let utc_start = local_naive_to_utc(start_date);
-        let utc_end = local_naive_to_utc(end_date);
+        let utc_start = tz_naive_to_utc(start_date, &parse_timezone(tz_id));
+        let utc_end = tz_naive_to_utc(end_date, &parse_timezone(tz_id));
         let rows: Vec<(i64, i64, i64, Option<String>, Option<String>, Option<String>, Option<String>, i64)> = sqlx::query_as(
             r#"SELECT wbl.ID, wbl.SiteId, wbl.Duration, ws.Title, ws.Domain, ws.IconFile, ws.Alias, ws.CategoryID
             FROM WebBrowseLogModels wbl
@@ -636,10 +715,10 @@ impl WebDataService {
         Ok(result)
     }
 
-    pub async fn get_web_export_data(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime) -> Result<crate::models::web::WebExportDataResult, AppError> {
+    pub async fn get_web_export_data(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str) -> Result<crate::models::web::WebExportDataResult, AppError> {
         info!("get_web_export_data: start={} end={}", start, end);
-        let utc_start = local_naive_to_utc(start);
-        let utc_end = local_naive_to_utc(end);
+        let utc_start = tz_naive_to_utc(start, &parse_timezone(tz_id));
+        let utc_end = tz_naive_to_utc(end, &parse_timezone(tz_id));
         let logs: Vec<WebBrowseLogModel> = sqlx::query_as("SELECT * FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
             .bind(utc_start).bind(utc_end).fetch_all(pool).await?;
         Ok(crate::models::web::WebExportDataResult { logs })
@@ -754,6 +833,11 @@ fn convert_svg_to_png(svg_bytes: &[u8]) -> Result<Vec<u8>, AppError> {
     let width = size.width().ceil() as u32;
     let height = size.height().ceil() as u32;
 
+    if width == 0 || height == 0 {
+        tracing::warn!("SVG has zero dimensions ({}x{}), skipping", width, height);
+        return Err(AppError::Internal("SVG has zero dimensions".to_string()));
+    }
+
     // 限制最大尺寸，防止恶意/超大 SVG 消耗过多内存
     let max_size = 256u32;
     let (width, height) = if width > max_size || height > max_size {
@@ -800,36 +884,33 @@ fn clean_title(title: &str) -> Option<String> {
     }
 }
 
-/// 提取站点显示名称：优先从原始 title 清洗，其次从域名推断
-fn extract_site_name(domain: &str, raw_title: Option<&str>) -> String {
-    if let Some(name) = raw_title.and_then(|t| clean_title(t)) {
-        if name.len() <= 40 && !name.is_empty() {
-            return name;
-        }
-    }
+/// 提取站点显示名称：直接从域名推断
+fn extract_site_name(domain: &str, _raw_title: Option<&str>) -> String {
     infer_name_from_domain(domain)
 }
 
-/// 从域名推断站点名称，仅使用通用规则（去掉常见前缀，取主品牌名）
+/// 从域名推断站点名称：取主品牌名，如有有意义的子域名则附加在后
 fn infer_name_from_domain(domain: &str) -> String {
     let lower = domain.to_lowercase();
 
-    let without_prefix = lower
-        .trim_start_matches("www.")
-        .trim_start_matches("m.")
-        .trim_start_matches("app.")
-        .trim_start_matches("chat.")
-        .trim_start_matches("web.")
-        .trim_start_matches("my.")
-        .trim_start_matches("account.")
-        .trim_start_matches("login.")
-        .trim_start_matches("mail.");
+    let without_prefix = lower.trim_start_matches("www.");
 
     let parts: Vec<&str> = without_prefix.split('.').collect();
     if parts.len() >= 2 {
         let brand = parts[parts.len() - 2];
         if brand.len() > 1 {
-            return capitalize_first(brand);
+            let brand_name = capitalize_first(brand);
+
+            // 如有额外子域名（非品牌部分），将其作为后缀，排除常见无意义前缀
+            if parts.len() > 2 {
+                let subdomain = parts[0];
+                let meaningless = ["m", "app", "chat", "web", "my", "account", "login", "mail"];
+                if !meaningless.contains(&subdomain) && subdomain != brand {
+                    return format!("{} {}", brand_name, capitalize_first(subdomain));
+                }
+            }
+
+            return brand_name;
         }
     }
 
@@ -858,6 +939,8 @@ fn is_browser_internal_page(url: &str, title: Option<&str>) -> bool {
         "brave://",
         "opera://",
         "vivaldi://",
+        "file://",
+        "data:",
     ];
     for prefix in &internal_prefixes {
         if url_lower.starts_with(prefix) {
@@ -885,17 +968,4 @@ fn is_browser_internal_page(url: &str, title: Option<&str>) -> bool {
     }
 
     false
-}
-
-fn last_day_of_month(year: i32, month: u32) -> u32 {
-    match month {
-        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-        4 | 6 | 9 | 11 => 30,
-        2 => if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) { 29 } else { 28 },
-        _ => 30,
-    }
-}
-
-fn local_naive_to_utc(naive: NaiveDateTime) -> DateTime<Utc> {
-    Local.from_local_datetime(&naive).unwrap().with_timezone(&Utc)
 }

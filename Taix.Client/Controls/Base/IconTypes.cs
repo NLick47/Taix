@@ -1,7 +1,7 @@
 ﻿namespace Taix.Client.Controls.Base;
 
 /// <summary>
-///     图标类型
+/// 图标类型
 /// </summary>
 public enum IconTypes
 {

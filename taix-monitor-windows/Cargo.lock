@@ -543,6 +543,7 @@ name = "taix-monitor-windows"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "crc32fast",
  "image",
  "parking_lot",
  "serde",

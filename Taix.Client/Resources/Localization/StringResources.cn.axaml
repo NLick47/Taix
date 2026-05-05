@@ -28,6 +28,7 @@
 
     <system:String x:Key="Today">今日</system:String>
     <system:String x:Key="More">更多</system:String>
+    <system:String x:Key="CategoryFilterLabel">分类筛选：</system:String>
 
 
     <!--base-->
@@ -134,6 +135,8 @@
     <system:String x:Key="DefaultView">默认视图</system:String>
     <system:String x:Key="SummaryView">汇总视图</system:String>
     <system:String x:Key="CategoryView">分类视图</system:String>
+    <system:String x:Key="TrendView">趋势</system:String>
+    <system:String x:Key="ColumnView">柱状</system:String>
     <system:String x:Key="Uncategorized">未分类</system:String>
 
     <system:String x:Key="ViewCategoryAppList">查看分类应用列表</system:String>
@@ -308,6 +311,8 @@
 
     <system:String x:Key="Cancel">取消</system:String>
     <system:String x:Key="RestoreSystemCategory">还原系统分类</system:String>
+    <system:String x:Key="CategoryHasApps">该分类下有 {0} 个应用，删除后将移入系统默认分类</system:String>
+    <system:String x:Key="CategoryHasSites">该分类下有 {0} 个网站，删除后将移入系统默认分类</system:String>
 
 
     <system:String x:Key="ChooseColor">选择颜色</system:String>

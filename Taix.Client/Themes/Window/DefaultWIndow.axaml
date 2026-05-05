@@ -3,15 +3,19 @@
                     xmlns:button="using:Taix.Client.Controls.Button"
                     xmlns:base="using:Taix.Client.Controls.Base"
                     xmlns:input="using:Taix.Client.Controls.Input"
-                    xmlns:controls="using:Taix.Client.Controls.Window">
+                    xmlns:controls="using:Taix.Client.Controls.Window"
+    xmlns:system="clr-namespace:System;assembly=System.Runtime">
 
+    <system:Double x:Key="WindowTitleBarHeight">40</system:Double>
 
     <ControlTheme x:Key="{x:Type controls:DefaultWindow}"
                   TargetType="controls:DefaultWindow">
         <Setter Property="ExtendClientAreaToDecorationsHint"
                 Value="True" />
-        <Setter Property="ExtendClientAreaTitleBarHeightHint" Value="32" />
-        <Setter Property="ExtendClientAreaChromeHints" Value="NoChrome" />
+        <Setter Property="ExtendClientAreaTitleBarHeightHint" Value="40" />
+        <Setter Property="WindowDecorations" Value="None" />
+        <!-- <Setter Property="ExtendClientAreaChromeHints" Value="NoChrome" /> -->
+        
         <Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
         <Setter Property="UseLayoutRounding" Value="True" />
 
@@ -61,18 +65,27 @@
         </Styles>
         <Setter Property="Template">
             <ControlTemplate>
-                <Border x:Name="WindowBorder">
+                <Border x:Name="WindowBorder"   
+                        CornerRadius="12"
+                        BoxShadow="0 12 40 0 #28000000"
+                        ClipToBounds="False"
+                        Margin="16">
                     <Border
+                        CornerRadius="12"
                         BorderThickness="1"
+                        ClipToBounds="True"
                         BorderBrush="{DynamicResource WindowBorderBrush}"
                         Background="{DynamicResource WindowBackground}">
-                        <Grid x:Name="WindowContent">
+                        <Grid>
+                            <!-- 原有窗口内容 -->
+                            <Grid x:Name="WindowContent">
                             <!--标题栏-->
                             <Grid
                                 x:Name="TitleBar"
                                 Panel.ZIndex="999"
                                 Height="{DynamicResource WindowTitleBarHeight}"
-                                VerticalAlignment="Top">
+                                VerticalAlignment="Top"
+                                Background="Transparent">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
@@ -91,8 +104,38 @@
                                                            Command="{x:Static controls:DefaultWindow.BackCommand}"
                                                            Icon="Back" />
 
-                                        <Image Source="{TemplateBinding IconSource}" VerticalAlignment="Center"
-                                               Stretch="Uniform" Width="18" />
+                                        <Panel VerticalAlignment="Center">
+                                            <Image Source="{TemplateBinding IconSource}" VerticalAlignment="Center"
+                                                   Stretch="Uniform" Width="18" />
+                                            <Border x:Name="StatusDot"
+                                                    Width="8" Height="8"
+                                                    CornerRadius="4"
+                                                    Background="#999999"
+                                                    BorderBrush="{DynamicResource WindowBackground}"
+                                                    BorderThickness="1.5"
+                                                    HorizontalAlignment="Right"
+                                                    VerticalAlignment="Bottom"
+                                                    Margin="0,0,-2,-2">
+                                                <Border.Styles>
+                                                    <Style Selector="Border">
+                                                        <Style.Animations>
+                                                            <Animation Duration="0:0:4"
+                                                                       IterationCount="INFINITE">
+                                                                <KeyFrame Cue="0%">
+                                                                    <Setter Property="Opacity" Value="1.0" />
+                                                                </KeyFrame>
+                                                                <KeyFrame Cue="50%">
+                                                                    <Setter Property="Opacity" Value="0.8" />
+                                                                </KeyFrame>
+                                                                <KeyFrame Cue="100%">
+                                                                    <Setter Property="Opacity" Value="1.0" />
+                                                                </KeyFrame>
+                                                            </Animation>
+                                                        </Style.Animations>
+                                                    </Style>
+                                                </Border.Styles>
+                                            </Border>
+                                        </Panel>
                                         <TextBlock VerticalAlignment="Center" Text="{TemplateBinding Title}"
                                                    IsEnabled="{TemplateBinding IsActive}"
                                                    Foreground="{DynamicResource DefaultTextBrush}" Margin="15,0,0,0" />
@@ -216,6 +259,38 @@
                                     </Grid>
                                 </Border>
 
+                                <!--Action Dialog-->
+                                <Border
+                                    Padding="15,15"
+                                    CornerRadius="10"
+                                    Width="320"
+                                    x:Name="ActionDialogBorder"
+                                    Background="{DynamicResource WindowContentBackground}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Top" ZIndex="1000">
+                                    <Border.RenderTransform>
+                                        <TransformGroup>
+                                            <TranslateTransform Y="-150" />
+                                        </TransformGroup>
+                                    </Border.RenderTransform>
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="10" Color="Black" Opacity=".1" />
+                                    </Border.Effect>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="40" />
+                                            <RowDefinition Height="auto" />
+                                            <RowDefinition Height="auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="{TemplateBinding DialogTitle}" FontSize="16" FontWeight="Bold" />
+                                        <TextBlock Grid.Row="1" Text="{TemplateBinding DialogMessage}"
+                                                   VerticalAlignment="Top" TextWrapping="WrapWithOverflow" />
+                                        <StackPanel Grid.Row="2" x:Name="ActionDialogButtonsPanel"
+                                                    Orientation="Horizontal" HorizontalAlignment="Right"
+                                                    Margin="0,20,0,0" />
+                                    </Grid>
+                                </Border>
+
                                 <!--Dialog-->
                                 <Border
                                     Padding="15,15"
@@ -258,6 +333,42 @@
                                 <!--遮罩层-->
                                 <Border x:Name="Masklayer" Background="Black" Opacity="0" />
                             </Grid>
+                            
+                             <Panel ZIndex="10000" IsHitTestVisible="True">
+                                 <Border Width="8" HorizontalAlignment="Left"  VerticalAlignment="Stretch"
+                                         Background="Transparent"
+                                         WindowDecorationProperties.ElementRole="ResizeW"/>
+                                 <Border Width="8" HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                                         Background="Transparent"
+                                         WindowDecorationProperties.ElementRole="ResizeE"/>
+                                <Border Height="8" VerticalAlignment="Top"    HorizontalAlignment="Stretch"
+                                        Background="Transparent"
+                                        WindowDecorationProperties.ElementRole="ResizeN"/>
+                                <Border Height="8" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+                                        Background="Transparent"
+                                        WindowDecorationProperties.ElementRole="ResizeS"/>
+                    
+                    <!-- 四角（斜向拉伸） -->
+                    <Border Width="12" Height="8" HorizontalAlignment="Left"  VerticalAlignment="Top"
+                            Background="Transparent"
+                            WindowDecorationProperties.ElementRole="ResizeNW"/>
+                    <Border Width="12" Height="8" HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Background="Transparent"
+                            WindowDecorationProperties.ElementRole="ResizeNE"/>
+                    <Border Width="12" Height="8" HorizontalAlignment="Left"  VerticalAlignment="Bottom"
+                            Background="Transparent"
+                            WindowDecorationProperties.ElementRole="ResizeSW"/>
+                    <Border Width="12" Height="8" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Background="Transparent"
+                            WindowDecorationProperties.ElementRole="ResizeSE"/>
+                </Panel>
+                            </Grid>
+                            
+                            <!-- 顶部玻璃高光：模拟玻璃边缘反光 -->
+                            <Border CornerRadius="12"
+                                    BorderThickness="1,1,0,0"
+                                    BorderBrush="{DynamicResource WindowGlassHighlightBrush}"
+                                    IsHitTestVisible="False" />
                         </Grid>
                     </Border>
                 </Border>

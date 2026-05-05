@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
@@ -276,7 +277,7 @@ public class Charts : TemplatedControl
     private string _total;
 
     /// <summary>
-    ///     容器
+    /// 容器
     /// </summary>
     private StackPanel _typeATempContainer;
 
@@ -294,12 +295,12 @@ public class Charts : TemplatedControl
     private WrapPanel CardContainer;
 
     /// <summary>
-    ///     是否在渲染中
+    /// 是否在渲染中
     /// </summary>
     private bool isRendering;
 
     /// <summary>
-    ///     计算最大值
+    /// 计算最大值
     /// </summary>
     private double maxValue;
 
@@ -307,9 +308,35 @@ public class Charts : TemplatedControl
     private Border RadarContainer;
 
     /// <summary>
-    ///     搜索关键字（仅列表样式有效
+    /// 搜索关键字（仅列表样式有效
     /// </summary>
     private string searchKey;
+
+    private readonly ConditionalWeakTable<Control, object> _clickHandledControls = new();
+
+    public Charts()
+    {
+        Loaded += Charts_Loaded;
+    }
+
+    private void Charts_Loaded(object? sender, RoutedEventArgs e)
+    {
+        // Tab 切换回来后重新订阅 SizeChanged，因为 Unloaded 中已取消订阅
+        if (ChartsType == ChartsType.Column && _typeColumnCanvas != null)
+        {
+            _typeColumnCanvas.SizeChanged -= _typeColumnCanvas_SizeChanged;
+            _typeColumnCanvas.SizeChanged += _typeColumnCanvas_SizeChanged;
+        }
+
+        if (ChartsType == ChartsType.Pie && _commonCanvas != null)
+        {
+            _commonCanvas.SizeChanged -= _commonCanvas_SizeChanged;
+            _commonCanvas.SizeChanged += _commonCanvas_SizeChanged;
+        }
+
+        // 触发重绘，防止因 Data 未变更而错过渲染时机
+        Render();
+    }
 
     public ChartsType ChartsType
     {
@@ -535,7 +562,7 @@ public class Charts : TemplatedControl
     }
 
     /// <summary>
-    ///     点击项目时发生
+    /// 点击项目时发生
     /// </summary>
     public event EventHandler OnItemClick;
 
@@ -653,26 +680,33 @@ public class Charts : TemplatedControl
         IsEmpty = false;
 
         isRendering = true;
-        switch (ChartsType)
+        try
         {
-            case ChartsType.List:
-                RenderListStyle();
-                break;
-            case ChartsType.Card:
-                RenderCardStyle();
-                break;
-            case ChartsType.Month:
-                RenderMonthStyle();
-                break;
-            case ChartsType.Column:
-                RenderColumnStyle();
-                break;
-            case ChartsType.Radar:
-                RenderLadarStyle();
-                break;
-            case ChartsType.Pie:
-                RenderPieStyle();
-                break;
+            switch (ChartsType)
+            {
+                case ChartsType.List:
+                    RenderListStyle();
+                    break;
+                case ChartsType.Card:
+                    RenderCardStyle();
+                    break;
+                case ChartsType.Month:
+                    RenderMonthStyle();
+                    break;
+                case ChartsType.Column:
+                    RenderColumnStyle();
+                    break;
+                case ChartsType.Radar:
+                    RenderLadarStyle();
+                    break;
+                case ChartsType.Pie:
+                    RenderPieStyle();
+                    break;
+            }
+        }
+        finally
+        {
+            isRendering = false;
         }
     }
 
@@ -818,18 +852,28 @@ public class Charts : TemplatedControl
 
     private void HandleItemClick(Control el, ChartsDataModel data)
     {
+        if (_clickHandledControls.TryGetValue(el, out _))
+            return;
+        _clickHandledControls.Add(el, null!);
+
         el.PointerPressed += (s, e) =>
         {
+            var clickData = data;
+            if (el is ChartsItemTypeCard card)
+                clickData = card.Data;
+            else if (el is ChartsItemTypeMonth month)
+                clickData = month.Data;
+            if (clickData == null) return;
+
             if (e.GetCurrentPoint(el).Properties.IsLeftButtonPressed)
             {
-                OnItemClick?.Invoke(data, null);
-                ClickCommand?.Execute(data);
+                OnItemClick?.Invoke(clickData, null);
+                ClickCommand?.Execute(clickData);
             }
 
             if (e.GetCurrentPoint(el).Properties.IsRightButtonPressed)
                 if (ItemMenu != null)
-                    //ItemMenu.IsOpen = true;
-                    ItemMenu.Tag = data;
+                    ItemMenu.Tag = clickData;
         };
     }
 
@@ -888,12 +932,15 @@ public class Charts : TemplatedControl
             ItemMenu.Opening -= OnContextMenuOpening;
         }
 
-        if (ChartsType == ChartsType.Column) _typeColumnCanvas.SizeChanged -= _typeColumnCanvas_SizeChanged;
+        if (ChartsType == ChartsType.Column && _typeColumnCanvas != null)
+            _typeColumnCanvas.SizeChanged -= _typeColumnCanvas_SizeChanged;
 
-        if (ChartsType == ChartsType.Pie) _commonCanvas.SizeChanged -= _commonCanvas_SizeChanged;
+        if (ChartsType == ChartsType.Pie && _commonCanvas != null)
+            _commonCanvas.SizeChanged -= _commonCanvas_SizeChanged;
 
         _listView.PointerReleased -= OnListViewPointerReleased;
         _searchBox.TextChanged -= SearchBox_TextChanged;
+        Loaded -= Charts_Loaded;
     }
 
     private void _listView_MouseLeftButtonUp(object sender, PointerReleasedEventArgs e)
@@ -912,11 +959,11 @@ public class Charts : TemplatedControl
         if (box.Text != searchKey)
         {
             searchKey = box.Text.ToLower();
-            HandleSearch();
+            _ = HandleSearchAsync();
         }
     }
 
-    private async void HandleSearch()
+    private async Task HandleSearchAsync()
     {
         var data = Data.ToList();
         await Task.Run(() =>
@@ -1100,11 +1147,11 @@ public class Charts : TemplatedControl
     }
 
     /// <summary>
-    ///     渲染柱形图
+    /// 渲染柱形图
     /// </summary>
     private void RenderColumnStyle()
     {
-        if (_typeColumnCanvas == null || _typeColumnCanvas.Bounds.Height == 0)
+        if (_typeColumnCanvas == null || _typeColumnCanvas.Bounds.Height == 0 || _typeColumnCanvas.Bounds.Width == 0)
         {
             isRendering = false;
             return;
@@ -1120,12 +1167,22 @@ public class Charts : TemplatedControl
         Median = string.Empty;
         Total = string.Empty;
 
-        if (Data == null || Data.Count() == 0) return;
+        if (Data == null || Data.Count() == 0)
+        {
+            isRendering = false;
+            return;
+        }
 
+        var firstData = Data.FirstOrDefault();
+        if (firstData?.Values == null || firstData.Values.Length == 0)
+        {
+            isRendering = false;
+            return;
+        }
 
         double total = 0;
         //  查找最大值
-        var colValueCount = Data.FirstOrDefault().Values.Length;
+        var colValueCount = firstData.Values.Length;
         var tempValueArr = new double[colValueCount];
 
         foreach (var item in Data)
@@ -1191,6 +1248,8 @@ public class Charts : TemplatedControl
         var columnBorderWidth = _typeColumnCanvas.Bounds.Width / columns;
         //  列值宽度
         var colValueRectWidth = _typeColumnCanvas.Bounds.Width / columns - margin * 2;
+        if (colValueRectWidth <= 0) colValueRectWidth = 1;
+        if (canvasHeight <= 0) canvasHeight = 1;
 
         for (var i = 0; i < columns; i++)
         {
@@ -1230,8 +1289,8 @@ public class Charts : TemplatedControl
             {
                 var item = list[di];
                 //string colColor = item.Color == null ? Taix.Client.Base.Color.Colors.MainColors[di] : item.Color;
-                var themeColor = App.Current.FindResource("ThemeColor");
-                var colColor = item.Color == null ? themeColor.ToString() : item.Color;
+                var themeColor = App.Current?.FindResource("ThemeColor");
+                var colColor = item.Color == null ? themeColor?.ToString() ?? StateData.ThemeColor : item.Color;
                 var value = item.Values[i];
                 if (value > 0)
                 {

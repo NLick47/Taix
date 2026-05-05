@@ -25,6 +25,7 @@ public interface ITaixApiClient
     Task<CategoryModel?> GetCategoryAsync(int id);
     Task<CategoryModel> CreateCategoryAsync(CategoryModel category);
     Task UpdateCategoryAsync(CategoryModel category);
+    Task<CategoryModel> RestoreSystemCategoryAsync(int id);
     Task DeleteCategoryAsync(int id);
 
     // Data

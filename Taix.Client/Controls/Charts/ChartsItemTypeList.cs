@@ -4,8 +4,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
+using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
-using Taix.Client.Librarys.Image;
 
 namespace Taix.Client.Controls.Charts;
 
@@ -50,13 +50,14 @@ public class ChartsItemTypeList : TemplatedControl
     private bool _isShowBadge;
 
     private double _maxValue;
-    private Image IconObj;
+    private Img IconObj;
     private bool IsAddEvent;
     private bool isRendering;
 
     private TextBlock NameTextObj, ValueTextObj;
     private Rectangle ValueBlockObj;
     private StackPanel ValueContainer;
+    private EventHandler? _layoutUpdatedHandler;
 
     public ChartsDataModel Data
     {
@@ -97,6 +98,11 @@ public class ChartsItemTypeList : TemplatedControl
         Loaded -= ChartsItemTypeList_Loaded;
         var parent = Parent as Control;
         parent.SizeChanged -= Parent_SizeChanged;
+        if (_layoutUpdatedHandler != null)
+        {
+            ValueTextObj.LayoutUpdated -= _layoutUpdatedHandler;
+            _layoutUpdatedHandler = null;
+        }
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -106,7 +112,7 @@ public class ChartsItemTypeList : TemplatedControl
         ValueTextObj = e.NameScope.Get<TextBlock>("ValueTextObj");
         ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
         ValueContainer = e.NameScope.Get<StackPanel>("ValueContainer");
-        IconObj = e.NameScope.Get<Image>("IconObj");
+        IconObj = e.NameScope.Get<Img>("IconObj");
 
         if (!IsAddEvent)
         {
@@ -133,14 +139,17 @@ public class ChartsItemTypeList : TemplatedControl
     {
         if (isRendering || Data == null) return;
         isRendering = true;
-        ValueTextObj.LayoutUpdated += (e, c) =>
+
+        if (_layoutUpdatedHandler != null)
+            ValueTextObj.LayoutUpdated -= _layoutUpdatedHandler;
+        _layoutUpdatedHandler = (e, c) =>
         {
             if (MaxValue <= 0) return;
             UpdateValueBlockWidth();
         };
+        ValueTextObj.LayoutUpdated += _layoutUpdatedHandler;
 
         ValueTextObj.Text = Data.Tag;
-        IconObj.Source = Imager.Load(Data.Icon);
     }
 
     public void UpdateValueBlockWidth()

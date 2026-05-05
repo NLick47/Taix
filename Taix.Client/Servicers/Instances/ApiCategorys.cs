@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Taix.Client.Librarys.Api;
 using Taix.Client.Shared.Models;
@@ -10,76 +9,40 @@ namespace Taix.Client.Servicers.Instances;
 public class ApiCategorys : ICategorys
 {
     private readonly ITaixApiClient _apiClient;
-    private readonly List<CategoryModel> _categories = new();
-    private readonly object _lock = new();
 
     public ApiCategorys(ITaixApiClient apiClient)
     {
         _apiClient = apiClient;
     }
 
-    public List<CategoryModel> GetCategories(bool containSystemCategory = false)
+    public async Task<List<CategoryModel>> GetCategoriesAsync(bool containSystemCategory = false)
     {
-        lock (_lock)
-        {
-            if (containSystemCategory)
-            {
-                var list = new List<CategoryModel>(_categories);
-                var sys = list.FirstOrDefault(x => x.IsSystem);
-                if (sys != null) sys.Name = ResourceStrings.Uncategorized;
-                return list;
-            }
-            return new List<CategoryModel>(_categories.Where(x => !x.IsSystem));
-        }
+        return await _apiClient.GetCategoriesAsync(containSystemCategory);
     }
 
-    public async Task LoadAsync()
+    public async Task<CategoryModel?> GetCategoryAsync(int id)
     {
-        var categories = await _apiClient.GetCategoriesAsync(true);
-        lock (_lock)
-        {
-            _categories.Clear();
-            _categories.AddRange(categories);
-        }
-    }
-
-    public CategoryModel GetCategory(int id)
-    {
-        lock (_lock)
-        {
-            var category = _categories.FirstOrDefault(m => m.ID == id);
-            if (category != null && category.IsSystem) category.Name = ResourceStrings.Uncategorized;
-            return category;
-        }
+        return await _apiClient.GetCategoryAsync(id);
     }
 
     public async Task<CategoryModel> CreateAsync(CategoryModel category)
     {
-        var created = await _apiClient.CreateCategoryAsync(category);
-        lock (_lock)
-        {
-            _categories.Add(created);
-        }
-        return created;
+        return await _apiClient.CreateCategoryAsync(category);
     }
 
     public async Task UpdateAsync(CategoryModel category)
     {
         await _apiClient.UpdateCategoryAsync(category);
-        lock (_lock)
-        {
-            var index = _categories.FindIndex(c => c.ID == category.ID);
-            if (index >= 0) _categories[index] = category;
-        }
+    }
+
+    public async Task<CategoryModel> RestoreSystemCategoryAsync(int id)
+    {
+        return await _apiClient.RestoreSystemCategoryAsync(id);
     }
 
     public async Task DeleteAsync(CategoryModel category)
     {
         if (category.IsSystem) return;
         await _apiClient.DeleteCategoryAsync(category.ID);
-        lock (_lock)
-        {
-            _categories.RemoveAll(c => c.ID == category.ID);
-        }
     }
 }

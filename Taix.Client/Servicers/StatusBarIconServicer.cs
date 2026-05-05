@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using Taix.Client.Logging;
 using Taix.Client.Shared.Servicers.Interfaces;
@@ -20,49 +21,67 @@ public class StatusBarIconServicer : IStatusBarIconServicer
         Normal
     }
 
-    private static readonly TrayIcon _trayIcon = new();
+    private TrayIcon? _trayIcon;
     private readonly IAppConfig _appConfig;
-    private readonly MainViewModel _mainVM;
-    private readonly MainWindow _mainWindow;
+    private readonly IWindowStateService _windowStateService;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IShutdownService _shutdownService;
+    private readonly IAppConfig _config;
+    private NativeMenu? _contextMenu;
 
-    private readonly IThemeServicer _themeServicer;
-    private readonly IUIServicer _uIServicer;
-    private NativeMenu _contextMenu;
+    private bool _isInit;
+    private MainWindow? _mainWindow;
 
-    private bool isInit;
-
-    public StatusBarIconServicer(IThemeServicer themeServicer,
-        MainViewModel mainVM, MainWindow mainWindow,
-        IAppConfig appConfig, IUIServicer uiServicer)
+    public StatusBarIconServicer(
+        IThemeServicer themeServicer,
+        IServiceProvider serviceProvider,
+        IAppConfig appConfig,
+        IWindowStateService windowStateService,
+        IUIServicer uiServicer,
+        IShutdownService shutdownService, IAppConfig config)
     {
-        _themeServicer = themeServicer;
+        _serviceProvider = serviceProvider;
         _appConfig = appConfig;
-        _uIServicer = uiServicer;
-        _mainVM = mainVM;
-        _mainWindow = mainWindow;
+        _windowStateService = windowStateService;
+        _shutdownService = shutdownService;
+        _config = config;
+        _shutdownService.AddHandler(OnShuttingDown);
     }
 
     public void Init()
     {
-        SetIcon(IconType.Normal);
-        InitMenu();
+        var config = _appConfig.GetConfig();
+        if (!config.General.IsEnableTray)
+            return;
+
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _trayIcon = new TrayIcon();
+            SetIcon(IconType.Normal);
+            InitMenu();
+        });
     }
 
     public void ShowMainWindow()
     {
-        var desk = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-        if (!isInit)
+        var desk = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+        if (desk == null) return;
+
+        var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+        var mainVM = _serviceProvider.GetRequiredService<MainViewModel>();
+
+        if (!_isInit)
         {
-            isInit = true;
-            InitializeMainWindow();
-            desk.MainWindow = _mainWindow;
+            _isInit = true;
+            InitializeMainWindow(mainWindow, mainVM);
+            desk.MainWindow = mainWindow;
             return;
         }
 
         if (desk.MainWindow == null)
         {
-            InitializeMainWindow();
-            desk.MainWindow = _mainWindow;
+            InitializeMainWindow(mainWindow, mainVM);
+            desk.MainWindow = mainWindow;
         }
         else
         {
@@ -70,21 +89,18 @@ public class StatusBarIconServicer : IStatusBarIconServicer
         }
     }
 
-
     private void SetIcon(IconType iconType = IconType.Normal)
     {
         try
         {
+            if (_trayIcon == null) return;
             var iconName = iconType switch
             {
                 IconType.Normal => "tai32",
                 _ => "tai32"
             };
-            Dispatcher.UIThread.Invoke(() =>
-            {
-                _trayIcon.Icon =
-                    new WindowIcon(AssetLoader.Open(new Uri($"avares://Taix/Resources/Icons/{iconName}.ico")));
-            });
+            _trayIcon.Icon =
+                new WindowIcon(AssetLoader.Open(new Uri($"avares://Taix/Resources/Icons/{iconName}.ico")));
         }
         catch (Exception ex)
         {
@@ -100,50 +116,87 @@ public class StatusBarIconServicer : IStatusBarIconServicer
 
         _contextMenu.Items.Add(new NativeMenuItem
         {
-            Header = Application.Current.FindResource("Open") as string,
+            Header = Application.Current?.FindResource("Open") as string,
             Command = ReactiveCommand.Create(() => { ShowMainWindow(); })
         });
         _contextMenu.Items.Add(new NativeMenuItem
         {
-            Header = Application.Current.FindResource("Exit") as string,
-            Command = ReactiveCommand.Create(() => { ExitApp(); })
+            Header = Application.Current?.FindResource("Exit") as string,
+            Command = ReactiveCommand.CreateFromTask(ExitAppAsync)
         });
-        Dispatcher.UIThread.Invoke(() => { _trayIcon.Menu = _contextMenu; });
+        Dispatcher.UIThread.Post(() => { _trayIcon.Menu = _contextMenu; });
     }
 
-    private void ExitApp()
+    private async Task ExitAppAsync()
     {
-        _trayIcon.IsVisible = false;
-        App.Exit();
+        if (_trayIcon != null)
+            _trayIcon.IsVisible = false;
+        await App.ExitAsync();
     }
 
-  
-    private void InitializeMainWindow()
+    private async Task OnShuttingDown()
     {
-        var config = _appConfig.GetConfig();
+        if (_mainWindow is null) return;
 
-        if (isInit && config.General.IsSaveWindowSize)
+        var cfg = _appConfig.GetConfig();
+        if (cfg.General.IsSaveWindowSize)
         {
-            _mainWindow.Width = config.General.WindowWidth;
-            _mainWindow.Height = config.General.WindowHeight;
+            _windowStateService.WindowWidth = _mainWindow.Width;
+            _windowStateService.WindowHeight = _mainWindow.Height;
+            await _windowStateService.SaveAsync();
         }
 
-        _mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        _mainWindow.WindowState = WindowState.Normal;
-        _mainWindow.DataContext = _mainVM;
-        _mainWindow.IsVisible = true;
-        _mainWindow.Closing += (s, e) =>
-        {
-            e.Cancel = true;
-            _mainWindow.IsVisible = false;
+        await _appConfig.SaveAsync();
+    }
 
-            var cfg = _appConfig.GetConfig();
-            if (cfg.General.IsSaveWindowSize)
+    private void InitializeMainWindow(MainWindow mainWindow, MainViewModel mainVM)
+    {
+        _mainWindow = mainWindow;
+
+        var config = _appConfig.GetConfig();
+
+        if (config.General.IsSaveWindowSize
+            && _windowStateService.WindowWidth > 0
+            && _windowStateService.WindowHeight > 0)
+        {
+            mainWindow.Width = _windowStateService.WindowWidth;
+            mainWindow.Height = _windowStateService.WindowHeight;
+        }
+
+        mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        mainWindow.WindowState = WindowState.Normal;
+        mainWindow.DataContext = mainVM;
+
+        mainWindow.Opened += (_, _) =>
+        {
+            _ = Task.Run(async () =>
             {
-                cfg.General.WindowWidth = _mainWindow.Width;
-                cfg.General.WindowHeight = _mainWindow.Height;
-                _ = _appConfig.SaveAsync();
-            }
+                try
+                {
+                    await _config.LoadAsync();
+                    await mainVM.LoadDefaultPageAsync();
+                    if (config.General.IsEnableTray)
+                    {
+                        Init();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"加载配置失败: {ex.Message}", ex);
+                }
+            });
+
+        };
+
+        mainWindow.IsVisible = true;
+        mainWindow.Closing += (s, e) =>
+        {
+            var cfg = _appConfig.GetConfig();
+            if (!cfg.General.IsEnableTray)
+                return;
+
+            e.Cancel = true;
+            mainWindow.IsVisible = false;
         };
     }
 

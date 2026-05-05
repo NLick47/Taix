@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,10 +16,12 @@ namespace Taix.Client.Servicers.Instances;
 public class ApiWebData : IWebData
 {
     private readonly ITaixApiClient _apiClient;
+    private readonly IWebSiteData _webSiteData;
 
-    public ApiWebData(ITaixApiClient apiClient)
+    public ApiWebData(ITaixApiClient apiClient, IWebSiteData webSiteData)
     {
         _apiClient = apiClient;
+        _webSiteData = webSiteData;
     }
 
     public Task AddUrlBrowseTimeAsync(Site site, int duration, DateTime? dateTime = null) =>
@@ -54,10 +56,15 @@ public class ApiWebData : IWebData
         await _apiClient.DeleteWebSiteCategoryAsync(data.ID);
     }
 
-    public async Task<IReadOnlyList<WebSiteModel>> GetWebSitesAsync(int categoryId)
+    public async Task<IReadOnlyCollection<WebSiteModel>> GetWebSitesAsync(int categoryId)
     {
-        var result = await _apiClient.GetWebSitesAsync(categoryId);
-        return result.AsReadOnly();
+        return await _webSiteData.GetWebSitesByCategoryIDAsync(categoryId);
+    }
+
+    public async Task<int> GetWebSitesCount(int categoryId)
+    {
+        var sites = await _webSiteData.GetWebSitesByCategoryIDAsync(categoryId);
+        return sites.Count;
     }
 
     public async Task<int> GetWebSitesCountAsync(int categoryId)
@@ -65,10 +72,9 @@ public class ApiWebData : IWebData
         return await _apiClient.GetWebSitesCountAsync(categoryId);
     }
 
-    public async Task<IReadOnlyList<WebSiteModel>> GetUnSetCategoryWebSitesAsync()
+    public async Task<IReadOnlyCollection<WebSiteModel>> GetUnSetCategoryWebSitesAsync()
     {
-        var result = await _apiClient.GetUnSetCategoryWebSitesAsync();
-        return result.AsReadOnly();
+        return await _webSiteData.GetWebSitesByCategoryIDAsync(0);
     }
 
     public async Task UpdateWebSitesCategoryAsync(int[] siteIds, int categoryId)
@@ -121,16 +127,14 @@ public class ApiWebData : IWebData
         return result.AsReadOnly();
     }
 
-    public async Task<WebSiteModel> GetWebSiteAsync(int id)
+    public async Task<WebSiteModel?> GetWebSiteAsync(int id)
     {
-        var result = await _apiClient.GetWebSiteAsync(id);
-        return result!;
+        return await _webSiteData.GetWebSiteAsync(id);
     }
 
-    public async Task<WebSiteModel> GetWebSiteAsync(string domain)
+    public async Task<WebSiteModel?> GetWebSiteAsync(string domain)
     {
-        var result = await _apiClient.GetWebSiteByDomainAsync(domain);
-        return result!;
+        return await _webSiteData.GetWebSiteByDomainAsync(domain);
     }
 
     public async Task ClearAsync(DateTime start, DateTime end)
@@ -154,20 +158,23 @@ public class ApiWebData : IWebData
         var data = await _apiClient.GetWebExportDataAsync(start, end);
         var prefix = "Taix";
 
-        var rows = data.Logs.Select(log => new
+        var rows = data.Logs.Select(log => new WebLogExportRow
         {
-            Time = log.LogTime.ToString("yyyy-MM-dd HH:mm"),
+            Time = DateTime.SpecifyKind(log.LogTime, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd HH:mm"),
             Title = log.Url?.Title ?? log.Site?.Title ?? string.Empty,
             Website = log.Site?.Domain ?? string.Empty,
             Duration = FormatDuration(log.Duration)
         });
 
+        var rangePart = $"{start.ToString("yyyyMMdd")}_{end.ToString("yyyyMMdd")}";
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
         // Excel
-        var excelPath = Path.Combine(dir, $"{prefix}_web_data.xlsx");
+        var excelPath = Path.Combine(dir, $"{prefix}_web_data_{rangePart}_{timestamp}.xlsx");
         MiniExcel.SaveAs(excelPath, rows);
 
         // CSV
-        var csvPath = Path.Combine(dir, $"{prefix}_web_data.csv");
+        var csvPath = Path.Combine(dir, $"{prefix}_web_data_{rangePart}_{timestamp}.csv");
         MiniExcel.SaveAs(csvPath, rows, excelType: MiniExcelLibs.ExcelType.CSV);
     }
 
@@ -177,9 +184,8 @@ public class ApiWebData : IWebData
         return $"{ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
     }
 
-    public async Task<WebSiteModel> UpdateAsync(WebSiteModel website)
+    public async Task<WebSiteModel?> UpdateAsync(WebSiteModel website)
     {
-        var result = await _apiClient.UpdateWebSiteAsync(website);
-        return result!;
+        return await _webSiteData.UpdateWebSiteAsync(website);
     }
 }

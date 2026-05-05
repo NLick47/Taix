@@ -4,12 +4,10 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using Avalonia;
-using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Media.Transformation;
 using Taix.Client.Controls.Navigation.Models;
 
 namespace Taix.Client.Controls.Navigation;
@@ -56,9 +54,6 @@ public class Navigation : TemplatedControl
     private NavigationItemModel? _selectedItem;
 
     private object? _topExtContent;
-
-    //  选中标记块
-    private Border ActiveBlock;
 
     private StackPanel ItemsPanel;
 
@@ -179,8 +174,6 @@ public class Navigation : TemplatedControl
     {
         base.OnApplyTemplate(e);
         ItemsPanel = e.NameScope.Get<StackPanel>("ItemsPanel")!;
-        ActiveBlock = e.NameScope.Get<Border>("ActiveBlock")!;
-        CreateTransitions();
         Render();
     }
 
@@ -201,30 +194,14 @@ public class Navigation : TemplatedControl
             navItem.BadgeText = item.BadgeText;
             navItem.Uri = item.Uri;
 
-            if (!string.IsNullOrEmpty(item.Title))
-            {
-                navItem.MouseUp += NavItem_MouseUp;
-                navItem.Unloaded += (e, c) => { navItem.MouseUp -= NavItem_MouseUp; };
-            }
+            navItem.MouseUp += NavItem_MouseUp;
+            navItem.Unloaded += (e, c) => { navItem.MouseUp -= NavItem_MouseUp; };
 
             if (SelectedItem?.ID == id) navItem.IsSelected = true;
 
             ItemsPanel.Children.Add(navItem);
             ItemsDictionary.Add(id, navItem);
         }
-    }
-
-
-    public void CreateTransitions()
-    {
-        ActiveBlock.Transitions = new Transitions
-        {
-            new TransformOperationsTransition
-            {
-                Property = RenderTransformProperty,
-                Duration = TimeSpan.FromSeconds(0.25)
-            }
-        };
     }
 
 
@@ -269,11 +246,6 @@ public class Navigation : TemplatedControl
 
         var item = ItemsDictionary[SelectedItem.ID];
         item.IsSelected = true;
-
-        //  选中项的坐标
-        var relativePoint = item.Bounds.Position;
-        var activeBlockTTF = ActiveBlock.Bounds.Position;
-        ActiveBlock.RenderTransform = TransformOperations.Parse($"translateY({relativePoint.Y + 16}px)");
     }
 
     private void UpdateActiveLocation()

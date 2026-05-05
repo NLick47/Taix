@@ -66,7 +66,7 @@ public class SettingPanelMultiItem : TemplatedControl
     private ICommand _onRemoveAction;
 
     /// <summary>
-    ///     所有设置数据
+    /// 所有设置数据
     /// </summary>
     // Dictionary property
     private Dictionary<string, List<string>> _settingData = new();
@@ -139,7 +139,7 @@ public class SettingPanelMultiItem : TemplatedControl
 
         Container.Children.Clear();
 
-        configData = Activator.CreateInstance(Data.GetType());
+        configData = SettingPanel.DeepCopy(Data, Data.GetType())!;
 
         // 遍历方法特性
         foreach (var pi in Data.GetType().GetProperties())

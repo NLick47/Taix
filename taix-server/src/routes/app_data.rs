@@ -13,9 +13,9 @@ use crate::services::app_data::AppDataService;
 pub fn router() -> Router<SqlitePool> {
     Router::new()
         .route("/api/appdata", get(get_all_apps).post(create_app))
-        .route("/api/appdata/{id}", get(get_app).put(update_app))
-        .route("/api/appdata/by-name/{name}", get(get_app_by_name))
-        .route("/api/appdata/by-category/{categoryId}", get(get_apps_by_category))
+        .route("/api/appdata/:id", get(get_app).put(update_app))
+        .route("/api/appdata/by-name/:name", get(get_app_by_name))
+        .route("/api/appdata/by-category/:categoryId", get(get_apps_by_category))
 }
 
 async fn get_all_apps(State(pool): State<SqlitePool>) -> Json<ApiResponse<Vec<AppModel>>> {

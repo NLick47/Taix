@@ -15,7 +15,6 @@ public class IndexPageModel : ModelBase
 
     private int _frequentUseNum;
 
-    private bool _isLoading;
     private int _moreNum;
     private SelectItemModel _moreType;
     private ObservableCollection<string> _tabbarData;
@@ -30,7 +29,7 @@ public class IndexPageModel : ModelBase
     private List<ChartsDataModel> _weekData;
 
     /// <summary>
-    ///     tabbar data
+    /// tabbar data
     /// </summary>
     public ObservableCollection<string> TabbarData
     {
@@ -43,7 +42,7 @@ public class IndexPageModel : ModelBase
     }
 
     /// <summary>
-    ///     tabbar selected item index
+    /// tabbar selected item index
     /// </summary>
     public int TabbarSelectedIndex
     {
@@ -56,7 +55,7 @@ public class IndexPageModel : ModelBase
     }
 
     /// <summary>
-    ///     week data
+    /// week data
     /// </summary>
     public List<ChartsDataModel> WeekData
     {
@@ -64,16 +63,6 @@ public class IndexPageModel : ModelBase
         set
         {
             _weekData = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public bool IsLoading
-    {
-        get => _isLoading;
-        set
-        {
-            _isLoading = value;
             OnPropertyChanged();
         }
     }
@@ -89,7 +78,7 @@ public class IndexPageModel : ModelBase
     }
 
     /// <summary>
-    ///     最为频繁条数
+    /// 最为频繁条数
     /// </summary>
     public int FrequentUseNum
     {
@@ -102,7 +91,7 @@ public class IndexPageModel : ModelBase
     }
 
     /// <summary>
-    ///     更多条数
+    /// 更多条数
     /// </summary>
     public int MoreNum
     {
@@ -115,7 +104,7 @@ public class IndexPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网页最为频繁数据
+    /// 网页最为频繁数据
     /// </summary>
     public List<ChartsDataModel> WebFrequentUseData
     {
@@ -128,7 +117,7 @@ public class IndexPageModel : ModelBase
     }
 
     /// <summary>
-    ///     更多展示数据类型（0=应用/1=网页）
+    /// 更多展示数据类型（0=应用/1=网页）
     /// </summary>
     public SelectItemModel MoreType
     {
@@ -141,7 +130,7 @@ public class IndexPageModel : ModelBase
     }
 
     /// <summary>
-    ///     应用最为频繁数据
+    /// 应用最为频繁数据
     /// </summary>
     public List<ChartsDataModel> AppFrequentUseData
     {
@@ -154,7 +143,7 @@ public class IndexPageModel : ModelBase
     }
 
     /// <summary>
-    ///     应用更多数据
+    /// 应用更多数据
     /// </summary>
     public List<ChartsDataModel> AppMoreData
     {
@@ -167,7 +156,7 @@ public class IndexPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网页更多数据
+    /// 网页更多数据
     /// </summary>
     public List<ChartsDataModel> WebMoreData
     {
@@ -180,7 +169,7 @@ public class IndexPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网站右键菜单
+    /// 网站右键菜单
     /// </summary>
     public ContextMenu WebSiteContextMenu
     {

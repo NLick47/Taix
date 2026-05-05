@@ -28,7 +28,7 @@ public class DetailPageModel : ModelBase
     private DateTime _monthDate;
     private int _nameIndexStart;
     private string _ratio = string.Empty;
-    private SelectItemModel _selectedWeek = null!;
+    private SelectItemModel? _selectedWeek;
     private ObservableCollection<string> _tabbarData = [];
     private int _tabbarSelectedIndex;
     private string _todayTime = string.Empty;
@@ -230,7 +230,7 @@ public class DetailPageModel : ModelBase
         }
     }
 
-    public SelectItemModel SelectedWeek
+    public SelectItemModel? SelectedWeek
     {
         get => _selectedWeek;
         set

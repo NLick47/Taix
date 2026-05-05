@@ -13,7 +13,7 @@
             </Style>
 
             <Style Selector="controls|DatePickerBar:pointerover  /template/ Border#Date">
-                <Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}" />
+                <Setter Property="Background" Value="{DynamicResource NavHoverGlassBrush}" />
             </Style>
 
             <Style Selector="controls|DatePickerBar[IsShowDatePickerPopup=True]  /template/ base|Icon#PopupIcon">
@@ -28,31 +28,15 @@
                     <StackPanel>
                         <Grid x:Name="header">
                             <Border
-                                Width="{Binding ElementName=Date,Path=Bounds.Width}"
-                                Height="{Binding ElementName=Date,Path=Bounds.Height}"
-                                Background="{Binding ElementName=Date,Path=Background}"
-                                CornerRadius="{Binding ElementName=Date,Path=CornerRadius}"
-                                Padding="{Binding ElementName=Date,Path=Padding}"
-                                Margin="{Binding ElementName=Date,Path=Margin}"
-
-                                HorizontalAlignment="Left">
-                                <Border.Effect>
-                                    <DropShadowDirectionEffect Color="#d8d2d2"
-                                                               BlurRadius="1"
-                                                               Direction="300"
-                                                               ShadowDepth="4"
-                                                               Opacity="0.1" />
-
-                                </Border.Effect>
-                            </Border>
-                            <Border
                                 x:Name="Date"
-                                Background="{DynamicResource StandardBackgroundBrush}"
+                                Background="{DynamicResource NavGlassBackgroundBrush}"
                                 Padding="15,8"
                                 CornerRadius="12"
                                 Margin="0,0,0,10"
                                 HorizontalAlignment="Left"
-                                ToolTip.Tip="{DynamicResource Select}">
+                                ToolTip.Tip="{DynamicResource Select}"
+                                BorderBrush="{DynamicResource NavGlassBorderBrush}"
+                                BorderThickness="1">
                                 <StackPanel Orientation="Horizontal">
                                     <base:Icon x:Name="DateIcon" Margin="0,0,5,0" IconType="Calendar"
                                                Foreground="{DynamicResource StandardTextBrush}"

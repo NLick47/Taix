@@ -1,5 +1,5 @@
 use crate::models::SleepStatus;
-use crate::win32::audio::is_windows_playing_sound;
+use crate::win32::audio::AudioState;
 use crate::win32::get_system_idle_time;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -12,7 +12,9 @@ const INACTIVE_THRESHOLD: Duration = Duration::from_secs(10);
 #[cfg(not(debug_assertions))]
 const INACTIVE_THRESHOLD: Duration = Duration::from_secs(300);
 const MAX_SOUND_DURATION: Duration = Duration::from_secs(7200);
-const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(1);
+const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
+/// idle 单 tick 增长超过此值视为系统从休眠/锁定恢复
+const RESUME_JUMP_THRESHOLD: Duration = Duration::from_secs(60);
 
 #[derive(Clone)]
 pub struct SleepDetector {
@@ -22,15 +24,17 @@ pub struct SleepDetector {
 struct Inner {
     tx: broadcast::Sender<SleepStatus>,
     shutdown: AtomicBool,
+    audio_state: AudioState,
 }
 
 impl SleepDetector {
-    pub fn new() -> Self {
-        let (tx, _rx) = broadcast::channel(4);
+    pub fn new(audio_state: AudioState) -> Self {
+        let (tx, _rx) = broadcast::channel(128);
         Self {
             inner: Arc::new(Inner {
                 tx,
                 shutdown: AtomicBool::new(false),
+                audio_state,
             }),
         }
     }
@@ -47,6 +51,9 @@ impl SleepDetector {
         let mut interval = tokio::time::interval(HEARTBEAT_INTERVAL);
         let mut status = SleepStatus::Wake;
         let mut sound_start: Option<std::time::Instant> = None;
+        let mut last_idle = Duration::ZERO;
+        let mut resume_pending = false;
+        let mut first_tick_done = false;
 
         info!("[SleepDetector] Started");
 
@@ -59,7 +66,39 @@ impl SleepDetector {
             }
 
             let idle = get_system_idle_time();
-            let is_playing_sound = is_windows_playing_sound();
+            let is_playing_sound = self.inner.audio_state.is_playing();
+
+            // 系统恢复检测：idle 在单个 tick 内大幅跳变（远超间隔时间）
+            // 注意：需要 first_tick_done 来排除程序启动时的初始化跳变
+            if first_tick_done
+                && !resume_pending
+                && status == SleepStatus::Wake
+                && idle > last_idle + RESUME_JUMP_THRESHOLD
+            {
+                info!(
+                    "[SleepDetector] System resume detected (idle jump: {:?} -> {:?}), broadcasting Sleep to flush timer",
+                    last_idle, idle
+                );
+                // 系统从冻结/休眠恢复，补发 Sleep 事件让计时器刷出冻结前的时间
+                status = SleepStatus::Sleep;
+                self.broadcast_status(status, idle);
+                resume_pending = true;
+                last_idle = idle;
+                continue;
+            }
+
+            // 恢复锁定中：不进入 Sleep，等用户操作后补发 Wake
+            if resume_pending {
+                if idle < INACTIVE_THRESHOLD {
+                    info!("[SleepDetector] User activity detected, exiting resume cooldown, broadcasting Wake");
+                    resume_pending = false;
+                    // 用户恢复活动，补发 Wake 事件让计时器重新开始
+                    status = SleepStatus::Wake;
+                    self.broadcast_status(status, idle);
+                }
+                last_idle = idle;
+                continue;
+            }
 
             let prev_status = status;
             status = Self::evaluate_status(status, idle, is_playing_sound, &mut sound_start);
@@ -68,6 +107,9 @@ impl SleepDetector {
             if status != prev_status {
                 self.broadcast_status(status, idle);
             }
+
+            last_idle = idle;
+            first_tick_done = true;
         }
     }
 
@@ -136,11 +178,5 @@ impl SleepDetector {
                 debug!("[SleepDetector] Status changed to {:?} (idle={:?}), all subscribers dropped", status, idle);
             }
         }
-    }
-}
-
-impl Default for SleepDetector {
-    fn default() -> Self {
-        Self::new()
     }
 }

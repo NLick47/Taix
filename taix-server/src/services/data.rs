@@ -1,5 +1,6 @@
-use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, TimeZone, Timelike, Utc};
+use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, TimeZone, Timelike, Utc};
 use sqlx::SqlitePool;
+use std::collections::HashMap;
 use tracing::{debug, info};
 
 use crate::error::AppError;
@@ -8,17 +9,26 @@ use crate::models::category::CategoryModel;
 use crate::models::log::{
     ColumnDataModel, DailyLogModel, ExportDataResult, HoursLogModel,
 };
+use crate::utils::{last_day_of_month, parse_timezone, tz_date_range_to_utc_date_range, tz_date_to_utc_range, tz_naive_to_utc};
+
+/// 将 UTC 日期转换为目标时区的本地日期（取 UTC 00:00 在该时区对应的日期）
+fn utc_date_to_local_date(utc_date: NaiveDate, tz: &chrono_tz::Tz) -> NaiveDate {
+    let utc_dt = Utc.from_utc_datetime(&utc_date.and_hms_opt(0, 0, 0).unwrap());
+    utc_dt.with_timezone(tz).date_naive()
+}
 
 pub struct DataService;
 
 impl DataService {
-    pub async fn get_today_log_list(pool: &SqlitePool) -> Result<Vec<DailyLogModel>, AppError> {
+    pub async fn get_today_log_list(pool: &SqlitePool, today: NaiveDate, tz_id: &str) -> Result<Vec<DailyLogModel>, AppError> {
         debug!("get_today_log_list");
-        let today = Local::now().date_naive();
+        let tz = parse_timezone(tz_id);
+        let (utc_start, utc_end) = tz_date_to_utc_range(today, &tz);
         let logs: Vec<DailyLogModel> = sqlx::query_as(
-            "SELECT * FROM DailyLogModels WHERE Date = ? AND AppModelID != 0",
+            "SELECT * FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0",
         )
-        .bind(today.to_string())
+        .bind(utc_start.date_naive().to_string())
+        .bind(utc_end.date_naive().to_string())
         .fetch_all(pool)
         .await?;
         Ok(logs)
@@ -30,35 +40,51 @@ impl DataService {
         end: NaiveDate,
         take: i64,
         skip: i64,
+        tz_id: &str,
     ) -> Result<Vec<DailyLogModel>, AppError> {
         debug!("get_date_range_log_list: start={} end={} take={} skip={}", start, end, take, skip);
-        // SQLite 中 LIMIT -1 表示无限制，OFFSET 0 表示不跳过
         let limit = if take > 0 { take } else { -1 };
         let offset = if skip > 0 { skip } else { 0 };
 
-        let rows: Vec<(i64, i64, NaiveDate)> = sqlx::query_as(
-            r#"
-            SELECT AppModelID as app_model_id, SUM(Time) as time, MAX(Date) as date
-            FROM DailyLogModels
-            WHERE Date >= ? AND Date <= ? AND AppModelID != 0
-            GROUP BY AppModelID
-            ORDER BY time DESC
-            LIMIT ? OFFSET ?
-            "#,
+        let tz = parse_timezone(tz_id);
+        let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
+
+        // 先查出原始记录，再在后端做过滤和聚合，避免 UTC 日期边界导致的数据混叠
+        let logs: Vec<DailyLogModel> = sqlx::query_as(
+            "SELECT * FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0"
         )
-        .bind(start.to_string())
-        .bind(end.to_string())
-        .bind(limit)
-        .bind(offset)
+        .bind(utc_start.to_string())
+        .bind(utc_end.to_string())
         .fetch_all(pool)
         .await?;
+
+        // 后过滤：排除本地日期不在 [start, end] 范围内的记录
+        let mut groups: HashMap<i64, (i64, NaiveDate)> = HashMap::new();
+        for log in logs {
+            let local_date = utc_date_to_local_date(log.date, &tz);
+            if local_date >= start && local_date <= end {
+                let entry = groups.entry(log.app_model_id).or_insert((0, log.date));
+                entry.0 += log.time;
+                entry.1 = entry.1.max(log.date);
+            }
+        }
 
         let apps: Vec<AppModelRow> = sqlx::query_as("SELECT * FROM AppModels")
             .fetch_all(pool)
             .await?;
 
+        // 按使用时长降序排列，再应用 LIMIT/OFFSET
+        let mut sorted_groups: Vec<_> = groups.into_iter().collect();
+        sorted_groups.sort_by(|a, b| b.1.0.cmp(&a.1.0));
+        let offset_usize = offset as usize;
+        let limit_usize = if limit > 0 { limit as usize } else { usize::MAX };
+        let sorted_groups: Vec<_> = sorted_groups.into_iter()
+            .skip(offset_usize)
+            .take(limit_usize)
+            .collect();
+
         let mut result = Vec::new();
-        for (app_id, time, date) in rows {
+        for (app_id, (time, date)) in sorted_groups {
             let app = apps.iter().find(|a| a.id == app_id).cloned();
             let app_model = app.map(|a| AppModel {
                 id: a.id,
@@ -86,39 +112,53 @@ impl DataService {
 
     pub async fn get_this_week_log_list(
         pool: &SqlitePool,
+        date: NaiveDate,
+        tz_id: &str,
     ) -> Result<Vec<DailyLogModel>, AppError> {
         debug!("get_this_week_log_list");
-        let now = Local::now().date_naive();
-        let (week_start, week_end) = get_week_range(now, false);
-        Self::get_date_range_log_list(pool, week_start, week_end, -1, -1).await
+        let (week_start, week_end) = get_week_range(date, false);
+        Self::get_date_range_log_list(pool, week_start, week_end, -1, -1, tz_id).await
     }
 
     pub async fn get_last_week_log_list(
         pool: &SqlitePool,
+        date: NaiveDate,
+        tz_id: &str,
     ) -> Result<Vec<DailyLogModel>, AppError> {
         debug!("get_last_week_log_list");
-        let now = Local::now().date_naive();
-        let (week_start, week_end) = get_week_range(now, true);
-        Self::get_date_range_log_list(pool, week_start, week_end, -1, -1).await
+        let (week_start, week_end) = get_week_range(date, true);
+        Self::get_date_range_log_list(pool, week_start, week_end, -1, -1, tz_id).await
     }
 
     pub async fn get_process_month_log_list(
         pool: &SqlitePool,
         app_id: i64,
         month: NaiveDate,
+        tz_id: &str,
     ) -> Result<Vec<DailyLogModel>, AppError> {
         debug!("get_process_month_log_list: app_id={} month={}", app_id, month);
+        let tz = parse_timezone(tz_id);
+        let month_start = NaiveDate::from_ymd_opt(month.year(), month.month(), 1).unwrap();
+        let month_end_day = last_day_of_month(month.year(), month.month());
+        let month_end = NaiveDate::from_ymd_opt(month.year(), month.month(), month_end_day).unwrap();
+        let (utc_start, utc_end) = tz_date_range_to_utc_date_range(month_start, month_end, &tz);
+
         let logs: Vec<DailyLogModel> = sqlx::query_as(
-            r#"
-            SELECT * FROM DailyLogModels
-            WHERE strftime('%Y', Date) = ? AND strftime('%m', Date) = ? AND AppModelID = ?
-            "#,
+            "SELECT * FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID = ?"
         )
-        .bind(month.year().to_string())
-        .bind(format!("{:02}", month.month()))
+        .bind(utc_start.to_string())
+        .bind(utc_end.to_string())
         .bind(app_id)
         .fetch_all(pool)
         .await?;
+
+        // 后过滤：排除本地日期不在目标月份范围内的记录
+        let logs: Vec<DailyLogModel> = logs.into_iter()
+            .filter(|log| {
+                let local_date = utc_date_to_local_date(log.date, &tz);
+                local_date >= month_start && local_date <= month_end
+            })
+            .collect();
         Ok(logs)
     }
 
@@ -126,43 +166,70 @@ impl DataService {
         pool: &SqlitePool,
         app_id: i64,
         day: NaiveDate,
+        tz_id: &str,
     ) -> Result<Option<DailyLogModel>, AppError> {
         debug!("get_process_day: app_id={} day={}", app_id, day);
-        let log: Option<DailyLogModel> = sqlx::query_as(
-            "SELECT * FROM DailyLogModels WHERE AppModelID = ? AND Date = ?",
+        let tz = parse_timezone(tz_id);
+        let (utc_start, utc_end) = tz_date_to_utc_range(day, &tz);
+        let logs: Vec<DailyLogModel> = sqlx::query_as(
+            "SELECT * FROM DailyLogModels WHERE AppModelID = ? AND Date >= ? AND Date <= ?",
         )
         .bind(app_id)
-        .bind(day.to_string())
-        .fetch_optional(pool)
+        .bind(utc_start.date_naive().to_string())
+        .bind(utc_end.date_naive().to_string())
+        .fetch_all(pool)
         .await?;
-        Ok(log)
+
+        // 后过滤：只保留本地日期等于目标日期的记录
+        let logs: Vec<DailyLogModel> = logs.into_iter()
+            .filter(|log| {
+                let local_date = utc_date_to_local_date(log.date, &tz);
+                local_date == day
+            })
+            .collect();
+
+        if logs.is_empty() {
+            Ok(None)
+        } else {
+            let total_time = logs.iter().map(|l| l.time).sum();
+            let first = logs.into_iter().next().unwrap();
+            Ok(Some(DailyLogModel {
+                id: first.id,
+                date: first.date,
+                app_model_id: first.app_model_id,
+                time: total_time,
+                app_model: first.app_model,
+            }))
+        }
     }
 
     pub async fn clear_app_data(
         pool: &SqlitePool,
         app_id: i64,
         month: Option<NaiveDate>,
+        tz_id: &str,
     ) -> Result<(), AppError> {
         info!("clear_app_data: app_id={} month={:?}", app_id, month);
         if let Some(month) = month {
+            let tz = parse_timezone(tz_id);
+            let month_start = NaiveDate::from_ymd_opt(month.year(), month.month(), 1).unwrap();
+            let month_end_day = last_day_of_month(month.year(), month.month());
+            let month_end = NaiveDate::from_ymd_opt(month.year(), month.month(), month_end_day).unwrap();
+            let (utc_start, utc_end) = tz_date_range_to_utc_date_range(month_start, month_end, &tz);
+
             sqlx::query(
-                r#"
-                DELETE FROM DailyLogModels
-                WHERE AppModelID = ? AND strftime('%Y', Date) = ? AND strftime('%m', Date) = ?
-                "#,
+                "DELETE FROM DailyLogModels WHERE AppModelID = ? AND Date >= ? AND Date <= ?"
             )
             .bind(app_id)
-            .bind(month.year().to_string())
-            .bind(format!("{:02}", month.month()))
+            .bind(utc_start.to_string())
+            .bind(utc_end.to_string())
             .execute(pool)
             .await?;
 
             // 按月删除 HoursLogModels：先把本地月份范围转 UTC，再删除
-            let month_start = NaiveDate::from_ymd_opt(month.year(), month.month(), 1).unwrap();
-            let month_end_day = last_day_of_month(month.year(), month.month());
-            let month_end = NaiveDate::from_ymd_opt(month.year(), month.month(), month_end_day).unwrap();
-            let utc_start = local_naive_to_utc(NaiveDateTime::new(month_start, chrono::NaiveTime::from_hms_opt(0,0,0).unwrap()));
-            let utc_end = local_naive_to_utc(NaiveDateTime::new(month_end, chrono::NaiveTime::from_hms_opt(23,59,59).unwrap()));
+            let s = tz_date_to_utc_range(month_start, &tz);
+            let e = tz_date_to_utc_range(month_end, &tz);
+            let (utc_start, utc_end) = (s.0, e.1);
 
             sqlx::query(
                 "DELETE FROM HoursLogModels WHERE AppModelID = ? AND DataTime >= ? AND DataTime <= ?"
@@ -182,12 +249,16 @@ impl DataService {
                 .bind(app_id)
                 .execute(pool)
                 .await?;
-
-            sqlx::query("UPDATE AppModels SET TotalTime = 0 WHERE ID = ?")
-                .bind(app_id)
-                .execute(pool)
-                .await?;
         }
+
+        // 统一重算 TotalTime，避免按月清除后 TotalTime 与日志表不一致
+        sqlx::query(
+            "UPDATE AppModels SET TotalTime = (SELECT COALESCE(SUM(Time), 0) FROM DailyLogModels WHERE AppModelID = ?) WHERE ID = ?"
+        )
+        .bind(app_id)
+        .bind(app_id)
+        .execute(pool)
+        .await?;
 
         Ok(())
     }
@@ -196,31 +267,48 @@ impl DataService {
         pool: &SqlitePool,
         start: NaiveDate,
         end: NaiveDate,
+        tz_id: &str,
     ) -> Result<(), AppError> {
         info!("clear_range: start={} end={}", start, end);
-        let days_in_month = last_day_of_month(end.year(), end.month());
-        let start_dt = NaiveDateTime::new(
-            NaiveDate::from_ymd_opt(start.year(), start.month(), 1).unwrap(),
-            chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-        );
-        let end_dt = NaiveDateTime::new(
-            NaiveDate::from_ymd_opt(end.year(), end.month(), days_in_month).unwrap(),
-            chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap(),
-        );
 
+        let tz = parse_timezone(tz_id);
+        let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
         sqlx::query("DELETE FROM DailyLogModels WHERE Date >= ? AND Date <= ?")
-            .bind(start_dt.date().to_string())
-            .bind(end_dt.date().to_string())
+            .bind(utc_start.to_string())
+            .bind(utc_end.to_string())
             .execute(pool)
             .await?;
 
-        let utc_start = local_naive_to_utc(start_dt);
-        let utc_end = local_naive_to_utc(end_dt);
+        let s = tz_date_to_utc_range(start, &tz);
+        let e = tz_date_to_utc_range(end, &tz);
+        let (utc_start, utc_end) = (s.0, e.1);
         sqlx::query("DELETE FROM HoursLogModels WHERE DataTime >= ? AND DataTime <= ?")
             .bind(utc_start)
             .bind(utc_end)
             .execute(pool)
             .await?;
+
+        // 重算所有 App 的 TotalTime，避免按日期范围清除后总计虚高
+        // 使用 JOIN + GROUP BY 替代 correlated subquery，提升大范围清除性能
+        let totals: Vec<(i64, i64)> = sqlx::query_as(
+            r#"
+            SELECT a.ID, COALESCE(SUM(d.Time), 0)
+            FROM AppModels a
+            LEFT JOIN DailyLogModels d ON a.ID = d.AppModelID
+            WHERE a.TotalTime > 0
+            GROUP BY a.ID
+            "#,
+        )
+        .fetch_all(pool)
+        .await?;
+
+        for (app_id, new_total) in totals {
+            sqlx::query("UPDATE AppModels SET TotalTime = ? WHERE ID = ?")
+                .bind(new_total)
+                .bind(app_id)
+                .execute(pool)
+                .await?;
+        }
 
         Ok(())
     }
@@ -228,13 +316,14 @@ impl DataService {
     pub async fn get_time_range_log_list(
         pool: &SqlitePool,
         time: NaiveDateTime,
+        tz_id: &str,
     ) -> Result<Vec<HoursLogModel>, AppError> {
         debug!("get_time_range_log_list: time={}", time);
         let local_hour = NaiveDateTime::new(
             time.date(),
             chrono::NaiveTime::from_hms_opt(time.hour() as u32, 0, 0).unwrap(),
         );
-        let utc_hour = local_naive_to_utc(local_hour);
+        let utc_hour = tz_naive_to_utc(local_hour, &parse_timezone(tz_id));
 
         let logs: Vec<HoursLogModel> =
             sqlx::query_as("SELECT * FROM HoursLogModels WHERE DataTime = ?")
@@ -277,25 +366,17 @@ impl DataService {
         pool: &SqlitePool,
         start: NaiveDate,
         end: NaiveDate,
+        tz_id: &str,
     ) -> Result<Vec<f64>, AppError> {
         debug!("get_range_total_data: start={} end={}", start, end);
         if start == end {
-            let day_start = NaiveDateTime::new(
-                start,
-                chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-            );
-            let day_end = NaiveDateTime::new(
-                start,
-                chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap(),
-            );
-            let utc_start = local_naive_to_utc(day_start);
-            let utc_end = local_naive_to_utc(day_end);
+            let (utc_start, utc_end) = tz_date_to_utc_range(start, &parse_timezone(tz_id));
 
             let rows: Vec<(DateTime<Utc>, i64)> = sqlx::query_as(
                 r#"
                 SELECT DataTime as data_time, SUM(Time) as total
                 FROM HoursLogModels
-                WHERE DataTime >= ? AND DataTime <= ?
+                WHERE DataTime >= ? AND DataTime < ?
                 GROUP BY DataTime
                 "#,
             )
@@ -306,14 +387,15 @@ impl DataService {
 
             let mut result = vec![0.0; 24];
             for (utc_dt, total) in rows {
-                let local_hour = utc_dt.with_timezone(&Local).hour() as usize;
+                let local_hour = utc_dt.with_timezone(&parse_timezone(tz_id)).hour() as usize;
                 if local_hour < 24 {
                     result[local_hour] += total as f64;
                 }
             }
             Ok(result)
         } else {
-            let days_count = (end - start).num_days() + 1;
+            let tz = parse_timezone(tz_id);
+            let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
             let rows: Vec<(NaiveDate, i64)> = sqlx::query_as(
                 r#"
                 SELECT Date as date, SUM(Time) as total
@@ -322,16 +404,19 @@ impl DataService {
                 GROUP BY Date
                 "#,
             )
-            .bind(start.to_string())
-            .bind(end.to_string())
+            .bind(utc_start.to_string())
+            .bind(utc_end.to_string())
             .fetch_all(pool)
             .await?;
 
-            let map: std::collections::HashMap<_, _> = rows.into_iter().collect();
-            let mut result = Vec::with_capacity(days_count as usize);
-            for i in 0..days_count {
-                let date = start + Duration::days(i);
-                result.push(map.get(&date).copied().unwrap_or(0) as f64);
+            let days = (end - start).num_days() + 1;
+            let mut result = vec![0.0; days as usize];
+            for (utc_date, total) in rows {
+                let local_date = utc_date_to_local_date(utc_date, &tz);
+                if local_date >= start && local_date <= end {
+                    let index = (local_date - start).num_days() as usize;
+                    result[index] += total as f64;
+                }
             }
             Ok(result)
         }
@@ -340,10 +425,13 @@ impl DataService {
     pub async fn get_month_total_data(
         pool: &SqlitePool,
         year: NaiveDate,
+        tz_id: &str,
     ) -> Result<Vec<f64>, AppError> {
         debug!("get_month_total_data: year={}", year);
+        let tz = parse_timezone(tz_id);
         let year_start = NaiveDate::from_ymd_opt(year.year(), 1, 1).unwrap();
         let year_end = NaiveDate::from_ymd_opt(year.year(), 12, 31).unwrap();
+        let (utc_start, utc_end) = tz_date_range_to_utc_date_range(year_start, year_end, &tz);
 
         let rows: Vec<(NaiveDate, i64)> = sqlx::query_as(
             r#"
@@ -353,8 +441,8 @@ impl DataService {
             GROUP BY Date
             "#,
         )
-        .bind(year_start.to_string())
-        .bind(year_end.to_string())
+        .bind(utc_start.to_string())
+        .bind(utc_end.to_string())
         .fetch_all(pool)
         .await?;
 
@@ -366,7 +454,10 @@ impl DataService {
 
             let total: i64 = rows
                 .iter()
-                .filter(|(d, _)| *d >= month_start && *d <= month_end)
+                .filter(|(utc_d, _)| {
+                    let local_d = utc_date_to_local_date(*utc_d, &tz);
+                    local_d >= month_start && local_d <= month_end
+                })
                 .map(|(_, t)| t)
                 .sum();
             result[(i - 1) as usize] = total as f64;
@@ -379,16 +470,19 @@ impl DataService {
         pool: &SqlitePool,
         start: NaiveDate,
         end: NaiveDate,
+        tz_id: &str,
     ) -> Result<i64, AppError> {
         debug!("get_date_range_app_count: start={} end={}", start, end);
+        let tz = parse_timezone(tz_id);
+        let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
         let count: (i64,) = sqlx::query_as(
             r#"
             SELECT COUNT(DISTINCT AppModelID) FROM DailyLogModels
             WHERE Date >= ? AND Date <= ? AND AppModelID != 0
             "#,
         )
-        .bind(start.to_string())
-        .bind(end.to_string())
+        .bind(utc_start.to_string())
+        .bind(utc_end.to_string())
         .fetch_one(pool)
         .await?;
         Ok(count.0)
@@ -397,18 +491,10 @@ impl DataService {
     pub async fn get_category_hours_data(
         pool: &SqlitePool,
         date: NaiveDate,
+        tz_id: &str,
     ) -> Result<Vec<ColumnDataModel>, AppError> {
         debug!("get_category_hours_data: date={}", date);
-        let start = NaiveDateTime::new(
-            date,
-            chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-        );
-        let end = NaiveDateTime::new(
-            date,
-            chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap(),
-        );
-        let utc_start = local_naive_to_utc(start);
-        let utc_end = local_naive_to_utc(end);
+        let (utc_start, utc_end) = tz_date_to_utc_range(date, &parse_timezone(tz_id));
 
         let categories: Vec<(i64, i64)> = sqlx::query_as(
             r#"
@@ -430,7 +516,7 @@ impl DataService {
             SELECT a.CategoryID as category_id, h.DataTime as data_time, SUM(h.Time) as total
             FROM HoursLogModels h
             JOIN AppModels a ON h.AppModelID = a.ID
-            WHERE h.DataTime >= ? AND h.DataTime <= ?
+            WHERE h.DataTime >= ? AND h.DataTime < ?
             GROUP BY a.CategoryID, h.DataTime
             "#,
         )
@@ -453,7 +539,7 @@ impl DataService {
                 date,
                 chrono::NaiveTime::from_hms_opt(i as u32, 0, 0).unwrap(),
             );
-            let utc_hour = local_naive_to_utc(local_hour);
+            let utc_hour = tz_naive_to_utc(local_hour, &parse_timezone(tz_id));
             for (cat_id, _) in &categories {
                 let total = data
                     .iter()
@@ -477,8 +563,12 @@ impl DataService {
         pool: &SqlitePool,
         start: NaiveDate,
         end: NaiveDate,
+        tz_id: &str,
     ) -> Result<Vec<ColumnDataModel>, AppError> {
         debug!("get_category_range_data: start={} end={}", start, end);
+        let tz = parse_timezone(tz_id);
+        let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
+
         let categories: Vec<(i64, i64)> = sqlx::query_as(
             r#"
             SELECT a.CategoryID as category_id, SUM(d.Time) as total
@@ -489,8 +579,8 @@ impl DataService {
             ORDER BY category_id DESC
             "#,
         )
-        .bind(start.to_string())
-        .bind(end.to_string())
+        .bind(utc_start.to_string())
+        .bind(utc_end.to_string())
         .fetch_all(pool)
         .await?;
 
@@ -503,8 +593,8 @@ impl DataService {
             GROUP BY a.CategoryID, d.Date
             "#,
         )
-        .bind(start.to_string())
-        .bind(end.to_string())
+        .bind(utc_start.to_string())
+        .bind(utc_end.to_string())
         .fetch_all(pool)
         .await?;
 
@@ -518,18 +608,13 @@ impl DataService {
             });
         }
 
-        for i in 0..days {
-            let date = start + Duration::days(i);
-            for (cat_id, _) in &categories {
-                let total = data
-                    .iter()
-                    .filter(|(cid, d, _)| *cid == *cat_id && *d == date)
-                    .map(|(_, _, t)| *t)
-                    .next()
-                    .unwrap_or(0);
-
+        // 将 UTC 日期数据映射回对应的本地日期
+        for (cat_id, utc_date, total) in &data {
+            let local_date = utc_date_to_local_date(*utc_date, &tz);
+            if local_date >= start && local_date <= end {
                 if let Some(item) = list.iter_mut().find(|x| x.category_id == Some(*cat_id)) {
-                    item.values[i as usize] = total as f64;
+                    let index = (local_date - start).num_days() as usize;
+                    item.values[index] += *total as f64;
                 }
             }
         }
@@ -540,10 +625,13 @@ impl DataService {
     pub async fn get_category_year_data(
         pool: &SqlitePool,
         date: NaiveDate,
+        tz_id: &str,
     ) -> Result<Vec<ColumnDataModel>, AppError> {
         debug!("get_category_year_data: date={}", date);
+        let tz = parse_timezone(tz_id);
         let year_start = NaiveDate::from_ymd_opt(date.year(), 1, 1).unwrap();
         let year_end = NaiveDate::from_ymd_opt(date.year(), 12, 31).unwrap();
+        let (utc_start, utc_end) = tz_date_range_to_utc_date_range(year_start, year_end, &tz);
 
         let categories: Vec<(i64, i64)> = sqlx::query_as(
             r#"
@@ -555,8 +643,8 @@ impl DataService {
             ORDER BY category_id DESC
             "#,
         )
-        .bind(year_start.to_string())
-        .bind(year_end.to_string())
+        .bind(utc_start.to_string())
+        .bind(utc_end.to_string())
         .fetch_all(pool)
         .await?;
 
@@ -569,8 +657,8 @@ impl DataService {
             GROUP BY a.CategoryID, d.Date
             "#,
         )
-        .bind(year_start.to_string())
-        .bind(year_end.to_string())
+        .bind(utc_start.to_string())
+        .bind(utc_end.to_string())
         .fetch_all(pool)
         .await?;
 
@@ -591,8 +679,9 @@ impl DataService {
             for (cat_id, _) in &categories {
                 let total: i64 = data
                     .iter()
-                    .filter(|(cid, d, _)| {
-                        *cid == *cat_id && *d >= month_start && *d <= month_end
+                    .filter(|(cid, utc_d, _)| {
+                        let local_d = utc_date_to_local_date(*utc_d, &tz);
+                        *cid == *cat_id && local_d >= month_start && local_d <= month_end
                     })
                     .map(|(_, _, t)| t)
                     .sum();
@@ -610,24 +699,16 @@ impl DataService {
         pool: &SqlitePool,
         app_id: i64,
         date: NaiveDate,
+        tz_id: &str,
     ) -> Result<Vec<ColumnDataModel>, AppError> {
         debug!("get_app_day_data: app_id={} date={}", app_id, date);
-        let start = NaiveDateTime::new(
-            date,
-            chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-        );
-        let end = NaiveDateTime::new(
-            date,
-            chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap(),
-        );
-        let utc_start = local_naive_to_utc(start);
-        let utc_end = local_naive_to_utc(end);
+        let (utc_start, utc_end) = tz_date_to_utc_range(date, &parse_timezone(tz_id));
 
         let data: Vec<(DateTime<Utc>, i64)> = sqlx::query_as(
             r#"
             SELECT DataTime as data_time, SUM(Time) as total
             FROM HoursLogModels
-            WHERE AppModelID = ? AND DataTime >= ? AND DataTime <= ?
+            WHERE AppModelID = ? AND DataTime >= ? AND DataTime < ?
             GROUP BY DataTime
             "#,
         )
@@ -643,7 +724,7 @@ impl DataService {
                 date,
                 chrono::NaiveTime::from_hms_opt(i as u32, 0, 0).unwrap(),
             );
-            let utc_hour = local_naive_to_utc(local_hour);
+            let utc_hour = tz_naive_to_utc(local_hour, &parse_timezone(tz_id));
             let total = data
                 .iter()
                 .find(|(dt, _)| {
@@ -666,8 +747,12 @@ impl DataService {
         app_id: i64,
         start: NaiveDate,
         end: NaiveDate,
+        tz_id: &str,
     ) -> Result<Vec<ColumnDataModel>, AppError> {
         debug!("get_app_range_data: app_id={} start={} end={}", app_id, start, end);
+        let tz = parse_timezone(tz_id);
+        let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
+
         let data: Vec<(NaiveDate, i64)> = sqlx::query_as(
             r#"
             SELECT Date as date, SUM(Time) as total
@@ -677,17 +762,20 @@ impl DataService {
             "#,
         )
         .bind(app_id)
-        .bind(start.to_string())
-        .bind(end.to_string())
+        .bind(utc_start.to_string())
+        .bind(utc_end.to_string())
         .fetch_all(pool)
         .await?;
 
         let days = (end - start).num_days() + 1;
         let mut values = vec![0.0; days as usize];
-        for i in 0..days {
-            let date = start + Duration::days(i);
-            let total = data.iter().find(|(d, _)| *d == date).map(|(_, t)| *t).unwrap_or(0);
-            values[i as usize] = total as f64;
+
+        for (utc_date, total) in &data {
+            let local_date = utc_date_to_local_date(*utc_date, &tz);
+            if local_date >= start && local_date <= end {
+                let index = (local_date - start).num_days() as usize;
+                values[index] += *total as f64;
+            }
         }
 
         Ok(vec![ColumnDataModel {
@@ -701,10 +789,13 @@ impl DataService {
         pool: &SqlitePool,
         app_id: i64,
         date: NaiveDate,
+        tz_id: &str,
     ) -> Result<Vec<ColumnDataModel>, AppError> {
         debug!("get_app_year_data: app_id={} date={}", app_id, date);
+        let tz = parse_timezone(tz_id);
         let year_start = NaiveDate::from_ymd_opt(date.year(), 1, 1).unwrap();
         let year_end = NaiveDate::from_ymd_opt(date.year(), 12, 31).unwrap();
+        let (utc_start, utc_end) = tz_date_range_to_utc_date_range(year_start, year_end, &tz);
 
         let data: Vec<(NaiveDate, i64)> = sqlx::query_as(
             r#"
@@ -715,8 +806,8 @@ impl DataService {
             "#,
         )
         .bind(app_id)
-        .bind(year_start.to_string())
-        .bind(year_end.to_string())
+        .bind(utc_start.to_string())
+        .bind(utc_end.to_string())
         .fetch_all(pool)
         .await?;
 
@@ -728,7 +819,10 @@ impl DataService {
 
             let total: i64 = data
                 .iter()
-                .filter(|(d, _)| *d >= month_start && *d <= month_end)
+                .filter(|(utc_d, _)| {
+                    let local_d = utc_date_to_local_date(*utc_d, &tz);
+                    local_d >= month_start && local_d <= month_end
+                })
                 .map(|(_, t)| t)
                 .sum();
             values[(i - 1) as usize] = total as f64;
@@ -745,18 +839,14 @@ impl DataService {
         pool: &SqlitePool,
         start: NaiveDate,
         end: NaiveDate,
+        tz_id: &str,
     ) -> Result<ExportDataResult, AppError> {
         info!("get_export_data: start={} end={}", start, end);
-        let start_dt = NaiveDateTime::new(
-            start,
-            chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-        );
-        let end_dt = NaiveDateTime::new(
-            end,
-            chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap(),
-        );
-        let utc_start = local_naive_to_utc(start_dt);
-        let utc_end = local_naive_to_utc(end_dt);
+        let tz = parse_timezone(tz_id);
+        let (daily_utc_start, daily_utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
+        let s = tz_date_to_utc_range(start, &tz);
+        let e = tz_date_to_utc_range(end, &tz);
+        let (utc_start, utc_end) = (s.0, e.1);
 
         let daily_logs: Vec<DailyLogModel> = sqlx::query_as(
             r#"
@@ -764,8 +854,8 @@ impl DataService {
             WHERE d.Date >= ? AND d.Date <= ?
             "#,
         )
-        .bind(start.to_string())
-        .bind(end.to_string())
+        .bind(daily_utc_start.to_string())
+        .bind(daily_utc_end.to_string())
         .fetch_all(pool)
         .await?;
 
@@ -848,21 +938,3 @@ fn get_week_range(today: NaiveDate, last_week: bool) -> (NaiveDate, NaiveDate) {
     }
 }
 
-fn last_day_of_month(year: i32, month: u32) -> u32 {
-    match month {
-        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-        4 | 6 | 9 | 11 => 30,
-        2 => {
-            if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) {
-                29
-            } else {
-                28
-            }
-        }
-        _ => 30,
-    }
-}
-
-fn local_naive_to_utc(naive: NaiveDateTime) -> DateTime<Utc> {
-    Local.from_local_datetime(&naive).unwrap().with_timezone(&Utc)
-}

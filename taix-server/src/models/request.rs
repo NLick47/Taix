@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 pub fn deserialize_bool_insensitive<'de, D>(deserializer: D) -> Result<bool, D::Error>
@@ -18,7 +18,7 @@ where
 pub struct UpdateAppDurationRequest {
     pub process_name: String,
     pub duration: i64,
-    pub start_date_time: NaiveDateTime,
+    pub start_date_time: DateTime<Utc>,
     pub file: Option<String>,
     pub icon_file: Option<String>,
     pub description: Option<String>,
@@ -56,7 +56,7 @@ pub struct CreateCategoryRequest {
     pub icon_file: Option<String>,
     pub color: Option<String>,
     #[serde(default)]
-    pub is_directory_math: bool,
+    pub is_directory_match: bool,
     pub directories: Option<String>,
 }
 
@@ -68,7 +68,7 @@ pub struct UpdateCategoryRequest {
     pub icon_file: Option<String>,
     pub color: Option<String>,
     #[serde(default)]
-    pub is_directory_math: bool,
+    pub is_directory_match: bool,
     pub directories: Option<String>,
 }
 
@@ -78,7 +78,7 @@ pub struct AddUrlBrowseTimeRequest {
     pub url: String,
     pub title: Option<String>,
     pub duration: i64,
-    pub date_time: Option<NaiveDateTime>,
+    pub date_time: Option<DateTime<Utc>>,
     pub icon_url: Option<String>,
 }
 

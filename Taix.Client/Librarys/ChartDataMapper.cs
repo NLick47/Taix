@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Shared.Librarys;
@@ -24,7 +25,7 @@ public static class ChartDataMapper
                 Tag = Time.ToString(item.Time),
                 PopupText = item.AppModel.File,
                 Icon = item.AppModel.IconFile,
-                DateTime = item.Date
+                DateTime = DateTime.SpecifyKind(item.Date, DateTimeKind.Utc).ToLocalTime()
             };
 
             if (includeBadges)
@@ -94,7 +95,8 @@ public static class ChartDataMapper
                 Value = item.Time,
                 Tag = Time.ToString(item.Time),
                 PopupText = item.AppModel.File,
-                Icon = item.AppModel.IconFile
+                Icon = item.AppModel.IconFile,
+                DateTime = DateTime.SpecifyKind(item.DataTime, DateTimeKind.Utc).ToLocalTime()
             };
 
             if (includeBadges)

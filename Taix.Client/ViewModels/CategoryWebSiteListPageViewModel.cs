@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,8 +48,12 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
         SearchCommand = ReactiveCommand.Create<object>(OnSearch).DisposeWith(Disposables);
         ChooseCloseCommand = ReactiveCommand.Create<object>(OnChooseClose).DisposeWith(Disposables);
         DelCommand = ReactiveCommand.CreateFromTask<object>(OnDelAsync).DisposeWith(Disposables);
+    }
 
+    public override Task OnNavigatedToAsync()
+    {
         _ = ExecuteAsync(LoadDataCoreAsync);
+        return Task.CompletedTask;
     }
 
     public bool IsRegexSearch

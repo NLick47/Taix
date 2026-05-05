@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MiniExcelLibs;
 using Taix.Client.Librarys.Api;
+using Taix.Client.Shared.Librarys;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Models.Data;
 using Taix.Client.Shared.Servicers.Interfaces;
@@ -20,6 +21,7 @@ public class ApiData : IData
     {
         _apiClient = apiClient;
     }
+
 
     public Task UpdateAppDurationAsync(string processName, int duration, DateTime startDateTime)
     {
@@ -39,7 +41,8 @@ public class ApiData : IData
 
     public async Task<IEnumerable<DailyLogModel>> GetThisWeeklogListAsync()
     {
-        return await _apiClient.GetThisWeekLogListAsync();
+        var week = Time.GetThisWeekDate();
+        return await GetDateRangelogListAsync(week[0], week[1]);
     }
 
     public async Task<IEnumerable<DailyLogModel>> GetLastWeeklogListAsync()
@@ -109,28 +112,29 @@ public class ApiData : IData
         var prefix = "Taix";
         var uncategorized = ResourceStrings.Uncategorized;
 
-        // Daily logs sheet
-        var dailyRows = data.DailyLogs.Select(log => new
+
+        var dailyRows = data.DailyLogs.Select(log => new DailyLogExportRow
         {
-            Date = log.Date.ToString("yyyy-MM-dd"),
+            Date = DateTime.SpecifyKind(log.Date, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd"),
             App = log.AppModel?.Alias ?? log.AppModel?.Name ?? string.Empty,
             Description = log.AppModel?.Description ?? string.Empty,
             Duration = FormatDuration(log.Time),
             Category = log.AppModel?.Category?.Name ?? uncategorized
         });
 
-        // Hours logs sheet
-        var hoursRows = data.HoursLogs.Select(log => new
+        var hoursRows = data.HoursLogs.Select(log => new HoursLogExportRow
         {
-            TimePeriod = log.DataTime.ToString("yyyy-MM-dd HH:mm"),
+            TimePeriod = DateTime.SpecifyKind(log.DataTime, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd HH:mm"),
             App = log.AppModel?.Alias ?? log.AppModel?.Name ?? string.Empty,
             Description = log.AppModel?.Description ?? string.Empty,
             Duration = FormatDuration(log.Time),
             Category = log.AppModel?.Category?.Name ?? uncategorized
         });
 
-        // Excel with multiple sheets
-        var excelPath = Path.Combine(dir, $"{prefix}_application_data.xlsx");
+        var rangePart = $"{start.ToString("yyyyMMdd")}_{end.ToString("yyyyMMdd")}";
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+        var excelPath = Path.Combine(dir, $"{prefix}_application_data_{rangePart}_{timestamp}.xlsx");
         var sheets = new Dictionary<string, object>
         {
             [ResourceStrings.ExportDaily] = dailyRows,
@@ -139,11 +143,11 @@ public class ApiData : IData
         MiniExcel.SaveAs(excelPath, sheets);
 
         // CSV: daily
-        var dailyCsvPath = Path.Combine(dir, $"{prefix}_application_daily.csv");
+        var dailyCsvPath = Path.Combine(dir, $"{prefix}_application_daily_{rangePart}_{timestamp}.csv");
         MiniExcel.SaveAs(dailyCsvPath, dailyRows, excelType: MiniExcelLibs.ExcelType.CSV);
 
         // CSV: hours
-        var hoursCsvPath = Path.Combine(dir, $"{prefix}_application_time_period.csv");
+        var hoursCsvPath = Path.Combine(dir, $"{prefix}_application_time_period_{rangePart}_{timestamp}.csv");
         MiniExcel.SaveAs(hoursCsvPath, hoursRows, excelType: MiniExcelLibs.ExcelType.CSV);
     }
 

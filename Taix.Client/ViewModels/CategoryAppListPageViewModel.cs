@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
-using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Threading.Tasks;
 using ReactiveUI;
 using Taix.Client.Models;
@@ -31,13 +31,11 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         _navigationService = navigationService;
 
         ShowChooseCommand = ReactiveCommand.CreateFromTask<object>(OnShowChooseAsync).DisposeWith(Disposables);
-        ChoosedCommand = ReactiveCommand.Create<object>(OnChoosed).DisposeWith(Disposables);
+        ChoosedCommand = ReactiveCommand.CreateFromTask<object>(OnChoosed).DisposeWith(Disposables);
         GotoDetailCommand = ReactiveCommand.Create<object>(OnGotoDetail).DisposeWith(Disposables);
         SearchCommand = ReactiveCommand.CreateFromTask<object>(OnSearchAsync).DisposeWith(Disposables);
         ChooseCloseCommand = ReactiveCommand.Create<object>(OnChooseClose).DisposeWith(Disposables);
-        DelCommand = ReactiveCommand.Create<object>(OnDel).DisposeWith(Disposables);
-
-        LoadData();
+        DelCommand = ReactiveCommand.CreateFromTask<object>(OnDel).DisposeWith(Disposables);
     }
 
     public ReactiveCommand<object, Unit> ShowChooseCommand { get; }
@@ -54,19 +52,18 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         base.Dispose();
     }
 
-    private void OnDel(object obj)
+    private async Task OnDel(object obj)
     {
         if (SelectedItem != null)
         {
             var list = Data.ToList();
             list.Remove(SelectedItem);
 
-            var app = _appDataService.GetApp(SelectedItem.ID);
+            var app = await _appDataService.GetAppAsync(SelectedItem.ID);
             if (app != null)
             {
-                app.CategoryID = 0;
-                app.Category = null;
-                _appDataService.UpdateApp(app);
+                app = app with { CategoryID = 0, Category = null };
+                await _appDataService.UpdateAppAsync(app);
             }
 
             Data = list;
@@ -79,7 +76,7 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         SearchInput = "";
     }
 
-    private Task OnSearchAsync(object obj)
+    private Task OnSearchAsync(object? obj)
     {
         if (string.IsNullOrEmpty(SearchInput)) return Task.CompletedTask;
         var keyword = obj?.ToString() ?? SearchInput;
@@ -100,7 +97,7 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         }
     }
 
-    private void OnChoosed(object obj)
+    private async Task OnChoosed(object obj)
     {
         ChooseVisibility = false;
         SearchInput = "";
@@ -108,15 +105,15 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
 
         foreach (var item in AppList)
         {
-            var app = _appDataService.GetApp(item.App.ID);
+            var app = await _appDataService.GetAppAsync(item.App.ID);
+            if (app == null) continue;
 
             if (item.IsChoosed)
             {
                 if (app.CategoryID != Category.Data.ID)
                 {
-                    app.CategoryID = Category.Data.ID;
-                    app.Category = Category.Data;
-                    _appDataService.UpdateApp(app);
+                    app = app with { CategoryID = Category.Data.ID, Category = Category.Data };
+                    await _appDataService.UpdateAppAsync(app);
                 }
                 data.Add(app);
             }
@@ -125,9 +122,8 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
                 var isHas = Data.Any(m => m.ID == item.App.ID);
                 if (isHas)
                 {
-                    app.CategoryID = 0;
-                    app.Category = null;
-                    _appDataService.UpdateApp(app);
+                    app = app with { CategoryID = 0, Category = null };
+                    await _appDataService.UpdateAppAsync(app);
                 }
             }
         }
@@ -135,44 +131,44 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         Data = data;
     }
 
-    private Task OnShowChooseAsync(object obj)
+    private async Task OnShowChooseAsync(object obj)
     {
         ChooseVisibility = true;
-        return LoadAppsAsync();
+        await LoadAppsAsync();
     }
 
-    private void LoadData()
+    public override async Task OnNavigatedToAsync()
     {
         Category = _navigationData.Data as CategoryModel ?? new CategoryModel();
-        Data = _appDataService.GetAppsByCategoryID(Category.Data.ID);
+        Data = Category.Data != null
+            ? (await _appDataService.GetAppsByCategoryIDAsync(Category.Data.ID)).ToList()
+            : [];
     }
 
-    private Task LoadAppsAsync()
+    private async Task LoadAppsAsync()
     {
-        return Task.Run(() =>
+        _appList = [];
+
+        if (Category == null) return;
+        var allApps = await _appDataService.GetAllAppsAsync();
+        foreach (var item in allApps)
         {
-            _appList = [];
-
-            if (Category == null) return;
-            foreach (var item in _appDataService.GetAllApps())
+            var app = new ChooseAppModel
             {
-                var app = new ChooseAppModel
+                App = item,
+                IsChoosed = item.CategoryID == Category.Data.ID,
+                Value =
                 {
-                    App = item,
-                    IsChoosed = item.CategoryID == Category.Data.ID,
-                    Value =
-                    {
-                        Name = string.IsNullOrEmpty(item.Description) ? item.Name : item.Description,
-                        Img = item.IconFile
-                    }
-                };
+                    Name = string.IsNullOrEmpty(item.Description) ? item.Name : item.Description,
+                    Img = item.IconFile
+                }
+            };
 
-                if (app.IsChoosed || item.Category?.IsSystem == true) _appList.Add(app);
-            }
+            if (app.IsChoosed || item.Category?.IsSystem == true) _appList.Add(app);
+        }
 
-            _appList = _appList.OrderBy(m => m.App.Description).ToList();
-            AppList = _appList;
-        });
+        _appList = _appList.OrderBy(m => m.App.Description).ToList();
+        AppList = _appList;
     }
 
     private Task SearchAsync(string keyword)
@@ -189,13 +185,10 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
                                        item.App.Description.ToLower().Contains(keyword)) ||
                                       (item.App.Name != null && item.App.Name.ToLower().Contains(keyword));
                 }
-                return list;
             }
             else
             {
-                var list = AppList.ToList();
-                foreach (var item in list) item.Visibility = true;
-                return list;
+                foreach (var item in AppList) item.Visibility = true;
             }
         });
     }

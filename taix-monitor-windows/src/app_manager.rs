@@ -1,10 +1,17 @@
 use crate::models::{AppInfo, AppType};
+
+#[derive(Debug)]
+pub enum AppInfoError {
+    #[allow(dead_code)]
+    ProcessNotFound { pid: u32 },
+}
 use crate::win32::process::{get_file_description, get_process_exe_path, get_process_name};
 use crate::win32::window::{enum_child_windows, extract_icon_to_png, get_window_class_name};
 use parking_lot::Mutex;
 use std::collections::HashMap;
-use std::hash::Hasher;
+
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{debug, error};
 use windows::Win32::Foundation::HWND;
@@ -26,7 +33,7 @@ struct CachedApp {
 }
 
 pub struct AppManager {
-    cache: Mutex<HashMap<String, CachedApp>>,
+    cache: Arc<Mutex<HashMap<String, CachedApp>>>,
     data_dir: PathBuf,
 }
 
@@ -37,29 +44,36 @@ impl AppManager {
             .unwrap_or_else(|| {
                 std::env::current_exe()
                     .ok()
-                    .and_then(|p| p.parent().map(|d| d.join("Data")))
-                    .unwrap_or_else(|| PathBuf::from("Data"))
+                    .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+                    .unwrap_or_else(|| PathBuf::from("."))
             });
         Self {
-            cache: Mutex::new(HashMap::new()),
+            cache: Arc::new(Mutex::new(HashMap::new())),
             data_dir,
         }
     }
 
-    pub fn get_app_info(&self, hwnd: HWND) -> AppInfo {
-        let hwnd_ptr = hwnd.0;
+    pub fn get_app_info(&self, hwnd: HWND) -> Result<AppInfo, AppInfoError> {
         let (_tid, pid) = crate::win32::window::get_window_thread_process_id(hwnd);
 
         let name = match get_process_name(pid) {
             Some(n) => n,
             None => {
                 error!("[AppManager] Failed to get process name for hwnd={:?}, pid={}", hwnd, pid);
-                return AppInfo::empty();
+                return Err(AppInfoError::ProcessNotFound { pid });
             }
         };
 
         let (exe_path, base_app_type, process_name) = if name == "ApplicationFrameHost" {
-            let path = get_uwp_path(hwnd, pid);
+            // UWP 先尝试子窗口找真实进程，找不到则用类名回退，避免 executable_path 为空导致不计数
+            let path = get_uwp_path(hwnd, pid).or_else(|| {
+                let cls = get_window_class_name(hwnd);
+                if !cls.is_empty() {
+                    Some(cls)
+                } else {
+                    None
+                }
+            });
             let proc = path.as_deref()
                 .and_then(|p| Path::new(p).file_stem())
                 .map(|s| s.to_string_lossy().to_string())
@@ -92,80 +106,104 @@ impl AppManager {
                 if cached.time.elapsed() < Duration::from_secs(CACHE_TTL_SECS) {
                     cached.time = Instant::now();
                     debug!("[AppManager] Cache hit for key={}", cache_key);
-                    return cached.info.clone();
+                    return Ok(cached.info.clone());
                 }
             }
         }
 
-        let description = exe_path.as_deref().and_then(get_file_description).unwrap_or_default();
-        let icon_path = exe_path.as_deref().and_then(|p| self.extract_icon(p, &process_name)).unwrap_or_default();
+        // 同步提取文件描述（通常很快），避免首次上报缺失 description
+        let description = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            exe_path.as_deref().and_then(get_file_description)
+        }))
+        .ok()
+        .flatten()
+        .unwrap_or_default();
 
         let info = AppInfo {
-            window_handle: hwnd_ptr as isize,
-            pid,
             process: process_name.to_string(),
             description,
-            executable_path: exe_path.unwrap_or_default(),
-            icon_path,
+            executable_path: exe_path.clone().unwrap_or_default(),
+            icon_path: String::new(),
             app_type,
         };
 
         {
             let mut cache = self.cache.lock();
-            if cache.len() > MAX_CACHE_SIZE {
-                let cutoff = Instant::now() - Duration::from_secs(CACHE_TTL_SECS);
-                let to_remove: Vec<String> = cache
-                    .iter()
-                    .filter(|(_, v)| v.time < cutoff)
-                    .map(|(k, _)| k.clone())
-                    .collect();
-                let removed = to_remove.len();
-                for k in to_remove {
-                    cache.remove(&k);
+            // 只在缓存达到上限的 150% 时才批量清理，避免热路径频繁遍历
+            const CLEANUP_THRESHOLD: usize = MAX_CACHE_SIZE + MAX_CACHE_SIZE / 2;
+            if cache.len() > CLEANUP_THRESHOLD {
+                let mut items: Vec<_> = cache.iter().map(|(k, v)| (k.clone(), v.time)).collect();
+                items.sort_by(|a, b| a.1.cmp(&b.1));
+                let to_remove = cache.len() - MAX_CACHE_SIZE;
+                for i in 0..to_remove {
+                    cache.remove(&items[i].0);
                 }
-                debug!("[AppManager] Cache cleaned {} entries, remaining={}", removed, cache.len());
+                debug!("[AppManager] Cache LRU evicted {} entries, remaining={}", to_remove, cache.len());
+            }
+            cache.insert(cache_key.clone(), CachedApp { info: info.clone(), time: Instant::now() });
+        }
 
-                if cache.len() > MAX_CACHE_SIZE {
-                    let mut items: Vec<_> = cache.iter().map(|(k, v)| (k.clone(), v.time)).collect();
-                    items.sort_by(|a, b| a.1.cmp(&b.1));
-                    let to_remove = cache.len() - MAX_CACHE_SIZE;
-                    for i in 0..to_remove {
-                        cache.remove(&items[i].0);
-                    }
-                    debug!("[AppManager] Cache LRU evicted {} entries, remaining={}", to_remove, cache.len());
+        // 后台异步提取图标，完成后回填缓存（description 已在同步路径获取）
+        let cache = Arc::clone(&self.cache);
+        let data_dir = self.data_dir.clone();
+        let exe_path_for_icon = exe_path.clone();
+        let process_name_for_icon = process_name.clone();
+        let cache_key_for_fill = cache_key.clone();
+        std::thread::spawn(move || {
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let icon_path = exe_path_for_icon.as_deref()
+                    .and_then(|p| extract_icon(&data_dir, p, &process_name_for_icon))
+                    .unwrap_or_default();
+
+                let mut cache = cache.lock();
+                if let Some(cached) = cache.get_mut(&cache_key_for_fill) {
+                    cached.info.icon_path = icon_path;
+                    cached.time = Instant::now();
+                    debug!(
+                        "[AppManager] Async filled icon for key={}, icon_len={}",
+                        cache_key_for_fill,
+                        cached.info.icon_path.len()
+                    );
+                }
+            }));
+
+            if let Err(e) = result {
+                if let Some(s) = e.downcast_ref::<String>() {
+                    tracing::error!("[AppManager] Icon extraction thread panicked: {}", s);
+                } else if let Some(s) = e.downcast_ref::<&str>() {
+                    tracing::error!("[AppManager] Icon extraction thread panicked: {}", s);
+                } else {
+                    tracing::error!("[AppManager] Icon extraction thread panicked");
                 }
             }
-            cache.insert(cache_key, CachedApp { info: info.clone(), time: Instant::now() });
-        }
+        });
 
-        debug!("[AppManager] Resolved app: name={}, type={}, path={}, icon={}, pid={}",
-            info.process, info.app_type, info.executable_path, info.icon_path, info.pid);
+        debug!("[AppManager] Resolved app: name={}, type={}, path={}",
+            info.process, info.app_type, info.executable_path);
 
-        info
+        Ok(info)
+    }
+}
+
+fn extract_icon(data_dir: &Path, exe_path: &str, process_name: &str) -> Option<String> {
+    let icon_dir = data_dir.join("AppIcons");
+    std::fs::create_dir_all(&icon_dir).ok()?;
+
+    let safe_name: String = process_name.chars().filter(|c| !r#"<>:"/\?*"#.contains(*c)).collect();
+
+    let path_hash = format!("{:08x}", crc32fast::hash(exe_path.as_bytes()));
+
+    let icon_path = icon_dir.join(format!("{}_{}.png", safe_name, path_hash));
+
+    if icon_path.exists() {
+        return relative_path(&icon_path, data_dir);
     }
 
-    fn extract_icon(&self, exe_path: &str, process_name: &str) -> Option<String> {
-        let icon_dir = self.data_dir.join("AppIcons");
-        std::fs::create_dir_all(&icon_dir).ok()?;
-
-        let safe_name: String = process_name.chars().filter(|c| !r#"<>:"/\|?*"#.contains(*c)).collect();
-
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        std::hash::Hash::hash(exe_path, &mut hasher);
-        let path_hash = format!("{:08x}", hasher.finish());
-
-        let icon_path = icon_dir.join(format!("{}_{}.png", safe_name, path_hash));
-
-        if icon_path.exists() {
-            return relative_path(&icon_path, &self.data_dir);
-        }
-
-        if let Err(e) = extract_icon_to_png(exe_path, &icon_path) {
-            tracing::warn!("[AppManager] Failed to extract icon for {}: {}", process_name, e);
-            return None;
-        }
-        relative_path(&icon_path, &self.data_dir)
+    if let Err(e) = extract_icon_to_png(exe_path, &icon_path) {
+        tracing::warn!("[AppManager] Failed to extract icon for {}: {}", process_name, e);
+        return None;
     }
+    relative_path(&icon_path, data_dir)
 }
 
 fn get_uwp_path(hwnd: HWND, owner_pid: u32) -> Option<String> {

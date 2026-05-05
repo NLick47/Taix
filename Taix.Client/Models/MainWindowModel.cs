@@ -73,7 +73,7 @@ public class MainWindowModel : UINotifyPropertyChanged
     }
 
     /// <summary>
-    ///     页面传递数据
+    /// 页面传递数据
     /// </summary>
     public object Data
     {

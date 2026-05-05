@@ -21,7 +21,9 @@ using Taix.Client.Controls.Select;
 using Taix.Client.Controls.Window;
 using Taix.Client.Logging;
 using Taix.Client.Servicers;
+using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Models.Config;
+using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.ViewModels;
 
 namespace Taix.Client.Controls.SettingPanel;
@@ -32,7 +34,8 @@ public class SettingPanel : TemplatedControl
         AvaloniaProperty.RegisterDirect<SettingPanel, object>(
             nameof(Data),
             o => o.Data,
-            (o, v) => o.Data = v);
+            (o, v) => o.Data = v,
+            defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
     public static readonly StyledProperty<SolidColorBrush> SpliteLineBrushProperty =
         AvaloniaProperty.Register<SettingPanel, SolidColorBrush>(nameof(SpliteLineBrush));
@@ -45,6 +48,9 @@ public class SettingPanel : TemplatedControl
 
     private StackPanel _container;
     private bool _isCanRender = true;
+    private IAppConfig? _appConfig;
+    private IDisposable? _themeSubscription;
+    private IDisposable? _languageSubscription;
 
     public SettingPanel()
     {
@@ -87,6 +93,36 @@ public class SettingPanel : TemplatedControl
         Render();
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        _appConfig = ServiceLocator.GetService<IAppConfig>();
+        if (_appConfig != null)
+        {
+            _themeSubscription = _appConfig.WhenAnyThemeRelatedChanged(OnThemeChanged);
+            _languageSubscription = _appConfig.WhenLanguageChanged(OnLanguageChanged);
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _themeSubscription?.Dispose();
+        _languageSubscription?.Dispose();
+    }
+
+    private void OnLanguageChanged()
+    {
+        _isCanRender = true;
+        Render();
+    }
+
+    private void OnThemeChanged()
+    {
+        _isCanRender = true;
+        Render();
+    }
+
     private void Render()
     {
         if (!_isCanRender)
@@ -119,7 +155,7 @@ public class SettingPanel : TemplatedControl
         var itemType = dataType.GenericTypeArguments[0];
         var test1 = dataType.GetGenericArguments()[0];
 
-        var emptyData = Activator.CreateInstance(itemType);
+        var emptyData = AotTypeFactory.CreateInstance(itemType);
 
         //  添加按钮
         var addBtn = new Button.Button();
@@ -165,10 +201,7 @@ public class SettingPanel : TemplatedControl
                 //  更新
                 cacheList[pid] = panel.Data;
 
-                var listType = typeof(List<>);
-                var constructedListType = listType.MakeGenericType(panel.Data.GetType());
-
-                var newList = (IList)Activator.CreateInstance(constructedListType);
+                var newList = AotTypeFactory.CreateList(panel.Data.GetType());
 
                 foreach (var item in cacheList.Values) newList.Add(item);
 
@@ -179,10 +212,7 @@ public class SettingPanel : TemplatedControl
         panel.OnRemoveAction = ReactiveCommand.Create(() =>
         {
             cacheList.Remove(id);
-            var listType = typeof(List<>);
-            var constructedListType = listType.MakeGenericType(panel.Data.GetType());
-
-            var newList = (IList)Activator.CreateInstance(constructedListType);
+            var newList = AotTypeFactory.CreateList(panel.Data.GetType());
             foreach (var item in cacheList.Values) newList.Add(item);
 
             _container.Children.Remove(panel);
@@ -194,7 +224,7 @@ public class SettingPanel : TemplatedControl
 
     private void RenderSinglePanel()
     {
-        _configData = Activator.CreateInstance(Data.GetType());
+        _configData = DeepCopy(Data, Data.GetType())!;
 
         // 遍历方法特性
         foreach (var pi in Data.GetType().GetProperties())
@@ -429,11 +459,14 @@ public class SettingPanel : TemplatedControl
         contextMenuItemDel.Click += (e, c) => { listControl.Items.Remove(listControl.SelectedItem); };
         var contextMenuItemCopy = new MenuItem();
         contextMenuItemCopy.Header = Application.Current.FindResource("CopyContent");
-        contextMenuItemCopy.Click += (e, c) =>
+        contextMenuItemCopy.Click += async (e, c) =>
         {
             var clipboard = TopLevel.GetTopLevel(this)!.Clipboard!;
-            clipboard.SetTextAsync(listControl.SelectedItem)
-                .ConfigureAwait(false).GetAwaiter();
+            var item = new Avalonia.Input.DataTransferItem();
+            item.Set(Avalonia.Input.DataFormat.Text, listControl.SelectedItem?.ToString() ?? string.Empty);
+            var data = new Avalonia.Input.DataTransfer();
+            data.Add(item);
+            await clipboard.SetDataAsync(data);
         };
         contextMenu.Items.Add(contextMenuItemCopy);
         contextMenu.Items.Add(new Separator());

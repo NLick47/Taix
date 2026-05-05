@@ -16,7 +16,7 @@ public class TPage : UserControl
     private PageContainer pageContainer;
 
     /// <summary>
-    ///     是否填充页面而不使用自适应滚动
+    /// 是否填充页面而不使用自适应滚动
     /// </summary>
     public bool IsFillPage
     {

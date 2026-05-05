@@ -10,7 +10,7 @@ public class CategoryPageModel : ModelBase
     private string _editColor = string.Empty;
     private string _editErrorText = string.Empty;
     private string _editIconFile = string.Empty;
-    private bool _editIsDirectoryMath;
+    private bool _editIsDirectoryMatch;
     private string _editName = string.Empty;
     private string _editSelectedDirectory = string.Empty;
     private bool _editVisibility;
@@ -18,8 +18,8 @@ public class CategoryPageModel : ModelBase
     private bool _isEditError;
     private bool _isRightClickSelected;
     private bool _isSysCategory;
-    private CategoryModel _selectedAppCategoryItem = null!;
-    private WebCategoryModel _selectedWebCategoryItem = null!;
+    private CategoryModel? _selectedAppCategoryItem;
+    private WebCategoryModel? _selectedWebCategoryItem;
     private ObservableCollection<WebCategoryModel> _webCategoryData = new();
 
     public ObservableCollection<CategoryModel> Data
@@ -32,7 +32,7 @@ public class CategoryPageModel : ModelBase
         }
     }
 
-    public CategoryModel SelectedAppCategoryItem
+    public CategoryModel? SelectedAppCategoryItem
     {
         get => _selectedAppCategoryItem;
         set
@@ -85,12 +85,12 @@ public class CategoryPageModel : ModelBase
         }
     }
 
-    public bool EditIsDirectoryMath
+    public bool EditIsDirectoryMatch
     {
-        get => _editIsDirectoryMath;
+        get => _editIsDirectoryMatch;
         set
         {
-            _editIsDirectoryMath = value;
+            _editIsDirectoryMatch = value;
             OnPropertyChanged();
         }
     }
@@ -167,7 +167,7 @@ public class CategoryPageModel : ModelBase
         }
     }
 
-    public WebCategoryModel SelectedWebCategoryItem
+    public WebCategoryModel? SelectedWebCategoryItem
     {
         get => _selectedWebCategoryItem;
         set
@@ -179,7 +179,7 @@ public class CategoryPageModel : ModelBase
 
     public class WebCategoryModel
     {
-        public WebSiteCategoryModel Data { get; set; } = null!;
+        public WebSiteCategoryModel? Data { get; set; }
         public int Count { get; set; }
     }
 }

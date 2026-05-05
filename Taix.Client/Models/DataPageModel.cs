@@ -26,7 +26,7 @@ public class DataPageModel : ModelBase
     private DateTime _yearDate;
 
     /// <summary>
-    ///     tabbar data
+    /// tabbar data
     /// </summary>
     public ObservableCollection<string> TabbarData
     {
@@ -39,7 +39,7 @@ public class DataPageModel : ModelBase
     }
 
     /// <summary>
-    ///     tabbar selected item index
+    /// tabbar selected item index
     /// </summary>
     public int TabbarSelectedIndex
     {
@@ -52,7 +52,7 @@ public class DataPageModel : ModelBase
     }
 
     /// <summary>
-    ///     data
+    /// data
     /// </summary>
     public List<ChartsDataModel> Data
     {
@@ -65,7 +65,7 @@ public class DataPageModel : ModelBase
     }
 
     /// <summary>
-    ///     MonthData
+    /// MonthData
     /// </summary>
     public List<ChartsDataModel> MonthData
     {
@@ -78,7 +78,7 @@ public class DataPageModel : ModelBase
     }
 
     /// <summary>
-    ///     YearData
+    /// YearData
     /// </summary>
     public List<ChartsDataModel> YearData
     {
@@ -91,7 +91,7 @@ public class DataPageModel : ModelBase
     }
 
     /// <summary>
-    ///     date
+    /// date
     /// </summary>
     public DateTime DayDate
     {
@@ -104,7 +104,7 @@ public class DataPageModel : ModelBase
     }
 
     /// <summary>
-    ///     date
+    /// date
     /// </summary>
     public DateTime MonthDate
     {
@@ -117,7 +117,7 @@ public class DataPageModel : ModelBase
     }
 
     /// <summary>
-    ///     date
+    /// date
     /// </summary>
     public DateTime YearDate
     {

@@ -27,12 +27,12 @@ public class NavigationItemModel : UINotifyPropertyChanged
     }
 
     /// <summary>
-    ///     未选择时默认图标
+    /// 未选择时默认图标
     /// </summary>
     public IconTypes UnSelectedIcon { get; set; }
 
     /// <summary>
-    ///     选中后图标
+    /// 选中后图标
     /// </summary>
     public IconTypes SelectedIcon
     {

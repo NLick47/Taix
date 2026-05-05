@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reactive;
-using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
@@ -58,8 +58,12 @@ public class CategoryPageViewModel : CategoryPageModel
         DirectoriesCommand = ReactiveCommand.Create<object>(OnDirectoriesCommand).DisposeWith(Disposables);
         ListBoxContextRequestedCommand = ReactiveCommand.Create<object>(OnListBoxContextRequested).DisposeWith(Disposables);
         RestoreSystemCategoryCommand = ReactiveCommand.CreateFromTask<object>(OnRestoreSystemCategoryAsync).DisposeWith(Disposables);
+    }
 
+    public override Task OnNavigatedToAsync()
+    {
         _ = ExecuteAsync(LoadDataCoreAsync);
+        return Task.CompletedTask;
     }
 
     public ReactiveCommand<object, Unit> GotoListCommand { get; }
@@ -82,7 +86,8 @@ public class CategoryPageViewModel : CategoryPageModel
             if (arg is not CategoryModel selected || selected.Data == null || !selected.Data.IsSystem)
                 return;
 
-            var defaultSys = Shared.Models.CategoryModel.DefaultSystemCategory();
+            var restored = await _categoryService.RestoreSystemCategoryAsync(selected.Data.ID);
+
             var editItemIndex = Data.IndexOf(selected);
             if (editItemIndex == -1)
                 return;
@@ -91,10 +96,8 @@ public class CategoryPageViewModel : CategoryPageModel
             Data[editItemIndex] = new CategoryModel
             {
                 Count = originalCount,
-                Data = defaultSys
+                Data = restored
             };
-
-            await _categoryService.UpdateAsync(defaultSys);
         }
         catch (Exception ex)
         {
@@ -142,7 +145,7 @@ public class CategoryPageViewModel : CategoryPageModel
         EditName = "";
         EditIconFile = "avares://Taix/Resources/Emoji/(1).png";
         EditColor = "#00FFAB";
-        EditIsDirectoryMath = false;
+        EditIsDirectoryMatch = false;
         EditDirectories.Clear();
         IsEditError = false;
         EditErrorText = "";
@@ -161,13 +164,38 @@ public class CategoryPageViewModel : CategoryPageModel
 
         try
         {
+            var category = SelectedWebCategoryItem.Data;
+            if (category.IsSystem) return;
+
+            var message = SelectedWebCategoryItem.Count > 0
+                ? string.Format(ResourceStrings.CategoryHasSites, SelectedWebCategoryItem.Count)
+                : ResourceStrings.WantDeleteCategory;
+
             var isConfirm = await _dialogService.ShowConfirmDialogAsync(
                 ResourceStrings.DeleteCategory,
-                ResourceStrings.WantDeleteCategory);
+                message);
 
             if (!isConfirm) return;
 
-            await _webDataService.DeleteWebSiteCategoryAsync(SelectedWebCategoryItem.Data);
+            await _webDataService.DeleteWebSiteCategoryAsync(category);
+
+            if (SelectedWebCategoryItem.Count > 0)
+            {
+                var sysCategory = WebCategoryData.FirstOrDefault(m => m.Data.IsSystem);
+                if (sysCategory != null)
+                {
+                    var index = WebCategoryData.IndexOf(sysCategory);
+                    if (index != -1)
+                    {
+                        WebCategoryData[index] = new WebCategoryModel
+                        {
+                            Data = sysCategory.Data,
+                            Count = sysCategory.Count + SelectedWebCategoryItem.Count
+                        };
+                    }
+                }
+            }
+
             WebCategoryData.Remove(SelectedWebCategoryItem);
             SelectedWebCategoryItem = null;
 
@@ -284,7 +312,7 @@ public class CategoryPageViewModel : CategoryPageModel
 
             if (IsCreate)
             {
-                if (Data.Any(m => m.Data.Name.Equals(EditName, StringComparison.OrdinalIgnoreCase)))
+                if (Data.Any(m => EditName.Equals(m.Data.Name, StringComparison.OrdinalIgnoreCase)))
                 {
                     _toastService.Toast(ResourceStrings.CategoryNameExists, ToastType.Error, IconTypes.ImportantBadge12);
                     return;
@@ -295,7 +323,7 @@ public class CategoryPageViewModel : CategoryPageModel
                     Name = EditName,
                     IconFile = EditIconFile,
                     Color = EditColor,
-                    IsDirectoryMath = EditIsDirectoryMath,
+                    IsDirectoryMatch = EditIsDirectoryMatch,
                     Directories = directoriesStr
                 });
 
@@ -320,25 +348,28 @@ public class CategoryPageViewModel : CategoryPageModel
                     return;
                 }
 
-                if (Data.Any(m => m.Data.Name.Equals(EditName, StringComparison.OrdinalIgnoreCase) &&
+                if (Data.Any(m => EditName.Equals(m.Data.Name, StringComparison.OrdinalIgnoreCase) &&
                                   m.Data.ID != SelectedAppCategoryItem.Data.ID))
                 {
                     _toastService.Toast(ResourceStrings.CategoryNameExists, ToastType.Error, IconTypes.ImportantBadge12);
                     return;
                 }
 
-                var category = _categoryService.GetCategory(SelectedAppCategoryItem.Data.ID);
+                var category = await _categoryService.GetCategoryAsync(SelectedAppCategoryItem.Data.ID);
                 if (category == null)
                 {
                     _toastService.Error(ResourceStrings.CategoryNotFound);
                     return;
                 }
 
-                category.Name = EditName;
-                category.IconFile = EditIconFile;
-                category.Color = EditColor;
-                category.IsDirectoryMath = EditIsDirectoryMath;
-                category.Directories = directoriesStr;
+                category = category with
+                {
+                    Name = EditName,
+                    IconFile = EditIconFile,
+                    Color = EditColor,
+                    IsDirectoryMatch = EditIsDirectoryMatch,
+                    Directories = directoriesStr
+                };
 
                 await _categoryService.UpdateAsync(category);
 
@@ -357,7 +388,8 @@ public class CategoryPageViewModel : CategoryPageModel
                                 Name = EditName,
                                 IconFile = EditIconFile,
                                 Color = EditColor,
-                                IsDirectoryMath = EditIsDirectoryMath,
+                                IsDirectoryMatch = EditIsDirectoryMatch,
+                                IsSystem = item.Data.IsSystem,
                                 Directories = directoriesStr
                             }
                         };
@@ -383,24 +415,37 @@ public class CategoryPageViewModel : CategoryPageModel
 
         try
         {
-            var isConfirm = await _dialogService.ShowConfirmDialogAsync(
-                ResourceStrings.DeleteCategory,
-                ResourceStrings.WantDeleteCategory);
-
-            if (!isConfirm) return;
-
-            var category = _categoryService.GetCategory(SelectedAppCategoryItem.Data.ID);
+            var category = await _categoryService.GetCategoryAsync(SelectedAppCategoryItem.Data.ID);
             if (category == null || category.IsSystem)
                 return;
 
+            var message = SelectedAppCategoryItem.Count > 0
+                ? string.Format(ResourceStrings.CategoryHasApps, SelectedAppCategoryItem.Count)
+                : ResourceStrings.WantDeleteCategory;
+
+            var isConfirm = await _dialogService.ShowConfirmDialogAsync(
+                ResourceStrings.DeleteCategory,
+                message);
+
+            if (!isConfirm) return;
+
             await _categoryService.DeleteAsync(category);
 
-            var apps = _appDataService.GetAppsByCategoryID(category.ID).ToList();
-            foreach (var app in apps)
+            if (SelectedAppCategoryItem.Count > 0)
             {
-                app.CategoryID = 0;
-                app.Category = null;
-                _appDataService.UpdateApp(app);
+                var sysCategory = Data.FirstOrDefault(m => m.Data.IsSystem);
+                if (sysCategory != null)
+                {
+                    var index = Data.IndexOf(sysCategory);
+                    if (index != -1)
+                    {
+                        Data[index] = new CategoryModel
+                        {
+                            Data = sysCategory.Data,
+                            Count = sysCategory.Count + SelectedAppCategoryItem.Count
+                        };
+                    }
+                }
             }
 
             Data.Remove(SelectedAppCategoryItem);
@@ -423,13 +468,13 @@ public class CategoryPageViewModel : CategoryPageModel
 
             if (IsCreate)
             {
-                if (WebCategoryData.Any(m => m.Data.Name.Equals(EditName, StringComparison.OrdinalIgnoreCase)))
+                if (WebCategoryData.Any(m => EditName.Equals(m.Data.Name, StringComparison.OrdinalIgnoreCase)))
                 {
                     _toastService.Toast(ResourceStrings.CategoryNameExists, ToastType.Error, IconTypes.ImportantBadge12);
                     return;
                 }
 
-                if (WebCategoryData.Any(m => m.Data.Color.Equals(EditColor, StringComparison.OrdinalIgnoreCase)))
+                if (WebCategoryData.Any(m => EditColor.Equals(m.Data.Color, StringComparison.OrdinalIgnoreCase)))
                 {
                     _toastService.Toast(ResourceStrings.ColoreExists, ToastType.Error, IconTypes.ImportantBadge12);
                     return;
@@ -463,14 +508,14 @@ public class CategoryPageViewModel : CategoryPageModel
                     return;
                 }
 
-                if (WebCategoryData.Any(m => m.Data.Name.Equals(EditName, StringComparison.OrdinalIgnoreCase) &&
+                if (WebCategoryData.Any(m => EditName.Equals(m.Data.Name, StringComparison.OrdinalIgnoreCase) &&
                                            m.Data.ID != SelectedWebCategoryItem.Data.ID))
                 {
                     _toastService.Toast(ResourceStrings.CategoryNameExists, ToastType.Error, IconTypes.ImportantBadge12);
                     return;
                 }
 
-                if (WebCategoryData.Any(m => m.Data.Color.Equals(EditColor, StringComparison.OrdinalIgnoreCase) &&
+                if (WebCategoryData.Any(m => EditColor.Equals(m.Data.Color, StringComparison.OrdinalIgnoreCase) &&
                                            m.Data.ID != SelectedWebCategoryItem.Data.ID))
                 {
                     _toastService.Toast(ResourceStrings.ColoreExists, ToastType.Error, IconTypes.ImportantBadge12);
@@ -487,10 +532,12 @@ public class CategoryPageViewModel : CategoryPageModel
                     return;
                 }
 
-                var category = SelectedWebCategoryItem.Data;
-                category.Name = EditName;
-                category.IconFile = EditIconFile;
-                category.Color = EditColor;
+                var category = SelectedWebCategoryItem.Data with
+                {
+                    Name = EditName,
+                    IconFile = EditIconFile,
+                    Color = EditColor
+                };
 
                 await _webDataService.UpdateWebSiteCategoryAsync(category);
 
@@ -537,7 +584,7 @@ public class CategoryPageViewModel : CategoryPageModel
                 EditName = appCategory.Data.Name;
                 EditIconFile = appCategory.Data.IconFile;
                 EditColor = string.IsNullOrWhiteSpace(appCategory.Data.Color) ? "#00FFAB" : appCategory.Data.Color;
-                EditIsDirectoryMath = appCategory.Data.IsDirectoryMath;
+                EditIsDirectoryMatch = appCategory.Data.IsDirectoryMatch;
 
                 if (!string.IsNullOrWhiteSpace(appCategory.Data.Directories))
                 {
@@ -564,7 +611,7 @@ public class CategoryPageViewModel : CategoryPageModel
                 EditName = webCategory.Data.Name;
                 EditIconFile = webCategory.Data.IconFile;
                 EditColor = string.IsNullOrWhiteSpace(webCategory.Data.Color) ? "#00FFAB" : webCategory.Data.Color;
-                EditIsDirectoryMath = false;
+                EditIsDirectoryMatch = false;
             }
         }
         else
@@ -572,7 +619,7 @@ public class CategoryPageViewModel : CategoryPageModel
             EditName = "";
             EditIconFile = "avares://Taix/Resources/Emoji/(1).png";
             EditColor = "#00FFAB";
-            EditIsDirectoryMath = false;
+            EditIsDirectoryMatch = false;
         }
     }
 
@@ -600,10 +647,12 @@ public class CategoryPageViewModel : CategoryPageModel
     private async Task LoadDataCoreAsync(CancellationToken cancellationToken)
     {
         Data.Clear();
-        var categories = _categoryService.GetCategories(true).ToList();
+        var categories = await _categoryService.GetCategoriesAsync(true);
+        cancellationToken.ThrowIfCancellationRequested();
         foreach (var item in categories)
         {
-            var appCount = _appDataService.GetAppsByCategoryID(item.ID).Count;
+            var appCount = await _appDataService.GetAppCountByCategoryIDAsync(item.ID);
+            cancellationToken.ThrowIfCancellationRequested();
             Data.Add(new CategoryModel
             {
                 Count = appCount,

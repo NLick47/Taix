@@ -9,4 +9,6 @@ public interface IUIServicer
 
     Task<string?> ShowInputModalAsync(string title, string placeholder, string value = null,
         Func<string, bool> validate = null);
+
+    Task<int> ShowActionDialogAsync(string title, string message, string[] buttons);
 }

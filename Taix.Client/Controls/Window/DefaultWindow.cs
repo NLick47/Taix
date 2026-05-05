@@ -14,6 +14,7 @@ using Avalonia.VisualTree;
 using ReactiveUI;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Input;
+using Taix.Client.Models;
 
 namespace Taix.Client.Controls.Window;
 
@@ -58,18 +59,25 @@ public class DefaultWindow : Avalonia.Controls.Window
     public static readonly StyledProperty<bool> IsCanBackProperty =
         AvaloniaProperty.Register<DefaultWindow, bool>(nameof(IsCanBack));
 
+    public static readonly StyledProperty<ConnectionStatus> ConnectionStatusProperty =
+        AvaloniaProperty.Register<DefaultWindow, ConnectionStatus>(nameof(ConnectionStatus), ConnectionStatus.Checking);
+
     private CancellationTokenSource _toastCancellationTokenSource;
     private Button.Button CancelBtn, ConfirmBtn, InputModalCancelBtn, InputModalConfirmBtn;
     private InputBox InputModalInputBox;
     private Func<string, bool> InputModalValidFnc;
     private string? InputValue;
     private bool IsDialogConfirm;
-    private bool IsShowConfirmDialog, IsShowInputModal;
+    private bool IsShowConfirmDialog, IsShowInputModal, IsShowActionDialog;
+    private int ActionDialogResult = -1;
+    private Border? _statusDot;
+    private EventHandler? _onLoadPagedHandler;
 
 
     private Grid titleBar;
 
-    private Border ToastBorder, Masklayer, DialogBorder, InputModalBorder;
+    private Border ToastBorder, Masklayer, DialogBorder, InputModalBorder, ActionDialogBorder;
+    private StackPanel ActionDialogButtonsPanel;
     private Grid ToastGrid;
     private DispatcherTimer toastTimer;
 
@@ -98,7 +106,7 @@ public class DefaultWindow : Avalonia.Controls.Window
 
         MaximizeWindowCommand = ReactiveCommand.Create(() => { WindowState = WindowState.Maximized; });
 
-        CloseWindowCommand = ReactiveCommand.Create(() => { Close(); });
+        CloseWindowCommand = ReactiveCommand.Create(() => { RequestClose?.Invoke(this, EventArgs.Empty); });
 
         BackCommand = ReactiveCommand.Create(() =>
         {
@@ -130,7 +138,7 @@ public class DefaultWindow : Avalonia.Controls.Window
     }
 
     /// <summary>
-    ///     toast type
+    /// toast type
     /// </summary>
     public ToastType ToastType
     {
@@ -139,7 +147,7 @@ public class DefaultWindow : Avalonia.Controls.Window
     }
 
     /// <summary>
-    ///     toast content
+    /// toast content
     /// </summary>
     public string ToastContent
     {
@@ -154,7 +162,7 @@ public class DefaultWindow : Avalonia.Controls.Window
     }
 
     /// <summary>
-    ///     Dialog title
+    /// Dialog title
     /// </summary>
     public string DialogTitle
     {
@@ -163,7 +171,7 @@ public class DefaultWindow : Avalonia.Controls.Window
     }
 
     /// <summary>
-    ///     Dialog title
+    /// Dialog title
     /// </summary>
     public string InputModalValue
     {
@@ -172,7 +180,7 @@ public class DefaultWindow : Avalonia.Controls.Window
     }
 
     /// <summary>
-    ///     Dialog message
+    /// Dialog message
     /// </summary>
     public string DialogMessage
     {
@@ -187,13 +195,21 @@ public class DefaultWindow : Avalonia.Controls.Window
     }
 
     /// <summary>
-    ///     是否可以返回
+    /// 是否可以返回
     /// </summary>
     public bool IsCanBack
     {
         get => GetValue(IsCanBackProperty);
         set => SetValue(IsCanBackProperty, value);
     }
+
+    public ConnectionStatus ConnectionStatus
+    {
+        get => GetValue(ConnectionStatusProperty);
+        set => SetValue(ConnectionStatusProperty, value);
+    }
+
+    public event EventHandler? RequestClose;
 
     public bool IsWindowClosed { get; private set; }
 
@@ -213,6 +229,7 @@ public class DefaultWindow : Avalonia.Controls.Window
         if (change.Property == PageContainerProperty) OnPageContainerChanged(change);
         if (change.Property == IsCanBackProperty) OnIsCanBackChanged(change);
         if (change.Property == IsShowToastProperty) OnIsShowToastChanged(change);
+        if (change.Property == ConnectionStatusProperty) UpdateConnectionStatus();
     }
 
     private static void OnIsShowToastChanged(AvaloniaPropertyChangedEventArgs e)
@@ -221,13 +238,13 @@ public class DefaultWindow : Avalonia.Controls.Window
         if (that != null)
         {
             if (that.IsShowToast)
-                that.ShowToast();
+                _ = that.ShowToastAsync();
             else
                 that.HideToast();
         }
     }
 
-    private async void ShowToast()
+    private async Task ShowToastAsync()
     {
         if (ToastGrid == null)
             return;
@@ -282,6 +299,56 @@ public class DefaultWindow : Avalonia.Controls.Window
             while (IsShowConfirmDialog) await Task.Delay(10);
 
             return IsDialogConfirm;
+        });
+    }
+
+    public Task<int> ShowActionDialogAsync(string title, string message, string[] buttons)
+    {
+        IsShowActionDialog = true;
+        ActionDialogResult = -1;
+        ToastGrid.IsVisible = true;
+        ToastBorder.IsVisible = false;
+        DialogBorder.IsVisible = false;
+        InputModalBorder.IsVisible = false;
+        ActionDialogBorder.IsVisible = true;
+
+        DialogMessage = message;
+        DialogTitle = title;
+        ActionDialogBorder.RenderTransform = TransformOperations.Parse("translateY(0px)");
+        Masklayer.Opacity = 0.6;
+
+        // 清除旧按钮并动态创建新按钮
+        if (ActionDialogButtonsPanel != null)
+        {
+            ActionDialogButtonsPanel.Children.Clear();
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                int index = i;
+                var btn = new Button.Button
+                {
+                    Content = buttons[i],
+                    Width = 100,
+                    Margin = new Thickness(i > 0 ? 10 : 0, 0, 0, 0)
+                };
+                if (i == 0)
+                {
+                    btn.Background = this.FindResource("ThemeBrush") as IBrush ?? Brushes.Transparent;
+                    btn.Foreground = Brushes.White;
+                }
+                btn.Click += (s, e) =>
+                {
+                    ActionDialogResult = index;
+                    HideActionDialog();
+                };
+                ActionDialogButtonsPanel.Children.Add(btn);
+            }
+        }
+
+        return Task.Run(async () =>
+        {
+            while (IsShowActionDialog) await Task.Delay(10);
+
+            return ActionDialogResult;
         });
     }
 
@@ -350,17 +417,29 @@ public class DefaultWindow : Avalonia.Controls.Window
     private static void OnPageContainerChanged(AvaloniaPropertyChangedEventArgs e)
     {
         var that = (DefaultWindow)e.Sender;
-        if (that != null)
-            if (e.NewValue != null)
-            {
-                that.IsCanBack = that.PageContainer.Index >= 1;
+        if (that == null) return;
 
-                that.PageContainer.OnLoadPaged += (s, v) =>
-                {
-                    var pc = s as PageContainer;
-                    that.IsCanBack = pc?.Index >= 1;
-                };
-            }
+        if (e.OldValue is PageContainer oldPc && that._onLoadPagedHandler != null)
+        {
+            oldPc.OnLoadPaged -= that._onLoadPagedHandler;
+        }
+
+        if (e.NewValue is PageContainer newPc)
+        {
+            that.IsCanBack = newPc.Index >= 1;
+
+            that._onLoadPagedHandler = (s, v) =>
+            {
+                var pc = s as PageContainer;
+                that.IsCanBack = pc?.Index >= 1;
+            };
+
+            newPc.OnLoadPaged += that._onLoadPagedHandler;
+        }
+        else
+        {
+            that._onLoadPagedHandler = null;
+        }
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -371,12 +450,16 @@ public class DefaultWindow : Avalonia.Controls.Window
         Masklayer = e.NameScope.Find<Border>("Masklayer");
         ToastGrid = e.NameScope.Find<Grid>("ToastGrid");
         DialogBorder = e.NameScope.Find<Border>("DialogBorder");
+        ActionDialogBorder = e.NameScope.Find<Border>("ActionDialogBorder");
+        ActionDialogButtonsPanel = e.NameScope.Find<StackPanel>("ActionDialogButtonsPanel");
         CancelBtn = e.NameScope.Find<Button.Button>("CancelBtn");
         ConfirmBtn = e.NameScope.Find<Button.Button>("ConfirmBtn");
         InputModalBorder = e.NameScope.Find<Border>("InputModalBorder");
         InputModalCancelBtn = e.NameScope.Find<Button.Button>("InputModalCancelBtn");
         InputModalConfirmBtn = e.NameScope.Find<Button.Button>("InputModalConfirmBtn");
         InputModalInputBox = e.NameScope.Find<InputBox>("InputModalInputBox");
+        _statusDot = e.NameScope.Find<Border>("StatusDot");
+        UpdateConnectionStatus();
 
         if (CancelBtn != null)
             CancelBtn.Click += (e, c) =>
@@ -411,7 +494,7 @@ public class DefaultWindow : Avalonia.Controls.Window
             InputModalInputBox.TextChanged += (e, c) => { InputValue = InputModalInputBox.Text; };
 
         if (IsShowToast)
-            ShowToast();
+            _ = ShowToastAsync();
     }
 
     private void HideDialog()
@@ -422,12 +505,48 @@ public class DefaultWindow : Avalonia.Controls.Window
         IsShowConfirmDialog = false;
     }
 
+    private void HideActionDialog()
+    {
+        ActionDialogBorder.RenderTransform = TransformOperations.Parse("translateY(-150px)");
+        Masklayer.Opacity = 0;
+        ToastGrid.IsVisible = false;
+        IsShowActionDialog = false;
+    }
+
     private void HideInputModal()
     {
         InputModalBorder.RenderTransform = TransformOperations.Parse("translateY(-150px)");
         Masklayer.Opacity = 0;
         ToastGrid.IsVisible = false;
         IsShowInputModal = false;
+    }
+
+    private void UpdateConnectionStatus()
+    {
+        if (_statusDot == null) return;
+
+        IBrush brush;
+        string toolTipKey;
+
+        switch (ConnectionStatus)
+        {
+            case ConnectionStatus.Connected:
+                brush = new SolidColorBrush(Color.Parse("#24bf5f"));
+                toolTipKey = "ConnectionStatusConnected";
+                break;
+            case ConnectionStatus.Disconnected:
+                brush = new SolidColorBrush(Color.Parse("#f51837"));
+                toolTipKey = "ConnectionStatusDisconnected";
+                break;
+            case ConnectionStatus.Checking:
+            default:
+                brush = new SolidColorBrush(Color.Parse("#999999"));
+                toolTipKey = "ConnectionStatusChecking";
+                break;
+        }
+
+        _statusDot.Background = brush;
+        ToolTip.SetTip(_statusDot, Application.Current?.FindResource(toolTipKey) ?? string.Empty);
     }
 
     protected override void OnClosed(EventArgs e)
@@ -439,11 +558,21 @@ public class DefaultWindow : Avalonia.Controls.Window
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
-    
-        // 处理标题栏拖动
-        if (titleBar.Bounds.Contains(e.GetCurrentPoint(null).Position)
-            && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-            BeginMoveDrag(e);
+
+        if (titleBar == null) return;
+
+        try
+        {
+            var point = e.GetCurrentPoint(this);
+            if (titleBar.Bounds.Contains(point.Position) && point.Properties.IsLeftButtonPressed)
+            {
+                BeginMoveDrag(e);
+            }
+        }
+        catch
+        {
+            // ignored
+        }
     }
 
     

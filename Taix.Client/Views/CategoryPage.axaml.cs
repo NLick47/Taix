@@ -21,7 +21,7 @@ public partial class CategoryPage : TPage
         var model = ServiceLocator.GetRequiredService<CategoryPageViewModel>();
         _model = model;
         DataContext = model;
-        _editIsDirectoryMatchSubscription = this.WhenAnyValue(x => x._model.EditIsDirectoryMath)
+        _editIsDirectoryMatchSubscription = this.WhenAnyValue(x => x._model.EditIsDirectoryMatch)
             .Subscribe(HandleEditIsDirectoryMatchChange);
 
         _editDirectoriesSubscription = this.WhenAnyValue(x => x._model.EditDirectories).Subscribe(val =>

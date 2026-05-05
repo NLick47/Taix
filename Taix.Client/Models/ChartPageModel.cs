@@ -58,7 +58,7 @@ public class ChartPageModel : ModelBase
 
     //private SelectItemModel ShowType_;
     /// <summary>
-    ///     展示数据类型（0=应用/1=网页）
+    /// 展示数据类型（0=应用/1=网页）
     /// </summary>
     //public SelectItemModel ShowType { get { return ShowType_; } set { ShowType_ = value; OnPropertyChanged(); } }
     private List<ChartsDataModel> _webCategoriesPieData;
@@ -82,16 +82,6 @@ public class ChartPageModel : ModelBase
 
     private DateTime _yearDate;
     
-    private List<TrendDataPoint> _trendChartDataPoints;
-    public List<TrendDataPoint> TrendChartDataPoints
-    {
-        get => _trendChartDataPoints;
-        set
-        {
-            _trendChartDataPoints = value;
-            OnPropertyChanged();
-        }
-    }
 
     public List<ChartsDataModel> Data
     {
@@ -104,7 +94,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     tabbar data
+    /// tabbar data
     /// </summary>
     public ObservableCollection<string> TabbarData
     {
@@ -117,7 +107,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     tabbar selected item index
+    /// tabbar selected item index
     /// </summary>
     public int TabbarSelectedIndex
     {
@@ -260,7 +250,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     柱状图选中列索引
+    /// 柱状图选中列索引
     /// </summary>
     public int ColumnSelectedIndex
     {
@@ -273,7 +263,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     指定时段app数据
+    /// 指定时段app数据
     /// </summary>
     public List<ChartsDataModel> DayHoursData
     {
@@ -286,7 +276,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     选中时段
+    /// 选中时段
     /// </summary>
     public string DayHoursSelectedTime
     {
@@ -299,7 +289,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     是否允许选择
+    /// 是否允许选择
     /// </summary>
     public bool IsCanColumnSelect
     {
@@ -312,7 +302,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     图表数据模式（1=分类/2=汇总）
+    /// 图表数据模式（1=分类/2=汇总）
     /// </summary>
     public SelectItemModel ChartDataMode
     {
@@ -325,7 +315,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     雷达图数据
+    /// 雷达图数据
     /// </summary>
     public List<ChartsDataModel> RadarData
     {
@@ -338,7 +328,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     是否以堆叠形式展示
+    /// 是否以堆叠形式展示
     /// </summary>
     public bool IsChartStack
     {
@@ -351,7 +341,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     使用时间最长的应用
+    /// 使用时间最长的应用
     /// </summary>
     public AppModel Top1App
     {
@@ -364,7 +354,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     时长对比上一周期变化（0无变化，1增加，-1减少）
+    /// 时长对比上一周期变化（0无变化，1增加，-1减少）
     /// </summary>
     public string DiffTotalTimeType
     {
@@ -377,7 +367,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     应用量对比上一周期变化（0无变化，1增加，-1减少）
+    /// 应用量对比上一周期变化（0无变化，1增加，-1减少）
     /// </summary>
     public string DiffAppCountType
     {
@@ -390,7 +380,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     时长差异值
+    /// 时长差异值
     /// </summary>
     public string DiffTotalTimeValue
     {
@@ -403,7 +393,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     应用量差异值
+    /// 应用量差异值
     /// </summary>
     public string DiffAppCountValue
     {
@@ -416,7 +406,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网页分类统计饼图数据
+    /// 网页分类统计饼图数据
     /// </summary>
     public List<ChartsDataModel> WebCategoriesPieData
     {
@@ -429,7 +419,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网页浏览时长统计数据（柱状图）
+    /// 网页浏览时长统计数据（柱状图）
     /// </summary>
     public List<ChartsDataModel> WebBrowseStatisticsData
     {
@@ -442,7 +432,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网页浏览总时长
+    /// 网页浏览总时长
     /// </summary>
     public string WebTotalTimeText
     {
@@ -455,7 +445,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网页浏览总时长
+    /// 网页浏览总时长
     /// </summary>
     public double WebTotalTime
     {
@@ -468,7 +458,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     站点浏览数量
+    /// 站点浏览数量
     /// </summary>
     public double WebSiteCount
     {
@@ -481,7 +471,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网页浏览数量
+    /// 网页浏览数量
     /// </summary>
     public double WebPageCount
     {
@@ -494,7 +484,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     上一个周期网页浏览总时长
+    /// 上一个周期网页浏览总时长
     /// </summary>
     public double LastWebTotalTime
     {
@@ -507,7 +497,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     上一个周期站点浏览数量
+    /// 上一个周期站点浏览数量
     /// </summary>
     public double LastWebSiteCount
     {
@@ -520,7 +510,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     上一个周期网页浏览数量
+    /// 上一个周期网页浏览数量
     /// </summary>
     public double LastWebPageCount
     {
@@ -533,7 +523,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网页站点最为频繁
+    /// 网页站点最为频繁
     /// </summary>
     public List<ChartsDataModel> WebSitesTopData
     {
@@ -546,7 +536,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网页浏览数据柱状图选中列索引
+    /// 网页浏览数据柱状图选中列索引
     /// </summary>
     public int WebColSelectedIndex
     {
@@ -559,7 +549,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网页浏览数据柱状图选中列数据
+    /// 网页浏览数据柱状图选中列数据
     /// </summary>
     public List<ChartsDataModel> WebSitesColSelectedData
     {
@@ -572,7 +562,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网页浏览数据柱状图选择列时间
+    /// 网页浏览数据柱状图选择列时间
     /// </summary>
     public string WebSitesColSelectedTimeText
     {
@@ -585,7 +575,7 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    ///     网站右键菜单
+    /// 网站右键菜单
     /// </summary>
     public ContextMenu WebSiteContextMenu
     {

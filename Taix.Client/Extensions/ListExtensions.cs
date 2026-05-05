@@ -16,7 +16,7 @@ public static class ThreadSafeRandom
 public static class ListExtensions
 {
     /// <summary>
-    ///     随机打乱该List
+    /// 随机打乱该List
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="list"></param>

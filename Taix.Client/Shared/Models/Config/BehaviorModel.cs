@@ -4,7 +4,7 @@ using Taix.Client.Platform.Abstractions.Primitives;
 namespace Taix.Client.Shared.Models.Config;
 
 /// <summary>
-///     行为
+/// 行为
 /// </summary>
 public class BehaviorModel
 {

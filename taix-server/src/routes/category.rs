@@ -10,6 +10,7 @@ use crate::models::category::CategoryModel;
 use crate::models::request::{CreateCategoryRequest, UpdateCategoryRequest};
 use crate::response::ApiResponse;
 use crate::services::category::CategoryService;
+use axum::routing::post;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -21,7 +22,8 @@ struct CategoryQuery {
 pub fn router() -> Router<SqlitePool> {
     Router::new()
         .route("/api/category", get(get_categories).post(create_category))
-        .route("/api/category/{id}", get(get_category).put(update_category).delete(delete_category))
+        .route("/api/category/:id", get(get_category).put(update_category).delete(delete_category))
+        .route("/api/category/:id/restore", post(restore_system_category))
 }
 
 async fn get_categories(
@@ -73,6 +75,30 @@ async fn update_category(
 ) -> Json<ApiResponse<()>> {
     match CategoryService::update_category(&pool, id, req).await {
         Ok(_) => Json(ApiResponse::ok_empty()),
+        Err(crate::error::AppError::Business(msg)) => Json(ApiResponse {
+            code: 400,
+            message: msg,
+            data: None,
+        }),
+        Err(e) => Json(ApiResponse {
+            code: 500,
+            message: e.to_string(),
+            data: None,
+        }),
+    }
+}
+
+async fn restore_system_category(
+    State(pool): State<SqlitePool>,
+    Path(id): Path<i64>,
+) -> Json<ApiResponse<CategoryModel>> {
+    match CategoryService::restore_system_category(&pool, id).await {
+        Ok(data) => Json(ApiResponse::ok(data)),
+        Err(crate::error::AppError::Business(msg)) => Json(ApiResponse {
+            code: 400,
+            message: msg,
+            data: None,
+        }),
         Err(e) => Json(ApiResponse {
             code: 500,
             message: e.to_string(),
@@ -87,6 +113,11 @@ async fn delete_category(
 ) -> Json<ApiResponse<()>> {
     match CategoryService::delete_category(&pool, id).await {
         Ok(_) => Json(ApiResponse::ok_empty()),
+        Err(crate::error::AppError::Business(msg)) => Json(ApiResponse {
+            code: 400,
+            message: msg,
+            data: None,
+        }),
         Err(e) => Json(ApiResponse {
             code: 500,
             message: e.to_string(),

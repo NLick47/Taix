@@ -9,7 +9,7 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource TabOptionTextColor}" />
         <Setter Property="Padding" Value="16,8" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="CornerRadius" Value="12" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
         
@@ -19,6 +19,12 @@
                         Background="{TemplateBinding Background}" 
                         Padding="{TemplateBinding Padding}"
                         Cursor="Hand">
+                    <Border.Transitions>
+                        <Transitions>
+                            <BrushTransition Property="Background" Duration="0:0:0.15" />
+                            <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                        </Transitions>
+                    </Border.Transitions>
                     <Grid ColumnDefinitions="Auto,*" HorizontalAlignment="Center">
                         <!-- 图标 - 使用绑定控制显示 -->
                         <Border Grid.Column="0" 
@@ -51,8 +57,17 @@
             </Style>
             
             <Style Selector="select|TabOption[IsChecked=True]">
-                <Setter Property="Background" Value="{DynamicResource ThemeColor}" />
+                <Setter Property="Background" Value="{DynamicResource TabOptionSelectedBrush}" />
                 <Setter Property="Foreground" Value="{DynamicResource TabOptionTextCheckedColor}" />
+            </Style>
+            
+            <Style Selector="select|TabOption[IsChecked=True] /template/ Border">
+                <Setter Property="BorderBrush" Value="{DynamicResource TabOptionSelectedBorderBrush}" />
+                <Setter Property="BorderThickness" Value="0.5" />
+            </Style>
+            
+            <Style Selector="select|TabOption:pointerover">
+                <Setter Property="Background" Value="{DynamicResource TabOptionHoverBrush}" />
             </Style>
         
           

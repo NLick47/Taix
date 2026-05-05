@@ -22,8 +22,6 @@ windows = { version = "0.62", features = [
     "Win32_UI_Shell",
     "Win32_Storage_FileSystem",
     "Win32_Graphics_Gdi",
-    "Win32_System_LibraryLoader",
-    "Win32_System_ProcessStatus",
     "Win32_Media_Audio",
     "Win32_Media_Audio_Endpoints",
     "Win32_System_Com",
@@ -32,3 +30,4 @@ windows = { version = "0.62", features = [
     "Win32_System_Variant",
 ] }
 image = { version = "0.25", default-features = false, features = ["png"] }
+crc32fast = "1.3"

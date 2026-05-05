@@ -8,7 +8,7 @@ namespace Taix.Client.Controls.Base;
 public static class UIHelper
 {
     /// <summary>
-    ///     测量字符串控件尺寸
+    /// 测量字符串控件尺寸
     /// </summary>
     /// <param name="textBlock"></param>
     /// <returns></returns>

@@ -13,6 +13,8 @@ using Avalonia.VisualTree;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Window;
+using Taix.Client.Logging;
+using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.ViewModels;
@@ -20,7 +22,7 @@ using Taix.Client.Views;
 
 namespace Taix.Client.Servicers;
 
-public class AppContextMenuServicer : IAppContextMenuServicer
+public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
 {
     private readonly MainWindow _mainWindow;
     private readonly IUIServicer _uiServicer;
@@ -38,6 +40,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer
     private MenuItem _setLinkMenuItem;
     private MenuItem _blockMenuItem;
     private MenuItem _whiteListMenuItem;
+    private IDisposable? _languageSubscription;
 
     public AppContextMenuServicer(
         MainViewModel mainViewModel,
@@ -61,7 +64,13 @@ public class AppContextMenuServicer : IAppContextMenuServicer
     {
         InitializeContextMenu();
         _mainWindow.PointerPressed += OnGlobalPointerPressed;
-        SystemLanguage.CurrentLanguageChanged += OnLanguageChanged;
+        _languageSubscription = _appConfig.WhenLanguageChanged(OnLanguageChanged);
+    }
+
+    public void Dispose()
+    {
+        _mainWindow.PointerPressed -= OnGlobalPointerPressed;
+        _languageSubscription?.Dispose();
     }
 
     public ContextMenu GetContextMenu() => _contextMenu;
@@ -74,7 +83,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer
         }
     }
 
-    private void OnLanguageChanged(object? sender, EventArgs e) => UpdateMenuTexts();
+    private void OnLanguageChanged() => UpdateMenuTexts();
 
     private void InitializeContextMenu()
     {
@@ -134,16 +143,28 @@ public class AppContextMenuServicer : IAppContextMenuServicer
         _whiteListMenuItem.Header = ResourceStrings.AddWhitelist;
     }
 
-    private void OnContextMenuOpening(object? sender, CancelEventArgs e)
+    private async void OnContextMenuOpening(object? sender, CancelEventArgs e)
+    {
+        try
+        {
+            await OnContextMenuOpeningAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"上下文菜单打开失败: {ex.Message}", ex);
+        }
+    }
+
+    private async Task OnContextMenuOpeningAsync()
     {
         if (_contextMenu.Tag == null) return;
-        
+
         var app = GetAppFromContextMenu();
         if (app == null) return;
 
         UpdateBlockMenuItemText(app);
         UpdateWhiteListMenuItemText(app);
-        UpdateCategoryMenuItems();
+        await UpdateCategoryMenuItemsAsync();
         UpdateLinkMenuItems();
     }
 
@@ -176,15 +197,16 @@ public class AppContextMenuServicer : IAppContextMenuServicer
             : ResourceStrings.AddWhitelist;
     }
 
-    private void UpdateCategoryMenuItems()
+    private async Task UpdateCategoryMenuItemsAsync()
     {
         _setCategoryMenuItem.Items.Clear();
 
         var app = GetAppFromContextMenu();
         if (app == null) return;
 
-        var categories = _categorys.GetCategories();
-        var appCategoryId = _appData.GetApp(app.ID).CategoryID;
+        var categories = await _categorys.GetCategoriesAsync(true);
+        var appData = await _appData.GetAppAsync(app.ID);
+        var appCategoryId = appData?.CategoryID ?? 0;
 
         foreach (var category in categories)
         {
@@ -195,7 +217,12 @@ public class AppContextMenuServicer : IAppContextMenuServicer
         if (appCategoryId != 0)
         {
             _setCategoryMenuItem.Items.Add(new Separator());
-            var uncategorizedMenuItem = CreateUncategorizedMenuItem(app.ID);
+            var sysCategory = categories.FirstOrDefault(c => c.IsSystem);
+            var uncategorizedMenuItem = new MenuItem
+            {
+                Header = sysCategory?.Name ?? ResourceStrings.Uncategorized
+            };
+            uncategorizedMenuItem.Click += async (s, e) => await ClearAppCategoryAsync(app.ID);
             _setCategoryMenuItem.Items.Add(uncategorizedMenuItem);
         }
 
@@ -212,20 +239,11 @@ public class AppContextMenuServicer : IAppContextMenuServicer
             IsSelected = true
         };
 
-        menuItem.Click += (s, e) => SetAppCategory(appId, category);
+        menuItem.Click += async (s, e) => await SetAppCategoryAsync(appId, category);
         return menuItem;
     }
 
-    private MenuItem CreateUncategorizedMenuItem(int appId)
-    {
-        var menuItem = new MenuItem
-        {
-            Header = ResourceStrings.Uncategorized
-        };
 
-        menuItem.Click += (s, e) => ClearAppCategory(appId);
-        return menuItem;
-    }
 
     private void UpdateLinkMenuItems()
     {
@@ -252,25 +270,30 @@ public class AppContextMenuServicer : IAppContextMenuServicer
 
     private async void EditAliasMenuItem_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
+            await EditAliasAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"编辑别名失败: {ex.Message}", ex);
+        }
+    }
+
+    private async Task EditAliasAsync()
+    {
         var app = GetAppFromContextMenu();
         if (app == null) return;
 
-        try
-        {
-            var input = await _uiServicer.ShowInputModalAsync(
-                ResourceStrings.UpdateAlias,
-                ResourceStrings.EnterAlias,
-                app.Alias,
-                ValidateAlias);
+        var input = await _uiServicer.ShowInputModalAsync(
+            ResourceStrings.UpdateAlias,
+            ResourceStrings.EnterAlias,
+            app.Alias,
+            ValidateAlias);
 
-            if (input != null)
-            {
-                await UpdateAppAlias(app, input);
-            }
-        }
-        catch
+        if (input != null)
         {
-            // 输入取消，无需处理异常
+            await UpdateAppAlias(app, input);
         }
     }
 
@@ -286,9 +309,10 @@ public class AppContextMenuServicer : IAppContextMenuServicer
 
     private async System.Threading.Tasks.Task UpdateAppAlias(AppModel app, string newAlias)
     {
-        var appToUpdate = _appData.GetApp(app.ID);
-        appToUpdate.Alias = newAlias;
-        _appData.UpdateApp(appToUpdate);
+        var appToUpdate = await _appData.GetAppAsync(app.ID);
+        if (appToUpdate == null) return;
+        appToUpdate = appToUpdate with { Alias = newAlias };
+        await _appData.UpdateAppAsync(appToUpdate);
 
         // 更新UI显示
         var data = _contextMenu.Tag as ChartsDataModel;
@@ -366,15 +390,15 @@ public class AppContextMenuServicer : IAppContextMenuServicer
         }
     }
 
-    private void SetAppCategory(int appId, CategoryModel category)
+    private async Task SetAppCategoryAsync(int appId, CategoryModel category)
     {
         var data = _contextMenu.Tag as ChartsDataModel;
         UpdateCategoryBadge(data, category);
 
-        var app = _appData.GetApp(appId);
-        app.CategoryID = category.ID;
-        app.Category = category;
-        _appData.UpdateApp(app);
+        var app = await _appData.GetAppAsync(appId);
+        if (app == null) return;
+        app = app with { CategoryID = category.ID, Category = category };
+        await _appData.UpdateAppAsync(app);
     }
 
     private void UpdateCategoryBadge(ChartsDataModel? data, CategoryModel category)
@@ -390,15 +414,15 @@ public class AppContextMenuServicer : IAppContextMenuServicer
         data.BadgeList = newBadgeList;
     }
 
-    private void ClearAppCategory(int appId)
+    private async Task ClearAppCategoryAsync(int appId)
     {
         var data = _contextMenu.Tag as ChartsDataModel;
         if(data == null) return;
         data.BadgeList = new List<ChartBadgeModel>();
-        var app = _appData.GetApp(appId);
-        app.CategoryID = 0;
-        app.Category = null;
-        _appData.UpdateApp(app);
+        var app = await _appData.GetAppAsync(appId);
+        if (app == null) return;
+        app = app with { CategoryID = 0, Category = null };
+        await _appData.UpdateAppAsync(app);
     }
 
     private async Task SetAppLinkAsync(AppModel app, string linkName)

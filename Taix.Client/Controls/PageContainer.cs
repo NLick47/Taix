@@ -4,8 +4,10 @@ using System.Diagnostics;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using ReactiveUI;
 using Taix.Client.Controls.Models;
 using Taix.Client.Models;
@@ -33,22 +35,33 @@ public class PageContainer : TemplatedControl
         AvaloniaProperty.Register<PageContainer, PageContainer>(nameof(Instance));
 
     private readonly List<string> Historys;
-    private readonly Dictionary<string, PageModel> PageCache;
+    private readonly Dictionary<string, double> ScrollPositions;
 
-    private readonly string ProjectName;
+    private static readonly Dictionary<string, Type> PageTypeMap = new()
+    {
+        ["IndexPage"] = typeof(Views.IndexPage),
+        ["DataPage"] = typeof(Views.DataPage),
+        ["SettingPage"] = typeof(Views.SettingPage),
+        ["DetailPage"] = typeof(Views.DetailPage),
+        ["CategoryPage"] = typeof(Views.CategoryPage),
+        ["CategoryAppListPage"] = typeof(Views.CategoryAppListPage),
+        ["CategoryWebSiteListPage"] = typeof(Views.CategoryWebSiteListPage),
+        ["ChartPage"] = typeof(Views.ChartPage),
+        ["WebSiteDetailPage"] = typeof(Views.WebSiteDetailPage),
+    };
 
-    private ContentControl ContentControl;
+    private ContentPresenter ContentPresenter;
     public int Index, OldIndex;
     private bool IsBack;
     private ScrollViewer ScrollViewer;
+    private string? PendingUri;
 
     private double VerticalOffset;
 
     public PageContainer()
     {
-        ProjectName = "Taix.Client";
         Historys = new List<string>();
-        PageCache = new Dictionary<string, PageModel>();
+        ScrollPositions = new Dictionary<string, double>();
         BackCommand = ReactiveCommand.Create<object>(OnBackCommand);
     }
 
@@ -98,13 +111,31 @@ public class PageContainer : TemplatedControl
     {
         base.OnApplyTemplate(e);
         ScrollViewer = e.NameScope.Get<ScrollViewer>("ScrollViewer");
-        ContentControl = e.NameScope.Get<ContentControl>("Frame");
+        ContentPresenter = e.NameScope.Get<ContentPresenter>("Frame");
         Loaded += PageContainer_Loaded;
+        Unloaded += PageContainer_Unloaded;
     }
 
     private void PageContainer_Loaded(object? sender, RoutedEventArgs e)
     {
         Instance = this;
+    }
+
+    private void PageContainer_Unloaded(object? sender, RoutedEventArgs e)
+    {
+        Loaded -= PageContainer_Loaded;
+        Unloaded -= PageContainer_Unloaded;
+    }
+
+    protected override void OnAttachedToLogicalTree(LogicalTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToLogicalTree(e);
+        if (PendingUri != null)
+        {
+            var uri = PendingUri;
+            PendingUri = null;
+            Uri = uri;
+        }
     }
 
 
@@ -123,19 +154,15 @@ public class PageContainer : TemplatedControl
 
             var preIndex = Index + 1;
 
-            //  从缓存中移除上一页
-
+            //  dispose the page being navigated away from
             var pageUri = Historys[preIndex];
-            if (PageCache.ContainsKey(pageUri))
+            if (Content is UserControl oldPage && oldPage.DataContext is IDisposable disposable)
             {
-                var page = PageCache[pageUri];
-                var vm = page.Instance.DataContext as ModelBase;
-                vm?.Dispose();
-                page.Instance.Content = null;
-                page.Instance.DataContext = null;
-                PageCache.Remove(pageUri);
+                disposable.Dispose();
+                oldPage.DataContext = null;
             }
 
+            ScrollPositions.Remove(pageUri);
             Historys.RemoveRange(preIndex, 1);
 
             IsBack = true;
@@ -159,11 +186,18 @@ public class PageContainer : TemplatedControl
     {
         var control = e.Sender as PageContainer;
         if (string.IsNullOrEmpty(e.NewValue?.ToString())) return;
-        var oldUri = e.OldValue?.ToString();
-        if (oldUri != null && control.PageCache.ContainsKey(oldUri))
+
+        // 如果模板尚未应用，挂起本次导航，等附加到逻辑树后再执行
+        if (control.ContentPresenter == null || control.ScrollViewer == null)
         {
-            var page = control.PageCache[oldUri];
-            page.ScrollValue = control.ScrollViewer.Offset.Y;
+            control.PendingUri = e.NewValue?.ToString();
+            return;
+        }
+
+        var oldUri = e.OldValue?.ToString();
+        if (oldUri != null)
+        {
+            control.ScrollPositions[oldUri] = control.ScrollViewer?.Offset.Y ?? 0;
         }
 
         control.LoadPage();
@@ -172,86 +206,99 @@ public class PageContainer : TemplatedControl
 
     private PageModel GetPage()
     {
-        UserControl page = null;
-        if (PageCache.ContainsKey(Uri) && !IndexUriList.Contains(Uri)) return PageCache[Uri];
-        var pageType = Type.GetType(ProjectName + ".Views." + Uri);
-        if (pageType != null) page = ServiceLocator.GetRequiredService(pageType) as UserControl;
-        var newPage = new PageModel
+        UserControl? page = null;
+        if (PageTypeMap.TryGetValue(Uri, out var pageType))
+            page = ServiceLocator.GetRequiredService(pageType) as UserControl;
+        return new PageModel
         {
             Instance = page,
-            ScrollValue = 0
+            ScrollValue = ScrollPositions.TryGetValue(Uri, out var scroll) ? scroll : 0
         };
-
-        return newPage;
     }
 
 
     private void LoadPage()
     {
-        if (Uri != string.Empty)
+        try
         {
-            if (IndexUriList != null && IndexUriList.Contains(Uri))
+            // 模板元素未就绪时不执行加载，挂起等待逻辑树就绪
+            if (ContentPresenter == null || ScrollViewer == null)
             {
-                Historys.Clear();
-                Index = 0;
-                OldIndex = 0;
-                Historys.Add(Uri);
-                if (!IsBack) ClearCache();
+                PendingUri = Uri;
+                return;
             }
-            else
+
+            if (Content is UserControl oldPage && oldPage.DataContext is ModelBase oldVm)
             {
-                //处理历史记录
-                if (OldIndex == Index)
+                oldVm.OnNavigatedFrom();
+                if (oldVm is IDisposable disposable)
+                    disposable.Dispose();
+            }
+
+            if (Uri != string.Empty)
+            {
+                if (IndexUriList != null && IndexUriList.Contains(Uri))
                 {
-                    //新开
+                    Historys.Clear();
+                    Index = 0;
+                    OldIndex = 0;
                     Historys.Add(Uri);
-                    Index++;
+                    if (!IsBack) ClearCache();
+                }
+                else
+                {
+                    //处理历史记录
+                    if (OldIndex == Index)
+                    {
+                        //新开
+                        Historys.Add(Uri);
+                        Index++;
+                    }
+
+                    OldIndex = Index;
                 }
 
-                OldIndex = Index;
-            }
+                var page = GetPage();
 
-            var page = GetPage();
+                if (page?.Instance != null)
+                {
+                    // 安全序列：先分离旧内容逻辑树，再附加新内容，避免 Avalonia 12 逻辑树竞态
+                    ContentPresenter.Content = null;
+                    ContentPresenter.Content = page.Instance;
 
+                    // 同步 Content 属性供外部 Binding 观察（不再驱动模板）
+                    SetValue(ContentProperty, page.Instance);
 
-            if (page != null)
-            {
-                Content = page.Instance;
+                    //  滚动条位置处理
+                    if (IsBack)
+                        ScrollViewer.Offset = new Vector(0, page.ScrollValue);
+                    else
+                        ScrollViewer?.ScrollToHome();
 
-                if (!PageCache.ContainsKey(Uri)) PageCache.Add(Uri, page);
+                    OnLoadPaged?.Invoke(this, EventArgs.Empty);
 
-                //  滚动条位置处理
-                if (IsBack)
-                    ScrollViewer.Offset = new Vector(0, PageCache[Uri].ScrollValue);
+                    if (page.Instance.DataContext is ModelBase newVm)
+                        _ = newVm.OnNavigatedToAsync();
+                }
                 else
-                    ScrollViewer?.ScrollToHome();
-
-                OnLoadPaged?.Invoke(this, EventArgs.Empty);
-            }
-            else
-            {
-                Debug.WriteLine("找不到Page：" + Uri + "，请确认已被注入");
+                {
+                    Debug.WriteLine("找不到Page：" + Uri + "，请确认已被注入");
+                }
             }
         }
-
-        IsBack = false;
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"页面加载失败 [{Uri}]: {ex}");
+            throw;
+        }
+        finally
+        {
+            IsBack = false;
+        }
     }
 
     private void ClearCache()
     {
-        if (PageCache != null)
-        {
-            foreach (var key in PageCache.Keys)
-            {
-                var page = PageCache[key];
-                var vm = page.Instance.DataContext as ModelBase;
-                vm?.Dispose();
-                page.Instance.Content = null;
-                page.Instance.DataContext = null;
-                page.Instance = null;
-            }
-
-            PageCache.Clear();
-        }
+        ScrollPositions.Clear();
     }
 }

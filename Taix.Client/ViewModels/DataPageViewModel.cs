@@ -56,7 +56,6 @@ public class DataPageViewModel : DataPageModel
         TabbarData = [ResourceStrings.Daily, ResourceStrings.Monthly, ResourceStrings.Yearly];
         AppContextMenu = _appContextMenuService.GetContextMenu();
 
-        // 先初始化日期属性，避免 ShowType 的 skipInitial: false 触发时使用错误日期
         DayDate = DateTime.Now.Date;
         MonthDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
         YearDate = new DateTime(DateTime.Now.Year, 1, 1);
@@ -84,9 +83,17 @@ public class DataPageViewModel : DataPageModel
             AppContextMenu = ShowType.Id == 0
                 ? _appContextMenuService.GetContextMenu()
                 : _webSiteContextMenuService.GetContextMenu();
-        }, skipInitial: false);
+        });
 
         TabbarSelectedIndex = 0;
+    }
+
+    public override Task OnNavigatedToAsync()
+    {
+        _ = LoadDataAsync(DayDate, 0);
+        _ = LoadDataAsync(MonthDate, 1);
+        _ = LoadDataAsync(YearDate, 2);
+        return Task.CompletedTask;
     }
 
     private Task OnDateChangedAsync(DateTime date, int dataType)

@@ -3,7 +3,7 @@
 namespace Taix.Client.Shared.Models.Config;
 
 /// <summary>
-///     常规
+/// 常规
 /// </summary>
 public class GeneralModel
 {
@@ -63,11 +63,26 @@ public class GeneralModel
         Group = "Features", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
     public bool IsWebEnabled { get; set; } = false;
 
-    [Config(Name = "保存窗口大小", Description = "重启软件时恢复上次窗口尺寸", Group = "界面", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.ZhCn)]
+    [Config(Name = "系统托盘", Description = "关闭窗口时最小化到系统托盘而非退出程序", Group = "界面",CultureCode = CultureCode.ZhCn)]
+    [Config(Name = "System Tray", Description = "Minimize to system tray instead of exiting when closing window", Group = "Interface", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
+    public bool IsEnableTray { get; set; } = false;
+
+    [Config(Name = "保存窗口大小", Description = "重启软件时恢复上次窗口尺寸", Group = "界面", CultureCode = CultureCode.ZhCn)]
     [Config(Name = "Save Window Size", Description = "Restore the last window size when restarting", Group = "Interface", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
     public bool IsSaveWindowSize { get; set; } = false;
 
     public double WindowWidth { get; set; }
 
     public double WindowHeight { get; set; }
+
+    [Config(Name = "窗口渐变", Description = "启用窗口背景渐变效果", Group = "界面", CultureCode = CultureCode.ZhCn)]
+    [Config(Name = "Window Gradient", Description = "Enable window background gradient effect", Group = "Interface", CultureCode = CultureCode.EnUs)]
+    public bool IsWindowGradient { get; set; } = true;
+
+    public string SyncUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// ChartPage 分类筛选器隐藏的分类 ID 列表（JSON 数组字符串）
+    /// </summary>
+    public string ChartHiddenCategoryIds { get; set; } = string.Empty;
 }

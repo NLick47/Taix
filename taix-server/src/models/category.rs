@@ -13,8 +13,8 @@ pub struct CategoryModel {
     #[sqlx(rename = "Color")]
     pub color: Option<String>,
     #[serde(default)]
-    #[sqlx(rename = "IsDirectoryMath")]
-    pub is_directory_math: bool,
+    #[sqlx(rename = "IsDirectoryMatch")]
+    pub is_directory_match: bool,
     #[sqlx(rename = "Directories")]
     pub directories: Option<String>,
     #[serde(default)]

@@ -95,7 +95,7 @@ public class InputBox : TextBox
     }
 
     /// <summary>
-    ///     图标
+    /// 图标
     /// </summary>
     public IconTypes Icon
     {

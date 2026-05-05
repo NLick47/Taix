@@ -9,7 +9,9 @@
         <Styles>
             <Style Selector="controls|DatePickerBarItem[IsSelected=True]">
                 <Style Selector="^ /template/ Border#Bg">
-                    <Setter Property="Background" Value="{DynamicResource ThemeBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource TabOptionSelectedBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource TabOptionSelectedBorderBrush}" />
+                    <Setter Property="BorderThickness" Value="0.5" />
                 </Style>
 
                 <Style Selector="^ /template/ TextBlock#Text">
@@ -18,7 +20,7 @@
             </Style>
 
             <Style Selector="controls|DatePickerBarItem:pointerover /template/ Border#Bg">
-                <Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}" />
+                <Setter Property="Background" Value="{DynamicResource NavHoverGlassBrush}" />
             </Style>
 
             <Style Selector="controls|DatePickerBarItem[IsDisabled=True]">
@@ -36,8 +38,8 @@
                 <Border>
                     <Grid Margin="2">
                         <Border x:Name="Bg" Background="{DynamicResource DatePickerItemBgBrush}"
-                                Width="45" Height="45"
-                                CornerRadius="25">
+                                Width="46" Height="46"
+                                CornerRadius="23">
                             <Border.Transitions>
                                 <Transitions>
                                     <BrushTransition Property="Background" Duration="0.18" />

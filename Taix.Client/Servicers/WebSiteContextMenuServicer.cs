@@ -3,19 +3,21 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Window;
 using Taix.Client.Logging;
+using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Models.Db;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.ViewModels;
 
 namespace Taix.Client.Servicers;
 
-public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer
+public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposable
 {
     private readonly IAppConfig _appConfig;
 
@@ -31,6 +33,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer
     private MenuItem _open;
     private MenuItem _setCategory;
     private MenuItem _site;
+    private IDisposable? _languageSubscription;
 
     public WebSiteContextMenuServicer(
         MainViewModel main,
@@ -49,7 +52,12 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer
     public void Init()
     {
         InitializeMenuItems();
-        SystemLanguage.CurrentLanguageChanged += (s, e) => UpdateMenuTexts();
+        _languageSubscription = _appConfig.WhenLanguageChanged(UpdateMenuTexts);
+    }
+
+    public void Dispose()
+    {
+        _languageSubscription?.Dispose();
     }
 
     public ContextMenu GetContextMenu()
@@ -104,40 +112,54 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer
 
     private async void EditAlias_ClickAsync(object sender, RoutedEventArgs e)
     {
-        var data = _menu.Tag as ChartsDataModel;
-        var site = data.Data as WebSiteModel;
-
         try
         {
-            var input = await _uIServicer.ShowInputModalAsync(ResourceStrings.EditAlias, ResourceStrings.EnterAlias,
-                site.Alias, val =>
-                {
-                    if (val?.Length > 15)
-                    {
-                        _main.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
-                        return false;
-                    }
-
-                    return true;
-                });
-
-            //  开始更新别名
-
-            data.Name = string.IsNullOrEmpty(input) ? site.Title : input;
-            site.Alias = input;
-
-            await _webData.UpdateAsync(site);
-
-            _main.Success(ResourceStrings.AliasUpdated);
-            Debug.WriteLine("输入内容：" + input);
+            await EditAliasAsync();
         }
-        catch
+        catch (Exception ex)
         {
-            //  输入取消，无需处理异常
+            Logger.Error($"编辑别名失败: {ex.Message}", ex);
         }
     }
 
-    private void _menu_ContextMenuOpening(object sender, CancelEventArgs e)
+    private async Task EditAliasAsync()
+    {
+        var data = _menu.Tag as ChartsDataModel;
+        var site = data.Data as WebSiteModel;
+
+        var input = await _uIServicer.ShowInputModalAsync(ResourceStrings.EditAlias, ResourceStrings.EnterAlias,
+            site.Alias, val =>
+            {
+                if (val?.Length > 15)
+                {
+                    _main.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
+                    return false;
+                }
+
+                return true;
+            });
+
+        data.Name = string.IsNullOrEmpty(input) ? site.Title : input;
+        site = site with { Alias = input };
+
+        await _webData.UpdateAsync(site);
+
+        _main.Success(ResourceStrings.AliasUpdated);
+    }
+
+    private async void _menu_ContextMenuOpening(object sender, CancelEventArgs e)
+    {
+        try
+        {
+            await _menu_ContextMenuOpeningAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"网站上下文菜单打开失败: {ex.Message}", ex);
+        }
+    }
+
+    private async Task _menu_ContextMenuOpeningAsync()
     {
         if (_menu.Tag == null) return;
         var data = _menu.Tag as ChartsDataModel;
@@ -150,7 +172,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer
         else
             _block.Header = ResourceStrings.IgnoreSite;
 
-        UpdateCategoryMenu();
+        await UpdateCategoryMenuAsync();
     }
 
     private void Open_Click(object sender, PointerPressedEventArgs e)
@@ -208,14 +230,15 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer
     }
 
 
-    private async void UpdateCategoryMenu()
+    private async Task UpdateCategoryMenuAsync()
     {
         _setCategory.Items.Clear();
 
         var data = _menu.Tag as ChartsDataModel;
         var site = data.Data as WebSiteModel;
         var categories = await _webData.GetWebSiteCategoriesAsync(true);
-        var siteCategoryId = (await _webData.GetWebSiteAsync(site.ID)).CategoryID;
+        var siteFromCache = await _webData.GetWebSiteAsync(site.ID);
+        var siteCategoryId = siteFromCache?.CategoryID ?? 0;
         foreach (var category in categories)
         {
             var categoryMenu = new MenuItem();
@@ -224,17 +247,17 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer
             categoryMenu.Header = category.Name;
             if (category.IsSystem)
             {
-                categoryMenu.Click += (s, e) => { ClearSiteCategory(); };
+                categoryMenu.Click += async (s, e) => await ClearSiteCategoryAsync();
             }
             else
             {
-                categoryMenu.Click += (s, e) => { UpdateSiteCategory(data, category.ID); };
+                categoryMenu.Click += async (s, e) => await UpdateSiteCategoryAsync(data, category.ID);
             }
             _setCategory.Items.Add(categoryMenu);
         }
     }
 
-    private async void ClearSiteCategory()
+    private async Task ClearSiteCategoryAsync()
     {
         var data = _menu.Tag as ChartsDataModel;
         if (data != null)
@@ -245,15 +268,14 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer
     }
 
 
-    private async void UpdateSiteCategory(ChartsDataModel data, int categoryId)
+    private async Task UpdateSiteCategoryAsync(ChartsDataModel data, int categoryId)
     {
         var category = await _webData.GetWebSiteCategoryAsync(categoryId);
         if (category != null)
         {
             var site = data.Data as WebSiteModel;
             await _webData.UpdateWebSitesCategoryAsync(new[] { site.ID }, categoryId);
-            site.CategoryID = categoryId;
-            site.Category = category;
+            site = site with { CategoryID = categoryId, Category = category };
 
             var newBadgeList = new List<ChartBadgeModel>();
             if (data.BadgeList != null)

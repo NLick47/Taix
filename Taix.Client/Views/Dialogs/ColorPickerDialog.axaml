@@ -9,7 +9,7 @@
         BorderBrush="Transparent"
         BorderThickness="0"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="NoChrome"
+        SystemDecorations="None"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         Width="450"
@@ -24,7 +24,8 @@
                 x:Name="TitleBar"
                 Panel.ZIndex="999"
                 Height="{DynamicResource WindowTitleBarHeight}"
-                VerticalAlignment="Top">
+                VerticalAlignment="Top"
+                Background="Transparent">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />

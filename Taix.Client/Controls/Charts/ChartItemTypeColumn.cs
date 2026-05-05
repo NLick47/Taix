@@ -24,7 +24,6 @@ public class ChartItemTypeColumn : TemplatedControl
 
 
     private readonly bool isRendering = false;
-    private bool IsAddEvent;
     private Rectangle ValueBlockObj;
     private Border ValueContainer;
 
@@ -64,7 +63,8 @@ public class ChartItemTypeColumn : TemplatedControl
         base.OnApplyTemplate(e);
         ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
         ValueContainer = e.NameScope.Get<Border>("ValueContainer");
-        if (!IsAddEvent) Loaded += ChartItemTypeColumn_Loaded;
+        Loaded -= ChartItemTypeColumn_Loaded;
+        Loaded += ChartItemTypeColumn_Loaded;
     }
 
     private void ChartItemTypeColumn_Unloaded(object sender, RoutedEventArgs e)
@@ -76,7 +76,6 @@ public class ChartItemTypeColumn : TemplatedControl
     private void ChartItemTypeColumn_Loaded(object sender, RoutedEventArgs e)
     {
         Render();
-        IsAddEvent = true;
     }
 
     private void Render()

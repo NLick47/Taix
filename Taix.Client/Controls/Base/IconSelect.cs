@@ -115,7 +115,7 @@ public class IconSelect : TemplatedControl
 
     private void HandleWindowEvents(bool isOpen)
     {
-        var window = this.GetVisualRoot() as Avalonia.Controls.Window;
+        var window = this.VisualRoot as Avalonia.Controls.Window;
         if (window != null)
         {
             if (isOpen)

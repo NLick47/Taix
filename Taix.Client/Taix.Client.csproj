@@ -1,79 +1,70 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
-        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <PublishTrimmed>true</PublishTrimmed>
-        <TrimMode>full</TrimMode>
         <AssemblyName>Taix</AssemblyName>
+        <PublishAot>true</PublishAot>
+        <PublishSingleFile>true</PublishSingleFile>
+        <SelfContained>true</SelfContained>
         <Version>$(APP_VERSION)</Version>
         <ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
-
-   
-        <ServerGarbageCollection>false</ServerGarbageCollection>
-        <RetainVMGarbageCollection>false</RetainVMGarbageCollection>
-
-      
-        <PublishSingleFile>false</PublishSingleFile>
-        <SelfContained>true</SelfContained>
-
-        <AvaloniaVersion>11.3.9</AvaloniaVersion>
+        <AvaloniaVersion>12.0.2</AvaloniaVersion>
         <AvaloniaReactiveUIVersion>11.2.8</AvaloniaReactiveUIVersion>
         <AvaloniaXamlBehaviorsVersion>11.3.0.1</AvaloniaXamlBehaviorsVersion>
     </PropertyGroup>
-    
-    
+
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)"/>
-        <PackageReference Include="Avalonia.Controls.ColorPicker" Version="$(AvaloniaVersion)"/>
-        <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)"/>
-        <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)"/>
-        <PackageReference Include="Avalonia.ReactiveUI" Version="$(AvaloniaReactiveUIVersion)"/>
-        <PackageReference Include="Avalonia.Themes.Simple" Version="$(AvaloniaVersion)"/>
-        <PackageReference Include="Avalonia.Xaml.Behaviors" Version="$(AvaloniaXamlBehaviorsVersion)"/>
-        <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1"/>
-        <PackageReference Include="MiniExcel" Version="1.41.0"/>
+        <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
+        <PackageReference Include="Avalonia.Controls.ColorPicker" Version="$(AvaloniaVersion)" />
+        <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+        <!--Condition below is needed to remove AvaloniaUI.DiagnosticsSupport package from build output in Release configuration.-->
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.0" />
+        <PackageReference Include="Avalonia.Themes.Simple" Version="$(AvaloniaVersion)" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+        <PackageReference Include="MiniExcel" Version="1.41.0" />
+        <PackageReference Include="ReactiveUI.Avalonia" Version="12.0.1" />
+        <PackageReference Include="Xaml.Behaviors.Avalonia" Version="12.0.0" />
     </ItemGroup>
 
- 
-
     <ItemGroup>
-        <AvaloniaResource Include="Resources\Emoji\(*).png"/>
+        <TrimmerRootDescriptor Include="TrimmerRoots.xml" />
+    </ItemGroup>
+    <ItemGroup>
+        <AvaloniaResource Include="Resources\Emoji\(*).png" />
 
         <AvaloniaResource Include="Resources\Fonts\Segoe Fluent Icons.ttf">
             <CopyToOutputDirectory>Never</CopyToOutputDirectory>
         </AvaloniaResource>
 
-        <AvaloniaResource Include="Resources\Icons\*.ico"/>
-        <AvaloniaResource Include="Resources\Icons\defaultIcon.png"/>
+        <AvaloniaResource Include="Resources\Icons\*.ico" />
+        <AvaloniaResource Include="Resources\Icons\defaultIcon.png" />
     </ItemGroup>
 
     <ItemGroup>
-        <UpToDateCheckInput Remove="Themes\Navigation\NavigationItem.axaml"/>
+        <UpToDateCheckInput Remove="Themes\Navigation\NavigationItem.axaml" />
     </ItemGroup>
 
     <ItemGroup>
-        <UpToDateCheckInput Remove="Views\IndexPage.axaml"/>
+        <UpToDateCheckInput Remove="Views\IndexPage.axaml" />
     </ItemGroup>
 
     <ItemGroup>
-        <UpToDateCheckInput Remove="Views\DetailPage.axaml"/>
+        <UpToDateCheckInput Remove="Views\DetailPage.axaml" />
     </ItemGroup>
 
     <ItemGroup>
-        <UpToDateCheckInput Remove="Themes\Base\Img.axaml"/>
+        <UpToDateCheckInput Remove="Themes\Base\Img.axaml" />
     </ItemGroup>
 
     <ItemGroup>
-        <UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeCard.axaml"/>
+        <UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeCard.axaml" />
     </ItemGroup>
 
     <ItemGroup>
-        <UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeMonth.axaml"/>
+        <UpToDateCheckInput Remove="Themes\Charts\ChartsItemTypeMonth.axaml" />
     </ItemGroup>
 
     <ItemGroup>
@@ -83,17 +74,17 @@
     </ItemGroup>
 
     <ItemGroup>
-        <UpToDateCheckInput Remove="Themes\Base\IconSelect.axaml"/>
+        <UpToDateCheckInput Remove="Themes\Base\IconSelect.axaml" />
     </ItemGroup>
 
     <ItemGroup>
-        <UpToDateCheckInput Remove="Views\ChartPage.axaml"/>
+        <UpToDateCheckInput Remove="Views\ChartPage.axaml" />
     </ItemGroup>
 
     <ItemGroup>
       <AdditionalFiles Include="Resources\Localization\StringResources.cn.axaml" />
       <AdditionalFiles Include="Resources\Localization\StringResources.en.axaml" />
     </ItemGroup>
-    
-    
+
+
 </Project>

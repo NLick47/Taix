@@ -4,13 +4,16 @@
                     xmlns:controls="using:Taix.Client.Controls.Select">
 
     <ControlTheme x:Key="{x:Type controls:TabSwitch}" TargetType="controls:TabSwitch">
-        <Setter Property="Background" Value="{DynamicResource GrayDark}" />
+        <Setter Property="Background" Value="{DynamicResource NavGlassBackgroundBrush}" />
         <Setter Property="Padding" Value="4" />
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Background="{TemplateBinding Background}"
-                        CornerRadius="12"
-                        Padding="{TemplateBinding Padding}">
+                        CornerRadius="16"
+                        Padding="{TemplateBinding Padding}"
+                        BorderBrush="{DynamicResource NavGlassBorderBrush}"
+                        BorderThickness="1"
+                        BoxShadow="0 4 12 0 #15000000">
                     <StackPanel x:Name="ItemsContainer"
                                 Orientation="Horizontal"
                                 Spacing="4" />

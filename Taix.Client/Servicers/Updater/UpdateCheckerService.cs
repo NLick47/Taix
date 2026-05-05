@@ -41,11 +41,11 @@ public class UpdateCheckerService
         }
     }
 
-    private async Task<(GithubRelease release, dynamic info)> GetReleaseInfoAsync()
+    private async Task<(GithubRelease release, GithubRelease.VersionInfo? info)> GetReleaseInfoAsync()
     {
         var release = new GithubRelease("https://api.github.com/repos/nlick47/taix/releases/latest",
-            Assembly.GetExecutingAssembly().GetName().Version.ToString());
-        var info = await release.GetRequest();
+            Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? string.Empty);
+        var info = await release.GetRequestAsync();
         return (release, info);
     }
 

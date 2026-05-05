@@ -25,6 +25,11 @@ public class UIServicer : IUIServicer, IDialogService
         return _window.ShowInputModalAsync(title, placeholder, value ?? string.Empty, validate);
     }
 
+    public Task<int> ShowActionDialogAsync(string title, string message, string[] buttons)
+    {
+        return _window.ShowActionDialogAsync(title, message, buttons);
+    }
+
     public async Task<string?> ShowFolderPickerAsync(string? title = null)
     {
         var storage = _window.StorageProvider;

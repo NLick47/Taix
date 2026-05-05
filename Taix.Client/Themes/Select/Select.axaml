@@ -8,7 +8,7 @@
         <Styles>
             <Style Selector="controls|Select:pointerover">
                 <Style Selector="^ /template/ Border#Main">
-                    <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource NavHoverGlassBrush}" />
                 </Style>
             </Style>
             <Style Selector="controls|Select[IsShowIcon=False]">
@@ -18,24 +18,15 @@
             </Style>
         </Styles>
         <Setter Property="Padding" Value="18,10" />
-        <Setter Property="Background" Value="{DynamicResource StandardBackgroundBrush}" />
+        <Setter Property="Background" Value="{DynamicResource NavGlassBackgroundBrush}" />
         <Setter Property="Template">
             <ControlTemplate>
                 <Border HorizontalAlignment="Left">
                     <Grid>
-                        <Border Background="{TemplateBinding Background}" ZIndex="-1"
-                                Width="{Binding ElementName=Main,Path=Bounds.Width}"
-                                Height="{Binding ElementName=Main,Path=Bounds.Height}"
-                                CornerRadius="{Binding ElementName=Main,Path=CornerRadius}"
-                                Padding="{TemplateBinding Padding}">
-                            <Border.Effect>
-                                <DropShadowEffect Color="#d8d2d2" BlurRadius="1" Opacity="0.1" />
-                            </Border.Effect>
-
-                        </Border>
-
                         <Border x:Name="Main" Background="{TemplateBinding Background}"
-                                Padding="{TemplateBinding Padding}" CornerRadius="6">
+                                Padding="{TemplateBinding Padding}" CornerRadius="10"
+                                BorderBrush="{DynamicResource NavGlassBorderBrush}"
+                                BorderThickness="1">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
 
                                 <base:Img x:Name="Img"
@@ -64,10 +55,10 @@
                             PlacementTarget="{Binding ElementName=Main}"
                             IsOpen="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:Select}}, Path=IsOpen,Mode=TwoWay}">
                             <Border
-                                CornerRadius="10"
+                                CornerRadius="12"
                                 BorderBrush="{DynamicResource PopupBorderBrush}"
                                 BorderThickness="1"
-                                Background="{DynamicResource StandardBackgroundBrush2}" Padding="5" MaxHeight="300"
+                                Background="{DynamicResource PopupBackgroundBrush}" Padding="8" MaxHeight="300"
                                 Margin="10">
                                 <Border.Effect>
                                     <DropShadowEffect BlurRadius="10" Color="Gray" Opacity=".1" />

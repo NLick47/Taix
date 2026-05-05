@@ -6,28 +6,17 @@ use windows::Win32::Foundation::HWND;
 pub struct WindowManager;
 
 impl WindowManager {
-    pub fn new() -> Self {
-        Self
-    }
-
-    pub fn get_window_info(&self, hwnd: HWND) -> WindowInfo {
+    pub fn get_window_info(hwnd: HWND) -> Option<WindowInfo> {
         let title = get_window_text(hwnd);
-        let rect = match get_window_rect(hwnd) {
-            Some(r) => r,
-            None => {
-                error!("[WindowManager] GetWindowRect failed for hwnd={:?}", hwnd);
-                return WindowInfo::empty();
-            }
-        };
+        if get_window_rect(hwnd).is_none() {
+            error!("[WindowManager] GetWindowRect failed for hwnd={:?}", hwnd);
+            return None;
+        }
         let class_name = get_window_class_name(hwnd);
-        WindowInfo {
+        Some(WindowInfo {
             class_name,
             title,
             handle: hwnd.0 as isize,
-            width: rect.right - rect.left,
-            height: rect.bottom - rect.top,
-            x: rect.left,
-            y: rect.top,
-        }
+        })
     }
 }

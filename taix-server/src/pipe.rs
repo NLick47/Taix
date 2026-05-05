@@ -44,22 +44,17 @@ pub async fn start(state: Arc<SentryState>, pool: SqlitePool) {
             continue;
         }
 
-        let connected = server;
-
-        match create_server(false) {
-            Ok(s) => server = s,
+        let next = match create_server(false) {
+            Ok(s) => s,
             Err(e) => {
                 tracing::error!("[Pipe] Failed to create next server: {}", e);
-                let semaphore = state.semaphore.clone();
-                let state = state.clone();
-                let pool = pool.clone();
-                tokio::spawn(async move {
-                    let Ok(_permit) = semaphore.acquire().await else { return; };
-                    if let Err(e) = handle_client(connected, state, pool).await {
-                        tracing::warn!("[Pipe] Client handler error: {}", e);
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                loop {
+                    if let Ok(s) = create_server(false) {
+                        break s;
                     }
-                });
-                return;
+                    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                }
             }
         };
 
@@ -68,10 +63,12 @@ pub async fn start(state: Arc<SentryState>, pool: SqlitePool) {
         let pool = pool.clone();
         tokio::spawn(async move {
             let Ok(_permit) = semaphore.acquire().await else { return; };
-            if let Err(e) = handle_client(connected, state, pool).await {
+            if let Err(e) = handle_client(server, state, pool).await {
                 tracing::warn!("[Pipe] Client handler error: {}", e);
             }
         });
+
+        server = next;
     }
 }
 
@@ -118,14 +115,19 @@ async fn handle_client(
                     tracing::info!("[Pipe] Broadcast wake");
                 }
                 "app" => {
-                    if *state.is_sleep.read().await {
-                        tracing::debug!("[Pipe] Skip app duration update while sleeping");
-                        continue;
-                    }
                     if let Some(extra) = msg.extra {
+                        let now_ts = chrono::Utc::now().timestamp();
+                        let min_ts = 1577836800i64;
+                        if extra.a < min_ts || extra.a > now_ts + 60 {
+                            tracing::warn!(
+                                "[Pipe] Invalid timestamp {} for app {}, dropping",
+                                extra.a, extra.p
+                            );
+                            continue;
+                        }
+
                         let date_time = chrono::DateTime::from_timestamp(extra.a, 0)
-                            .map(|dt| dt.with_timezone(&chrono::Local).naive_local())
-                            .unwrap_or_else(|| chrono::Local::now().naive_local());
+                            .unwrap_or_else(|| chrono::Utc::now());
 
                         let req = UpdateAppDurationRequest {
                             process_name: extra.p,
@@ -136,7 +138,9 @@ async fn handle_client(
                             description: extra.desc,
                         };
 
-                        if let Err(e) = AppTimerService::update_app_duration(&pool, req).await {
+                        if let Err(e) = AppTimerService::update_app_duration(
+                            &pool, req, &state.config_service
+                        ).await {
                             tracing::warn!("[Pipe] Failed to update app duration: {}", e);
                         } else {
                             tracing::debug!("[Pipe] App duration updated");

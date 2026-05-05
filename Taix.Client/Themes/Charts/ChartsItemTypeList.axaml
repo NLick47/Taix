@@ -72,9 +72,10 @@
                                 Background="{DynamicResource ListItemIconBgBrush}" CornerRadius="6" Width="50"
                                 Height="50"
                                 HorizontalAlignment="Left">
-                            <Image x:Name="IconObj" Width="{TemplateBinding IconSize}"
-                                   Height="{TemplateBinding IconSize}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <base:Img x:Name="IconObj" Width="{TemplateBinding IconSize}"
+                                             Height="{TemplateBinding IconSize}"
+                                             URL="{Binding Data.Icon,RelativeSource={RelativeSource TemplatedParent}}"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
 
                         <StackPanel Grid.Column="1" x:Name="ValueContainer" VerticalAlignment="Center">

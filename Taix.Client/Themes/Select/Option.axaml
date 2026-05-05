@@ -35,7 +35,7 @@
                     </Style>
                 </Style>
                 <Style Selector="^:pointerover">
-                    <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource NavHoverGlassBrush}" />
                 </Style>
 
             </Style>
@@ -43,6 +43,11 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Border CornerRadius="10" Background="{TemplateBinding Background}" Padding="10,8">
+                    <Border.Transitions>
+                        <Transitions>
+                            <BrushTransition Property="Background" Duration="0:0:0.15" />
+                        </Transitions>
+                    </Border.Transitions>
                     <Border>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -60,21 +65,17 @@
                                     <Border
                                         Width="20"
                                         Height="20"
-                                        Background="{DynamicResource ThemeBrush}"
-                                        BorderBrush="{DynamicResource ThemeBrush}"
+                                        Background="{DynamicResource TabOptionSelectedBrush}"
+                                        BorderBrush="{DynamicResource TabOptionSelectedBorderBrush}"
                                         BorderThickness="2"
                                         CornerRadius="20"
-                                        x:Name="CheckStyle" IsVisible="False">
-                                        <Border.Effect>
-                                            <DropShadowEffect BlurRadius="10" Color="Gray" Opacity=".3" />
-                                        </Border.Effect>
-                                    </Border>
+                                        x:Name="CheckStyle" IsVisible="False" />
 
                                     <!--未选中-->
                                     <Border
                                         Width="20"
                                         Height="20"
-                                        BorderBrush="#ccc"
+                                        BorderBrush="{DynamicResource WindowGlassHighlightBrush}"
                                         BorderThickness="2"
                                         CornerRadius="20"
                                         x:Name="UnCheckStyle" IsVisible="False" />

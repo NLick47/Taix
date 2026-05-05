@@ -22,7 +22,7 @@ public class FileLogger : ILogger, IDisposable
         _options = new FileLoggerOptions();
         configure?.Invoke(_options);
 
-        CleanupOldLogs();
+        Task.Run(CleanupOldLogs);
 
         _autoSaveTimer = new Timer(_options.AutoSaveInterval);
         _autoSaveTimer.Elapsed += (_, _) => Flush();

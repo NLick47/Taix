@@ -28,6 +28,7 @@
 
     <system:String x:Key="Today">Today</system:String>
     <system:String x:Key="More">More</system:String>
+    <system:String x:Key="CategoryFilterLabel">Category Filter: </system:String>
 
 
     <!--base-->
@@ -129,6 +130,8 @@
     <system:String x:Key="DefaultView">Default View</system:String>
     <system:String x:Key="SummaryView">Summary View</system:String>
     <system:String x:Key="CategoryView">Category View</system:String>
+    <system:String x:Key="TrendView">Trend</system:String>
+    <system:String x:Key="ColumnView">Column</system:String>
     <system:String x:Key="Uncategorized">Uncategorized</system:String>
 
     <system:String x:Key="ViewCategoryAppList">View Category App List</system:String>
@@ -299,6 +302,8 @@
 
     <system:String x:Key="Cancel">Cancel</system:String>
     <system:String x:Key="RestoreSystemCategory">Restore System Category</system:String>
+    <system:String x:Key="CategoryHasApps">This category has {0} apps. They will be moved to the default category  after deletion</system:String>
+    <system:String x:Key="CategoryHasSites">This category has {0} sites. They will be moved to the default category after deletion</system:String>
 
     <system:String x:Key="ChooseColor">Choose color</system:String>
     <system:String x:Key="CustomColor">Custom color</system:String>

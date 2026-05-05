@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
+using Taix.Client.Logging;
 using Taix.Client.Platform.Abstractions.Primitives;
 using Taix.Client.Resources.Localization;
+using Taix.Client.Shared.Event;
+using Taix.Client.Shared.Servicers.Interfaces;
 
 namespace Taix.Client;
 
@@ -43,7 +46,36 @@ public class SystemLanguage
         }
     }
 
-    public static event EventHandler CurrentLanguageChanged;
+    private static IAppConfig? _appConfig;
+    private static EventHandler<ConfigChangedEventArgs>? _configChangedHandler;
+
+    /// <summary>
+    /// 将 SystemLanguage 与配置系统关联，后续配置中的语言变更会自动同步。
+    /// </summary>
+    public static void AttachConfig(IAppConfig appConfig)
+    {
+        if (_appConfig != null && _configChangedHandler != null)
+        {
+            _appConfig.ConfigChanged -= _configChangedHandler;
+        }
+
+        _appConfig = appConfig;
+        _configChangedHandler = (s, e) =>
+        {
+            if (e.HasChange("General.Language"))
+            {
+                try
+                {
+                    CurrentLanguage = (CultureCode)e.NewConfig.General.Language;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"切换语言失败: {ex.Message}", ex);
+                }
+            }
+        };
+        _appConfig.ConfigChanged += _configChangedHandler;
+    }
 
     public static CultureInfo GetCurrentSystemLanguage()
     {
@@ -77,7 +109,6 @@ public class SystemLanguage
             foreach (var pageLocaleItem in pageLocale)
                 Application.Current.Resources[pageLocaleItem.Key] = pageLocaleItem.Value;
             _currentLanguage = culture;
-            CurrentLanguageChanged?.Invoke(null, EventArgs.Empty);
         }
         else
         {

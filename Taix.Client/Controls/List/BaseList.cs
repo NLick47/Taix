@@ -55,7 +55,7 @@ public class BaseList : TemplatedControl
     protected override Type StyleKeyOverride => typeof(BaseList);
 
     /// <summary>
-    ///     选择项更改后发生
+    /// 选择项更改后发生
     /// </summary>
     public event EventHandler SelectedItemChanged;
 

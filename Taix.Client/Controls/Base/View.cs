@@ -1,7 +1,9 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 
@@ -29,6 +31,15 @@ public class View : ContentControl
     {
         Loaded += View_Loaded;
         Unloaded += View_Unloaded;
+
+        Transitions = new Transitions
+        {
+            new DoubleTransition
+            {
+                Property = OpacityProperty,
+                Duration = TimeSpan.FromMilliseconds(120)
+            }
+        };
     }
 
     public string Condition
@@ -54,6 +65,7 @@ public class View : ContentControl
     {
         Loaded -= View_Loaded;
         Unloaded -= View_Unloaded;
+        UnsubscribeCollectionChanged(Value);
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -62,8 +74,31 @@ public class View : ContentControl
         if (change.Property == ValueProperty)
         {
             var control = change.Sender as View;
+            control.UnsubscribeCollectionChanged(change.OldValue);
+            control.SubscribeCollectionChanged(change.NewValue);
             control.Handle();
         }
+    }
+
+    private void SubscribeCollectionChanged(object value)
+    {
+        if (value is INotifyCollectionChanged notifyCollectionChanged)
+        {
+            notifyCollectionChanged.CollectionChanged += OnCollectionChanged;
+        }
+    }
+
+    private void UnsubscribeCollectionChanged(object value)
+    {
+        if (value is INotifyCollectionChanged notifyCollectionChanged)
+        {
+            notifyCollectionChanged.CollectionChanged -= OnCollectionChanged;
+        }
+    }
+
+    private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+    {
+        Handle();
     }
 
     private void Handle()
@@ -119,11 +154,27 @@ public class View : ContentControl
                 }
             }
 
-            IsVisible = isShow;
+            if (isShow)
+            {
+                if (!IsVisible)
+                {
+                    Opacity = 0;
+                    IsVisible = true;
+                }
+                Opacity = 1;
+                ZIndex = 1;
+            }
+            else
+            {
+                IsVisible = false;
+                Opacity = 0;
+                ZIndex = 0;
+            }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             IsVisible = false;
+            ZIndex = 0;
         }
     }
 }

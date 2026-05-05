@@ -3,19 +3,19 @@
 namespace Taix.Client.Shared.Models;
 
 /// <summary>
-///     每小时的使用数据
+/// 每小时的使用数据
 /// </summary>
 public class HoursLogModel
 {
     public int ID { get; set; }
 
     /// <summary>
-    ///     统计时段（YYYY-MM-dd HH:00:00)
+    /// 统计时段（YYYY-MM-dd HH:00:00)
     /// </summary>
     public DateTime DataTime { get; set; }
 
     /// <summary>
-    ///     使用时长（单位：秒）
+    /// 使用时长（单位：秒）
     /// </summary>
     public int Time { get; set; } = 0;
     ///// <summary>
@@ -29,7 +29,7 @@ public class HoursLogModel
     //public string File { get; set; }
 
     /// <summary>
-    ///     应用ID
+    /// 应用ID
     /// </summary>
     public int AppModelID { get; set; }
 

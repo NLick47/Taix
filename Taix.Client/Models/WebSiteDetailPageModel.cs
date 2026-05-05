@@ -17,18 +17,18 @@ public class WebSiteDetailPageModel : ModelBase
     private bool _isIgnore;
     private DateTime _monthDate;
     private int _nameIndexStart;
-    private SelectItemModel _selectedWeek = null!;
+    private SelectItemModel? _selectedWeek;
     private ObservableCollection<string> _tabbarData = [];
     private int _tabbarSelectedIndex;
     private List<WebBrowseLogModel> _webPageData = [];
     private WebBrowseLogModel? _webPageSelectedItem;
-    private WebSiteModel _webSite = null!;
+    private WebSiteModel? _webSite;
     private ContextMenu? _webSiteContextMenu;
     private string _weekDateStr = string.Empty;
     private List<SelectItemModel> _weekOptions = [];
     private DateTime _yearDate;
 
-    public WebSiteModel WebSite
+    public WebSiteModel? WebSite
     {
         get => _webSite;
         set
@@ -98,7 +98,7 @@ public class WebSiteDetailPageModel : ModelBase
         }
     }
 
-    public SelectItemModel SelectedWeek
+    public SelectItemModel? SelectedWeek
     {
         get => _selectedWeek;
         set

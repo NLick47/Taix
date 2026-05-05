@@ -18,8 +18,8 @@ pub fn router() -> Router<SqlitePool> {
 }
 
 async fn get_config(Extension(service): Extension<Arc<ConfigService>>) -> Json<ApiResponse<Value>> {
-    match service.load().await {
-        Ok(config) => match serde_json::to_value(config) {
+    match service.get_or_load().await {
+        Ok(config) => match serde_json::to_value(config.as_ref()) {
             Ok(mut value) => {
                 to_camel_case_keys(&mut value);
                 Json(ApiResponse::ok(value))
@@ -56,11 +56,17 @@ async fn save_config(
     };
 
     // 读取旧配置，用于比较 is_web_enabled 是否变化
-    let old_enabled = match service.load().await {
+    let old_enabled = match service.get_cached().await {
         Ok(old) => old.general.is_web_enabled,
-        Err(e) => {
-            tracing::warn!("Failed to load old config before save: {}", e);
-            false
+        Err(_) => {
+            // 缓存未预热时回退到加载
+            match service.get_or_load().await {
+                Ok(old) => old.general.is_web_enabled,
+                Err(e) => {
+                    tracing::warn!("Failed to load old config before save: {}", e);
+                    false
+                }
+            }
         }
     };
 

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
-using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -62,11 +62,11 @@ public class ChartPageViewModel : ChartPageModel
 
     public ReactiveCommand<object, Unit> ToDetailCommand { get; }
     public ReactiveCommand<object, Unit> RefreshCommand { get; }
+
     public List<SelectItemModel> ChartDataModeOptions { get; } =
     [
-        new() { Id = 1, Name = ResourceStrings.DefaultView },
-        new() { Id = 2, Name = ResourceStrings.SummaryView },
-        new() { Id = 3, Name = ResourceStrings.CategoryView }
+        new() { Id = 1, Name = ResourceStrings.CategoryView },
+        new() { Id = 2, Name = ResourceStrings.SummaryView }
     ];
 
     private void Initialize()
@@ -89,6 +89,8 @@ public class ChartPageViewModel : ChartPageModel
         AppContextMenu = _appContextMenuService.GetContextMenu();
         WebSiteContextMenu = _webSiteContextMenuService.GetContextMenu();
 
+        // 分类筛选不再持久化，仅内存缓存
+
         WhenPropertyChanged(this, x => x.Date, _ => OnDateChangedAsync());
         WhenPropertyChanged(this, x => x.TabbarSelectedIndex, _ => OnTabbarChangedAsync());
         WhenPropertyChanged(this, x => x.SelectedWeek, _ => OnSelectedWeekChangedAsync());
@@ -97,14 +99,17 @@ public class ChartPageViewModel : ChartPageModel
         WhenPropertyChanged(this, x => x.ColumnSelectedIndex, _ => LoadSelectedColDataAsync());
         WhenPropertyChanged(this, x => x.ChartDataMode, _ => OnChartDataModeChangedAsync());
         WhenPropertyChanged(this, x => x.WebColSelectedIndex, _ => LoadWebSitesColSelectedDataAsync());
+    }
 
+    public override Task OnNavigatedToAsync()
+    {
         _ = ExecuteAsync(LoadDataAsync);
+        return Task.CompletedTask;
     }
 
     private Task OnDateChangedAsync() => ExecuteAsync(async ct =>
     {
         await LoadDayDataAsync(ct);
-        await LoadTrendChartDataAsync(ct);
     });
 
     private Task OnTabbarChangedAsync() => ExecuteAsync(async ct =>
@@ -117,21 +122,18 @@ public class ChartPageViewModel : ChartPageModel
     {
         if (TabbarSelectedIndex != 1) return;
         await LoadWeekDataAsync(ct);
-        await LoadTrendChartDataAsync(ct);
     });
 
     private Task OnMonthDateChangedAsync() => ExecuteAsync(async ct =>
     {
         if (TabbarSelectedIndex != 2) return;
         await LoadMonthlyDataAsync(ct);
-        await LoadTrendChartDataAsync(ct);
     });
 
     private Task OnYearDateChangedAsync() => ExecuteAsync(async ct =>
     {
         if (TabbarSelectedIndex != 3) return;
         await LoadYearDataAsync(ct);
-        await LoadTrendChartDataAsync(ct);
     });
 
     private Task OnChartDataModeChangedAsync() => ExecuteAsync(async ct =>
@@ -141,70 +143,6 @@ public class ChartPageViewModel : ChartPageModel
     });
 
     private Task OnRefreshAsync(object _) => ExecuteAsync(LoadDataAsync);
-
-    #region 趋势图数据
-
-    private async Task LoadTrendChartDataAsync(CancellationToken cancellationToken)
-    {
-        var trendData = new List<TrendDataPoint>();
-        switch (TabbarSelectedIndex)
-        {
-            case 0:
-                await LoadDailyTrendDataAsync(trendData, cancellationToken);
-                break;
-            case 1:
-                await LoadWeeklyTrendDataAsync(trendData, cancellationToken);
-                break;
-            case 2:
-                await LoadMonthlyTrendDataAsync(trendData, cancellationToken);
-                break;
-            case 3:
-                await LoadYearlyTrendDataAsync(trendData, cancellationToken);
-                break;
-        }
-        cancellationToken.ThrowIfCancellationRequested();
-        TrendChartDataPoints = trendData;
-    }
-
-    private async Task LoadDailyTrendDataAsync(List<TrendDataPoint> points, CancellationToken ct)
-    {
-        var hourlyData = await _dataService.GetRangeTotalDataAsync(Date, Date, ct);
-        ct.ThrowIfCancellationRequested();
-        for (int i = 0; i < 24; i++)
-            points.Add(new TrendDataPoint { Label = i.ToString(), Value = i < hourlyData.Length ? hourlyData[i] : 0 });
-    }
-
-    private async Task LoadWeeklyTrendDataAsync(List<TrendDataPoint> points, CancellationToken ct)
-    {
-        var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek
-            ? Time.GetThisWeekDate()
-            : Time.GetLastWeekDate();
-        var dailyData = await _dataService.GetRangeTotalDataAsync(weekDateArr[0], weekDateArr[1], ct);
-        ct.ThrowIfCancellationRequested();
-        string[] dayNames = [ResourceStrings.Monday, ResourceStrings.Tuesday, ResourceStrings.Wednesday, ResourceStrings.Thursday, ResourceStrings.Friday, ResourceStrings.Saturday, ResourceStrings.Sunday];
-        for (int i = 0; i < 7; i++)
-            points.Add(new TrendDataPoint { Label = dayNames[i], Value = i < dailyData.Length ? dailyData[i] : 0 });
-    }
-
-    private async Task LoadMonthlyTrendDataAsync(List<TrendDataPoint> points, CancellationToken ct)
-    {
-        var dateArr = Time.GetMonthDate(MonthDate);
-        var daysInMonth = DateTime.DaysInMonth(MonthDate.Year, MonthDate.Month);
-        var dailyData = await _dataService.GetRangeTotalDataAsync(dateArr[0], dateArr[1], ct);
-        ct.ThrowIfCancellationRequested();
-        for (int i = 0; i < daysInMonth; i++)
-            points.Add(new TrendDataPoint { Label = (i + 1).ToString(), Value = i < dailyData.Length ? dailyData[i] : 0 });
-    }
-
-    private async Task LoadYearlyTrendDataAsync(List<TrendDataPoint> points, CancellationToken ct)
-    {
-        var monthlyData = await _dataService.GetMonthTotalDataAsync(YearDate, ct);
-        ct.ThrowIfCancellationRequested();
-        for (int i = 0; i < 12; i++)
-            points.Add(new TrendDataPoint { Label = (i + 1).ToString(), Value = i < monthlyData.Length ? monthlyData[i] : 0 });
-    }
-
-    #endregion
 
     private void OnToDetail(object obj)
     {
@@ -245,7 +183,8 @@ public class ChartPageViewModel : ChartPageModel
                 await LoadYearDataAsync(cancellationToken);
                 break;
         }
-        await LoadTrendChartDataAsync(cancellationToken);
+
+
     }
 
     private async Task LoadDayDataAsync(CancellationToken cancellationToken)
@@ -359,7 +298,7 @@ public class ChartPageViewModel : ChartPageModel
         var categoryData = new List<ChartsDataModel>();
         foreach (var item in list)
         {
-            var category = _categoryService.GetCategory(item.CategoryID);
+            var category = await _categoryService.GetCategoryAsync(item.CategoryID);
             category ??= new CategoryModel { Name = "Unknown", Color = "#ccc", IconFile = "" };
             categoryData.Add(new ChartsDataModel
             {
@@ -371,8 +310,11 @@ public class ChartPageViewModel : ChartPageModel
             });
         }
 
+        // 按分类总时长降序排序
+        categoryData = categoryData.OrderByDescending(c => c.Values.Sum()).ToList();
+
         List<ChartsDataModel> data;
-        if (ChartDataMode.Id == 1 || ChartDataMode.Id == 3)
+        if (ChartDataMode.Id == 1)
         {
             data = categoryData;
         }
@@ -564,15 +506,14 @@ public class ChartPageViewModel : ChartPageModel
                 category = new WebSiteCategoryModel { Name = "Unknown", Color = "#ccc", IconFile = "" };
             }
 #pragma warning disable CS8601
-            var isSystemCategory = category.IsSystem;
             chartsDatas.Add(new ChartsDataModel
             {
-                Name = isSystemCategory ? ResourceStrings.Uncategorized : item.Name,
+                Name = item.Name,
                 Value = item.Value,
                 Data = item,
-                Color = isSystemCategory ? "#ccc" : category.Color,
-                PopupText = (isSystemCategory ? ResourceStrings.Uncategorized : item.Name) + " " + Time.ToString((int)item.Value),
-                Icon = isSystemCategory ? "" : category.IconFile
+                Color = category.Color,
+                PopupText = item.Name + " " + Time.ToString((int)item.Value),
+                Icon = category.IconFile
             });
 #pragma warning restore CS8601
         }
@@ -588,8 +529,8 @@ public class ChartPageViewModel : ChartPageModel
         var emptyCategory = new WebSiteCategoryModel
         {
             ID = 0,
-            Name = ResourceStrings.Uncategorized,
-            IconFile = "avares://Taix/Resources/Icons/tai32.ico"
+            Name = "Unknown",
+            IconFile = ""
         };
 
         string[]? colNames = null;
@@ -605,7 +546,7 @@ public class ChartPageViewModel : ChartPageModel
 
         foreach (var item in data)
         {
-            if (!categoryDict.TryGetValue(item.CategoryID, out var category) || category?.IsSystem == true)
+            if (!categoryDict.TryGetValue(item.CategoryID, out var category))
                 category = emptyCategory;
             if (category != null)
             {
@@ -687,7 +628,6 @@ public class ChartPageViewModel : ChartPageModel
     {
         Data = [];
         TopData = [];
-        TrendChartDataPoints = [];
         base.Dispose();
     }
 }

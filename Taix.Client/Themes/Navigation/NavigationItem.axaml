@@ -3,6 +3,16 @@
                     xmlns:base="clr-namespace:Taix.Client.Controls.Base"
                     xmlns:controls="using:Taix.Client.Controls.Navigation">
 
+    <Design.PreviewWith>
+        <Border Padding="30" Background="#161616">
+            <StackPanel Spacing="8">
+                <controls:NavigationItem Title="首页" Icon="Home" IsSelected="True" />
+                <controls:NavigationItem Title="图表" Icon="Chart" />
+                <controls:NavigationItem Title="日历" Icon="Calendar" />
+            </StackPanel>
+        </Border>
+    </Design.PreviewWith>
+
     <ControlTheme x:Key="{x:Type controls:NavigationItem}"
                   TargetType="controls:NavigationItem">
         <Setter Property="Width" Value="60" />
@@ -11,42 +21,40 @@
         <Setter Property="Background" Value="Transparent" />
         <Styles>
             <Style Selector="controls|NavigationItem:pointerover Border#Border">
-                <Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}" />
+                <Setter Property="Background" Value="{DynamicResource NavHoverGlassBrush}" />
+            </Style>
+
+            <Style Selector="controls|NavigationItem:pointerover Border#GlassHighlight">
+                <Setter Property="Opacity" Value="0.08" />
             </Style>
 
 
             <Style Selector="controls|NavigationItem[IsSelected=True]">
-                <Style Selector="^ /template/ TextBlock">
+                <!-- 文字已移除，纯图标导航 -->
+                <Style Selector="^ /template/ Border#Border">
+                    <Setter Property="Background" Value="{DynamicResource NavSelectedGlassBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource NavSelectedGlassBorderBrush}" />
+                    <Setter Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect Color="{DynamicResource ThemeColor}"
+                                              BlurRadius="8"
+                                              Opacity="0.25"
+                                              OffsetX="0" OffsetY="3" />
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+                <Style Selector="^ /template/ Border#GlassHighlight">
+                    <Setter Property="Opacity" Value="0.22" />
+                </Style>
+
+                <Style Selector="^ /template/ Border#GlassThickness">
+                    <Setter Property="Opacity" Value="0.10" />
+                </Style>
+
+                <Style Selector="^ /template/ base|Icon#Icon">
                     <Setter Property="Foreground" Value="{DynamicResource ThemeBrush}" />
-                    <Setter Property="IsVisible" Value="False" />
-                </Style>
-                <Style Selector="^ /template/ Border">
-                    <Setter Property="Background"
-                            Value="{DynamicResource NavSelectedBrush}" />
-                </Style>
-
-                <Style Selector="^ /template/ base|Icon">
-                    <Style.Animations>
-                        <Animation Duration="0:0:0.5">
-                            <KeyFrame Cue="0%">
-                                <Setter Property="Margin" Value="0,-20,0,0" />
-                            </KeyFrame>
-
-                            <KeyFrame Cue="35%">
-                                <Setter Property="Margin" Value="0,-7,0,0" />
-                            </KeyFrame>
-
-                            <KeyFrame Cue="40%">
-                                <Setter Property="Margin" Value="0,10,0,0" />
-                            </KeyFrame>
-
-                            <KeyFrame Cue="100%">
-                                <Setter Property="Margin" Value="0,0,0,0" />
-                            </KeyFrame>
-                        </Animation>
-                    </Style.Animations>
-
-                    <Setter Property="RenderTransform" Value="translateY(0px)" />
+                    <Setter Property="RenderTransform" Value="scaleX(1.12) scaleY(1.12)" />
                 </Style>
 
             </Style>
@@ -55,31 +63,72 @@
         </Styles>
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Background="Transparent" CornerRadius="10"
-                        x:Name="Border">
+                <Grid Margin="4">
+                    <!-- 底部厚度阴影：模拟玻璃体积感 -->
+                    <Border x:Name="GlassThickness"
+                            CornerRadius="14"
+                            IsHitTestVisible="False"
+                            Opacity="0">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                <GradientStop Color="Transparent" Offset="0" />
+                                <GradientStop Color="#000000" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Transitions>
+                            <Transitions>
+                                <DoubleTransition Property="Opacity" Duration="0:0:0.4" />
+                            </Transitions>
+                        </Border.Transitions>
+                    </Border>
 
-                    <Grid x:Name="Content" Margin="5">
-                        <base:Icon x:Name="Icon" IconType="{TemplateBinding Icon}"
-                                   Foreground="{Binding ElementName=Title,Path=Foreground}"
-                                   VerticalAlignment="Center" Grid.Column="1"
-                                   FontSize="17"
-                                   RenderTransformOrigin="0.5,0.5">
-                            <base:Icon.RenderTransform>
-                                <TransformGroup>
-                                    <TranslateTransform X="0" Y="-5" />
-                                </TransformGroup>
-                            </base:Icon.RenderTransform>
-                        </base:Icon>
-                        <TextBlock x:Name="Title"
-                                   Text="{TemplateBinding Title}"
-                                   Grid.Column="2"
-                                   VerticalAlignment="Bottom" HorizontalAlignment="Center"
-                                   FontSize="10"
-                                   Foreground="{DynamicResource NavUnselectedTextBrush}"
-                                   Margin="0,5,0,0" />
-                    </Grid>
+                    <!-- 表面高光：模拟光源从左上照射 -->
+                    <Border x:Name="GlassHighlight"
+                            CornerRadius="14"
+                            IsHitTestVisible="False"
+                            Opacity="0">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                <GradientStop Color="#FFFFFF" Offset="0" />
+                                <GradientStop Color="#FFFFFF" Offset="0.35" />
+                                <GradientStop Color="Transparent" Offset="0.75" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Transitions>
+                            <Transitions>
+                                <DoubleTransition Property="Opacity" Duration="0:0:0.4" />
+                            </Transitions>
+                        </Border.Transitions>
+                    </Border>
+
+                    <Border Background="Transparent" CornerRadius="14"
+                            x:Name="Border" BorderThickness="0.5" BorderBrush="Transparent">
+                        <Border.Transitions>
+                            <Transitions>
+                                <BrushTransition Property="Background" Duration="0:0:0.45" />
+                                <BrushTransition Property="BorderBrush" Duration="0:0:0.45" />
+                            </Transitions>
+                        </Border.Transitions>
+
+                        <Grid x:Name="Content">
+                            <base:Icon x:Name="Icon" IconType="{TemplateBinding Icon}"
+                                       Foreground="{DynamicResource NavUnselectedTextBrush}"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Center"
+                                       FontSize="18"
+                                       RenderTransform="scaleX(1) scaleY(1)"
+                                       RenderTransformOrigin="0.5,0.5">
+                                <base:Icon.Transitions>
+                                    <Transitions>
+                                        <BrushTransition Property="Foreground" Duration="0:0:0.3" />
+                                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.35" Easing="BackEaseOut" />
+                                    </Transitions>
+                                </base:Icon.Transitions>
+                            </base:Icon>
+                        </Grid>
                 </Border>
-            </ControlTemplate>
+            </Grid>
+        </ControlTemplate>
         </Setter>
     </ControlTheme>
 </ResourceDictionary>

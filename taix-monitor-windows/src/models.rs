@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -7,7 +7,7 @@ pub enum SleepStatus {
     Sleep,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AppType {
     Win32,
     Uwp,
@@ -25,10 +25,7 @@ impl fmt::Display for AppType {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct AppInfo {
-    pub window_handle: isize,
-    pub pid: u32,
     pub process: String,
     pub description: String,
     pub executable_path: String,
@@ -39,8 +36,6 @@ pub struct AppInfo {
 impl AppInfo {
     pub fn empty() -> Self {
         Self {
-            window_handle: 0,
-            pid: 0,
             process: String::new(),
             description: String::new(),
             executable_path: String::new(),
@@ -49,21 +44,16 @@ impl AppInfo {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.process.is_empty()
+    pub fn is_valid(&self) -> bool {
+        !self.process.is_empty()
     }
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct WindowInfo {
     pub class_name: String,
     pub title: String,
     pub handle: isize,
-    pub width: i32,
-    pub height: i32,
-    pub x: i32,
-    pub y: i32,
 }
 
 impl WindowInfo {
@@ -72,24 +62,18 @@ impl WindowInfo {
             class_name: String::new(),
             title: String::new(),
             handle: 0,
-            width: 0,
-            height: 0,
-            x: 0,
-            y: 0,
         }
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.class_name.is_empty() && self.title.is_empty()
+    pub fn is_valid(&self) -> bool {
+        self.handle != 0 && (!self.class_name.is_empty() || !self.title.is_empty())
     }
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct AppActiveEvent {
     pub app: AppInfo,
     pub window: WindowInfo,
-    pub active_time: chrono::DateTime<chrono::Local>,
 }
 
 #[derive(Debug, Clone)]
@@ -119,4 +103,14 @@ pub enum MonitorMessage<'a> {
     Sleep,
     #[serde(rename = "wake")]
     Wake,
+}
+
+// 崩溃恢复用的会话检查点，记录最近一次刷盘时的活跃应用状态
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionCheckpoint {
+    pub process: String,
+    pub exe_path: String,
+    pub icon_path: String,
+    pub desc: String,
+    pub since_ts: i64,
 }

@@ -1,13 +1,13 @@
-use super::queue::ReliableMessageQueue;
+use super::queue::MessageQueue;
 use crate::models::MonitorMessage;
 use chrono::{DateTime, Local};
 
 pub struct MonitorClient {
-    queue: ReliableMessageQueue,
+    queue: MessageQueue,
 }
 
 impl MonitorClient {
-    pub fn new(queue: ReliableMessageQueue) -> Self {
+    pub fn new(queue: MessageQueue) -> Self {
         Self { queue }
     }
 
@@ -28,21 +28,21 @@ impl MonitorClient {
             i: icon_path,
             desc: description,
         };
-        let mut json = serde_json::to_string(&msg).unwrap();
+        let mut json = serde_json::to_string(&msg).expect("bug: MonitorMessage is always serializable");
         json.push('\n');
         self.queue.enqueue(json.into_bytes());
     }
 
     pub fn send_sleep(&self) {
         let msg = MonitorMessage::Sleep;
-        let mut json = serde_json::to_string(&msg).unwrap();
+        let mut json = serde_json::to_string(&msg).expect("bug: MonitorMessage is always serializable");
         json.push('\n');
         self.queue.enqueue(json.into_bytes());
     }
 
     pub fn send_wake(&self) {
         let msg = MonitorMessage::Wake;
-        let mut json = serde_json::to_string(&msg).unwrap();
+        let mut json = serde_json::to_string(&msg).expect("bug: MonitorMessage is always serializable");
         json.push('\n');
         self.queue.enqueue(json.into_bytes());
     }

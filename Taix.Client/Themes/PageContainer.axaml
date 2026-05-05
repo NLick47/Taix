@@ -7,8 +7,7 @@
             <ControlTemplate>
                 <ScrollViewer x:Name="ScrollViewer"
                               VerticalScrollBarVisibility="Auto">
-                    <ContentControl x:Name="Frame"
-                                    Content="{TemplateBinding Content}" />
+                    <ContentPresenter x:Name="Frame" />
                 </ScrollViewer>
             </ControlTemplate>
         </Setter>

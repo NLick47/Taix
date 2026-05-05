@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Threading;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Models;
 using Taix.Client.Servicers.Interfaces;
+using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Shared.Models.Db;
 using Taix.Client.Shared.Servicers.Interfaces;
@@ -25,7 +27,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
     private readonly IAppConfig _appConfig;
     private readonly IClipboardService _clipboardService;
     private readonly IDialogService _dialogService;
-    private readonly EventHandler _languageChangedHandler;
+    private IDisposable? _languageSubscription;
     private readonly IProcessService _processService;
     private readonly IToastService _toastService;
     private readonly INavigationDataService _navigationData;
@@ -56,8 +58,6 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         _processService = processService;
         _toastService = toastService;
 
-        _languageChangedHandler = (s, e) => UpdateMenuTexts();
-
         Initialize();
     }
 
@@ -87,7 +87,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         YearDate = DateTime.Now;
         TabbarSelectedIndex = 0;
 
-        SystemLanguage.CurrentLanguageChanged += _languageChangedHandler;
+        _languageSubscription = _appConfig.WhenLanguageChanged(UpdateMenuTexts);
 
         WhenPropertyChanged(this, x => x.TabbarSelectedIndex, _ => LoadDataAsync());
         WhenPropertyChanged(this, x => x.ChartDate, _ => LoadDataAsync());
@@ -106,15 +106,19 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
         PageCommand = ReactiveCommand.CreateFromTask<object>(OnPageCommandAsync);
         PageCommand.DisposeWith(Disposables);
+    }
 
-        // 3. 手动加载当前视图数据一次
+    public override Task OnNavigatedToAsync()
+    {
         _ = ExecuteAsync(LoadDataCoreAsync);
+        return Task.CompletedTask;
     }
 
     private Task LoadDataAsync() => ExecuteAsync(LoadDataCoreAsync);
 
     private async Task LoadDataCoreAsync(CancellationToken cancellationToken)
     {
+        if (WebSite == null || SelectedWeek == null) return;
         IsIgnore = IsUrlIgnore(WebSite.Domain);
 
         var startDate = DateTime.Now;
@@ -187,6 +191,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
     private async Task LoadCategoriesAsync(CancellationToken cancellationToken)
     {
+        if (WebSite == null) return;
         var data = await _webData.GetWebSiteCategoriesAsync(true);
         var list = new List<SelectItemModel>();
         foreach (var category in data)
@@ -195,7 +200,8 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
             {
                 Name = category.Name,
                 Img = category.IconFile,
-                Id = category.ID
+                Id = category.ID,
+                Data = category
             });
         }
 
@@ -207,8 +213,9 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
     private async Task UpdateCategoryAsync(int categoryId)
     {
+        if (WebSite == null) return;
         await _webData.UpdateWebSitesCategoryAsync(new[] { WebSite.ID }, categoryId);
-        WebSite.CategoryID = categoryId;
+        WebSite = WebSite with { CategoryID = categoryId };
         if (Category == null || categoryId != Category.Id)
             Category = Categories.FirstOrDefault(m => m.Id == WebSite.CategoryID);
     }
@@ -244,7 +251,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         _openMenuItem = new MenuItem();
         var openCommand = ReactiveCommand.Create(() =>
         {
-            if (!string.IsNullOrEmpty(WebSite.Domain))
+            if (!string.IsNullOrEmpty(WebSite!.Domain))
                 _processService.OpenUrl(WebSite.Domain);
         });
         openCommand.DisposeWith(Disposables);
@@ -253,7 +260,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         _copyDomainMenuItem = new MenuItem();
         var copyCommand = ReactiveCommand.CreateFromTask(async () =>
         {
-            if (!string.IsNullOrEmpty(WebSite.Domain))
+            if (!string.IsNullOrEmpty(WebSite!.Domain))
                 await _clipboardService.SetTextAsync(WebSite.Domain);
         });
         copyCommand.DisposeWith(Disposables);
@@ -299,9 +306,11 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
     private async Task RefreshMenuItemsAsync()
     {
+        if (WebSite == null) return;
         _setCategoryMenuItem.Items.Clear();
 
         var webSite = await _webData.GetWebSiteAsync(WebSite.ID);
+        if (webSite == null) return;
         var categoryId = webSite.CategoryID;
 
         foreach (var category in Categories)
@@ -320,9 +329,10 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         if (categoryId != 0)
         {
             _setCategoryMenuItem.Items.Add(new Separator());
+            var sysCategory = Categories.FirstOrDefault(m => m.Data is WebSiteCategoryModel wc && wc.IsSystem);
             var un = new MenuItem
             {
-                Header = ResourceStrings.Uncategorized,
+                Header = sysCategory?.Name ?? ResourceStrings.Uncategorized,
                 Command = ReactiveCommand.Create(() => _ = ClearSiteCategoryAsync())
             };
             _setCategoryMenuItem.Items.Add(un);
@@ -345,6 +355,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
     private async Task OnEditAliasAsync()
     {
+        if (WebSite == null) return;
         try
         {
             var input = await _dialogService.ShowInputModalAsync(
@@ -361,8 +372,9 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
                     return true;
                 });
 
-            WebSite.Alias = input;
-            WebSite = await _webData.UpdateAsync(WebSite);
+            WebSite = WebSite with { Alias = input };
+            var updated = await _webData.UpdateAsync(WebSite);
+            if (updated != null) WebSite = updated;
             _toastService.Success(ResourceStrings.AliasUpdated);
         }
         catch
@@ -373,6 +385,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
     private async Task OnClearAsync()
     {
+        if (WebSite == null) return;
         var isConfirm = await _dialogService.ShowConfirmDialogAsync(
             ResourceStrings.ClearConfirmation,
             ResourceStrings.ClearAllStatisticsSiteTip);
@@ -387,6 +400,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
     private void OnBlockAction()
     {
+        if (WebSite == null) return;
         var config = _appConfig.GetConfig();
 
         if (IsIgnore)
@@ -400,6 +414,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
     private async Task ClearSiteCategoryAsync()
     {
+        if (WebSite == null) return;
         await _webData.UpdateWebSitesCategoryAsync(new[] { WebSite.ID }, 0);
         Category = null;
     }
@@ -432,7 +447,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
     public override void Dispose()
     {
-        SystemLanguage.CurrentLanguageChanged -= _languageChangedHandler;
+        _languageSubscription?.Dispose();
         if (WebSiteContextMenu != null)
             WebSiteContextMenu.Opened -= OnWebSiteContextMenuOpened;
 

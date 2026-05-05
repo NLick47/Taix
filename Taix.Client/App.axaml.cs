@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -12,6 +13,7 @@ using Taix.Client.Servicers;
 using Taix.Client.Servicers.Instances;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Servicers.Updater;
+using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.ViewModels;
 using Taix.Client.Views;
@@ -26,7 +28,8 @@ public class App : Application
     {
         services.AddHttpClient("TaixApi", client =>
         {
-            client.BaseAddress = new Uri("http://localhost:5000");
+            var serverUrl = Environment.GetEnvironmentVariable("TAIX_SERVER") ?? "http://localhost:37091";
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout = TimeSpan.FromSeconds(6);
         });
 
@@ -35,8 +38,10 @@ public class App : Application
         services.AddSingleton<IData, ApiData>();
         services.AddSingleton<IWebData, ApiWebData>();
         services.AddSingleton<IAppData, ApiAppData>();
+        services.AddSingleton<IWebSiteData, ApiWebSiteData>();
         services.AddSingleton<ICategorys, ApiCategorys>();
         services.AddSingleton<IAppConfig, ApiAppConfig>();
+        services.AddSingleton<IWindowStateService, WindowStateService>();
 
         services.AddSingleton<IUIServicer, UIServicer>();
         services.AddSingleton<IDialogService>(provider => provider.GetRequiredService<IUIServicer>() as IDialogService);
@@ -45,9 +50,10 @@ public class App : Application
         services.AddSingleton<IAppContextMenuServicer, AppContextMenuServicer>();
         services.AddSingleton<IThemeServicer, ThemeServicer>();
         services.AddSingleton<IMainServicer, MainServicer>();
-        //services.AddSingleton<IInputServicer, InputServicer>();
+
         services.AddSingleton<IWebSiteContextMenuServicer, WebSiteContextMenuServicer>();
         services.AddSingleton<IStatusBarIconServicer, StatusBarIconServicer>();
+        services.AddSingleton<IShutdownService, ShutdownService>();
 
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<INavigationService>(provider => provider.GetRequiredService<MainViewModel>());
@@ -130,30 +136,24 @@ public class App : Application
         ConfigureServices(serviceCollection);
         ServiceLocator.Initialize(serviceCollection.BuildServiceProvider());
 
-        if (Design.IsDesignMode)
-        {
-            var main = ServiceLocator.GetService<IMainServicer>();
-            main.DesignStart();
-        }
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             OnStartup(this, Environment.GetCommandLineArgs());
-            desktop.Exit += (e, r) => { Logger.Flush(); };
+            desktop.Exit += (e, r) =>
+            {
+                Logger.Flush();
+            };
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 
-
     private async void OnStartup(object sender, string[] args)
     {
-        if (IsRunned()) Environment.Exit(0);
-        var main = ServiceLocator.GetService<IMainServicer>();
-
         try
         {
-            await main.Start();
+            await OnStartupAsync(sender, args);
         }
         catch (Exception e)
         {
@@ -162,10 +162,29 @@ public class App : Application
         }
     }
 
-
-    public static void Exit()
+    private async Task OnStartupAsync(object sender, string[] args)
     {
+        if (IsRunned()) Environment.Exit(0);
+        var main = ServiceLocator.GetService<IMainServicer>();
+        await main.Start();
+    }
+
+
+    private static bool _isShuttingDown;
+    public static bool IsShuttingDown => _isShuttingDown;
+
+    public static async Task ExitAsync()
+    {
+        if (_isShuttingDown) return;
+        _isShuttingDown = true;
+
         var desktop = Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-        desktop?.Shutdown();
+        if (desktop == null) return;
+
+        var shutdownService = ServiceLocator.GetService<IShutdownService>();
+        if (shutdownService != null)
+            await shutdownService.ShutdownAsync();
+
+        desktop.Shutdown();
     }
 }

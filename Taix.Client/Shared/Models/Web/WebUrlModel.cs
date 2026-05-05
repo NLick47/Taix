@@ -1,7 +1,7 @@
 ﻿namespace Taix.Client.Shared.Models.Db;
 
 /// <summary>
-///     网页URL模型
+/// 网页URL模型
 /// </summary>
 public class WebUrlModel
 {

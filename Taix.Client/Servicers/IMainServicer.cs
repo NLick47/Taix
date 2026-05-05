@@ -6,5 +6,4 @@ public interface IMainServicer
 {
     Task Start();
 
-    void DesignStart();
 }

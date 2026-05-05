@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Reactive;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Threading.Tasks;
 using ReactiveUI;
 using Taix.Client.Controls.Base;
@@ -11,6 +12,7 @@ using Taix.Client.Models;
 using Taix.Client.Platform.Abstractions.Primitives;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Servicers.Updater;
+using Taix.Client.Shared.Event;
 using Taix.Client.Shared.Models.Config;
 using Taix.Client.Shared.Models.Data;
 using Taix.Client.Shared.Servicers.Interfaces;
@@ -56,52 +58,63 @@ public class SettingPageViewModel : SettingPageModel
         Initialize();
     }
 
+    public object GeneralSettings
+    {
+        get => _config.General;
+        set
+        {
+            if (value is GeneralModel general && _config.General != general)
+            {
+                _config.General = general;
+                _ = _appConfig.SaveAsync();
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public object BehaviorSettings
+    {
+        get => _config.Behavior;
+        set
+        {
+            if (value is BehaviorModel behavior && _config.Behavior != behavior)
+            {
+                _config.Behavior = behavior;
+                _ = _appConfig.SaveAsync();
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public ReactiveCommand<object, Unit> OpenURL { get; }
     public ReactiveCommand<Unit, Unit> CheckUpdate { get; }
     public ReactiveCommand<object, Unit> DelDataCommand { get; }
     public ReactiveCommand<object, Unit> ExportDataCommand { get; }
 
-    private void OnConfigChanged(ConfigModel oldConfig, ConfigModel newConfig)
+    private void OnConfigChanged(object? sender, ConfigChangedEventArgs e)
     {
-        SystemLanguage.CurrentLanguage = (CultureCode)newConfig.General.Language;
-        if (TabbarData.Count > 0) TabbarData[0] = ResourceStrings.General;
-        if (TabbarData.Count > 1) TabbarData[1] = ResourceStrings.Behavior;
-        if (TabbarData.Count > 2) TabbarData[2] = ResourceStrings.Data;
-        if (TabbarData.Count > 3) TabbarData[3] = ResourceStrings.About;
-        OnPropertyChanged(nameof(TabbarData));
+        if (e.HasChange("General.Language"))
+        {
+            if (TabbarData.Count > 0) TabbarData[0] = ResourceStrings.General;
+            if (TabbarData.Count > 1) TabbarData[1] = ResourceStrings.Behavior;
+            if (TabbarData.Count > 2) TabbarData[2] = ResourceStrings.Data;
+            if (TabbarData.Count > 3) TabbarData[3] = ResourceStrings.About;
+            OnPropertyChanged(nameof(TabbarData));
+        }
     }
 
     private void Initialize()
     {
         Data = _config.General;
         TabbarData = [ResourceStrings.General, ResourceStrings.Behavior, ResourceStrings.Data, ResourceStrings.About];
-        Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
+        Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? string.Empty;
         DelDataStartMonthDate = DateTime.Now;
         DelDataEndMonthDate = DateTime.Now;
         ExportDataStartMonthDate = DateTime.Now;
         ExportDataEndMonthDate = DateTime.Now;
 
-        WhenPropertyChanged(this, x => x.Data, async _ =>
-        {
-            if (TabbarSelectedIndex == 0 && Data is GeneralModel general)
-            {
-                _config.General = general;
-                await _appConfig.SaveAsync();
-            }
-            else if (TabbarSelectedIndex == 1 && Data is BehaviorModel behavior)
-            {
-                _config.Behavior = behavior;
-                await _appConfig.SaveAsync();
-            }
-            await Task.CompletedTask;
-        });
-
         WhenPropertyChanged(this, x => x.TabbarSelectedIndex, async _ =>
         {
-            if (TabbarSelectedIndex == 0)
-                Data = _config.General;
-            else if (TabbarSelectedIndex == 1)
-                Data = _config.Behavior;
             await Task.CompletedTask;
         });
     }

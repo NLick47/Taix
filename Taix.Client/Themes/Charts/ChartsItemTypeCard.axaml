@@ -6,31 +6,30 @@
     <ControlTheme x:Key="{x:Type controls:ChartsItemTypeCard}"
                   TargetType="controls:ChartsItemTypeCard">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Margin" Value="5" />
+        <Setter Property="Margin" Value="8" />
 
         <Styles>
             <Style Selector="controls|ChartsItemTypeCard">
                 <Style Selector="^ /template/ Border#Normal">
                     <Setter Property="Transitions">
                         <Transitions>
-                            <DoubleTransition Property="DropShadowDirectionEffect.Opacity" Duration="0.3" />
+                            <DoubleTransition Property="Opacity" Duration="0:0:0.25" />
                         </Transitions>
                     </Setter>
                 </Style>
 
                 <Style Selector="^:pointerover /template/ Border#Normal">
-                    <Setter Property="DropShadowDirectionEffect.Opacity" Value="0.3" />
+                    <Setter Property="Opacity" Value="1" />
                 </Style>
 
                 <Style Selector="^:pointerover /template/ Border#Border">
                     <Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
                 </Style>
 
-
                 <Style Selector="^ /template/ Border#Border">
                     <Setter Property="Transitions">
                         <Transitions>
-                            <BrushTransition Property="BorderBrush" Duration="0.3" />
+                            <BrushTransition Property="BorderBrush" Duration="0:0:0.3" />
                         </Transitions>
                     </Setter>
                 </Style>
@@ -42,60 +41,73 @@
                     <Style Selector="^ /template/ Border#Normal">
                         <Setter Property="IsVisible" Value="false" />
                     </Style>
-
                 </Style>
             </Style>
-
-
         </Styles>
 
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid>
-                    <Border x:Name="Normal" CornerRadius="12">
+                    <Border x:Name="Normal" CornerRadius="18">
                         <Border.Effect>
                             <DropShadowDirectionEffect
-                                BlurRadius="17" Direction="0" ShadowDepth="0"
+                                BlurRadius="20" Direction="0" ShadowDepth="0"
                                 Color="{DynamicResource ThemeColor}" Opacity="0" />
                         </Border.Effect>
                         <Border x:Name="Border"
-                                BorderThickness="2" Margin="0"
-                                Background="{DynamicResource StandardBackgroundBrush}"
-                                CornerRadius="12" Width="150"
+                                BorderThickness="1"
+                                Background="{DynamicResource ChartCardGlassBgBrush}"
+                                BorderBrush="{DynamicResource ChartCardGlassBorderBrush}"
+                                CornerRadius="18" Width="150"
                                 Height="150">
                             <Border.Clip>
                                 <RectangleGeometry Rect="0,0,150,150" />
                             </Border.Clip>
                             <Grid>
-                                <Rectangle x:Name="ValueBlockObj"
-                                           VerticalAlignment="Center"
-                                           Margin="0"
-                                           RenderTransformOrigin="0.5,0.5"
-                                           Fill="{DynamicResource ThemeBrush}"
-                                           HorizontalAlignment="Center">
-                                    <Rectangle.RenderTransform>
-                                        <ScaleTransform ScaleX="3" ScaleY="3" />
-                                    </Rectangle.RenderTransform>
-                                </Rectangle>
-                                <Image x:Name="IconObj" Width="25" HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
+                                <!-- 背景微渐变层：增强玻璃通透感与厚度 -->
+                                <Border CornerRadius="18" IsHitTestVisible="False">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                            <GradientStop Offset="0" Color="#0fffffff" />
+                                            <GradientStop Offset="0.55" Color="#06ffffff" />
+                                            <GradientStop Offset="1" Color="#03ffffff" />
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                </Border>
+
+                                <!-- 顶部高光条：模拟玻璃表面反光 -->
+                                <Border Height="1.5" VerticalAlignment="Top" Margin="14,0,14,0" IsHitTestVisible="False" CornerRadius="0.75">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                            <GradientStop Offset="0" Color="#00ffffff" />
+                                            <GradientStop Offset="0.5" Color="#55ffffff" />
+                                            <GradientStop Offset="1" Color="#00ffffff" />
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                </Border>
+
+                                <base:Img x:Name="IconObj" Width="32" Height="32" HorizontalAlignment="Center"
+                                                 URL="{Binding Data.Icon,RelativeSource={RelativeSource AncestorType={x:Type controls:ChartsItemTypeCard}}}"
+                                                 VerticalAlignment="Center" />
 
                                 <TextBlock x:Name="NameTextObj"
                                            Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:ChartsItemTypeCard}},Path=Data.Name}"
                                            Foreground="{DynamicResource WhiteBgTextBrush}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10" />
+                                           HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10,0,10,12"
+                                           FontSize="13" />
 
-                                <Border VerticalAlignment="Top" CornerRadius="5" Padding="5" HorizontalAlignment="Left"
-                                        Margin="10">
+                                <!-- 药丸标签：更精致通透 -->
+                                <Border VerticalAlignment="Top" CornerRadius="12" Padding="7,4" HorizontalAlignment="Left"
+                                        Margin="10,10,0,0">
                                     <Border.Background>
-                                        <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity="0.7" />
+                                        <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity="0.14" />
                                     </Border.Background>
-                                    <TextBlock x:Name="ValueTextObj" Foreground="White" FontSize="12" />
+                                    <TextBlock x:Name="ValueTextObj" Foreground="White" FontSize="11" FontWeight="SemiBold" />
                                 </Border>
                             </Grid>
                         </Border>
                     </Border>
-                    <base:Placeholder x:Name="Loading" IsVisible="False" CornerRadius="12" Width="150" Height="150" />
+                    <base:Placeholder x:Name="Loading" IsVisible="False" CornerRadius="18" Width="150" Height="150" />
                 </Grid>
             </ControlTemplate>
         </Setter>

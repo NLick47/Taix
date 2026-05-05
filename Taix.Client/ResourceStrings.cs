@@ -19,6 +19,8 @@ public static class ResourceStrings
     public static string DefaultView => GetStringValue("DefaultView");
     public static string SummaryView => GetStringValue("SummaryView");
     public static string CategoryView => GetStringValue("CategoryView");
+    public static string TrendView => GetStringValue("TrendView");
+    public static string ColumnView => GetStringValue("ColumnView");
     public static string App => GetStringValue("App");
     public static string Website => GetStringValue("Website");
     public static string Uncategorized => GetStringValue("Uncategorized");
@@ -68,6 +70,7 @@ public static class ResourceStrings
     public static string UnignoredDomain => GetStringValue("UnignoredDomain");
     public static string IgnoredDomain => GetStringValue("IgnoredDomain");
     public static string Confirm => GetStringValue("Confirm");
+    public static string Cancel => GetStringValue("Cancel");
     public static string LongDayTips => GetStringValue("LongDayTips");
     public static string NoData => GetStringValue("NoData");
     public static string ClearConfirmation => GetStringValue("ClearConfirmation");
@@ -123,6 +126,11 @@ public static class ResourceStrings
     public static string ConnectionStatusConnected => GetStringValue("ConnectionStatusConnected");
     public static string ConnectionStatusDisconnected => GetStringValue("ConnectionStatusDisconnected");
     public static string ConnectionStatusChecking => GetStringValue("ConnectionStatusChecking");
+    public static string CategoryHasApps => GetStringValue("CategoryHasApps");
+    public static string CategoryHasSites => GetStringValue("CategoryHasSites");
+    public static string MoveToSystemCategory => GetStringValue("MoveToSystemCategory");
+    public static string MoveToOtherCategory => GetStringValue("MoveToOtherCategory");
+    public static string SelectTargetCategory => GetStringValue("SelectTargetCategory");
 
     private static string GetStringValue(string key)
     {

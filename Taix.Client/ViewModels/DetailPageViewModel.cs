@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ using Taix.Client.Controls.Select;
 using Taix.Client.Librarys;
 using Taix.Client.Models;
 using Taix.Client.Servicers.Interfaces;
+using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Models.Config;
@@ -30,21 +32,20 @@ public class DetailPageViewModel : DetailPageModel
     private readonly IClipboardService _clipboardService;
     private readonly IData _dataService;
     private readonly IDialogService _dialogService;
-    private readonly EventHandler _languageChangedHandler;
+    private IDisposable? _languageSubscription;
     private readonly IProcessService _processService;
     private readonly IToastService _toastService;
     private readonly INavigationDataService _navigationData;
-    private readonly ConfigModel _config;
 
-    private MenuItem _clearMenuItem = new();
-    private MenuItem _copyProcessFileMenuItem = new();
-    private MenuItem _copyProcessNameMenuItem = new();
-    private MenuItem _editAliasMenuItem = new();
-    private MenuItem _openDirMenuItem = new();
-    private MenuItem _openExeMenuItem = new();
-    private MenuItem _reloadDataMenuItem = new();
-    private MenuItem _setCategoryMenuItem = new();
-    private MenuItem _whiteListMenuItem = new();
+    private MenuItem _clearMenuItem;
+    private MenuItem _copyProcessFileMenuItem;
+    private MenuItem _copyProcessNameMenuItem;
+    private MenuItem _editAliasMenuItem;
+    private MenuItem _openDirMenuItem;
+    private MenuItem _openExeMenuItem;
+    private MenuItem _reloadDataMenuItem;
+    private MenuItem _setCategoryMenuItem;
+    private MenuItem _whiteListMenuItem;
 
     public DetailPageViewModel(
         IData data,
@@ -66,9 +67,6 @@ public class DetailPageViewModel : DetailPageModel
         _clipboardService = clipboardService;
         _processService = processService;
         _toastService = toastService;
-        _config = appConfig.GetConfig();
-
-        _languageChangedHandler = (s, e) => UpdateMenuTexts();
 
         BlockActionCommand = ReactiveCommand.CreateFromTask<object>(OnBlockActionAsync);
         ClearSelectMonthDataCommand = ReactiveCommand.CreateFromTask<object>(OnClearSelectMonthDataAsync);
@@ -109,7 +107,7 @@ public class DetailPageViewModel : DetailPageModel
         YearDate = DateTime.Now;
         TabbarSelectedIndex = 0;
 
-        SystemLanguage.CurrentLanguageChanged += _languageChangedHandler;
+        _languageSubscription = _appConfig.WhenLanguageChanged(UpdateMenuTexts);
 
         InitializeMenuItems();
         UpdateMenuTexts();
@@ -121,23 +119,15 @@ public class DetailPageViewModel : DetailPageModel
         WhenPropertyChanged(this, x => x.SelectedWeek, _ => LoadWeekDataAsync());
         WhenPropertyChanged(this, x => x.MonthDate, _ => LoadMonthlyDataAsync());
         WhenPropertyChanged(this, x => x.YearDate, _ => LoadYearDataAsync());
+    }
 
-        _ = ExecuteAsync(async ct =>
-        {
-            await LoadDataCoreAsync(ct);
-            await LoadChartDataAsync();
-            await LoadInfoAsync(ct);
-
-            var regexList = _config.Behavior.IgnoreProcessList.Where(m => Regex.IsMatch(m, @"[\.\*\?\{\\\[\^\|]"));
-            foreach (var reg in regexList)
-            {
-                if (App != null && (RegexHelper.IsMatch(App.Name, reg) || RegexHelper.IsMatch(App.File, reg)))
-                {
-                    IsRegexIgnore = true;
-                    break;
-                }
-            }
-        });
+    public override Task OnNavigatedToAsync()
+    {
+        return Task.WhenAll(
+            ExecuteAsync(LoadDataCoreAsync),
+            LoadChartDataAsync(),
+            ExecuteAsync(LoadInfoAsync)
+        );
     }
 
     private Task LoadDataAsync() => ExecuteAsync(LoadDataCoreAsync);
@@ -176,15 +166,16 @@ public class DetailPageViewModel : DetailPageModel
     {
         if (App == null) return;
 
-        await Task.Run(() =>
-        {
-            IsIgnore = _config.Behavior.IgnoreProcessList.Contains(App.Name);
-            LoadCategorys(App.Category?.Name);
+        IsIgnore = IsProcessIgnore(App.Name, App.File);
+        IsRegexIgnore = IsProcessRegexIgnore(App.Name, App.File);
+        await LoadCategorys(App.Category?.Name);
 
-            var link = _config.Links.FirstOrDefault(m => m.ProcessList.Contains(App.Name));
-            if (link != null)
-                LinkApps = _appDataService.GetAllApps().Where(m => link.ProcessList.Contains(m.Name) && m.Name != App.Name).ToList();
-        });
+        var link = _appConfig.GetConfig().Links.FirstOrDefault(m => m.ProcessList.Contains(App.Name));
+        if (link != null)
+        {
+            var allApps = await _appDataService.GetAllAppsAsync();
+            LinkApps = allApps.Where(m => link.ProcessList.Contains(m.Name) && m.Name != App.Name).ToList();
+        }
     }
 
     private Task LoadChartDataAsync() => ExecuteAsync(async ct =>
@@ -212,10 +203,10 @@ public class DetailPageViewModel : DetailPageModel
 
     private Task OnRefreshAsync(object _) => LoadChartDataAsync();
 
-    private void LoadCategorys(string? categoryName)
+    private async Task LoadCategorys(string? categoryName)
     {
         var list = new List<SelectItemModel>();
-        foreach (var item in _categoryService.GetCategories())
+        foreach (var item in await _categoryService.GetCategoriesAsync(true))
         {
             var option = new SelectItemModel
             {
@@ -235,12 +226,12 @@ public class DetailPageViewModel : DetailPageModel
         if (App == null || Category?.Data is not CategoryModel cat) return;
         if ((App.Category == null && Category != null) || (Category != null && App.Category?.Name != Category.Name))
         {
-            App.Category = cat;
-            var app = _appDataService.GetApp(App.ID);
+            App = App with { Category = cat };
+            var app = await _appDataService.GetAppAsync(App.ID);
             if (app != null)
             {
-                app.CategoryID = cat.ID;
-                _appDataService.UpdateApp(app);
+                app = app with { CategoryID = cat.ID };
+                await _appDataService.UpdateAppAsync(app);
             }
         }
         await Task.CompletedTask;
@@ -267,19 +258,50 @@ public class DetailPageViewModel : DetailPageModel
     private async Task OnBlockActionAsync(object obj)
     {
         if (App == null) return;
-        if (obj.ToString() == "block")
+        if (obj?.ToString() == "block")
         {
-            _config.Behavior.IgnoreProcessList.Add(App.Name);
+            var config = _appConfig.GetConfig();
+            if (!config.Behavior.IgnoreProcessList.Contains(App.Name))
+                config.Behavior.IgnoreProcessList.Add(App.Name);
             IsIgnore = true;
             _toastService.Success(string.Format(ResourceStrings.ApplicationNowIgnored, App.Name));
         }
         else
         {
-            _config.Behavior.IgnoreProcessList.Remove(App.Name);
+            _appConfig.GetConfig().Behavior.IgnoreProcessList.Remove(App.Name);
             IsIgnore = false;
             _toastService.Success(string.Format(ResourceStrings.IgnoringApplicationCancelled, App.Name));
         }
         await _appConfig.SaveAsync();
+    }
+
+    private bool IsProcessIgnore(string name, string? file)
+    {
+        var ignoreList = _appConfig.GetConfig().Behavior.IgnoreProcessList;
+        return ignoreList.Any(item => IsProcessMatch(name, file, item));
+    }
+
+    private bool IsProcessRegexIgnore(string name, string? file)
+    {
+        var ignoreList = _appConfig.GetConfig().Behavior.IgnoreProcessList;
+        return ignoreList.Any(item => IsRegexPattern(item) && IsProcessMatch(name, file, item));
+    }
+
+    private static bool IsProcessMatch(string name, string? file, string pattern)
+    {
+        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(pattern))
+            return false;
+        if (IsRegexPattern(pattern))
+            return RegexHelper.IsMatch(name, pattern) || (!string.IsNullOrEmpty(file) && RegexHelper.IsMatch(file, pattern));
+        return name.Equals(pattern, StringComparison.OrdinalIgnoreCase)
+            || (!string.IsNullOrEmpty(file) && file.Equals(pattern, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsRegexPattern(string pattern)
+    {
+        if (string.IsNullOrEmpty(pattern))
+            return false;
+        return Regex.IsMatch(pattern, @"[\.\*\?\{\\\[\^\|]");
     }
 
     private void InitializeMenuItems()
@@ -288,50 +310,66 @@ public class DetailPageViewModel : DetailPageModel
         AppContextMenu.Opened += OnAppContextMenuOpened;
 
         _openExeMenuItem = new MenuItem();
-        _openExeMenuItem.Command = ReactiveCommand.Create(() =>
+        var openExeCommand = ReactiveCommand.Create(() =>
         {
             if (!string.IsNullOrEmpty(App?.File))
                 _processService.OpenFile(App.File);
             else
                 _toastService.Error(ResourceStrings.ApplicationExist);
         });
+        openExeCommand.DisposeWith(Disposables);
+        _openExeMenuItem.Command = openExeCommand;
 
         _copyProcessNameMenuItem = new MenuItem();
-        _copyProcessNameMenuItem.Command = ReactiveCommand.CreateFromTask(async () =>
+        var copyProcessNameCommand = ReactiveCommand.CreateFromTask(async () =>
         {
             if (App?.Name != null)
                 await _clipboardService.SetTextAsync(App.Name);
         });
+        copyProcessNameCommand.DisposeWith(Disposables);
+        _copyProcessNameMenuItem.Command = copyProcessNameCommand;
 
         _copyProcessFileMenuItem = new MenuItem();
-        _copyProcessFileMenuItem.Command = ReactiveCommand.CreateFromTask(async () =>
+        var copyProcessFileCommand = ReactiveCommand.CreateFromTask(async () =>
         {
             if (App?.File != null)
                 await _clipboardService.SetTextAsync(App.File);
         });
+        copyProcessFileCommand.DisposeWith(Disposables);
+        _copyProcessFileMenuItem.Command = copyProcessFileCommand;
 
         _openDirMenuItem = new MenuItem();
-        _openDirMenuItem.Command = ReactiveCommand.Create(() =>
+        var openDirCommand = ReactiveCommand.Create(() =>
         {
             if (!string.IsNullOrEmpty(App?.File))
                 _processService.OpenDirectory(App.File);
             else
                 _toastService.Error(ResourceStrings.ApplicationFileExist);
         });
+        openDirCommand.DisposeWith(Disposables);
+        _openDirMenuItem.Command = openDirCommand;
 
         _reloadDataMenuItem = new MenuItem();
-        _reloadDataMenuItem.Command = ReactiveCommand.CreateFromTask(async () => await OnRefreshAsync(null));
+        var reloadDataCommand = ReactiveCommand.CreateFromTask(async () => await OnRefreshAsync(null));
+        reloadDataCommand.DisposeWith(Disposables);
+        _reloadDataMenuItem.Command = reloadDataCommand;
 
         _setCategoryMenuItem = new MenuItem();
 
         _editAliasMenuItem = new MenuItem();
-        _editAliasMenuItem.Command = ReactiveCommand.CreateFromTask(OnEditAliasAsync);
+        var editAliasCommand = ReactiveCommand.CreateFromTask(OnEditAliasAsync);
+        editAliasCommand.DisposeWith(Disposables);
+        _editAliasMenuItem.Command = editAliasCommand;
 
         _whiteListMenuItem = new MenuItem();
-        _whiteListMenuItem.Command = ReactiveCommand.Create(OnWhiteListAction);
+        var whiteListCommand = ReactiveCommand.Create(OnWhiteListAction);
+        whiteListCommand.DisposeWith(Disposables);
+        _whiteListMenuItem.Command = whiteListCommand;
 
         _clearMenuItem = new MenuItem();
-        _clearMenuItem.Command = ReactiveCommand.CreateFromTask(async () => await ClearAsync());
+        var clearCommand = ReactiveCommand.CreateFromTask(async () => await ClearAsync());
+        clearCommand.DisposeWith(Disposables);
+        _clearMenuItem.Command = clearCommand;
 
         AppContextMenu.Items.Add(_openExeMenuItem);
         AppContextMenu.Items.Add(new Separator());
@@ -363,6 +401,7 @@ public class DetailPageViewModel : DetailPageModel
         _clearMenuItem.Header = ResourceStrings.ClearStatistics;
         _setCategoryMenuItem.Header = ResourceStrings.SetCategory;
         _editAliasMenuItem.Header = ResourceStrings.EditAlias;
+        _whiteListMenuItem.Header = ResourceStrings.AddWhitelist;
     }
 
     private async Task RefreshMenuItemsAsync()
@@ -370,15 +409,16 @@ public class DetailPageViewModel : DetailPageModel
         if (App == null) return;
         _setCategoryMenuItem.Items.Clear();
 
-        var categoryId = _appDataService.GetApp(App.ID).CategoryID;
+        var app = await _appDataService.GetAppAsync(App.ID);
+        var categoryId = app?.CategoryID ?? 0;
         foreach (var category in Categorys)
         {
             var categoryMenu = new MenuItem
             {
                 Header = category.Name,
                 ToggleType = MenuItemToggleType.Radio,
-                IsChecked = App.CategoryID == category.Id,
-                Command = ReactiveCommand.Create(() => UpdateCategory(category.Data as CategoryModel))
+                IsChecked = categoryId == category.Id,
+                Command = ReactiveCommand.CreateFromTask(async () => await UpdateCategory(category.Data as CategoryModel))
             };
             _setCategoryMenuItem.Items.Add(categoryMenu);
         }
@@ -386,16 +426,17 @@ public class DetailPageViewModel : DetailPageModel
         if (categoryId != 0)
         {
             _setCategoryMenuItem.Items.Add(new Separator());
+            var sysCategory = Categorys.FirstOrDefault(m => m.Data is CategoryModel c && c.IsSystem);
             var un = new MenuItem
             {
-                Header = ResourceStrings.Uncategorized,
-                Command = ReactiveCommand.Create(() => ClearCategory(App.ID))
+                Header = sysCategory?.Name ?? ResourceStrings.Uncategorized,
+                Command = ReactiveCommand.CreateFromTask(async () => await ClearCategory(App.ID))
             };
             _setCategoryMenuItem.Items.Add(un);
         }
 
         _setCategoryMenuItem.IsEnabled = _setCategoryMenuItem.Items.Count > 0;
-        _whiteListMenuItem.Header = _config.Behavior.ProcessWhiteList.Contains(App.Name)
+        _whiteListMenuItem.Header = _appConfig.GetConfig().Behavior.ProcessWhiteList.Contains(App.Name)
             ? ResourceStrings.RemoveWhitelist
             : ResourceStrings.AddWhitelist;
     }
@@ -403,7 +444,8 @@ public class DetailPageViewModel : DetailPageModel
     private async Task OnEditAliasAsync()
     {
         if (App == null) return;
-        var app = _appDataService.GetApp(App.ID);
+        var app = await _appDataService.GetAppAsync(App.ID);
+        if (app == null) return;
         try
         {
             var input = await _dialogService.ShowInputModalAsync(
@@ -412,7 +454,7 @@ public class DetailPageViewModel : DetailPageModel
                 app.Alias,
                 val =>
                 {
-                    if (val?.Length > 15)
+                    if (val.Length > 15)
                     {
                         _toastService.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
                         return false;
@@ -420,8 +462,8 @@ public class DetailPageViewModel : DetailPageModel
                     return true;
                 });
 
-            app.Alias = input;
-            _appDataService.UpdateApp(app);
+            app = app with { Alias = input };
+            await _appDataService.UpdateAppAsync(app);
             App = app;
             _toastService.Success(ResourceStrings.AliasUpdated);
         }
@@ -434,33 +476,34 @@ public class DetailPageViewModel : DetailPageModel
     private void OnWhiteListAction()
     {
         if (App == null) return;
-        if (_config.Behavior.ProcessWhiteList.Contains(App.Name))
+        var config = _appConfig.GetConfig();
+        if (config.Behavior.ProcessWhiteList.Contains(App.Name))
         {
-            _config.Behavior.ProcessWhiteList.Remove(App.Name);
+            config.Behavior.ProcessWhiteList.Remove(App.Name);
             _toastService.Success($"{ResourceStrings.RemovedApplicationFromWhitelist} {App.Description}");
         }
         else
         {
-            _config.Behavior.ProcessWhiteList.Add(App.Name);
+            config.Behavior.ProcessWhiteList.Add(App.Name);
             _toastService.Success($"{ResourceStrings.AddedToWhitelist} {App.Description}");
         }
     }
 
-    private void ClearCategory(int appId)
+    private async Task ClearCategory(int appId)
     {
-        var app = _appDataService.GetApp(appId);
-        app.CategoryID = 0;
-        app.Category = null;
-        _appDataService.UpdateApp(app);
+        var app = await _appDataService.GetAppAsync(appId);
+        if (app == null) return;
+        app = app with { CategoryID = 0, Category = null };
+        await _appDataService.UpdateAppAsync(app);
     }
 
-    private void UpdateCategory(CategoryModel? category)
+    private async Task UpdateCategory(CategoryModel? category)
     {
         if (App == null || category == null) return;
-        var app = _appDataService.GetApp(App.ID);
-        app.CategoryID = category.ID;
-        app.Category = category;
-        _appDataService.UpdateApp(app);
+        var app = await _appDataService.GetAppAsync(App.ID);
+        if (app == null) return;
+        app = app with { CategoryID = category.ID, Category = category };
+        await _appDataService.UpdateAppAsync(app);
 
         if (Category == null || category.ID != Category.Id)
             Category = Categorys.FirstOrDefault(m => m.Id == category.ID);
@@ -487,7 +530,7 @@ public class DetailPageViewModel : DetailPageModel
     {
         if (TabbarSelectedIndex != 1) return;
         DataMaximum = 0;
-        if (App == null) return;
+        if (App == null || SelectedWeek == null) return;
         var culture = SystemLanguage.CurrentCultureInfo;
         var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek
             ? Time.GetThisWeekDate()
@@ -550,7 +593,7 @@ public class DetailPageViewModel : DetailPageModel
 
     public override void Dispose()
     {
-        SystemLanguage.CurrentLanguageChanged -= _languageChangedHandler;
+        _languageSubscription?.Dispose();
         if (AppContextMenu != null)
             AppContextMenu.Opened -= OnAppContextMenuOpened;
         base.Dispose();

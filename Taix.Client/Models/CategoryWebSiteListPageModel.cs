@@ -7,7 +7,7 @@ namespace Taix.Client.Models;
 
 public class CategoryWebSiteListPageModel : ModelBase
 {
-    private WebSiteCategoryModel _category = null!;
+    private WebSiteCategoryModel? _category;
     private ObservableCollection<WebSiteModel> _categoryWebSiteList = new();
     private bool _chooseVisibility;
     private string _searchInput = string.Empty;
@@ -54,7 +54,7 @@ public class CategoryWebSiteListPageModel : ModelBase
         }
     }
 
-    public WebSiteCategoryModel Category
+    public WebSiteCategoryModel? Category
     {
         get => _category;
         set
@@ -77,7 +77,7 @@ public class CategoryWebSiteListPageModel : ModelBase
     public class OptionModel
     {
         public bool IsChecked { get; set; }
-        public WebSiteModel WebSite { get; set; } = null!;
+        public WebSiteModel? WebSite { get; set; }
         public SelectItemModel OptionValue { get; set; } = new();
     }
 }

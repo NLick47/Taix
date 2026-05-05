@@ -15,6 +15,9 @@ pub enum AppError {
 
     #[error("internal error: {0}")]
     Internal(String),
+
+    #[error("{0}")]
+    Business(String),
 }
 
 impl IntoResponse for AppError {
@@ -31,6 +34,10 @@ impl IntoResponse for AppError {
             AppError::Internal(msg) => {
                 tracing::error!("Internal error: {}", msg);
                 (StatusCode::INTERNAL_SERVER_ERROR, msg.clone())
+            }
+            AppError::Business(msg) => {
+                tracing::warn!("Business error: {}", msg);
+                (StatusCode::BAD_REQUEST, msg.clone())
             }
         };
 

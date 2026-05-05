@@ -1,10 +1,10 @@
 use tokio::net::windows::named_pipe::ClientOptions;
-use tokio::io::{AsyncWriteExt, BufWriter};
+use tokio::io::AsyncWriteExt;
 use std::io;
 
 pub struct NamedPipeTransport {
     pipe_name: String,
-    writer: Option<BufWriter<tokio::net::windows::named_pipe::NamedPipeClient>>,
+    writer: Option<tokio::net::windows::named_pipe::NamedPipeClient>,
 }
 
 impl NamedPipeTransport {
@@ -23,7 +23,7 @@ impl NamedPipeTransport {
         self.disconnect();
         let pipe_path = format!("\\\\.\\pipe\\{}", self.pipe_name);
         let client = ClientOptions::new().open(&pipe_path)?;
-        self.writer = Some(BufWriter::new(client));
+        self.writer = Some(client);
         Ok(())
     }
 

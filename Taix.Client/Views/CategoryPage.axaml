@@ -79,7 +79,6 @@
                                 <input:InputBox Grid.Column="1" Error="{Binding EditErrorText}"
                                                 IsShowError="{Binding IsEditError,Mode=TwoWay}"
                                                 Text="{Binding EditName,Mode=TwoWay}"
-                                                IsVisible="{Binding !IsSysCategory}"
                                                 MaxLength="10" Margin="5,10,0,0"
                                                 Placeholder="{DynamicResource PleaseEnterCategoryName}" />
                             </Grid>
@@ -91,11 +90,11 @@
                                 <StackPanel IsVisible="{Binding !IsSysCategory}">
                                     <Border Margin="0,10,0,0">
                                         <toggle:Toggle
-                                            IsChecked="{Binding EditIsDirectoryMath,Mode=TwoWay}" TextPosition="Left"
+                                            IsChecked="{Binding EditIsDirectoryMatch,Mode=TwoWay}" TextPosition="Left"
                                             OnText="{DynamicResource DirectoryMatch}"
                                             OffText="{DynamicResource DirectoryMatch}" />
                                     </Border>
-                                    <base:View Condition="True" Value="{Binding EditIsDirectoryMath}">
+                                    <base:View Condition="True" Value="{Binding EditIsDirectoryMatch}">
                                         <StackPanel Margin="0,10,0,0">
                                             <Button:Button HorizontalAlignment="Right" Width="100"
                                                            Command="{Binding AddDirectoryCommand}"
@@ -229,7 +228,8 @@
 
                                 <Style Selector="ListBoxItem">
                                     <Style Selector="^:pointerover Border#Border">
-                                        <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush}" />
+                                        <Setter Property="Background" Value="{DynamicResource CategoryCardHoverGlassBrush}" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource CategoryCardHoverBorderBrush}" />
                                     </Style>
 
                                     <Style Selector="^:pointerover /template/ ContentPresenter">
@@ -257,21 +257,35 @@
                                                 <Border BorderBrush="{Binding ElementName=Border,Path=BorderBrush}"
                                                         BorderThickness="{Binding ElementName=Border,Path=BorderThickness}"
                                                         Margin="{Binding ElementName=Border,Path=Margin}"
-                                                        CornerRadius="{Binding ElementName=Border,Path=CornerRadius}">
-                                                    <Border.Effect>
-                                                        <DropShadowDirectionEffect
-                                                            Color="#d8d2d2"
-                                                            BlurRadius="10" Direction="300"
-                                                            ShadowDepth="4" Opacity="0.1" />
-                                                    </Border.Effect>
-                                                </Border>
+                                                        CornerRadius="{Binding ElementName=Border,Path=CornerRadius}"
+                                                        BoxShadow="0 4 16 0 #15000000" />
                                                 <Border BorderBrush="Transparent"
-                                                        BorderThickness="2" x:Name="Border"
-                                                        Background="{DynamicResource StandardBackgroundBrush}"
-                                                        Margin="5" CornerRadius="20">
-                                                    <ContentPresenter
-                                                        ContentTemplate="{TemplateBinding ContentTemplate}"
-                                                        Content="{TemplateBinding Content}" />
+                                                        BorderThickness="1.5" x:Name="Border"
+                                                        Background="{DynamicResource CategoryCardGlassBgBrush}"
+                                                        Margin="8" CornerRadius="20">
+                                                    <Grid>
+                                                        <Border CornerRadius="20,20,0,0"
+                                                                IsHitTestVisible="False"
+                                                                Height="55"
+                                                                VerticalAlignment="Top"
+                                                                Opacity="0.12">
+                                                            <Border.Background>
+                                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                                                    <GradientStop Color="#FFFFFF" Offset="0" />
+                                                                    <GradientStop Color="Transparent" Offset="1" />
+                                                                </LinearGradientBrush>
+                                                            </Border.Background>
+                                                        </Border>
+                                                        <ContentPresenter
+                                                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                            Content="{TemplateBinding Content}" />
+                                                    </Grid>
+                                                    <Border.Transitions>
+                                                        <Transitions>
+                                                            <BrushTransition Property="Background" Duration="0:0:0.35" />
+                                                            <BrushTransition Property="BorderBrush" Duration="0:0:0.35" />
+                                                        </Transitions>
+                                                    </Border.Transitions>
                                                 </Border>
                                             </Grid>
                                         </ControlTemplate>
@@ -292,22 +306,18 @@
                                             <Grid>
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="40" />
-
                                                     <RowDefinition Height="40" />
                                                     <RowDefinition Height="30" />
                                                     <RowDefinition Height="*" />
-
                                                 </Grid.RowDefinitions>
 
                                                 <Ellipse HorizontalAlignment="Left"
                                                          Margin="10"
                                                          VerticalAlignment="Top"
-
-                                                         Width="15"
-                                                         Height="15"
+                                                         Width="15" Height="15"
                                                          Fill="{Binding Data.Color,Converter={StaticResource HextoColorConverter}}" />
 
-                                                <base:View Value="{Binding Data.IsDirectoryMath}">
+                                                <base:View Value="{Binding Data.IsDirectoryMatch}">
                                                     <Border Background="{DynamicResource ThemeBrush}"
                                                             VerticalAlignment="Top" HorizontalAlignment="Right"
                                                             Margin="10" Padding="8,0" CornerRadius="10" Height="20">
@@ -319,29 +329,37 @@
                                                 </base:View>
 
                                                 <Grid Grid.Row="1">
-                                                    <base:Img Radius="8" Width="40" Height="40"
-                                                              URL="{Binding Data.IconFile}" />
+                                                    <Border Width="42" Height="42"
+                                                            CornerRadius="12"
+                                                            Background="{DynamicResource NavHoverGlassBrush}"
+                                                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <base:Img Radius="8" Width="32" Height="32"
+                                                                  URL="{Binding Data.IconFile}"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center" />
+                                                    </Border>
                                                 </Grid>
 
                                                 <TextBlock Foreground="{DynamicResource StandardTextBrush}"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center"
                                                            Grid.Row="2" Text="{Binding Data.Name}"
                                                            FontSize="14"
-                                                           FontWeight="Bold" />
+                                                           FontWeight="SemiBold" />
 
                                                 <Border Grid.Row="3">
                                                     <Border Margin="10,0,10,0"
                                                             CornerRadius="10"
-                                                            Background="{DynamicResource CategoryAppNumBgBrush}"
+                                                            Background="{DynamicResource CategoryCardGlassBgBrush}"
+                                                            BorderBrush="{DynamicResource CategoryCardGlassBorderBrush}"
+                                                            BorderThickness="1"
                                                             HorizontalAlignment="Right" VerticalAlignment="Center"
                                                             Padding="10,5"
                                                             ToolTip.Tip="{DynamicResource CategoryAppCount}">
-                                                        <TextBlock Foreground="{DynamicResource DefaultTextBrush}">
+                                                        <TextBlock Foreground="{DynamicResource SubTextBrush}" FontSize="11">
                                                             <Run Text="×" />
                                                             <Run Text="{Binding Count}" />
                                                         </TextBlock>
                                                     </Border>
-
                                                 </Border>
                                             </Grid>
                                         </Border>
@@ -396,7 +414,8 @@
 
                                 <Style Selector="ListBoxItem">
                                     <Style Selector="^:pointerover Border#Border">
-                                        <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush}" />
+                                        <Setter Property="Background" Value="{DynamicResource CategoryCardHoverGlassBrush}" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource CategoryCardHoverBorderBrush}" />
                                     </Style>
 
                                     <Style Selector="^:pointerover /template/ ContentPresenter">
@@ -424,18 +443,35 @@
                                                 <Border BorderBrush="{Binding ElementName=Border,Path=BorderBrush}"
                                                         BorderThickness="{Binding ElementName=Border,Path=BorderThickness}"
                                                         Margin="{Binding ElementName=Border,Path=Margin}"
-                                                        CornerRadius="{Binding ElementName=Border,Path=CornerRadius}">
-                                                    <Border.Effect>
-                                                        <DropShadowDirectionEffect Color="#d8d2d2" BlurRadius="10"
-                                                            Direction="300" ShadowDepth="4" Opacity="0.1" />
-                                                    </Border.Effect>
-                                                </Border>
-                                                <Border BorderBrush="Transparent" BorderThickness="2" x:Name="Border"
-                                                        Background="{DynamicResource StandardBackgroundBrush}"
-                                                        Margin="5" CornerRadius="20">
-                                                    <ContentPresenter
-                                                        ContentTemplate="{TemplateBinding ContentTemplate}"
-                                                        Content="{TemplateBinding Content}" />
+                                                        CornerRadius="{Binding ElementName=Border,Path=CornerRadius}"
+                                                        BoxShadow="0 4 16 0 #15000000" />
+                                                <Border BorderBrush="Transparent"
+                                                        BorderThickness="1.5" x:Name="Border"
+                                                        Background="{DynamicResource CategoryCardGlassBgBrush}"
+                                                        Margin="8" CornerRadius="20">
+                                                    <Grid>
+                                                        <Border CornerRadius="20,20,0,0"
+                                                                IsHitTestVisible="False"
+                                                                Height="55"
+                                                                VerticalAlignment="Top"
+                                                                Opacity="0.12">
+                                                            <Border.Background>
+                                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                                                    <GradientStop Color="#FFFFFF" Offset="0" />
+                                                                    <GradientStop Color="Transparent" Offset="1" />
+                                                                </LinearGradientBrush>
+                                                            </Border.Background>
+                                                        </Border>
+                                                        <ContentPresenter
+                                                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                            Content="{TemplateBinding Content}" />
+                                                    </Grid>
+                                                    <Border.Transitions>
+                                                        <Transitions>
+                                                            <BrushTransition Property="Background" Duration="0:0:0.35" />
+                                                            <BrushTransition Property="BorderBrush" Duration="0:0:0.35" />
+                                                        </Transitions>
+                                                    </Border.Transitions>
                                                 </Border>
                                             </Grid>
                                         </ControlTemplate>
@@ -453,46 +489,52 @@
                                 <DataTemplate>
                                     <WrapPanel Orientation="Vertical">
                                         <Border Width="150" Height="150">
-
                                             <Grid>
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="40" />
-
                                                     <RowDefinition Height="40" />
                                                     <RowDefinition Height="30" />
                                                     <RowDefinition Height="*" />
-
                                                 </Grid.RowDefinitions>
 
                                                 <Ellipse HorizontalAlignment="Left"
                                                          Margin="10"
                                                          VerticalAlignment="Top"
-                                                         Width="15"
-                                                         Height="15"
+                                                         Width="15" Height="15"
                                                          Fill="{Binding Data.Color,Converter={StaticResource HextoColorConverter}}" />
 
                                                 <Grid Grid.Row="1">
-                                                    <base:Img Radius="8" Width="40" Height="40"
-                                                              URL="{Binding Data.IconFile}" />
+                                                    <Border Width="42" Height="42"
+                                                            CornerRadius="12"
+                                                            Background="{DynamicResource NavHoverGlassBrush}"
+                                                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <base:Img Radius="8" Width="32" Height="32"
+                                                                  URL="{Binding Data.IconFile}"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center" />
+                                                    </Border>
                                                 </Grid>
 
                                                 <TextBlock Foreground="{DynamicResource StandardTextBrush}"
                                                            HorizontalAlignment="Center"
                                                            VerticalAlignment="Center" Grid.Row="2"
                                                            Text="{Binding Data.Name}" FontSize="14"
-                                                           FontWeight="Bold" />
+                                                           FontWeight="SemiBold" />
 
                                                 <Border Grid.Row="3">
-                                                    <Border Margin="10,0,10,0" CornerRadius="10"
-                                                            Background="{DynamicResource CategoryAppNumBgBrush}"
+                                                    <Border Margin="10,0,10,0"
+                                                            CornerRadius="10"
+                                                            Background="{DynamicResource CategoryCardGlassBgBrush}"
+                                                            BorderBrush="{DynamicResource CategoryCardGlassBorderBrush}"
+                                                            BorderThickness="1"
                                                             HorizontalAlignment="Right" VerticalAlignment="Center"
-                                                            Padding="10,5">
-                                                        <TextBlock Foreground="{DynamicResource DefaultTextBrush}">
+                                                            Padding="10,5"
+                                                            ToolTip.Tip="{DynamicResource CategoryAppCount}">
+                                                        <TextBlock Foreground="{DynamicResource SubTextBrush}" FontSize="11">
                                                             <Run Text="×" />
                                                             <Run Text="{Binding Count}" />
                                                         </TextBlock>
                                                     </Border>
-
                                                 </Border>
                                             </Grid>
                                         </Border>

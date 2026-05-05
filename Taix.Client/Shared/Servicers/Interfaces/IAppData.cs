@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Taix.Client.Shared.Models;
 
@@ -6,38 +7,17 @@ namespace Taix.Client.Shared.Servicers.Interfaces;
 
 public interface IAppData
 {
-    /// <summary>
-    ///     更新app数据，要先调用GetApp获得后更改并传回才有效
-    /// </summary>
-    void UpdateApp(AppModel app);
+    Task<AppModel?> GetAppAsync(int id, CancellationToken cancellationToken = default);
 
- 
-    /// <summary>
-    ///     通过进程名称获取app
-    /// </summary>
-    /// <param name="name"></param>
-    /// <returns></returns>
-    AppModel GetApp(string name);
+    Task<AppModel?> GetAppByNameAsync(string name, CancellationToken cancellationToken = default);
 
-    AppModel GetApp(int id);
+    Task<IReadOnlyCollection<AppModel>> GetAllAppsAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>
-    ///     获取所有app
-    /// </summary>
-    /// <returns></returns>
-    List<AppModel> GetAllApps();
+    Task<IReadOnlyCollection<AppModel>> GetAppsByCategoryIDAsync(int categoryID, CancellationToken cancellationToken = default);
 
-    void AddApp(AppModel app);
+    Task<int> GetAppCountByCategoryIDAsync(int categoryID);
 
-    /// <summary>
-    ///     加载已存储的app列表，仅建议在启动时调用一次，无必要请勿再次调用
-    /// </summary>
-    Task LoadAsync();
+    Task AddAppAsync(AppModel app, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    ///     获取app列表通过分类ID
-    /// </summary>
-    /// <param name="categoryID">分类ID</param>
-    /// <returns></returns>
-    List<AppModel> GetAppsByCategoryID(int categoryID);
+    Task UpdateAppAsync(AppModel app, CancellationToken cancellationToken = default);
 }

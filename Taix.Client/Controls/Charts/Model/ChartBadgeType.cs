@@ -3,12 +3,12 @@
 public enum ChartBadgeType
 {
     /// <summary>
-    ///     应用分类
+    /// 应用分类
     /// </summary>
     Category,
 
     /// <summary>
-    ///     忽略徽章
+    /// 忽略徽章
     /// </summary>
     Ignore
 }

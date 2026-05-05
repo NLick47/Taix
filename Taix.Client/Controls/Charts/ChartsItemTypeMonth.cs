@@ -68,7 +68,7 @@ public class ChartsItemTypeMonth : TemplatedControl
     }
 
     /// <summary>
-    ///     数据
+    /// 数据
     /// </summary>
     public ChartsDataModel Data
     {
@@ -83,7 +83,7 @@ public class ChartsItemTypeMonth : TemplatedControl
     }
 
     /// <summary>
-    ///     是否正在加载中
+    /// 是否正在加载中
     /// </summary>
     public bool IsLoading
     {
@@ -92,7 +92,7 @@ public class ChartsItemTypeMonth : TemplatedControl
     }
 
     /// <summary>
-    ///     是否选中
+    /// 是否选中
     /// </summary>
     public bool IsSelected
     {

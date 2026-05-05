@@ -32,14 +32,17 @@
         <GradientStop Color="#161616" Offset="0.8"/>
         <GradientStop Color="#FF14104A" Offset="1"/>
     </LinearGradientBrush>-->
-            <LinearGradientBrush x:Key="WindowBackground">
-                <GradientStop Color="#161616" Offset="0" />
-                <GradientStop Color="#161616" Offset="0.8" />
-                <GradientStop Color="{DynamicResource ThemeColor}" Offset="1.2" />
+            <LinearGradientBrush x:Key="WindowBackground" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#131315" Offset="0" />
+                <GradientStop Color="#1a1a1e" Offset="0.4" />
+                <GradientStop Color="#18181c" Offset="0.8" />
+                <GradientStop Color="{DynamicResource ThemeColor}" Offset="1.3" />
             </LinearGradientBrush>
             <SolidColorBrush x:Key="WindowContentBackground" Color="#FF383636" Opacity=".5" />
             <SolidColorBrush x:Key="WindowContentBorder" Color="#FF121010" />
             <SolidColorBrush x:Key="CardBorder" Color="Transparent" />
+            <SolidColorBrush x:Key="WindowGlassHighlightBrush" Color="#ffffff" Opacity="0.06" />
+            <SolidColorBrush x:Key="WindowBackgroundSolid" Color="#131315" />
 
             <!--导航栏-->
             <Color x:Key="NavSelectedColor">#313131</Color>
@@ -47,6 +50,13 @@
 
             <Color x:Key="NavUnselectedTextColor">#FFAFAFAF</Color>
             <SolidColorBrush x:Key="NavUnselectedTextBrush" Color="{StaticResource NavUnselectedTextColor}" />
+
+            <!--导航栏毛玻璃效果-->
+            <SolidColorBrush x:Key="NavGlassBackgroundBrush" Color="#121212" Opacity="0.28" />
+            <SolidColorBrush x:Key="NavGlassBorderBrush" Color="#ffffff" Opacity="0.08" />
+            <SolidColorBrush x:Key="NavSelectedGlassBrush" Color="{DynamicResource ThemeColor}" Opacity="0.18" />
+            <SolidColorBrush x:Key="NavSelectedGlassBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.22" />
+            <SolidColorBrush x:Key="NavHoverGlassBrush" Color="#ffffff" Opacity="0.06" />
 
             <!--设置面板-->
             <Color x:Key="SettingPanelBgColor">#323232</Color>
@@ -106,6 +116,18 @@
             <Color x:Key="CategoryAppNumBgColor">#646464</Color>
             <SolidColorBrush x:Key="CategoryAppNumBgBrush" Color="{StaticResource CategoryAppNumBgColor}" />
 
+            <!--分类页卡片玻璃效果-->
+            <SolidColorBrush x:Key="CategoryCardGlassBgBrush" Color="#ffffff" Opacity="0.08" />
+            <SolidColorBrush x:Key="CategoryCardGlassBorderBrush" Color="#ffffff" Opacity="0.30" />
+            <SolidColorBrush x:Key="CategoryCardHoverGlassBrush" Color="#ffffff" Opacity="0.15" />
+            <SolidColorBrush x:Key="CategoryCardHoverBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.55" />
+
+            <!--Chart 卡片玻璃效果-->
+            <SolidColorBrush x:Key="ChartCardGlassBgBrush" Color="#ffffff" Opacity="0.06" />
+            <SolidColorBrush x:Key="ChartCardGlassBorderBrush" Color="#ffffff" Opacity="0.12" />
+            <SolidColorBrush x:Key="ChartCardHoverGlassBgBrush" Color="#ffffff" Opacity="0.10" />
+            <SolidColorBrush x:Key="ChartCardHoverBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.50" />
+
             <!--输入框-->
             <Color x:Key="InputBoxBgColor">#3e3e3e</Color>
             <SolidColorBrush x:Key="InputBoxBgBrush" Color="{StaticResource InputBoxBgColor}" />
@@ -146,11 +168,13 @@
             <Color x:Key="WarningColor">#FFC408</Color>
             <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
             
-            <SolidColorBrush x:Key="GrayDark" Color="#2e2e2e" />
+            <SolidColorBrush x:Key="GrayDark" Color="#1e1e20" Opacity="0.55" />
             
             <Color x:Key="TabOptionTextColor">#9CA3AF</Color>
             <Color x:Key="TabOptionTextCheckedColor">White</Color>
-            <Color x:Key="TabOptionHoverColor">#555555</Color>
+            <SolidColorBrush x:Key="TabOptionHoverBrush" Color="#2a2a2e" />
+            <SolidColorBrush x:Key="TabOptionSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.35" />
+            <SolidColorBrush x:Key="TabOptionSelectedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.50" />
         </ResourceDictionary>
 
 
@@ -181,15 +205,18 @@
             <SolidColorBrush x:Key="Background" Color="#f3f3f3" />
             <!--窗口背景颜色-->
             <!--<SolidColorBrush x:Key="WindowBackground" Color="#f3f3f3" />-->
-            <LinearGradientBrush x:Key="WindowBackground">
-                <GradientStop Color="#f3f3f3" Offset="0" />
-                <GradientStop Color="#f3f3f3" Offset="0.8" />
-                <GradientStop Color="{DynamicResource ThemeColor}" Offset="2" />
+            <LinearGradientBrush x:Key="WindowBackground" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#ededf0" Offset="0" />
+                <GradientStop Color="#ffffff" Offset="0.4" />
+                <GradientStop Color="#f5f5f7" Offset="0.8" />
+                <GradientStop Color="{DynamicResource ThemeColor}" Offset="1.6" />
             </LinearGradientBrush>
 
             <SolidColorBrush x:Key="WindowContentBackground" Color="#f9f9f9" />
             <SolidColorBrush x:Key="WindowContentBorder" Color="#ccc" />
             <SolidColorBrush x:Key="CardBorder" Color="#ccc" />
+            <SolidColorBrush x:Key="WindowGlassHighlightBrush" Color="#ffffff" Opacity="0.35" />
+            <SolidColorBrush x:Key="WindowBackgroundSolid" Color="#ededf0" />
 
             <!--导航栏-->
             <Color x:Key="NavSelectedColor">#ffffff</Color>
@@ -197,6 +224,13 @@
 
             <Color x:Key="NavUnselectedTextColor">#5c5c5c</Color>
             <SolidColorBrush x:Key="NavUnselectedTextBrush" Color="{StaticResource NavUnselectedTextColor}" />
+
+            <!--导航栏毛玻璃效果-->
+            <SolidColorBrush x:Key="NavGlassBackgroundBrush" Color="#ffffff" Opacity="0.38" />
+            <SolidColorBrush x:Key="NavGlassBorderBrush" Color="#ffffff" Opacity="0.45" />
+            <SolidColorBrush x:Key="NavSelectedGlassBrush" Color="{DynamicResource ThemeColor}" Opacity="0.14" />
+            <SolidColorBrush x:Key="NavSelectedGlassBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.18" />
+            <SolidColorBrush x:Key="NavHoverGlassBrush" Color="#000000" Opacity="0.03" />
 
             <!--设置面板-->
             <Color x:Key="SettingPanelBgColor">#ffffff</Color>
@@ -256,6 +290,17 @@
             <Color x:Key="CategoryAppNumBgColor">#F9F9F9</Color>
             <SolidColorBrush x:Key="CategoryAppNumBgBrush" Color="{StaticResource CategoryAppNumBgColor}" />
 
+            <!--分类页卡片玻璃效果-->
+            <SolidColorBrush x:Key="CategoryCardGlassBgBrush" Color="#ffffff" Opacity="0.50" />
+            <SolidColorBrush x:Key="CategoryCardGlassBorderBrush" Color="#ffffff" Opacity="0.55" />
+            <SolidColorBrush x:Key="CategoryCardHoverGlassBrush" Color="#000000" Opacity="0.04" />
+            <SolidColorBrush x:Key="CategoryCardHoverBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.25" />
+
+            <!--Chart 卡片玻璃效果-->
+            <SolidColorBrush x:Key="ChartCardGlassBgBrush" Color="#ffffff" Opacity="0.45" />
+            <SolidColorBrush x:Key="ChartCardGlassBorderBrush" Color="#ffffff" Opacity="0.55" />
+            <SolidColorBrush x:Key="ChartCardHoverGlassBgBrush" Color="#ffffff" Opacity="0.60" />
+            <SolidColorBrush x:Key="ChartCardHoverBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.35" />
 
             <!--输入框-->
             <Color x:Key="InputBoxBgColor">#F3F3F4</Color>
@@ -298,11 +343,13 @@
             <Color x:Key="WarningColor">#FFC408</Color>
             <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
             
-            <SolidColorBrush x:Key="GrayDark" Color="#f0f0f0" />
+            <SolidColorBrush x:Key="GrayDark" Color="#e8e8ea" Opacity="0.65" />
             
             <Color x:Key="TabOptionTextColor">#4b5563</Color>
             <Color x:Key="TabOptionTextCheckedColor">#111827</Color>
-            <Color x:Key="TabOptionHoverColor">#f9fafb</Color>
+            <SolidColorBrush x:Key="TabOptionHoverBrush" Color="#e2e2e6" />
+            <SolidColorBrush x:Key="TabOptionSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.30" />
+            <SolidColorBrush x:Key="TabOptionSelectedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.45" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

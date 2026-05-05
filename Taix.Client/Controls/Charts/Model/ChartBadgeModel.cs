@@ -3,12 +3,12 @@
 namespace Taix.Client.Controls.Charts.Model;
 
 /// <summary>
-///     徽章模型
+/// 徽章模型
 /// </summary>
 public class ChartBadgeModel
 {
     /// <summary>
-    ///     忽略应用徽章
+    /// 忽略应用徽章
     /// </summary>
     public static ChartBadgeModel IgnoreBadge = new()
     {
@@ -24,17 +24,17 @@ public class ChartBadgeModel
     };
 
     /// <summary>
-    ///     徽章名称
+    /// 徽章名称
     /// </summary>
     public string Name { get; set; }
 
     /// <summary>
-    ///     徽章颜色
+    /// 徽章颜色
     /// </summary>
     public string Color { get; set; }
 
     /// <summary>
-    ///     徽章类型
+    /// 徽章类型
     /// </summary>
     public ChartBadgeType Type { get; set; }
 }

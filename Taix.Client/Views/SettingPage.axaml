@@ -9,39 +9,64 @@
              xmlns:select="using:Taix.Client.Controls.Select"
              xmlns:Tabbar="using:Taix.Client.Controls.Tabbar"
              xmlns:SettingPanel="using:Taix.Client.Controls.SettingPanel"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:Taix.Client.Behaviors"
              x:Class="Taix.Client.Views.SettingPage">
-    <StackPanel Margin="25">
-        <TextBlock Text="{DynamicResource Settings}" FontSize="18" Margin="0,5,0,20" />
-        <Tabbar:Tabbar
-            HorizontalAlignment="Left" Data="{Binding TabbarData}"
-            SelectedIndex="{Binding TabbarSelectedIndex,Mode=TwoWay}" />
+    <i:Interaction.Behaviors>
+        <behaviors:ScrollTabSyncBehavior TabbarName="Tabbar"
+                                         SectionPrefix="Section"
+                                         ScrollViewerName="ContentScrollViewer" />
+    </i:Interaction.Behaviors>
 
-        <TabControl
-            SelectedIndex="{Binding TabbarSelectedIndex}"
-            BorderThickness="0"
-            Margin="0,15,0,0"
-            Padding="0"
-            Background="Transparent">
-            <TabControl.Styles>
-                <Style Selector="TabItem">
-                    <Setter Property="Template">
-                        <ControlTemplate />
-                    </Setter>
-                </Style>
-            </TabControl.Styles>
+    <Grid Margin="25" RowDefinitions="Auto,*">
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="{DynamicResource Settings}" FontSize="18" Margin="0,5,0,20" />
+            <Tabbar:Tabbar x:Name="Tabbar"
+                HorizontalAlignment="Left" Data="{Binding TabbarData}"
+                SelectedIndex="{Binding TabbarSelectedIndex,Mode=TwoWay}" />
+        </StackPanel>
 
-            <TabItem Foreground="{DynamicResource StandardTextBrush}">
-                <SettingPanel:SettingPanel Data="{Binding Data,Mode=TwoWay}" />
-            </TabItem>
+        <ScrollViewer Grid.Row="1" x:Name="ContentScrollViewer"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="SectionContainer" Margin="0,15,0,0">
+                <StackPanel.Styles>
+                    <Style Selector="StackPanel.section-header">
+                        <Setter Property="Orientation" Value="Horizontal" />
+                        <Setter Property="Margin" Value="0,0,0,10" />
+                    </Style>
+                    <Style Selector="Border.section-accent">
+                        <Setter Property="Width" Value="4" />
+                        <Setter Property="Background" Value="{DynamicResource ThemeBrush}" />
+                        <Setter Property="CornerRadius" Value="2" />
+                        <Setter Property="Margin" Value="0,3,10,3" />
+                    </Style>
+                    <Style Selector="TextBlock.section-title">
+                        <Setter Property="FontSize" Value="16" />
+                        <Setter Property="VerticalAlignment" Value="Center" />
+                    </Style>
+                </StackPanel.Styles>
 
-            <TabItem Foreground="{DynamicResource StandardTextBrush}">
-                <SettingPanel:SettingPanel Data="{Binding Data,Mode=TwoWay}" Margin="0,0,0,0" />
-            </TabItem>
+                <StackPanel x:Name="Section0">
+                    <StackPanel Classes="section-header">
+                        <Border Classes="section-accent" />
+                        <TextBlock Classes="section-title" Text="{DynamicResource General}" />
+                    </StackPanel>
+                    <SettingPanel:SettingPanel Data="{Binding GeneralSettings,Mode=TwoWay}" />
+                </StackPanel>
 
-            <TabItem Foreground="{DynamicResource StandardTextBrush}">
-                <!--数据-->
+                <StackPanel x:Name="Section1" Margin="0,30,0,0">
+                    <StackPanel Classes="section-header">
+                        <Border Classes="section-accent" />
+                        <TextBlock Classes="section-title" Text="{DynamicResource Behavior}" />
+                    </StackPanel>
+                    <SettingPanel:SettingPanel Data="{Binding BehaviorSettings,Mode=TwoWay}" />
+                </StackPanel>
 
-                <StackPanel Margin="0,10,0,0">
+                <StackPanel x:Name="Section2" Margin="0,30,0,0">
+                    <StackPanel Classes="section-header">
+                        <Border Classes="section-accent" />
+                        <TextBlock Classes="section-title" Text="{DynamicResource Data}" />
+                    </StackPanel>
                     <TextBlock Text="{DynamicResource DeleteData}" Foreground="#f54f4e" FontSize="14" />
                     <Border Background="{DynamicResource SettingPanelBgBrush}" Padding="20" CornerRadius="6"
                             Margin="0,10,0,0" BorderBrush="{DynamicResource SettingPanelBorderBrush}"
@@ -78,56 +103,60 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
-            </TabItem>
-            <TabItem Foreground="{DynamicResource StandardTextBrush}">
-                <!--关于-->
-                <Border Background="{DynamicResource SettingPanelBgBrush}" Padding="20" CornerRadius="6">
-                    <StackPanel HorizontalAlignment="Left">
-                        <Image Width="25" Source="/Resources/Icons/tai.ico" HorizontalAlignment="Left" />
-                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                            <TextBlock VerticalAlignment="Center">
-                                <Run Text="Taix" />
-                                <Run Text="{DynamicResource Version}" />
-                                <Run Text="{Binding Version}" />
-                            </TextBlock>
-                            <Btn:Button IsVisible="{Binding CheckUpdateBtnVisibility}"
-                                        Command="{Binding CheckUpdate}"
-                                        Margin="20,0,0,0"
-                                        VerticalAlignment="Center" Width="120"
-                                        Icon="SetlockScreen" Content="{DynamicResource CheckUpdate}" />
-                        </StackPanel>
-                        <TextBlock Margin="0,30,0,0">
 
-                            <HyperlinkButton Command="{Binding OpenURL}"
-                                             CommandParameter="https://github.com/Planshit/Tai/discussions/279"
-                                             Content="{DynamicResource PlugIn}" />
-                        </TextBlock>
-                        <TextBlock Margin="0,15,0,0">
-                            <Run Text="{DynamicResource OpenSource}" />
-                            <HyperlinkButton Command="{Binding OpenURL}"
-                                             CommandParameter="https://github.com/NLick47/Taix">
-                                https://github.com/NLick47/Taix
-                            </HyperlinkButton>
-                        </TextBlock>
-                        <TextBlock Margin="0,5,0,0">
-                            <Run Text="{DynamicResource Discuss}" />
-                            <HyperlinkButton Command="{Binding OpenURL}"
-                                             CommandParameter="https://github.com/NLick47/Taix/discussions">
-                                https://github.com/NLick47/Taix/discussions
-                            </HyperlinkButton>
-                        </TextBlock>
-
-                        <TextBlock Margin="0,10,0,0">
-                            <Run Text="{DynamicResource ExternalDeclaration}" />
-                        </TextBlock>
-                        <TextBlock Foreground="Gray" Margin="0,5,0,0">
-                            <Run Text="Icon" />
-                            <Run Text="{DynamicResource FromMicrosoft}" />
-                            <Run Text="Emoji}" />
-                        </TextBlock>
+                <StackPanel x:Name="Section3" Margin="0,30,0,0">
+                    <StackPanel Classes="section-header">
+                        <Border Classes="section-accent" />
+                        <TextBlock Classes="section-title" Text="{DynamicResource About}" />
                     </StackPanel>
-                </Border>
-            </TabItem>
-        </TabControl>
-    </StackPanel>
+                    <Border Background="{DynamicResource SettingPanelBgBrush}" Padding="20" CornerRadius="6">
+                        <StackPanel HorizontalAlignment="Left">
+                            <Image Width="25" Source="/Resources/Icons/tai.ico" HorizontalAlignment="Left" />
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <TextBlock VerticalAlignment="Center">
+                                    <Run Text="Taix" />
+                                    <Run Text="{DynamicResource Version}" />
+                                    <Run Text="{Binding Version}" />
+                                </TextBlock>
+                                <Btn:Button IsVisible="{Binding CheckUpdateBtnVisibility}"
+                                            Command="{Binding CheckUpdate}"
+                                            Margin="20,0,0,0"
+                                            VerticalAlignment="Center" Width="120"
+                                            Icon="SetlockScreen" Content="{DynamicResource CheckUpdate}" />
+                            </StackPanel>
+                            <TextBlock Margin="0,30,0,0">
+
+                                <HyperlinkButton Command="{Binding OpenURL}"
+                                                 CommandParameter="https://github.com/Planshit/Tai/discussions/279"
+                                                 Content="{DynamicResource PlugIn}" />
+                            </TextBlock>
+                            <TextBlock Margin="0,15,0,0">
+                                <Run Text="{DynamicResource OpenSource}" />
+                                <HyperlinkButton Command="{Binding OpenURL}"
+                                                 CommandParameter="https://github.com/NLick47/Taix">
+                                    https://github.com/NLick47/Taix
+                                </HyperlinkButton>
+                            </TextBlock>
+                            <TextBlock Margin="0,5,0,0">
+                                <Run Text="{DynamicResource Discuss}" />
+                                <HyperlinkButton Command="{Binding OpenURL}"
+                                                 CommandParameter="https://github.com/NLick47/Taix/discussions">
+                                    https://github.com/NLick47/Taix/discussions
+                                </HyperlinkButton>
+                            </TextBlock>
+
+                            <TextBlock Margin="0,10,0,0">
+                                <Run Text="{DynamicResource ExternalDeclaration}" />
+                            </TextBlock>
+                            <TextBlock Foreground="Gray" Margin="0,5,0,0">
+                                <Run Text="Icon" />
+                                <Run Text="{DynamicResource FromMicrosoft}" />
+                                <Run Text="Emoji}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

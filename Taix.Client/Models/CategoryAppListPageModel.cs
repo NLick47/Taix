@@ -8,15 +8,15 @@ namespace Taix.Client.Models;
 public class CategoryAppListPageModel : ModelBase
 {
     private List<ChooseAppModel> _appList = [];
-    private CategoryModel _category = null!;
+    private CategoryModel? _category;
     private bool _chooseVisibility;
     private List<AppModel> _data = [];
     private string _searchInput = string.Empty;
     private AppModel? _selectedItem;
 
-    public bool IsSystemCategory => _category.Data.IsSystem;
+    public bool IsSystemCategory => _category?.Data.IsSystem ?? false;
 
-    public CategoryModel Category
+    public CategoryModel? Category
     {
         get => _category;
         set

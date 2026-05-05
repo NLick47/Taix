@@ -9,6 +9,8 @@ use super::app::AppModel;
 pub struct DailyLogModel {
     #[sqlx(rename = "ID")]
     pub id: i64,
+    /// UTC 日期 (YYYY-MM-DD)，按 UTC 00:00 边界汇总。
+    /// 查询时由前端传入本地日期，后端转换为 UTC 日期进行检索。
     #[sqlx(rename = "Date")]
     pub date: chrono::NaiveDate,
     #[sqlx(rename = "AppModelID")]

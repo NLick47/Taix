@@ -1,4 +1,6 @@
-use crate::models::{AppDurationEvent, AppInfo, AppType, SleepStatus, WindowInfo};
+use crate::models::{AppDurationEvent, AppInfo, AppType, SessionCheckpoint, SleepStatus, WindowInfo};
+use std::path::PathBuf;
+use std::time::Duration;
 use tokio::sync::broadcast;
 use tracing::info;
 
@@ -8,15 +10,15 @@ pub struct AppTimer {
     tx: broadcast::Sender<AppDurationEvent>,
     state: AppTimerState,
     ignore_list: Vec<String>,
+    data_dir: Option<PathBuf>,
 }
 
 struct AppTimerState {
     active_app: AppInfo,
     active_window: WindowInfo,
     start_time: Option<chrono::DateTime<chrono::Local>>,
-    last_reported_start: Option<chrono::DateTime<chrono::Local>>,
-    last_reported_end: Option<chrono::DateTime<chrono::Local>>,
     accumulated_ms: i64,
+    is_sleeping: bool,
 }
 
 impl Default for AppTimerState {
@@ -25,9 +27,8 @@ impl Default for AppTimerState {
             active_app: AppInfo::empty(),
             active_window: WindowInfo::empty(),
             start_time: None,
-            last_reported_start: None,
-            last_reported_end: None,
             accumulated_ms: 0,
+            is_sleeping: false,
         }
     }
 }
@@ -37,14 +38,16 @@ impl AppTimer {
         event_rx: broadcast::Receiver<crate::models::AppActiveEvent>,
         sleep_rx: broadcast::Receiver<SleepStatus>,
         ignore_list: Vec<String>,
+        data_dir: Option<PathBuf>,
     ) -> Self {
-        let (tx, _rx) = broadcast::channel(256);
+        let (tx, _rx) = broadcast::channel(512);
         Self {
             rx: event_rx,
             sleep_rx,
             tx,
             state: AppTimerState::default(),
             ignore_list,
+            data_dir,
         }
     }
 
@@ -55,6 +58,10 @@ impl AppTimer {
     pub async fn run(mut self) {
         let mut rx = self.rx;
         let mut sleep_rx = self.sleep_rx;
+        let mut periodic_tick = tokio::time::interval(Duration::from_secs(60));
+        periodic_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        // 跳过首次立即触发，等 60s 后再开始
+        periodic_tick.reset();
         info!("[AppTimer] Started");
 
         loop {
@@ -84,10 +91,9 @@ impl AppTimer {
                                     info!("[AppTimer] App active: [{}] {} (title: {})", event.app.app_type, event.app.process, event.window.title);
                                 }
 
-                                // 毫秒零头归前 app，避免时间归属错误
-                                self.state.accumulated_ms = 0;
+                                // build_args 的 force_flush 已把毫秒零头进位并清零
 
-                                self.state.start_time = if is_statistical { Some(now) } else { None };
+                                self.state.start_time = if is_statistical && !self.state.is_sleeping { Some(now) } else { None };
                                 self.state.active_app = if is_statistical { event.app } else { AppInfo::empty() };
                                 self.state.active_window = if is_statistical { event.window } else { WindowInfo::empty() };
                             }
@@ -111,9 +117,13 @@ impl AppTimer {
                                         }
                                     }
                                     self.state.start_time = None;
+                                    self.state.is_sleeping = true;
+                                    info!("[AppTimer] Entered sleep mode, timer paused");
                                 }
                                 SleepStatus::Wake => {
-                                    if !self.state.active_app.is_empty() && self.state.start_time.is_none() {
+                                    self.state.is_sleeping = false;
+                                    info!("[AppTimer] Exited sleep mode, timer resuming");
+                                    if self.state.active_app.is_valid() && self.state.start_time.is_none() {
                                         self.state.start_time = Some(chrono::Local::now());
                                         info!("[AppTimer] System wake | resumed: [{}] {} (title: {})",
                                             self.state.active_app.app_type, self.state.active_app.process, self.state.active_window.title);
@@ -125,6 +135,48 @@ impl AppTimer {
                             tracing::warn!("[AppTimer] Sleep events lagged by {} messages", n);
                         }
                         Err(broadcast::error::RecvError::Closed) => break,
+                    }
+                }
+                _ = periodic_tick.tick() => {
+                    if self.state.is_sleeping {
+                        if self.state.active_app.is_valid() {
+                            tracing::warn!("[AppTimer] Skipping periodic flush while sleeping | app={}", self.state.active_app.process);
+                        } else {
+                            tracing::warn!("[AppTimer] Skipping periodic flush while sleeping | no active app");
+                        }
+                        continue;
+                    }
+                    if !self.state.active_app.is_valid() || self.state.start_time.is_none() {
+                        continue;
+                    }
+                    if let Some(args) = build_args(&mut self.state, chrono::Local::now(), true) {
+                        info!("[AppTimer] Periodic flush | [{}] {} (title: {}) | duration: {}s",
+                            args.app.app_type, args.app.process, self.state.active_window.title, args.duration_secs);
+                        if let Err(e) = self.tx.send(args) {
+                            tracing::warn!("[AppTimer] Failed to broadcast periodic duration: {}", e);
+                        }
+                    }
+                    self.state.start_time = Some(chrono::Local::now());
+                    // 写检查点用于崩溃恢复
+                    if let Some(dir) = &self.data_dir {
+                        if self.state.active_app.is_valid() {
+                            if let Some(since) = self.state.start_time {
+                                let cp = SessionCheckpoint {
+                                    process: self.state.active_app.process.clone(),
+                                    exe_path: self.state.active_app.executable_path.clone(),
+                                    icon_path: self.state.active_app.icon_path.clone(),
+                                    desc: self.state.active_app.description.clone(),
+                                    since_ts: since.timestamp(),
+                                };
+                                let path = dir.join("active_session.json");
+                                let tmp = dir.join("active_session.json.tmp");
+                                if let Ok(json) = serde_json::to_string(&cp) {
+                                    if std::fs::write(&tmp, &json).is_ok() {
+                                        let _ = std::fs::rename(&tmp, &path);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -150,7 +202,7 @@ fn build_args(
 ) -> Option<AppDurationEvent> {
     let start = state.start_time?;
     let active = &state.active_app;
-    if active.is_empty() {
+    if !active.is_valid() {
         return None;
     }
 
@@ -159,26 +211,33 @@ fn build_args(
         return None;
     }
 
+    // 单次 flush 不超过 1 小时，防止系统时钟跳变（NTP、手动调时、休眠恢复）导致异常时长
+    const MAX_FLUSH_DURATION_MS: i64 = 3600_000;
+    let duration_ms = if duration_ms > MAX_FLUSH_DURATION_MS {
+        tracing::warn!(
+            "[AppTimer] Flush duration {}ms exceeds max {}ms for {}, truncating",
+            duration_ms, MAX_FLUSH_DURATION_MS, active.process
+        );
+        MAX_FLUSH_DURATION_MS
+    } else {
+        duration_ms
+    };
+
     let total_ms = duration_ms + state.accumulated_ms;
     let mut duration_secs = total_ms / 1000;
     state.accumulated_ms = total_ms % 1000;
 
-    // 强制刷盘时不足一秒进位
-    if duration_secs <= 0 && force_flush && state.accumulated_ms > 0 {
-        duration_secs = 1;
+    // 强制刷盘时毫秒零头四舍五入（>=500ms 进位），同时清零防止归属给下一个应用
+    if force_flush {
+        if state.accumulated_ms >= 500 {
+            duration_secs += 1;
+        }
         state.accumulated_ms = 0;
     }
 
     if duration_secs <= 0 {
         return None;
     }
-
-    if state.last_reported_start == Some(start) && state.last_reported_end == Some(end_time) {
-        return None;
-    }
-
-    state.last_reported_start = Some(start);
-    state.last_reported_end = Some(end_time);
 
     Some(AppDurationEvent {
         duration_secs,

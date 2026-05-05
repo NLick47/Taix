@@ -1,14 +1,54 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub const CURRENT_CONFIG_VERSION: u32 = 1;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ConfigModel {
+    #[serde(rename = "Version", default)]
+    pub version: u32,
     #[serde(rename = "Links")]
     pub links: Vec<LinkModel>,
     #[serde(rename = "General")]
     pub general: GeneralModel,
     #[serde(rename = "Behavior")]
     pub behavior: BehaviorModel,
+}
+
+impl Default for ConfigModel {
+    fn default() -> Self {
+        Self {
+            version: CURRENT_CONFIG_VERSION,
+            links: Vec::new(),
+            general: GeneralModel::default(),
+            behavior: BehaviorModel::default(),
+        }
+    }
+}
+
+impl ConfigModel {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.version == 0 {
+            return Err("配置版本缺失或无效".to_string());
+        }
+
+        let sync_url = self.general.sync_url.trim();
+        if !sync_url.is_empty() {
+            if !sync_url.starts_with("http://") && !sync_url.starts_with("https://") {
+                return Err("同步地址(SyncUrl)必须以 http:// 或 https:// 开头".to_string());
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn migrate(&mut self) {
+        if self.version >= CURRENT_CONFIG_VERSION {
+            return;
+        }
+
+        self.version = CURRENT_CONFIG_VERSION;
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,12 +70,10 @@ pub struct GeneralModel {
     pub index_page_more_num: i32,
     #[serde(rename = "IsWebEnabled")]
     pub is_web_enabled: bool,
-    #[serde(rename = "IsSaveWindowSize")]
-    pub is_save_window_size: bool,
-    #[serde(rename = "WindowWidth")]
-    pub window_width: f64,
-    #[serde(rename = "WindowHeight")]
-    pub window_height: f64,
+    #[serde(rename = "IsEnableTray")]
+    pub is_enable_tray: bool,
+    #[serde(rename = "SyncUrl")]
+    pub sync_url: String,
 }
 
 impl Default for GeneralModel {
@@ -49,9 +87,8 @@ impl Default for GeneralModel {
             index_page_frequent_use_num: 2,
             index_page_more_num: 11,
             is_web_enabled: false,
-            is_save_window_size: false,
-            window_width: 0.0,
-            window_height: 0.0,
+            is_enable_tray: false,
+            sync_url: String::new(),
         }
     }
 }
@@ -63,7 +100,7 @@ pub struct BehaviorModel {
     pub is_sleep_watch: bool,
     #[serde(rename = "IgnoreProcessList")]
     pub ignore_process_list: Vec<String>,
-    #[serde(rename = "IgnoreURLList")]
+    #[serde(rename = "IgnoreUrlList", alias = "IgnoreURLList")]
     pub ignore_url_list: Vec<String>,
     #[serde(rename = "IsWhiteList")]
     pub is_white_list: bool,

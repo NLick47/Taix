@@ -2,6 +2,20 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:controls="using:Taix.Client.Controls.Navigation">
 
+    <Design.PreviewWith>
+        <Border Padding="40" Background="#161616">
+            <controls:Navigation Width="80">
+                <controls:Navigation.BottomExtContent>
+                    <StackPanel Spacing="4">
+                        <controls:NavigationItem Title="首页" Icon="Home" IsSelected="True" />
+                        <controls:NavigationItem Title="图表" Icon="FourBars" />
+                        <controls:NavigationItem Title="设置" Icon="Settings" />
+                    </StackPanel>
+                </controls:Navigation.BottomExtContent>
+            </controls:Navigation>
+        </Border>
+    </Design.PreviewWith>
+
     <ControlTheme x:Key="{x:Type controls:Navigation}"
                   TargetType="controls:Navigation">
 
@@ -10,24 +24,56 @@
         <Setter Property="UseLayoutRounding" Value="True" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Grid Margin="10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <ContentPresenter Content="{TemplateBinding TopExtContent}" />
-                    <Grid Grid.Row="1" Background="Transparent" x:Name="MenuGrid">
-                        <Border x:Name="ActiveBlock" Width="5" Height="25"
-                                ZIndex="10"
-                                CornerRadius="2" Background="{DynamicResource ThemeBrush}" HorizontalAlignment="Left"
-                                VerticalAlignment="Top" />
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel x:Name="ItemsPanel" />
-                        </ScrollViewer>
-                    </Grid>
-                    <ContentPresenter Content="{TemplateBinding BottomExtContent}"
-                                      Grid.Row="2" />
+                <Grid Margin="8,6">
+                    <!-- 弥散阴影层 -->
+                    <Border CornerRadius="20"
+                            BoxShadow="0 8 32 0 #20000000"
+                            IsHitTestVisible="False" />
+
+                    <!-- 玻璃主体 -->
+                    <Border CornerRadius="20"
+                            Background="{DynamicResource NavGlassBackgroundBrush}"
+                            BorderBrush="{DynamicResource NavGlassBorderBrush}"
+                            BorderThickness="1">
+
+                        <!-- 玻璃内边缘高光：模拟光线折射 -->
+                        <Border CornerRadius="19"
+                                BorderThickness="1,1,0,0"
+                                BorderBrush="{DynamicResource WindowGlassHighlightBrush}"
+                                Padding="1">
+                            <Grid>
+                                <!-- 顶部 ThemeColor 环境晕染 -->
+                                <Border CornerRadius="19"
+                                        IsHitTestVisible="False"
+                                        VerticalAlignment="Top"
+                                        Height="50"
+                                        Opacity="0.06">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                            <GradientStop Color="{DynamicResource ThemeColor}" Offset="0" />
+                                            <GradientStop Color="Transparent" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                </Border>
+
+                                <Grid Margin="4,12">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <ContentPresenter Content="{TemplateBinding TopExtContent}" />
+                                    <Grid Grid.Row="1" Background="Transparent" x:Name="MenuGrid">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                            <StackPanel x:Name="ItemsPanel" />
+                                        </ScrollViewer>
+                                    </Grid>
+                                    <ContentPresenter Content="{TemplateBinding BottomExtContent}"
+                                                      Grid.Row="2" />
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </Border>
                 </Grid>
             </ControlTemplate>
         </Setter>

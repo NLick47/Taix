@@ -1,0 +1,16 @@
+{
+  "ignore_processes": [
+    "Taix",
+    "Tai",
+    "SearchHost",
+    "Taskmgr",
+    "ApplicationFrameHost",
+    "StartMenuExperienceHost",
+    "ShellExperienceHost",
+    "OpenWith",
+    "Updater",
+    "LockApp",
+    "dwm",
+    "SystemSettingsAdminFlows"
+  ]
+}

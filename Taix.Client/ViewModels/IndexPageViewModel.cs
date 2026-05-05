@@ -48,7 +48,7 @@ public class IndexPageViewModel : IndexPageModel
         ToDetailCommand = ReactiveCommand.Create<object>(OnToDetail);
         RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync);
 
-        Initialize();
+        InitializeStaticData();
     }
 
     public ReactiveCommand<object, Unit> ToDetailCommand { get; }
@@ -56,7 +56,8 @@ public class IndexPageViewModel : IndexPageModel
 
     public List<SelectItemModel> MoreTypeOptions { get; private set; } = [];
 
-    private void Initialize()
+
+    private void InitializeStaticData()
     {
         var config = _appConfig.GetConfig();
         FrequentUseNum = config.General.IndexPageFrequentUseNum + 1;
@@ -68,9 +69,8 @@ public class IndexPageViewModel : IndexPageModel
             Application.Current?.FindResource("ThisWeek") as string ?? "This Week"
         ];
 
-        WhenPropertyChanged(this, x => x.TabbarSelectedIndex, _ => LoadDataAsync(), skipInitial: false);
+        WhenPropertyChanged(this, x => x.TabbarSelectedIndex, _ => LoadDataAsync());
         TabbarSelectedIndex = 0;
-
 
         AppContextMenu = _appContextMenuService.GetContextMenu();
         WebSiteContextMenu = _webSiteContextMenuService.GetContextMenu();
@@ -91,6 +91,14 @@ public class IndexPageViewModel : IndexPageModel
         MoreType = MoreTypeOptions[0];
     }
 
+    /// <summary>
+    /// 页面导航到达时执行数据加载。
+    /// </summary>
+    public override async Task OnNavigatedToAsync()
+    {
+        await LoadDataAsync();
+    }
+
     private Task OnRefreshAsync(object _) => LoadDataAsync();
 
     private Task LoadDataAsync()
@@ -106,42 +114,52 @@ public class IndexPageViewModel : IndexPageModel
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// 加载本周数据
+    /// </summary>
     private async Task LoadThisWeekDataAsync(CancellationToken cancellationToken)
     {
         var week = Time.GetThisWeekDate();
 
-        // 应用数据：一次请求获取全量，客户端分割
-        var appList = await _dataService.GetThisWeeklogListAsync();
-        var appChartData = ChartDataMapper.MapFromDailyLogs(appList);
+        var appDataTask = _dataService.GetThisWeeklogListAsync();
+        var webDataTask = _webDataService.GetDateRangeWebSiteListAsync(week[0], week[1]);
+
+        await Task.WhenAll(appDataTask, webDataTask);
         cancellationToken.ThrowIfCancellationRequested();
+
+        var appList = await appDataTask;
+        var appChartData = ChartDataMapper.MapFromDailyLogs(appList);
         WeekData = appChartData;
         AppFrequentUseData = appChartData.Take(FrequentUseNum).ToList();
         AppMoreData = appChartData.Skip(FrequentUseNum).Take(MoreNum).ToList();
 
-        // 网页数据：一次请求获取全量，客户端分割
-        var webList = await _webDataService.GetDateRangeWebSiteListAsync(week[0], week[1]);
+        var webList = await webDataTask;
         var webChartData = ChartDataMapper.MapFromWebSites(webList);
-        cancellationToken.ThrowIfCancellationRequested();
         WebFrequentUseData = webChartData.Take(FrequentUseNum).ToList();
         WebMoreData = webChartData.Skip(FrequentUseNum).Take(MoreNum).ToList();
     }
 
+    /// <summary>
+    /// 加载今日数据
+    /// </summary>
     private async Task LoadTodayDataAsync(CancellationToken cancellationToken)
     {
         var today = DateTime.Now.Date;
 
-        // 应用数据：一次请求获取全量，客户端分割
-        var appList = await _dataService.GetDateRangelogListAsync(today, today);
-        var appChartData = ChartDataMapper.MapFromDailyLogs(appList);
+        var appDataTask = _dataService.GetDateRangelogListAsync(today, today);
+        var webDataTask = _webDataService.GetDateRangeWebSiteListAsync(today, today);
+
+        await Task.WhenAll(appDataTask, webDataTask);
         cancellationToken.ThrowIfCancellationRequested();
+
+        var appList = await appDataTask;
+        var appChartData = ChartDataMapper.MapFromDailyLogs(appList);
         WeekData = appChartData;
         AppFrequentUseData = appChartData.Take(FrequentUseNum).ToList();
         AppMoreData = appChartData.Skip(FrequentUseNum).Take(MoreNum).ToList();
 
-        // 网页数据：一次请求获取全量，客户端分割
-        var webList = await _webDataService.GetDateRangeWebSiteListAsync(today, today);
+        var webList = await webDataTask;
         var webChartData = ChartDataMapper.MapFromWebSites(webList);
-        cancellationToken.ThrowIfCancellationRequested();
         WebFrequentUseData = webChartData.Take(FrequentUseNum).ToList();
         WebMoreData = webChartData.Skip(FrequentUseNum).Take(MoreNum).ToList();
     }

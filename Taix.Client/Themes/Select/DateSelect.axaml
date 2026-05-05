@@ -5,7 +5,7 @@
                     xmlns:converter="using:Taix.Client.Controls.Converters"
                     xmlns:controls="using:Taix.Client.Controls.Select"
                     xmlns:select="clr-namespace:Taix.Client.Themes.Select">
-    <SolidColorBrush x:Key="ThemeLightBrush" Color="{DynamicResource ThemeColor}" Opacity=".1" />
+    <SolidColorBrush x:Key="ThemeLightBrush" Color="{DynamicResource ThemeColor}" Opacity=".15" />
     <select:DateFormatConverter x:Key="DateFormatConverter" />
     <converter:MultiValueToBoolConverter x:Key="MultiValueToBoolConverter" />
     <DataTemplate x:Key="DayViewTemplate" x:DataType="controls:DayModel">
@@ -31,7 +31,7 @@
                    </Style>
                 
                    <Style Selector="Border:pointerover">
-                       <Setter Property="Background" Value="{DynamicResource ThemeColor}"/>
+                       <Setter Property="Background" Value="{DynamicResource ThemeLightBrush}"/>
                    </Style>
                    
                    <Style Selector="Border:disabled TextBlock">
@@ -77,7 +77,7 @@
                   </Style>
                 
                   <Style Selector="Border:pointerover">
-                      <Setter Property="Background" Value="{DynamicResource ThemeColor}"/>
+                      <Setter Property="Background" Value="{DynamicResource ThemeLightBrush}"/>
                   </Style>
                   
                   <Style Selector="Border:disabled TextBlock">
@@ -132,7 +132,7 @@
                     </Style>
                     
                     <Style Selector="Border:pointerover">
-                        <Setter Property="Background" Value="{DynamicResource ThemeColor}"/>
+                        <Setter Property="Background" Value="{DynamicResource ThemeLightBrush}"/>
                     </Style>
                 </Border.Styles>
                 
@@ -220,7 +220,7 @@
 
             <Style Selector="controls|DateSelect:pointerover">
                 <Style Selector="^ /template/ Border#Main">
-                    <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource NavHoverGlassBrush}" />
                 </Style>
 
                 <Style Selector="^ /template/ base|Icon#Icon">
@@ -233,21 +233,12 @@
                 <Border Background="{TemplateBinding Background}"
                         HorizontalAlignment="Left">
                     <Grid>
-                        <Border Background="{Binding ElementName=Main,Path=Background}" ZIndex="-1"
-                                Width="{Binding ElementName=Main,Path=Bounds.Width}"
-                                Height="{Binding ElementName=Main,Path=Bounds.Height}"
-                                CornerRadius="{Binding ElementName=Main,Path=CornerRadius}">
-                            <Border.Effect>
-                                <DropShadowEffect Color="#d8d2d2" BlurRadius="1"
-                                                  OffsetX="-3.46"
-                                                  OffsetY="2" Opacity="0.1" />
-                            </Border.Effect>
-                        </Border>
-
                         <Border x:Name="Main" Margin="0,0,0,0"
-                                Background="{DynamicResource StandardBackgroundBrush}"
+                                Background="{DynamicResource NavGlassBackgroundBrush}"
                                 HorizontalAlignment="Left" Padding="18,10"
-                                CornerRadius="5">
+                                CornerRadius="10"
+                                BorderBrush="{DynamicResource NavGlassBorderBrush}"
+                                BorderThickness="1">
                             <Interaction.Behaviors>
                                 <EventTriggerBehavior EventName="PointerPressed">
                                     <InvokeCommandAction
@@ -274,11 +265,11 @@
 							Path=IsOpen,Mode=TwoWay}">
                             <Border
                                 x:Name="SelectContainer"
-                                CornerRadius="10"
+                                CornerRadius="12"
                                 BorderBrush="{DynamicResource PopupBorderBrush}"
                                 BorderThickness="1"
                                 Background="{DynamicResource PopupBackgroundBrush}"
-                                Padding="10"
+                                Padding="12"
                                 Margin="10">
                                 <Border.Effect>
                                     <DropShadowDirectionEffect

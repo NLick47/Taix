@@ -9,7 +9,7 @@ public class PageModel
     public UserControl Instance { get; set; }
 
     /// <summary>
-    ///     滚动条位置
+    /// 滚动条位置
     /// </summary>
     public double ScrollValue { get; set; }
 }

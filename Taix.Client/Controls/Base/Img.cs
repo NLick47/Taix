@@ -1,12 +1,12 @@
-﻿using System;
-using System.IO;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Avalonia.Platform;
-using Avalonia.Platform.Storage;
+using Taix.Client.Librarys.Image;
+using Taix.Client.Logging;
 
 namespace Taix.Client.Controls.Base;
 
@@ -16,8 +16,7 @@ public class Img : TemplatedControl
         AvaloniaProperty.Register<Img, CornerRadius>(nameof(Radius));
 
     public static readonly StyledProperty<IImage> ResourceProperty =
-        AvaloniaProperty.Register<Img, IImage>(nameof(Resource),
-            new Bitmap(AssetLoader.Open(new Uri("avares://Taix/Resources/Icons/defaultIcon.png"))));
+        AvaloniaProperty.Register<Img, IImage>(nameof(Resource));
 
     public static readonly DirectProperty<Img, string> URLProperty =
         AvaloniaProperty.RegisterDirect<Img, string>(
@@ -26,6 +25,13 @@ public class Img : TemplatedControl
             (o, v) => o.URL = v);
 
     private string _url;
+    private CancellationTokenSource? _cts;
+    private Bitmap? _pendingRelease;
+
+    public Img()
+    {
+        Resource = Imager.GetDefaultBitmap();
+    }
 
     public CornerRadius Radius
     {
@@ -47,38 +53,110 @@ public class Img : TemplatedControl
 
     protected override Type StyleKeyOverride => typeof(Img);
 
+    private void ReloadFromUrl()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+
+        var path = URL;
+
+        if (_pendingRelease != null)
+        {
+            Imager.Release(_pendingRelease);
+            _pendingRelease = null;
+        }
+
+        if (Resource is Bitmap oldBmp)
+            Imager.Release(oldBmp);
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            Resource = Imager.GetDefaultBitmap();
+            return;
+        }
+
+        if (Imager.TryGetFromCache(path, out var cached))
+        {
+            Resource = cached;
+            return;
+        }
+
+        Resource = Imager.GetDefaultBitmap();
+
+        if (Imager.IsFailed(path))
+            return;
+
+        _ = LoadImageAsync(path, token);
+    }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-        if (e.Property == URLProperty && e.OldValue != e.NewValue && e.NewValue != null)
+
+        if (e.Property != URLProperty) return;
+        if (e.OldValue == e.NewValue) return;
+
+        ReloadFromUrl();
+    }
+
+    private async Task LoadImageAsync(string path, CancellationToken token)
+    {
+        Bitmap? bitmap = null;
+        try
         {
-            var control = e.Sender as Img;
-            control.Handle(e.NewValue.ToString());
+            bitmap = await Imager.LoadAsync(path);
+            token.ThrowIfCancellationRequested();
+
+            if (URL != path)
+                return;
+
+            if (Resource is Bitmap oldBmp && oldBmp != bitmap)
+                Imager.Release(oldBmp);
+            Resource = bitmap;
+            bitmap = null;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"图片加载失败：{path}", ex);
+        }
+        finally
+        {
+            if (bitmap != null)
+                Imager.Release(bitmap);
         }
     }
 
-
-    private async void Handle(string path)
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        if (string.IsNullOrEmpty(path)) return;
-        
-        try
+        base.OnDetachedFromVisualTree(e);
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+
+        if (Resource is Bitmap bmp)
         {
-            if (path.IndexOf("avares:", StringComparison.Ordinal) != -1)
-            {
-                Resource = new Bitmap(AssetLoader.Open(new Uri(path)));
-                return;
-            }
-            var src = path.IndexOf(":", StringComparison.Ordinal) != -1 ? path : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
-            var desktop = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-            var storage = desktop.MainWindow.StorageProvider;
-            var result = await storage.TryGetFileFromPathAsync(src);
-            if (result != null) Resource = new Bitmap(await result.OpenReadAsync());
+            _pendingRelease = bmp;
+            Resource = null;
         }
-        catch (Exception e)
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        if (_pendingRelease != null)
         {
-            // ignored
+            Resource = _pendingRelease;
+            _pendingRelease = null;
+            return;
         }
+
+        if (Resource == null)
+            ReloadFromUrl();
     }
 }

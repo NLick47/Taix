@@ -12,6 +12,7 @@ use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock, Semaphore};
 
 use crate::models::request::AddUrlBrowseTimeRequest;
+use crate::services::config::ConfigService;
 use crate::services::web_data::WebDataService;
 
 pub struct SentryState {
@@ -20,6 +21,7 @@ pub struct SentryState {
     pub tx: broadcast::Sender<String>,
     pub web_favicons_dir: PathBuf,
     pub semaphore: Arc<Semaphore>,
+    pub config_service: Arc<ConfigService>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -62,23 +64,23 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<SentryState>) {
                         }
 
                         if text == "sleep" {
-                            *state.is_sleep.write().await = true;
                             let _ = state.tx.send("sleep".to_string());
                             continue;
                         }
 
                         if text == "wake" {
-                            *state.is_sleep.write().await = false;
                             let _ = state.tx.send("wake".to_string());
                             continue;
                         }
 
                         match serde_json::from_str::<WebBrowseData>(&text) {
                             Ok(data) => {
-                                let semaphore = state.semaphore.clone();
                                 let state = state.clone();
                                 tokio::spawn(async move {
-                                    let Ok(_permit) = semaphore.acquire().await else { return; };
+                                    let Ok(_permit) = state.semaphore.clone().try_acquire_owned() else {
+                                        tracing::warn!("[WebSentry] Too many concurrent tasks, dropping browse data");
+                                        return;
+                                    };
                                     handle_browse_data(state, data).await;
                                 });
                             }
@@ -99,8 +101,12 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<SentryState>) {
 }
 
 async fn handle_browse_data(state: Arc<SentryState>, data: WebBrowseData) {
-    let date_time = chrono::DateTime::from_timestamp(data.active_time, 0)
-        .map(|dt| dt.with_timezone(&chrono::Local).naive_local());
+    if state.config_service.should_ignore_url(&data.url).await {
+        tracing::debug!("[WebSentry] URL ignored by config: {}", data.url);
+        return;
+    }
+
+    let date_time = chrono::DateTime::from_timestamp(data.active_time, 0);
     let req = AddUrlBrowseTimeRequest {
         url: data.url,
         title: data.title,
@@ -114,5 +120,6 @@ async fn handle_browse_data(state: Arc<SentryState>, data: WebBrowseData) {
         &state.pool,
         req,
         Some(favicons_dir),
+        &state.config_service,
     ).await;
 }

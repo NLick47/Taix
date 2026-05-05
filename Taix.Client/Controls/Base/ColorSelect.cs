@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
@@ -44,7 +45,7 @@ public class ColorSelect : TemplatedControl
     {
         this.GetObservable(IsOpenProperty).Subscribe(isOpen => { HandleWindowEvents(isOpen); });
         ShowSelectCommand = ReactiveCommand.Create<object>(OnShowSelect);
-        ColorSelectCommand = ReactiveCommand.Create<object>(OnColorSelect);
+        ColorSelectCommand = ReactiveCommand.CreateFromTask<object>(OnColorSelectAsync);
         SelectionChangedCommand = ReactiveCommand.Create<string>(OnSelectionChanged);
 
         LoadColors();
@@ -116,7 +117,7 @@ public class ColorSelect : TemplatedControl
 
     private void HandleWindowEvents(bool isOpen)
     {
-        var window = this.GetVisualRoot() as Avalonia.Controls.Window;
+        var window = this.VisualRoot as Avalonia.Controls.Window;
         if (window != null)
         {
             if (isOpen)
@@ -144,7 +145,7 @@ public class ColorSelect : TemplatedControl
         IsOpen = false;
     }
 
-    private async void OnColorSelect(object obj)
+    private async Task OnColorSelectAsync(object obj)
     {
         IsOpen = false;
         var picker = new ColorPickerDialog();

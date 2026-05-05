@@ -43,20 +43,11 @@ public class Time
 
     public static DateTime[] GetThisWeekDate()
     {
-        DateTime weekStartDate = DateTime.Now, weekEndDate = DateTime.Now;
-        if (DateTime.Now.DayOfWeek == DayOfWeek.Monday)
-        {
-            weekStartDate = DateTime.Now.Date;
-            weekEndDate = DateTime.Now.Date.AddDays(6);
-        }
-        else
-        {
-            var weekNum = (int)DateTime.Now.DayOfWeek;
-            if (weekNum == 0) weekNum = 7;
-            weekNum -= 1;
-            weekStartDate = DateTime.Now.Date.AddDays(-weekNum);
-            weekEndDate = weekStartDate.Date.AddDays(6);
-        }
+        var weekNum = (int)DateTime.Now.DayOfWeek;
+        if (weekNum == 0) weekNum = 7;
+        weekNum -= 1;
+        var weekStartDate = DateTime.Now.Date.AddDays(-weekNum);
+        var weekEndDate = weekStartDate.AddDays(6);
 
         return new[] { weekStartDate, weekEndDate };
     }
