@@ -25,6 +25,7 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
+            10.0.x
 
       - name: Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -76,9 +77,14 @@ jobs:
           Copy-Item "script/install.ps1"   -Destination $publishDir -Force
           Copy-Item "script/uninstall.ps1" -Destination $publishDir -Force
 
-      - name: Organize publish directory
+      - name: Remove debug symbol files
+        shell: pwsh
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File ./script/organize-publish.ps1 -PublishDir ./output/${{ matrix.cpu }}
+          $publishDir = "./output/${{ matrix.cpu }}"
+          Get-ChildItem -Path $publishDir -Recurse -Include "*.pdb" -File | ForEach-Object {
+            Remove-Item $_.FullName -Force
+            Write-Host "Removed PDB: $($_.FullName)"
+          }
 
       - name: Compress build artifacts
         shell: pwsh
