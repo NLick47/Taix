@@ -157,13 +157,15 @@ public class ApiWebData : IWebData
     {
         var data = await _apiClient.GetWebExportDataAsync(start, end);
         var prefix = "Taix";
+        var uncategorized = ResourceStrings.Uncategorized;
 
         var rows = data.Logs.Select(log => new WebLogExportRow
         {
             Time = DateTime.SpecifyKind(log.LogTime, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd HH:mm"),
             Title = log.Url?.Title ?? log.Site?.Title ?? string.Empty,
             Website = log.Site?.Domain ?? string.Empty,
-            Duration = FormatDuration(log.Duration)
+            Duration = FormatDuration(log.Duration),
+            Category = log.Site?.Category?.Name ?? uncategorized
         });
 
         var rangePart = $"{start.ToString("yyyyMMdd")}_{end.ToString("yyyyMMdd")}";

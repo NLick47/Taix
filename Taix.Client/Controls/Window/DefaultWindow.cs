@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Reactive;
 using System.Threading;
@@ -79,8 +79,6 @@ public class DefaultWindow : Avalonia.Controls.Window
     private Border ToastBorder, Masklayer, DialogBorder, InputModalBorder, ActionDialogBorder;
     private StackPanel ActionDialogButtonsPanel;
     private Grid ToastGrid;
-    private DispatcherTimer toastTimer;
-
     public DefaultWindow()
     {
         this.WhenAnyValue(x => x.MaximizeVisible, x => x.WindowState)
@@ -195,7 +193,7 @@ public class DefaultWindow : Avalonia.Controls.Window
     }
 
     /// <summary>
-    /// 是否可以返回
+    /// �Ƿ���Է���
     /// </summary>
     public bool IsCanBack
     {
@@ -317,7 +315,7 @@ public class DefaultWindow : Avalonia.Controls.Window
         ActionDialogBorder.RenderTransform = TransformOperations.Parse("translateY(0px)");
         Masklayer.Opacity = 0.6;
 
-        // 清除旧按钮并动态创建新按钮
+        // ����ɰ�ť����̬�����°�ť
         if (ActionDialogButtonsPanel != null)
         {
             ActionDialogButtonsPanel.Children.Clear();
@@ -352,7 +350,7 @@ public class DefaultWindow : Avalonia.Controls.Window
         });
     }
 
-    private void ToastGrid_MouseLeftButtonDown(object sender, PointerPressedEventArgs e)
+    private void ToastGrid_MouseLeftButtonDown(object? sender, PointerPressedEventArgs e)
     {
         IsShowToast = false;
         _toastCancellationTokenSource?.Cancel();

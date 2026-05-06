@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::time::Duration as StdDuration;
 use tracing::{debug, info};
 
+use crate::constants;
 use crate::error::AppError;
 use crate::models::request::UpdateAppDurationRequest;
 use crate::services::category::CategoryService;
@@ -13,7 +14,7 @@ use crate::services::config::ConfigService;
 const DEDUP_RETENTION_DAYS: i64 = 14;
 
 
-const CLEANUP_INTERVAL: StdDuration = StdDuration::from_secs(24 * 60 * 60);
+const CLEANUP_INTERVAL: StdDuration = StdDuration::from_secs(constants::SECS_PER_DAY as u64);
 
 pub struct AppTimerService;
 
@@ -39,13 +40,13 @@ impl AppTimerService {
         }
 
         // 过滤掉明显无效的时间
-        if start_time_.year() < 2000 {
+        if start_time_.year() < constants::MIN_VALID_YEAR {
             debug!("update_app_duration: skip invalid timestamp");
             return Ok(());
         }
 
         // 单次上报时长不超过 24 小时，防止异常膨胀数据库
-        const MAX_DURATION_SECS: i64 = 86400;
+        const MAX_DURATION_SECS: i64 = constants::SECS_PER_DAY;
         let mut duration_ = duration_;
         if duration_ > MAX_DURATION_SECS {
             tracing::warn!(

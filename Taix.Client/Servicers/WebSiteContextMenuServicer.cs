@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -110,7 +110,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         UpdateMenuTexts();
     }
 
-    private async void EditAlias_ClickAsync(object sender, RoutedEventArgs e)
+    private async void EditAlias_ClickAsync(object? sender, RoutedEventArgs e)
     {
         try
         {
@@ -118,7 +118,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         }
         catch (Exception ex)
         {
-            Logger.Error($"ç¼–è¾‘åˆ«åå¤±è´¥: {ex.Message}", ex);
+            Logger.Error($"±à¼­±ğÃûÊ§°Ü: {ex.Message}", ex);
         }
     }
 
@@ -147,7 +147,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         _main.Success(ResourceStrings.AliasUpdated);
     }
 
-    private async void _menu_ContextMenuOpening(object sender, CancelEventArgs e)
+    private async void _menu_ContextMenuOpening(object? sender, CancelEventArgs e)
     {
         try
         {
@@ -155,7 +155,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         }
         catch (Exception ex)
         {
-            Logger.Error($"ç½‘ç«™ä¸Šä¸‹æ–‡èœå•æ‰“å¼€å¤±è´¥: {ex.Message}", ex);
+            Logger.Error($"ÍøÕ¾ÉÏÏÂÎÄ²Ëµ¥´ò¿ªÊ§°Ü: {ex.Message}", ex);
         }
     }
 
@@ -175,7 +175,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         await UpdateCategoryMenuAsync();
     }
 
-    private void Open_Click(object sender, PointerPressedEventArgs e)
+    private void Open_Click(object? sender, PointerPressedEventArgs e)
     {
         var data = _menu.Tag as ChartsDataModel;
         var site = data.Data as WebSiteModel;
@@ -193,13 +193,13 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
             }
             catch (Exception ex)
             {
-                Logger.Error("æ‰“å¼€ç½‘å€é“¾æ¥" + ex);
+                Logger.Error("´ò¿ªÍøÖ·Á´½Ó" + ex);
             }
         }
     }
 
 
-    private void Block_Click(object sender, PointerPressedEventArgs e)
+    private void Block_Click(object? sender, PointerPressedEventArgs e)
     {
         var data = _menu.Tag as ChartsDataModel;
         var site = data.Data as WebSiteModel;

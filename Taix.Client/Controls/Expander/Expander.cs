@@ -1,4 +1,4 @@
-锘縰sing System.Windows.Input;
+using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
@@ -8,10 +8,10 @@ namespace Taix.Client.Controls.Expander;
 
 public class Expander : Avalonia.Controls.Expander
 {
-    //  鍐呭閮ㄥ垎瀹瑰櫒杈规,鐢ㄤ簬璁剧疆涓嬬Щ鍔ㄧ敾
+    //  内容部分容器边框,用于设置下移动画
     private Border ContentBorder_;
 
-    //  鍐呭瀹瑰櫒楂樺害闅愯棌瀹瑰櫒,鐢ㄤ簬杈呭姪鏄剧ず闅愯棌鍔ㄧ敾
+    //  内容容器高度隐藏容器,用于辅助显示隐藏动画
     private Canvas ContentHeightCanvas_;
     private StackPanel ContentStackPanel_;
     private IconButton ExpBtn_;
@@ -26,7 +26,7 @@ public class Expander : Avalonia.Controls.Expander
         ContentStackPanel_.SizeChanged += ContentStackPanel__SizeChanged;
     }
 
-    private void ContentStackPanel__SizeChanged(object sender, SizeChangedEventArgs e)
+    private void ContentStackPanel__SizeChanged(object? sender, SizeChangedEventArgs e)
     {
         OnExpand(false);
     }

@@ -1,4 +1,4 @@
-锘縰sing System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -55,7 +55,7 @@ public class BaseList : TemplatedControl
     protected override Type StyleKeyOverride => typeof(BaseList);
 
     /// <summary>
-    /// 閫夋嫨椤规洿鏀瑰悗鍙戠敓
+    /// 选择项更改后发生
     /// </summary>
     public event EventHandler SelectedItemChanged;
 
@@ -118,7 +118,7 @@ public class BaseList : TemplatedControl
         Items.CollectionChanged += Items_CollectionChanged;
     }
 
-    private void Items_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+    private void Items_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.Action == NotifyCollectionChangedAction.Add)
             foreach (var item in e.NewItems)
@@ -169,7 +169,7 @@ public class BaseList : TemplatedControl
         Container.Children.Add(itemControl);
     }
 
-    private void HandleLoaded(object sender, RoutedEventArgs e)
+    private void HandleLoaded(object? sender, RoutedEventArgs e)
     {
         var control = sender as BaseListItem;
         if (control != null)
@@ -180,7 +180,7 @@ public class BaseList : TemplatedControl
         }
     }
 
-    private void OnItemControlLoaded(object sender, RoutedEventArgs e)
+    private void OnItemControlLoaded(object? sender, RoutedEventArgs e)
     {
         var itemControl = sender as BaseListItem;
         if (itemControl != null)

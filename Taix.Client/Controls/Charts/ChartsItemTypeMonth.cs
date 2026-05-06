@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -68,7 +68,7 @@ public class ChartsItemTypeMonth : TemplatedControl
     }
 
     /// <summary>
-    /// æ•°æ®
+    /// Êı¾İ
     /// </summary>
     public ChartsDataModel Data
     {
@@ -83,7 +83,7 @@ public class ChartsItemTypeMonth : TemplatedControl
     }
 
     /// <summary>
-    /// æ˜¯å¦æ­£åœ¨åŠ è½½ä¸­
+    /// ÊÇ·ñÕıÔÚ¼ÓÔØÖĞ
     /// </summary>
     public bool IsLoading
     {
@@ -92,7 +92,7 @@ public class ChartsItemTypeMonth : TemplatedControl
     }
 
     /// <summary>
-    /// æ˜¯å¦é€‰ä¸­
+    /// ÊÇ·ñÑ¡ÖĞ
     /// </summary>
     public bool IsSelected
     {
@@ -102,7 +102,7 @@ public class ChartsItemTypeMonth : TemplatedControl
 
     protected override Type StyleKeyOverride => typeof(ChartsItemTypeMonth);
 
-    private void ChartsItemTypeMonth_Unloaded(object sender, RoutedEventArgs e)
+    private void ChartsItemTypeMonth_Unloaded(object? sender, RoutedEventArgs e)
     {
         Unloaded -= ChartsItemTypeMonth_Unloaded;
         Loaded -= ChartsItemTypeMonth_Loaded;
@@ -119,7 +119,7 @@ public class ChartsItemTypeMonth : TemplatedControl
         }
     }
 
-    private void ChartsItemTypeMonth_Loaded(object sender, RoutedEventArgs e)
+    private void ChartsItemTypeMonth_Loaded(object? sender, RoutedEventArgs e)
     {
         Render();
     }
@@ -135,21 +135,21 @@ public class ChartsItemTypeMonth : TemplatedControl
         //};
 
         var size = Data.Value / MaxValue * Bounds.Width;
-        if (size > 0 && size < 8) //é˜²æ­¢å†å²æ•°å€¼å¤ªå°ç•Œé¢æ— æ˜¾ç¤ºæ•ˆæœ
+        if (size > 0 && size < 8) //·ÀÖ¹ÀúÊ·ÊıÖµÌ«Ğ¡½çÃæÎŞÏÔÊ¾Ğ§¹û
             size = 8;
         ValueBlockObj.Width = ValueBlockObj.Height = size;
-        ToolTip = Data.DateTime.ToString("yyyyå¹´MMæœˆddæ—¥") + " " + (string.IsNullOrEmpty(Data.Tag) ? "æ— æ•°æ®" : Data.Tag);
+        ToolTip = Data.DateTime.ToString("yyyyÄêMMÔÂddÈÕ") + " " + (string.IsNullOrEmpty(Data.Tag) ? "ÎŞÊı¾İ" : Data.Tag);
 
         if (Data.DateTime.Date == DateTime.Now.Date)
         {
             IsSelected = true;
-            ToolTip = "[ä»Šæ—¥] " + ToolTip;
+            ToolTip = "[½ñÈÕ] " + ToolTip;
         }
         //ValueTextObj.Text = Data.DateTime.Day.ToString();
         //NameTextObj.Text = Data.Name;
         //NameTextObj.SizeChanged += (e, c) =>
         //{
-        //    //  å¤„ç†æ–‡å­—è¿‡é•¿æ˜¾ç¤º
+        //    //  ´¦ÀíÎÄ×Ö¹ı³¤ÏÔÊ¾
         //    if (NameTextObj.ActualWidth > 121 && NameTextObj.FontSize > 8)
         //    {
         //        NameTextObj.FontSize = NameTextObj.FontSize - 1;

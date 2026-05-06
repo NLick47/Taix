@@ -1,3 +1,4 @@
+use crate::constants;
 use anyhow::Context;
 use chrono::TimeZone;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
@@ -385,7 +386,7 @@ async fn convert_local_to_utc(
 
     info!("转换表 {}.{}（{} 条记录）...", table, column, total);
 
-    let batch_size = 1000;
+    let batch_size = constants::MIGRATION_BATCH_SIZE;
     let mut converted = 0;
     let mut last_id = 0i64;
 

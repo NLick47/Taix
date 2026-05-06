@@ -5,6 +5,7 @@ use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::net::windows::named_pipe::{NamedPipeServer, ServerOptions};
 
+use crate::constants;
 use crate::models::request::UpdateAppDurationRequest;
 use crate::routes::web_sentry::SentryState;
 use crate::services::app_timer::AppTimerService;
@@ -40,7 +41,7 @@ pub async fn start(state: Arc<SentryState>, pool: SqlitePool) {
     loop {
         if let Err(e) = server.connect().await {
             tracing::error!("[Pipe] Connect error: {}", e);
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(constants::PIPE_CONNECT_RETRY_INTERVAL_SECS)).await;
             continue;
         }
 
@@ -48,12 +49,12 @@ pub async fn start(state: Arc<SentryState>, pool: SqlitePool) {
             Ok(s) => s,
             Err(e) => {
                 tracing::error!("[Pipe] Failed to create next server: {}", e);
-                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                tokio::time::sleep(tokio::time::Duration::from_secs(constants::PIPE_CONNECT_RETRY_INTERVAL_SECS)).await;
                 loop {
                     if let Ok(s) = create_server(false) {
                         break s;
                     }
-                    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                    tokio::time::sleep(tokio::time::Duration::from_secs(constants::PIPE_CREATE_RETRY_INTERVAL_SECS)).await;
                 }
             }
         };
@@ -117,8 +118,7 @@ async fn handle_client(
                 "app" => {
                     if let Some(extra) = msg.extra {
                         let now_ts = chrono::Utc::now().timestamp();
-                        let min_ts = 1577836800i64;
-                        if extra.a < min_ts || extra.a > now_ts + 60 {
+                        if extra.a < constants::MIN_VALID_TIMESTAMP || extra.a > now_ts + constants::TIMESTAMP_FUTURE_TOLERANCE_SECS {
                             tracing::warn!(
                                 "[Pipe] Invalid timestamp {} for app {}, dropping",
                                 extra.a, extra.p
@@ -127,7 +127,7 @@ async fn handle_client(
                         }
 
                         let date_time = chrono::DateTime::from_timestamp(extra.a, 0)
-                            .unwrap_or_else(|| chrono::Utc::now());
+                            .unwrap_or_else(chrono::Utc::now);
 
                         let req = UpdateAppDurationRequest {
                             process_name: extra.p,

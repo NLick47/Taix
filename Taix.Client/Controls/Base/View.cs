@@ -56,12 +56,12 @@ public class View : ContentControl
 
     protected override Type StyleKeyOverride => typeof(View);
 
-    private void View_Loaded(object sender, RoutedEventArgs e)
+    private void View_Loaded(object? sender, RoutedEventArgs e)
     {
         Handle();
     }
 
-    private void View_Unloaded(object sender, RoutedEventArgs e)
+    private void View_Unloaded(object? sender, RoutedEventArgs e)
     {
         Loaded -= View_Loaded;
         Unloaded -= View_Unloaded;
@@ -96,7 +96,7 @@ public class View : ContentControl
         }
     }
 
-    private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+    private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         Handle();
     }

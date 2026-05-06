@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls.Primitives;
@@ -12,7 +12,7 @@ namespace Taix.Client.Controls.Navigation;
 
 public class NavigationItem : TemplatedControl
 {
-    public delegate void NavigationEventHandler(object sender, PointerPressedEventArgs e);
+    public delegate void NavigationEventHandler(object? sender, PointerPressedEventArgs e);
 
     public static readonly DirectProperty<NavigationItem, int> IDProperty =
         AvaloniaProperty.RegisterDirect<NavigationItem, int>(
@@ -68,8 +68,6 @@ public class NavigationItem : TemplatedControl
             nameof(IsSelected),
             o => o.IsSelected,
             (o, v) => o.IsSelected = v);
-
-    private static NavigationItem _currentPressedItem;
 
     private string _badgeText = string.Empty;
 
@@ -158,7 +156,7 @@ public class NavigationItem : TemplatedControl
     protected override Type StyleKeyOverride => typeof(NavigationItem);
     public event NavigationEventHandler MouseUp;
 
-    private void OnPointerPressed(object sender, PointerPressedEventArgs e)
+    private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         MouseUp?.Invoke(this, e);
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) Command?.Execute(CommandParameter);

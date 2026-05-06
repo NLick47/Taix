@@ -112,24 +112,39 @@ public class ApiData : IData
         var prefix = "Taix";
         var uncategorized = ResourceStrings.Uncategorized;
 
-
         var dailyRows = data.DailyLogs.Select(log => new DailyLogExportRow
         {
-            Date = DateTime.SpecifyKind(log.Date, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd"),
+            Date = log.Date.ToString("yyyy-MM-dd"),
             App = log.AppModel?.Alias ?? log.AppModel?.Name ?? string.Empty,
             Description = log.AppModel?.Description ?? string.Empty,
             Duration = FormatDuration(log.Time),
             Category = log.AppModel?.Category?.Name ?? uncategorized
         });
 
-        var hoursRows = data.HoursLogs.Select(log => new HoursLogExportRow
-        {
-            TimePeriod = DateTime.SpecifyKind(log.DataTime, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd HH:mm"),
-            App = log.AppModel?.Alias ?? log.AppModel?.Name ?? string.Empty,
-            Description = log.AppModel?.Description ?? string.Empty,
-            Duration = FormatDuration(log.Time),
-            Category = log.AppModel?.Category?.Name ?? uncategorized
-        });
+        var totalSeconds = data.DailyLogs.Sum(l => l.Time);
+
+        var summaryRows = data.DailyLogs
+            .GroupBy(l => l.AppModelID)
+            .Select(g => new { AppModel = g.First().AppModel, Time = g.Sum(l => l.Time) })
+            .OrderByDescending(g => g.Time)
+            .Select(g => new AppSummaryExportRow
+            {
+                App = g.AppModel?.Alias ?? g.AppModel?.Name ?? string.Empty,
+                Description = g.AppModel?.Description ?? string.Empty,
+                TotalDuration = FormatDuration(g.Time),
+                Category = g.AppModel?.Category?.Name ?? uncategorized,
+                Percentage = totalSeconds > 0 ? $"{(g.Time * 100.0 / totalSeconds):F2}%" : "0.00%"
+            });
+
+        var dailySummaryRows = data.DailyLogs
+            .GroupBy(l => l.Date.ToString("yyyy-MM-dd"))
+            .Select(g => new { Date = g.Key, Time = g.Sum(l => l.Time) })
+            .OrderBy(g => g.Date)
+            .Select(g => new DailySummaryExportRow
+            {
+                Date = g.Date,
+                TotalDuration = FormatDuration(g.Time)
+            });
 
         var rangePart = $"{start.ToString("yyyyMMdd")}_{end.ToString("yyyyMMdd")}";
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -138,7 +153,8 @@ public class ApiData : IData
         var sheets = new Dictionary<string, object>
         {
             [ResourceStrings.ExportDaily] = dailyRows,
-            [ResourceStrings.ExportTimePeriod] = hoursRows
+            [ResourceStrings.ExportSummary] = summaryRows,
+            [ResourceStrings.ExportDailySummary] = dailySummaryRows
         };
         MiniExcel.SaveAs(excelPath, sheets);
 
@@ -146,9 +162,9 @@ public class ApiData : IData
         var dailyCsvPath = Path.Combine(dir, $"{prefix}_application_daily_{rangePart}_{timestamp}.csv");
         MiniExcel.SaveAs(dailyCsvPath, dailyRows, excelType: MiniExcelLibs.ExcelType.CSV);
 
-        // CSV: hours
-        var hoursCsvPath = Path.Combine(dir, $"{prefix}_application_time_period_{rangePart}_{timestamp}.csv");
-        MiniExcel.SaveAs(hoursCsvPath, hoursRows, excelType: MiniExcelLibs.ExcelType.CSV);
+        // CSV: summary
+        var summaryCsvPath = Path.Combine(dir, $"{prefix}_application_summary_{rangePart}_{timestamp}.csv");
+        MiniExcel.SaveAs(summaryCsvPath, summaryRows, excelType: MiniExcelLibs.ExcelType.CSV);
     }
 
     private static string FormatDuration(int seconds)

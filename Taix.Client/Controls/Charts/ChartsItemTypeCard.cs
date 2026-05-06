@@ -1,4 +1,4 @@
-锘縰sing System;
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -70,7 +70,7 @@ public class ChartsItemTypeCard : TemplatedControl
 
     protected override Type StyleKeyOverride => typeof(ChartsItemTypeCard);
 
-    private void ChartsItemTypeCard_Unloaded(object sender, RoutedEventArgs e)
+    private void ChartsItemTypeCard_Unloaded(object? sender, RoutedEventArgs e)
     {
         Unloaded -= ChartsItemTypeCard_Unloaded;
         Loaded -= ChartsItemTypeCard_Loaded;
@@ -101,7 +101,7 @@ public class ChartsItemTypeCard : TemplatedControl
         }
     }
 
-    private void ChartsItemTypeCard_Loaded(object sender, RoutedEventArgs e)
+    private void ChartsItemTypeCard_Loaded(object? sender, RoutedEventArgs e)
     {
         Render();
     }
@@ -115,7 +115,7 @@ public class ChartsItemTypeCard : TemplatedControl
             NameTextObj.SizeChanged -= _nameSizeChangedHandler;
         _nameSizeChangedHandler = (e, c) =>
         {
-            //  澶勭悊鏂囧瓧杩囬暱鏄剧ず
+            //  处理文字过长显示
             if (NameTextObj.Bounds.Width > 121 && NameTextObj.FontSize > 8)
                 NameTextObj.FontSize = NameTextObj.FontSize - 1;
         };
@@ -128,7 +128,7 @@ public class ChartsItemTypeCard : TemplatedControl
         _valueSizeChangedHandler = (e, c) =>
         {
             var size = Data.Value / MaxValue * Bounds.Width / 3;
-            // 鍏夋檿鍏冪礌宸蹭粠妯℃澘涓Щ闄わ紝鑻ュ瓨鍦ㄥ垯淇濇寔鍏煎
+            // 光晕元素已从模板中移除，若存在则保持兼容
             if (ValueBlockObj != null)
             {
                 ValueBlockObj.Width = ValueBlockObj.Height = size * 4;

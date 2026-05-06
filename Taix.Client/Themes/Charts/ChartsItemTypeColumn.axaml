@@ -6,13 +6,13 @@
     <ControlTheme x:Key="{x:Type controls:ChartItemTypeColumn}"
                   TargetType="controls:ChartItemTypeColumn">
         <Styles>
-            <Style Selector="controls|ChartItemTypeColumn /template/ Border#ValueContainer">
+            <Style Selector="controls|ChartItemTypeColumn /template/ Border#_valueContainer">
                 <Setter Property="Transitions">
                     <BrushTransition Property="Background" Duration="0.2" />
                 </Setter>
             </Style>
 
-            <Style Selector="controls|ChartItemTypeColumn:pointerover /template/ Border#ValueContainer">
+            <Style Selector="controls|ChartItemTypeColumn:pointerover /template/ Border#_valueContainer">
                 <Setter Property="Background" Value="#7FF1F1F1" />
             </Style>
         </Styles>

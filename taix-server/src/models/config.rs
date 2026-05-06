@@ -1,3 +1,4 @@
+use crate::constants;
 use serde::{Deserialize, Serialize};
 
 pub const CURRENT_CONFIG_VERSION: u32 = 1;
@@ -33,11 +34,10 @@ impl ConfigModel {
         }
 
         let sync_url = self.general.sync_url.trim();
-        if !sync_url.is_empty() {
-            if !sync_url.starts_with("http://") && !sync_url.starts_with("https://") {
+        if !sync_url.is_empty()
+            && !sync_url.starts_with("http://") && !sync_url.starts_with("https://") {
                 return Err("同步地址(SyncUrl)必须以 http:// 或 https:// 开头".to_string());
             }
-        }
 
         Ok(())
     }
@@ -84,8 +84,8 @@ impl Default for GeneralModel {
             language: 0,
             start_page: 0,
             is_auto_update: true,
-            index_page_frequent_use_num: 2,
-            index_page_more_num: 11,
+            index_page_frequent_use_num: constants::DEFAULT_FREQUENT_USE_NUM,
+            index_page_more_num: constants::DEFAULT_MORE_NUM,
             is_web_enabled: false,
             is_enable_tray: false,
             sync_url: String::new(),

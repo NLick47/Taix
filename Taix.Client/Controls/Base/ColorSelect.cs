@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -78,7 +78,7 @@ public class ColorSelect : TemplatedControl
 
     protected override Type StyleKeyOverride => typeof(ColorSelect);
 
-    private void OnWindowPointerPressed(object sender, PointerPressedEventArgs e)
+    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var source = e.Source as Control;
         if (source != null && SelectContainer != null)
@@ -140,7 +140,7 @@ public class ColorSelect : TemplatedControl
         IsOpen = false;
     }
 
-    private void OnDeactivated(object sender, EventArgs e)
+    private void OnDeactivated(object? sender, EventArgs e)
     {
         IsOpen = false;
     }
@@ -173,7 +173,7 @@ public class ColorSelect : TemplatedControl
         listBox.SelectionChanged += OnListBoxSelectionChanged;
     }
     
-    private  void OnListBoxSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private  void OnListBoxSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (e.AddedItems.Count > 0 && e.AddedItems[0] is string selectedColor)
         {

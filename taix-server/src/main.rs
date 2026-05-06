@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod constants;
 mod db;
 mod error;
 mod models;
@@ -71,7 +72,7 @@ async fn run(exe_dir: &Path, log_dir: &Path) -> anyhow::Result<()> {
         .rotation(tracing_appender::rolling::Rotation::DAILY)
         .filename_prefix("taix-server")
         .filename_suffix("log")
-        .max_log_files(31)
+        .max_log_files(constants::MAX_LOG_RETENTION_DAYS)
         .build(log_dir)?;
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
@@ -154,20 +155,20 @@ async fn run(exe_dir: &Path, log_dir: &Path) -> anyhow::Result<()> {
 
     let (web_enabled_tx, web_enabled_rx) = tokio::sync::watch::channel(initial_web_enabled);
 
-    let (tx, _rx) = broadcast::channel(128);
+    let (tx, _rx) = broadcast::channel(constants::BROADCAST_CHANNEL_CAPACITY);
     let sentry_state = Arc::new(SentryState {
         pool: pool.clone(),
         is_sleep: tokio::sync::RwLock::new(false),
         tx,
         web_favicons_dir,
-        semaphore: Arc::new(tokio::sync::Semaphore::new(16)),
+        semaphore: Arc::new(tokio::sync::Semaphore::new(constants::MAX_CONCURRENT_PIPE_CLIENTS)),
         config_service: config_service.clone(),
     });
 
     let app = create_app(pool.clone(), config_service, web_enabled_tx.clone());
 
     let addr: SocketAddr = std::env::var("TAIX_BIND")
-        .unwrap_or_else(|_| "127.0.0.1:37091".to_string())
+        .unwrap_or_else(|_| format!("127.0.0.1:{}", constants::DEFAULT_HTTP_PORT).to_string())
         .parse()?;
 
     tracing::info!("Server listening on http://{}", addr);

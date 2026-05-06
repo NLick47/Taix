@@ -3,6 +3,7 @@ use sqlx::SqlitePool;
 use std::path::Path;
 use tracing::{debug, info, warn};
 
+use crate::constants;
 use crate::error::AppError;
 use crate::models::request::{AddUrlBrowseTimeRequest, UpdateSitesCategoryRequest};
 use crate::models::log::{ColumnDataModel, InfrastructureDataModel};
@@ -41,50 +42,48 @@ impl WebDataService {
 
         // 时间戳合法性校验：拒绝明显过去或未来的时间
         if let Some(dt) = req.date_time {
-            if dt.year() < 2000 {
+            if dt.year() < constants::MIN_VALID_YEAR {
                 debug!("add_url_browse_time: skip invalid timestamp year={}", dt.year());
                 return Ok((0, 0));
             }
             let now_utc = Utc::now();
-            if dt > now_utc + Duration::minutes(5) {
+            if dt > now_utc + Duration::minutes(constants::FUTURE_TIMESTAMP_TOLERANCE_MINUTES) {
                 warn!("add_url_browse_time: future timestamp {} (> now + 5min), rejecting", dt);
                 return Ok((0, 0));
             }
         }
 
         let mut current_req = req;
-        // 安全上限：单次上报时长不超过 4 小时，防止异常数据导致循环次数过多
-        const MAX_WEB_DURATION_SECS: i64 = 3600 * 4;
-        if current_req.duration > MAX_WEB_DURATION_SECS {
+        if current_req.duration > constants::MAX_WEB_DURATION_SECS {
             tracing::warn!(
                 "add_url_browse_time: duration {}s exceeds max {}s, truncating",
-                current_req.duration, MAX_WEB_DURATION_SECS
+                current_req.duration, constants::MAX_WEB_DURATION_SECS
             );
-            current_req.duration = MAX_WEB_DURATION_SECS;
+            current_req.duration = constants::MAX_WEB_DURATION_SECS;
         }
 
         let mut tx = pool.begin().await?;
         let mut loop_count = 0;
         let (result_site_id, result_url_id) = loop {
             loop_count += 1;
-            if loop_count > 48 {
+            if loop_count > constants::MAX_ADD_URL_ITERATIONS {
                 warn!("add_url_browse_time: loop exceeded 48 iterations, breaking to prevent infinite loop");
                 break (0, 0);
             }
 
-            let date_time = current_req.date_time.unwrap_or_else(|| Utc::now());
+            let date_time = current_req.date_time.unwrap_or_else(Utc::now);
 
           
             let log_time = date_time.with_minute(0).unwrap().with_second(0).unwrap().with_nanosecond(0).unwrap();
             let duration = current_req.duration;
-            let now_time_max = (60 - date_time.minute() as i64) * 60 - date_time.second() as i64;
+            let now_time_max = (constants::MINS_PER_HOUR - date_time.minute() as i64) * constants::SECS_PER_MIN - date_time.second() as i64;
 
             let mut now_duration = duration;
             let mut next_duration = 0i64;
 
-            if now_duration > 3600 {
-                next_duration = now_duration - 3600;
-                now_duration = 3600;
+            if now_duration > constants::SECS_PER_HOUR {
+                next_duration = now_duration - constants::SECS_PER_HOUR;
+                now_duration = constants::SECS_PER_HOUR;
             }
             if now_duration > now_time_max {
                 next_duration += now_duration - now_time_max;
@@ -124,7 +123,7 @@ impl WebDataService {
                 .bind(log_time).bind(url_id).fetch_optional(&mut *tx).await?;
 
             let actual_added = if let Some((id, existing_duration)) = existing {
-                let new_duration = (existing_duration + now_duration).min(3600);
+                let new_duration = (existing_duration + now_duration).min(constants::SECS_PER_HOUR);
                 let overflow = (existing_duration + now_duration) - new_duration;
                 if overflow > 0 {
                     next_duration += overflow;
@@ -145,7 +144,7 @@ impl WebDataService {
 
             // 防止 Duration 无限累加
             sqlx::query("UPDATE WebSiteModels SET Duration = ? WHERE ID = ? AND Duration > ?")
-                .bind(3_153_600_000i64).bind(site_id).bind(3_153_600_000i64).execute(&mut *tx).await?;
+                .bind(constants::MAX_SITE_DURATION_SECS).bind(site_id).bind(constants::MAX_SITE_DURATION_SECS).execute(&mut *tx).await?;
 
             if next_duration > 0 {
                 current_req = AddUrlBrowseTimeRequest {
@@ -371,8 +370,8 @@ impl WebDataService {
     pub async fn get_date_range_web_site_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, take: i64, skip: i64, is_time: bool, tz_id: &str) -> Result<Vec<WebSiteModel>, AppError> {
         debug!("get_date_range_web_site_list: start={} end={} take={} skip={} is_time={}", start, end, take, skip, is_time);
         let (start, end) = if is_time {
-            (NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(start.hour() as u32, 0, 0).unwrap()),
-             NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(end.hour() as u32, 59, 59).unwrap()))
+            (NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(start.hour(), 0, 0).unwrap()),
+             NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(end.hour(), 59, 59).unwrap()))
         } else {
             (NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap()),
              NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap()))
@@ -468,16 +467,16 @@ impl WebDataService {
                     })
                     .map(|(_, v)| *v)
                     .sum();
-                result.push(InfrastructureDataModel { id: i as i64, name: i.to_string(), value });
+                result.push(InfrastructureDataModel { id: i, name: i.to_string(), value });
             }
         } else {
             let days = (end_date.date() - start_date.date()).num_days() + 1;
-            if days <= 31 {
+            if days <= constants::DAY_VIEW_THRESHOLD {
                 for i in 0..days {
                     let date = start_date.date() + Duration::days(i);
                     let (day_start, day_end) = tz_date_to_utc_range(date, &tz);
                     let value: i64 = data.iter().filter(|(t, _)| *t >= day_start && *t <= day_end).map(|(_, v)| v).sum();
-                    result.push(InfrastructureDataModel { id: i as i64, name: i.to_string(), value });
+                    result.push(InfrastructureDataModel { id: i, name: i.to_string(), value });
                 }
             } else {
                 for i in 0..12 {
@@ -537,7 +536,7 @@ impl WebDataService {
             }
         } else {
             let days = (end - start).num_days() + 1;
-            if days <= 31 {
+            if days <= constants::DAY_VIEW_THRESHOLD {
                 for (cat_id, _) in &categories {
                     result.push(crate::models::log::ColumnDataModel { app_id: None, category_id: Some(*cat_id), values: vec![0.0; days as usize] });
                 }
@@ -719,8 +718,75 @@ impl WebDataService {
         info!("get_web_export_data: start={} end={}", start, end);
         let utc_start = tz_naive_to_utc(start, &parse_timezone(tz_id));
         let utc_end = tz_naive_to_utc(end, &parse_timezone(tz_id));
-        let logs: Vec<WebBrowseLogModel> = sqlx::query_as("SELECT * FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
-            .bind(utc_start).bind(utc_end).fetch_all(pool).await?;
+
+        #[derive(sqlx::FromRow)]
+        struct ExportLogRow {
+            id: i64,
+            url_id: i64,
+            log_time: DateTime<Utc>,
+            duration: i64,
+            site_id: i64,
+            domain: String,
+            ws_title: Option<String>,
+            ws_icon_file: Option<String>,
+            ws_category_id: i64,
+            wu_url: String,
+            wu_title: Option<String>,
+            wu_icon_file: Option<String>,
+            wsc_name: Option<String>,
+            wsc_color: Option<String>,
+        }
+
+        let rows: Vec<ExportLogRow> = sqlx::query_as(
+            r#"
+            SELECT
+                wbl.ID as id, wbl.UrlId as url_id, wbl.LogTime as log_time, wbl.Duration as duration, wbl.SiteId as site_id,
+                ws.Domain as domain, ws.Title as ws_title, ws.IconFile as ws_icon_file, ws.CategoryID as ws_category_id,
+                wu.Url as wu_url, wu.Title as wu_title, wu.IconFile as wu_icon_file,
+                wsc.Name as wsc_name, wsc.Color as wsc_color
+            FROM WebBrowseLogModels wbl
+            JOIN WebUrlModels wu ON wbl.UrlId = wu.ID
+            JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
+            LEFT JOIN WebSiteCategoryModels wsc ON ws.CategoryID = wsc.ID
+            WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?
+            ORDER BY wbl.LogTime DESC
+            "#
+        )
+        .bind(utc_start)
+        .bind(utc_end)
+        .fetch_all(pool)
+        .await?;
+
+        let logs = rows.into_iter().map(|row| WebBrowseLogModel {
+            id: row.id,
+            url_id: row.url_id,
+            log_time: row.log_time,
+            duration: row.duration,
+            site_id: row.site_id,
+            site: Some(WebSiteModel {
+                id: row.site_id,
+                title: row.ws_title,
+                domain: Some(row.domain),
+                alias: None,
+                category_id: row.ws_category_id,
+                icon_file: row.ws_icon_file,
+                duration: 0,
+                category: row.wsc_name.map(|name| WebSiteCategoryModel {
+                    id: row.ws_category_id,
+                    name,
+                    icon_file: None,
+                    color: row.wsc_color,
+                    is_system: false,
+                }),
+            }),
+            url: Some(WebUrlModel {
+                id: row.url_id,
+                title: row.wu_title,
+                url: Some(row.wu_url),
+                icon_file: row.wu_icon_file,
+            }),
+        }).collect();
+
         Ok(crate::models::web::WebExportDataResult { logs })
     }
 
@@ -761,7 +827,7 @@ async fn save_icon(icon_url: &str, favicons_dir: &Path, site_id: i64, url_id: i6
 
     let icon_url = icon_url.to_string();
     let bytes = match tokio::time::timeout(
-        std::time::Duration::from_secs(10),
+        std::time::Duration::from_secs(constants::ICON_DOWNLOAD_TIMEOUT_SECS),
         tokio::task::spawn_blocking(move || {
             attohttpc::get(&icon_url).send().and_then(|r| r.bytes())
         })
@@ -814,7 +880,7 @@ async fn save_icon(icon_url: &str, favicons_dir: &Path, site_id: i64, url_id: i6
 }
 
 fn is_svg_data(bytes: &[u8]) -> bool {
-    let prefix_len = bytes.len().min(256);
+    let prefix_len = bytes.len().min(constants::SVG_PREFIX_CHECK_LEN);
     let prefix = &bytes[..prefix_len];
     if let Ok(text) = std::str::from_utf8(prefix) {
         let trimmed = text.trim_start();
@@ -839,7 +905,7 @@ fn convert_svg_to_png(svg_bytes: &[u8]) -> Result<Vec<u8>, AppError> {
     }
 
     // 限制最大尺寸，防止恶意/超大 SVG 消耗过多内存
-    let max_size = 256u32;
+    let max_size = constants::MAX_ICON_SIZE_PX;
     let (width, height) = if width > max_size || height > max_size {
         let scale = max_size as f32 / width.max(height) as f32;
         ((width as f32 * scale).ceil() as u32, (height as f32 * scale).ceil() as u32)

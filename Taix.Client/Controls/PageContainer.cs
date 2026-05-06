@@ -56,8 +56,6 @@ public class PageContainer : TemplatedControl
     private ScrollViewer ScrollViewer;
     private string? PendingUri;
 
-    private double VerticalOffset;
-
     public PageContainer()
     {
         Historys = new List<string>();

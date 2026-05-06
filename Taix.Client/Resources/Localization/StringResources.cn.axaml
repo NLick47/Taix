@@ -282,6 +282,8 @@
 
     <system:String x:Key="ExportDaily">每日</system:String>
     <system:String x:Key="ExportTimePeriod">时段</system:String>
+    <system:String x:Key="ExportSummary">汇总</system:String>
+    <system:String x:Key="ExportDailySummary">每日汇总</system:String>
     <system:String x:Key="AppliedStatistics">应用统计数据</system:String>
     <system:String x:Key="WebsiteStatistics">网页统计数据</system:String>
 

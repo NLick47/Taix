@@ -6,7 +6,7 @@ use tokio::sync::watch;
 use crate::routes::web_sentry::SentryState;
 
 pub async fn run(mut rx: watch::Receiver<bool>, sentry_state: Arc<SentryState>) {
-    let ws_addr: SocketAddr = "0.0.0.0:8908".parse().unwrap();
+    let ws_addr: SocketAddr = format!("0.0.0.0:{}", crate::constants::DEFAULT_WEBSOCKET_PORT).parse().unwrap();
     let mut is_enabled = *rx.borrow();
 
     loop {

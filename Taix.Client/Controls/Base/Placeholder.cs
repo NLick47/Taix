@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
@@ -19,7 +19,7 @@ public class Placeholder : TemplatedControl
         if (!IsAddEvent) Loaded += Placeholder_Loaded;
     }
 
-    private void Placeholder_Loaded(object sender, RoutedEventArgs e)
+    private void Placeholder_Loaded(object? sender, RoutedEventArgs e)
     {
         Loaded -= Placeholder_Loaded;
         IsAddEvent = true;

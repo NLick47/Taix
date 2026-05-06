@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -137,7 +137,7 @@ public class Navigation : TemplatedControl
             }
     }
 
-    private void Data_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+    private void Data_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.Action == NotifyCollectionChangedAction.Add)
             foreach (var item in e.NewItems)
@@ -158,7 +158,7 @@ public class Navigation : TemplatedControl
             }
     }
 
-    private void Navigation_Loaded(object sender, RoutedEventArgs e)
+    private void Navigation_Loaded(object? sender, RoutedEventArgs e)
     {
         ScrollToActive();
     }
@@ -205,7 +205,7 @@ public class Navigation : TemplatedControl
     }
 
 
-    private void NavItem_MouseUp(object sender, PointerPressedEventArgs e)
+    private void NavItem_MouseUp(object? sender, PointerPressedEventArgs e)
     {
         var navitem = sender as NavigationItem;
         if (navitem != null)
@@ -214,7 +214,7 @@ public class Navigation : TemplatedControl
 
             if (properties.IsLeftButtonPressed)
             {
-                // å·¦é”®é€‰ä¸­
+                // ×ó¼üÑ¡ÖĞ
                 SelectedItem = Data.First(m => m.ID == navitem.ID);
                 OnSelected?.Invoke(this, EventArgs.Empty);
 
@@ -222,7 +222,7 @@ public class Navigation : TemplatedControl
             }
             else if (properties.IsRightButtonPressed)
             {
-                // å³é”®
+                // ÓÒ¼ü
                 var args = new RoutedEventArgs();
                 args.RoutedEvent = e.RoutedEvent;
                 args.Source = Data.FirstOrDefault(m => m.ID == navitem.ID);
@@ -241,7 +241,7 @@ public class Navigation : TemplatedControl
 
     private void ScrollToActive(double animationDuration = 0.35)
     {
-        //  è·å–é€‰ä¸­é¡¹
+        //  »ñÈ¡Ñ¡ÖĞÏî
         if (SelectedItem == null || ItemsDictionary.Count == 0 || !ItemsDictionary.ContainsKey(SelectedItem.ID)) return;
 
         var item = ItemsDictionary[SelectedItem.ID];

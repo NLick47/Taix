@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
@@ -52,7 +52,7 @@ public class DatePickerBar : TemplatedControl
 
     private Border Date;
 
-    //  æ—¥æœŸé€‰æ‹©å¼¹å‡ºå±‚
+    //  ÈÕÆÚÑ¡Ôñµ¯³ö²ã
     private Popup DatePickerPopup;
     private StackPanel MonthSelect;
     private int renderIndex;
@@ -118,13 +118,13 @@ public class DatePickerBar : TemplatedControl
 
         Init();
 
-        //  æ¸²æŸ“æ—¥æœŸ
+        //  äÖÈ¾ÈÕÆÚ
         Render(DateTime.Now);
     }
 
     private void Init()
     {
-        //  å¡«å……å¹´ä»½æ•°æ®
+        //  Ìî³äÄê·İÊı¾İ
         YearsList.SelectedItem = DateTime.Now.Year.ToString();
         //YearsList.SelectedItem = "2073";
         Date.PointerPressed += OnDatePointerPressed;
@@ -133,7 +133,7 @@ public class DatePickerBar : TemplatedControl
 
         if (ShowType == DatePickerShowType.Day)
         {
-            //  å¡«å……æœˆä»½æ•°æ®
+            //  Ìî³äÔÂ·İÊı¾İ
             MonthSelect.IsVisible = true;
 
             MonthsList.SelectedItem = DateTime.Now.Month.ToString();
@@ -158,7 +158,7 @@ public class DatePickerBar : TemplatedControl
         YearsList.SelectedItemChanged -= DateChanged;
     }
 
-    private void DateChanged(object sender, EventArgs e)
+    private void DateChanged(object? sender, EventArgs e)
     {
         if (ShowType == DatePickerShowType.Day)
             SelectedDate = new DateTime(int.Parse(YearsList.SelectedItem), int.Parse(MonthsList.SelectedItem), 1);
@@ -202,7 +202,7 @@ public class DatePickerBar : TemplatedControl
                         ScrollToActive(SelectedDate);
                     }
                 };
-            //  åä¸€å¤©
+            //  ºóÒ»Ìì
             var next = DateList.IndexOf(date.AddDays(+1));
 
             if (next != -1)
@@ -298,7 +298,7 @@ public class DatePickerBar : TemplatedControl
 
         if (!ItemsDictionary.ContainsKey(date)) return;
         if (ItemsDictionary.ContainsKey(SelectedDate))
-            //  å¦‚æœå­˜åœ¨æ—§çš„é€‰ä¸­ï¼Œå…ˆå–æ¶ˆ
+            //  Èç¹û´æÔÚ¾ÉµÄÑ¡ÖĞ£¬ÏÈÈ¡Ïû
             ItemsDictionary[SelectedDate].IsSelected = false;
 
         if (date != SelectedDate) SelectedDate = date;

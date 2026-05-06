@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -125,12 +125,12 @@ public class ChartsItemTypeList : TemplatedControl
     }
 
 
-    private void Parent_SizeChanged(object sender, SizeChangedEventArgs e)
+    private void Parent_SizeChanged(object? sender, SizeChangedEventArgs e)
     {
         UpdateValueBlockWidth();
     }
 
-    private void ChartsItemTypeList_Loaded(object sender, RoutedEventArgs e)
+    private void ChartsItemTypeList_Loaded(object? sender, RoutedEventArgs e)
     {
         Render();
     }

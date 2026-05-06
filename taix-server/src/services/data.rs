@@ -321,7 +321,7 @@ impl DataService {
         debug!("get_time_range_log_list: time={}", time);
         let local_hour = NaiveDateTime::new(
             time.date(),
-            chrono::NaiveTime::from_hms_opt(time.hour() as u32, 0, 0).unwrap(),
+            chrono::NaiveTime::from_hms_opt(time.hour(), 0, 0).unwrap(),
         );
         let utc_hour = tz_naive_to_utc(local_hour, &parse_timezone(tz_id));
 
@@ -851,7 +851,7 @@ impl DataService {
         let daily_logs: Vec<DailyLogModel> = sqlx::query_as(
             r#"
             SELECT d.* FROM DailyLogModels d
-            WHERE d.Date >= ? AND d.Date <= ?
+            WHERE d.Date >= ? AND d.Date <= ? AND d.AppModelID != 0
             "#,
         )
         .bind(daily_utc_start.to_string())
@@ -860,7 +860,7 @@ impl DataService {
         .await?;
 
         let hours_logs: Vec<HoursLogModel> = sqlx::query_as(
-            "SELECT * FROM HoursLogModels WHERE DataTime >= ? AND DataTime <= ?",
+            "SELECT * FROM HoursLogModels WHERE DataTime >= ? AND DataTime <= ? AND AppModelID != 0",
         )
         .bind(utc_start)
         .bind(utc_end)
@@ -875,8 +875,57 @@ impl DataService {
             .fetch_all(pool)
             .await?;
 
-        let daily_logs = daily_logs
+        // Aggregate daily_logs by local date + app to avoid timezone-boundary splits
+        let mut daily_groups: HashMap<(NaiveDate, i64), i64> = HashMap::new();
+        for log in daily_logs {
+            let local_date = utc_date_to_local_date(log.date, &tz);
+            if local_date >= start && local_date <= end {
+                *daily_groups.entry((local_date, log.app_model_id)).or_insert(0) += log.time;
+            }
+        }
+
+        let mut daily_logs: Vec<DailyLogModel> = daily_groups
             .into_iter()
+            .map(|((date, app_id), time)| {
+                let app_model = apps.iter().find(|a| a.id == app_id).cloned().map(|app_row| {
+                    let category = categories.iter().find(|c| c.id == app_row.category_id).cloned();
+                    AppModel {
+                        id: app_row.id,
+                        name: app_row.name,
+                        alias: app_row.alias,
+                        description: app_row.description,
+                        file: app_row.file,
+                        category_id: app_row.category_id,
+                        icon_file: app_row.icon_file,
+                        total_time: app_row.total_time,
+                        category,
+                    }
+                });
+                DailyLogModel {
+                    id: 0,
+                    date,
+                    app_model_id: app_id,
+                    time,
+                    app_model,
+                }
+            })
+            .collect();
+
+        daily_logs.sort_by(|a, b| {
+            a.date.cmp(&b.date).then_with(|| {
+                let a_name = a.app_model.as_ref().and_then(|m| m.alias.as_deref().or(m.name.as_deref())).unwrap_or("");
+                let b_name = b.app_model.as_ref().and_then(|m| m.alias.as_deref().or(m.name.as_deref())).unwrap_or("");
+                a_name.cmp(b_name)
+            })
+        });
+
+        // Filter hours_logs by local date and fill app/category
+        let mut hours_logs: Vec<HoursLogModel> = hours_logs
+            .into_iter()
+            .filter(|log| {
+                let local_date = log.data_time.with_timezone(&tz).date_naive();
+                local_date >= start && local_date <= end
+            })
             .map(|mut log| {
                 if let Some(app_row) = apps.iter().find(|a| a.id == log.app_model_id).cloned() {
                     let category = categories.iter().find(|c| c.id == app_row.category_id).cloned();
@@ -896,26 +945,13 @@ impl DataService {
             })
             .collect();
 
-        let hours_logs = hours_logs
-            .into_iter()
-            .map(|mut log| {
-                if let Some(app_row) = apps.iter().find(|a| a.id == log.app_model_id).cloned() {
-                    let category = categories.iter().find(|c| c.id == app_row.category_id).cloned();
-                    log.app_model = Some(AppModel {
-                        id: app_row.id,
-                        name: app_row.name,
-                        alias: app_row.alias,
-                        description: app_row.description,
-                        file: app_row.file,
-                        category_id: app_row.category_id,
-                        icon_file: app_row.icon_file,
-                        total_time: app_row.total_time,
-                        category,
-                    });
-                }
-                log
+        hours_logs.sort_by(|a, b| {
+            a.data_time.cmp(&b.data_time).then_with(|| {
+                let a_name = a.app_model.as_ref().and_then(|m| m.alias.as_deref().or(m.name.as_deref())).unwrap_or("");
+                let b_name = b.app_model.as_ref().and_then(|m| m.alias.as_deref().or(m.name.as_deref())).unwrap_or("");
+                a_name.cmp(b_name)
             })
-            .collect();
+        });
 
         Ok(ExportDataResult {
             daily_logs,

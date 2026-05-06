@@ -14,7 +14,6 @@ using Taix.Client.Servicers.Instances;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Servicers.Updater;
 using Taix.Client.Shared.Servicers.Interfaces;
-using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.ViewModels;
 using Taix.Client.Views;
 
@@ -22,7 +21,9 @@ namespace Taix.Client;
 
 public class App : Application
 {
+#pragma warning disable CS0169
     private Mutex mutex;
+#pragma warning restore CS0169
 
     private void ConfigureServices(IServiceCollection services)
     {
@@ -95,11 +96,12 @@ public class App : Application
     {
 #if DEBUG
         return false;
-#endif
+#else
         var mutexName = "Taix";
         bool createdNew;
         mutex = new Mutex(true, mutexName, out createdNew);
         return !createdNew;
+#endif
     }
 
     public override void Initialize()

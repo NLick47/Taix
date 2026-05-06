@@ -85,6 +85,8 @@ public static class ResourceStrings
     public static string IgnoreWebsite => GetStringValue("IgnoreWebsite");
     public static string ExportDaily => GetStringValue("ExportDaily");
     public static string ExportTimePeriod => GetStringValue("ExportTimePeriod");
+    public static string ExportSummary => GetStringValue("ExportSummary");
+    public static string ExportDailySummary => GetStringValue("ExportDailySummary");
     public static string Column1 => GetStringValue("Column1");
     public static string Column2 => GetStringValue("Column2");
     public static string Column3 => GetStringValue("Column3");

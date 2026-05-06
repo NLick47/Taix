@@ -34,7 +34,6 @@ public class Tabbar : TemplatedControl
 
     //  选中标记块
     private Border ActiveBlock;
-    private Grid GridIcon;
     private Grid ItemsContainer;
 
     public Tabbar()

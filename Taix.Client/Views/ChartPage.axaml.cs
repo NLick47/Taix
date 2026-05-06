@@ -12,10 +12,6 @@ namespace Taix.Client.Views;
 
 public partial class ChartPage : UserControl
 {
-    private ScrollViewer? _ancestorScrollViewer;
-    private Control? _mainColumnChart;
-    private Control? _webColumnChart;
-
     public ChartPage()
     {
         InitializeComponent();

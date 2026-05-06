@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -131,12 +131,12 @@ public class IconSelect : TemplatedControl
         }
     }
 
-    private void OnDeactivated(object sender, EventArgs e)
+    private void OnDeactivated(object? sender, EventArgs e)
     {
         IsOpen = false;
     }
 
-    private void OnWindowPointerPressed(object sender, PointerPressedEventArgs e)
+    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         IsOpen = false;
     }

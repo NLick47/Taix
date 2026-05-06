@@ -145,8 +145,10 @@ public class SettingPageViewModel : SettingPageModel
             var folder = await _dialogService.ShowFolderPickerAsync();
             if (string.IsNullOrEmpty(folder)) return;
 
-            await _dataService.ExportToExcelAsync(folder, ExportDataStartMonthDate, ExportDataEndMonthDate);
-            await _webDataService.ExportAsync(folder, ExportDataStartMonthDate, ExportDataEndMonthDate);
+            var exportStart = new DateTime(ExportDataStartMonthDate.Year, ExportDataStartMonthDate.Month, 1);
+            var exportEnd = new DateTime(ExportDataEndMonthDate.Year, ExportDataEndMonthDate.Month, DateTime.DaysInMonth(ExportDataEndMonthDate.Year, ExportDataEndMonthDate.Month));
+            await _dataService.ExportToExcelAsync(folder, exportStart, exportEnd);
+            await _webDataService.ExportAsync(folder, exportStart, exportEnd);
             _toastService.Success(ResourceStrings.DataExportCompleted);
         }
         catch (Exception ex)

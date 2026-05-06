@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Specialized;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -30,7 +30,7 @@ public partial class CategoryPage : TPage
         });
     }
 
-    private void OnEditDirectoriesCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+    private void OnEditDirectoriesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.Action == NotifyCollectionChangedAction.Add) viewer.ScrollToEnd();
     }

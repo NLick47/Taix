@@ -14,6 +14,7 @@
         <AvaloniaVersion>12.0.2</AvaloniaVersion>
         <AvaloniaReactiveUIVersion>11.2.8</AvaloniaReactiveUIVersion>
         <AvaloniaXamlBehaviorsVersion>11.3.0.1</AvaloniaXamlBehaviorsVersion>
+        <NoWarn>$(NoWarn);CS0108;IL2026;IL3050;IL2075;AVLN5001</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

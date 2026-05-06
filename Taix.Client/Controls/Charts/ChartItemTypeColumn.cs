@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -23,9 +23,9 @@ public class ChartItemTypeColumn : TemplatedControl
         AvaloniaProperty.Register<ChartItemTypeColumn, string>(nameof(ColumnName));
 
 
-    private readonly bool isRendering = false;
-    private Rectangle ValueBlockObj;
-    private Border ValueContainer;
+    private readonly bool _isRendering = false;
+    private Rectangle _valueBlockObj;
+    private Border _valueContainer;
 
     public ChartItemTypeColumn()
     {
@@ -61,33 +61,33 @@ public class ChartItemTypeColumn : TemplatedControl
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
-        ValueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
-        ValueContainer = e.NameScope.Get<Border>("ValueContainer");
+        _valueBlockObj = e.NameScope.Get<Rectangle>("ValueBlockObj");
+        _valueContainer = e.NameScope.Get<Border>("ValueContainer");
         Loaded -= ChartItemTypeColumn_Loaded;
         Loaded += ChartItemTypeColumn_Loaded;
     }
 
-    private void ChartItemTypeColumn_Unloaded(object sender, RoutedEventArgs e)
+    private void ChartItemTypeColumn_Unloaded(object? sender, RoutedEventArgs e)
     {
         Loaded -= ChartItemTypeColumn_Loaded;
         Unloaded -= ChartItemTypeColumn_Unloaded;
     }
 
-    private void ChartItemTypeColumn_Loaded(object sender, RoutedEventArgs e)
+    private void ChartItemTypeColumn_Loaded(object? sender, RoutedEventArgs e)
     {
         Render();
     }
 
     private void Render()
     {
-        if (isRendering) return;
+        if (_isRendering) return;
 
-        if (!string.IsNullOrEmpty(Color)) ValueBlockObj.Fill = Colors.GetFromString(Color);
+        if (!string.IsNullOrEmpty(Color)) _valueBlockObj.Fill = Colors.GetFromString(Color);
         Update();
     }
 
     public void Update()
     {
-        ValueBlockObj.Height = Value / MaxValue * ValueContainer.Bounds.Height;
+        _valueBlockObj.Height = Value / MaxValue * _valueContainer.Bounds.Height;
     }
 }

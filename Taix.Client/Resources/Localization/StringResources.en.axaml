@@ -274,6 +274,8 @@
 
     <system:String x:Key="ExportDaily">daily</system:String>
     <system:String x:Key="ExportTimePeriod">time period</system:String>
+    <system:String x:Key="ExportSummary">summary</system:String>
+    <system:String x:Key="ExportDailySummary">daily summary</system:String>
     <system:String x:Key="AppliedStatistics">application statistics</system:String>
     <system:String x:Key="WebsiteStatistics">website statistics</system:String>
 
