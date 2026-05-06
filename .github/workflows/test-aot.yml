@@ -1,0 +1,58 @@
+name: Test AOT Publish
+
+on:
+  push:
+    branches: [ main, master, dev ]
+    paths:
+      - 'Taix.Client/**'
+      - '.github/workflows/test-aot.yml'
+  pull_request:
+    paths:
+      - 'Taix.Client/**'
+  workflow_dispatch:
+
+jobs:
+  test-aot-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Build AOT Client
+        run: |
+          dotnet publish -c Release -r win-x64 --self-contained true -p:DebugType=None -p:DebugSymbols=false Taix.Client/Taix.Client.csproj -o ./aot-output
+
+      - name: Verify AOT output
+        shell: pwsh
+        run: |
+          $outputDir = "./aot-output"
+          $exePath = Join-Path $outputDir "Taix.exe"
+
+          if (-not (Test-Path $exePath)) {
+            Write-Error "AOT publish failed: Taix.exe not found at $exePath"
+            exit 1
+          }
+
+          $exeSize = (Get-Item $exePath).Length
+          Write-Host "AOT publish succeeded."
+          Write-Host "  Taix.exe size: $([math]::Round($exeSize / 1MB, 2)) MB"
+
+          # List all files in output directory
+          Write-Host "`nAOT output files:"
+          Get-ChildItem -Path $outputDir | ForEach-Object {
+            $size = if ($_.Length) { "$([math]::Round($_.Length / 1MB, 2)) MB" } else { "" }
+            Write-Host "  $($_.Name) $size"
+          }
+
+      - name: Upload AOT artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: taix-client-aot
+          path: ./aot-output/**
