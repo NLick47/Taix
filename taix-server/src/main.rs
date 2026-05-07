@@ -51,8 +51,12 @@ async fn main() {
             .open(&log_path)
         {
             use std::io::Write;
-            let _ = file.write_all(message.as_bytes());
-            let _ = file.flush();
+            if let Err(e) = file.write_all(message.as_bytes()) {
+                eprintln!("Failed to write fatal error to log: {}", e);
+            }
+            if let Err(e) = file.flush() {
+                eprintln!("Failed to flush fatal error log: {}", e);
+            }
         }
 
         eprintln!("{}", message);
@@ -123,8 +127,12 @@ async fn run(exe_dir: &Path, log_dir: &Path) -> anyhow::Result<()> {
             .open(&log_path)
         {
             use std::io::Write;
-            let _ = file.write_all(message.as_bytes());
-            let _ = file.flush();
+            if let Err(e) = file.write_all(message.as_bytes()) {
+                eprintln!("Failed to write fatal error to log: {}", e);
+            }
+            if let Err(e) = file.flush() {
+                eprintln!("Failed to flush fatal error log: {}", e);
+            }
         }
 
         // 输出到 stderr，方便调试时直接看到
@@ -141,7 +149,10 @@ async fn run(exe_dir: &Path, log_dir: &Path) -> anyhow::Result<()> {
     tracing::info!("Using data dir: {}", data_dir.display());
     tracing::info!("Using web favicons dir: {}", web_favicons_dir.display());
 
-    let pool = db::init_db(db_path.to_str().unwrap(), "Asia/Shanghai").await?;
+    let pool = db::init_db(
+        db_path.to_str().ok_or_else(|| anyhow::anyhow!("Database path contains invalid UTF-8"))?,
+        "Asia/Shanghai",
+    ).await?;
     let config_service = Arc::new(ConfigService::new(&data_dir));
 
     // 读取初始配置，决定 WebSocket 是否启动

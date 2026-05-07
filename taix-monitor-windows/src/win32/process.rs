@@ -6,7 +6,12 @@ use windows::core::PCWSTR;
 
 #[link(name = "kernel32")]
 extern "system" {
-    fn QueryFullProcessImageNameW(hProcess: windows::Win32::Foundation::HANDLE, dwFlags: u32, lpExeName: *mut u16, lpdwSize: *mut u32) -> i32;
+    fn QueryFullProcessImageNameW(
+        hProcess: windows::Win32::Foundation::HANDLE,
+        dwFlags: u32,
+        lpExeName: *mut u16,
+        lpdwSize: *mut u32,
+    ) -> i32;
     fn GetUserDefaultLangID() -> u16;
 }
 
@@ -16,11 +21,17 @@ pub fn get_process_exe_path(pid: u32) -> Option<String> {
         let mut buf = vec![0u16; 4096];
         let mut len = buf.len() as u32;
         let result = QueryFullProcessImageNameW(handle, 0, buf.as_mut_ptr(), &mut len);
-        let _ = CloseHandle(handle);
+        if let Err(e) = CloseHandle(handle) {
+            tracing::debug!(target: "win32::process", "CloseHandle failed: {:?}", e);
+        }
         if result == 0 {
             return None;
         }
-        Some(String::from_utf16_lossy(&buf[..len as usize]).trim_end_matches('\0').to_string())
+        let mut s = String::from_utf16_lossy(&buf[..len as usize]);
+        if let Some(pos) = s.find('\0') {
+            s.truncate(pos);
+        }
+        Some(s)
     }
 }
 
@@ -28,7 +39,7 @@ pub fn get_process_name(pid: u32) -> Option<String> {
     get_process_exe_path(pid).map(|p| {
         Path::new(&p)
             .file_stem()
-            .map(|s| s.to_string_lossy().to_string())
+            .map(|s| s.to_string_lossy().into_owned())
             .unwrap_or_default()
     })
 }
@@ -57,19 +68,19 @@ pub fn get_file_description(path: &str) -> Option<String> {
             .chain(Some(0))
             .collect();
 
-        if !VerQueryValueW(data.as_ptr() as _, PCWSTR(sub_block.as_ptr()), &mut buf_ptr, &mut buf_len).as_bool() || buf_len < 4 {
+        if !VerQueryValueW(data.as_ptr() as _, PCWSTR(sub_block.as_ptr()), &mut buf_ptr, &mut buf_len).as_bool()
+            || buf_len < 4
+        {
             return None;
         }
 
         let count = (buf_len / 4) as usize;
         let translations = std::slice::from_raw_parts(buf_ptr as *const u32, count);
 
-        let mut pairs: Vec<(u16, u16)> = Vec::with_capacity(count);
-        for &t in translations {
-            let lang = (t & 0xFFFF) as u16;
-            let codepage = ((t >> 16) & 0xFFFF) as u16;
-            pairs.push((lang, codepage));
-        }
+        let pairs: Vec<(u16, u16)> = translations
+            .iter()
+            .map(|&t| ((t & 0xFFFF) as u16, ((t >> 16) & 0xFFFF) as u16))
+            .collect();
 
         let user_lang = GetUserDefaultLangID();
 
@@ -78,11 +89,14 @@ pub fn get_file_description(path: &str) -> Option<String> {
             let query_wide: Vec<u16> = query.encode_utf16().chain(Some(0)).collect();
             let mut desc_ptr = std::ptr::null_mut();
             let mut desc_len = 0u32;
-            if VerQueryValueW(data.as_ptr() as _, PCWSTR(query_wide.as_ptr()), &mut desc_ptr, &mut desc_len).as_bool() && desc_len > 0 {
-                // VerQueryValueW 对 StringFileInfo 字符串返回的 puLen 是字符数（wValueLength），
-                // 不是字节数，不需要除以 2。参考 .NET FileVersionInfo 的实现。
+            if VerQueryValueW(data.as_ptr() as _, PCWSTR(query_wide.as_ptr()), &mut desc_ptr, &mut desc_len).as_bool()
+                && desc_len > 0
+            {
                 let slice = std::slice::from_raw_parts(desc_ptr as *const u16, desc_len as usize);
-                let s = String::from_utf16_lossy(slice).trim_end_matches('\0').to_string();
+                let mut s = String::from_utf16_lossy(slice);
+                if let Some(pos) = s.find('\0') {
+                    s.truncate(pos);
+                }
                 if !s.is_empty() {
                     return Some(s);
                 }

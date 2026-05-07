@@ -11,7 +11,7 @@ impl MonitorClient {
         Self { queue }
     }
 
-    pub fn send_app_duration(
+    pub async fn send_app_duration(
         &self,
         process: &str,
         duration: i64,
@@ -28,23 +28,47 @@ impl MonitorClient {
             i: icon_path,
             desc: description,
         };
-        let mut json = serde_json::to_string(&msg).expect("bug: MonitorMessage is always serializable");
+        let mut json = match serde_json::to_string(&msg) {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::error!(target: "monitor_client", "Failed to serialize app message: {}", e);
+                return;
+            }
+        };
         json.push('\n');
-        self.queue.enqueue(json.into_bytes());
+        if let Err(e) = self.queue.enqueue(json.into_bytes()).await {
+            tracing::warn!(target: "monitor_client", "Failed to enqueue app duration: {}", e);
+        }
     }
 
-    pub fn send_sleep(&self) {
+    pub async fn send_sleep(&self) {
         let msg = MonitorMessage::Sleep;
-        let mut json = serde_json::to_string(&msg).expect("bug: MonitorMessage is always serializable");
+        let mut json = match serde_json::to_string(&msg) {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::error!(target: "monitor_client", "Failed to serialize sleep message: {}", e);
+                return;
+            }
+        };
         json.push('\n');
-        self.queue.enqueue(json.into_bytes());
+        if let Err(e) = self.queue.enqueue(json.into_bytes()).await {
+            tracing::warn!(target: "monitor_client", "Failed to enqueue sleep: {}", e);
+        }
     }
 
-    pub fn send_wake(&self) {
+    pub async fn send_wake(&self) {
         let msg = MonitorMessage::Wake;
-        let mut json = serde_json::to_string(&msg).expect("bug: MonitorMessage is always serializable");
+        let mut json = match serde_json::to_string(&msg) {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::error!(target: "monitor_client", "Failed to serialize wake message: {}", e);
+                return;
+            }
+        };
         json.push('\n');
-        self.queue.enqueue(json.into_bytes());
+        if let Err(e) = self.queue.enqueue(json.into_bytes()).await {
+            tracing::warn!(target: "monitor_client", "Failed to enqueue wake: {}", e);
+        }
     }
 
     pub async fn shutdown(self) {

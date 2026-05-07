@@ -1,13 +1,10 @@
 use crate::app_manager::AppManager;
 use crate::models::AppActiveEvent;
 use crate::win32::window::{
-    get_foreground_window, get_window_thread_process_id, is_valid_visible_window,
-    set_win_event_hook, unhook_win_event,
+    get_foreground_window, get_window_thread_process_id, get_window_info,
+    is_valid_visible_window, set_win_event_hook, unhook_win_event,
 };
 
-use crate::window_manager::WindowManager;
-use std::cell::Cell;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::thread;
 use tokio::sync::broadcast;
@@ -18,6 +15,7 @@ use windows::Win32::UI::WindowsAndMessaging::PostThreadMessageW;
 const EVENT_SYSTEM_FOREGROUND: u32 = 0x0003;
 const WM_QUIT: u32 = 0x0012;
 const WM_FOREGROUND_CHANGED: u32 = 0x8002; // WM_APP + 2
+const RESOLVER_QUEUE_CAPACITY: usize = 64;
 
 #[derive(Debug, Clone)]
 struct HwndSnapshot {
@@ -34,12 +32,12 @@ impl HwndSnapshot {
 
 // Hook 回调通过 thread_local 获取消息循环线程的 tid，避免全局 AtomicU32
 thread_local! {
-    static LOOP_TID: Cell<u32> = const { Cell::new(0) };
+    static LOOP_TID: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
 }
 
 pub struct AppObserver {
     tx: broadcast::Sender<AppActiveEvent>,
-    hwnd_tx: Option<std::sync::mpsc::Sender<HwndSnapshot>>,
+    hwnd_tx: Option<crossbeam::channel::Sender<HwndSnapshot>>,
     thread: Option<thread::JoinHandle<()>>,
     resolver_thread: Option<thread::JoinHandle<()>>,
     thread_id: u32,
@@ -50,103 +48,89 @@ impl AppObserver {
         let (tx, _rx) = broadcast::channel(1024);
         let tx2 = tx.clone();
 
-        let (hwnd_tx, hwnd_rx) = std::sync::mpsc::channel::<HwndSnapshot>();
+        let (hwnd_tx, hwnd_rx) = crossbeam::channel::bounded::<HwndSnapshot>(RESOLVER_QUEUE_CAPACITY);
 
-        // resolver 线程
         let resolver_thread = thread::spawn(move || {
-            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                while let Ok(snapshot) = hwnd_rx.recv() {
-                    debug!("[AppObserver] Processing HWND: {:#x}", snapshot.hwnd);
-                    let hwnd = snapshot.as_hwnd();
+            while let Ok(snapshot) = hwnd_rx.recv() {
+                debug!(target: "app_observer", "Processing HWND: {:#x}", snapshot.hwnd);
+                let hwnd = snapshot.as_hwnd();
 
-                    if !is_valid_visible_window(hwnd) {
-                        debug!(
-                            "[AppObserver] HWND {:#x} closed before resolver could process it; skipping.",
-                            snapshot.hwnd
-                        );
-                        continue;
-                    }
-
-                    let (current_tid, current_pid) = get_window_thread_process_id(hwnd);
-                    if current_pid != snapshot.pid || current_tid != snapshot.tid {
-                        info!(
-                            "[AppObserver] Handle recycled: expected pid={}/tid={}, got pid={}/tid={}; skipping.",
-                            snapshot.pid, snapshot.tid, current_pid, current_tid
-                        );
-                        continue;
-                    }
-
-                    let app = match app_manager.get_app_info(hwnd) {
-                        Ok(app) => app,
-                        Err(e) => {
-                            debug!("[AppObserver] Failed to get app info for HWND: {:#x}: {:?}", snapshot.hwnd, e);
-                            continue;
-                        }
-                    };
-
-                    if !is_valid_visible_window(hwnd) {
-                        debug!(
-                            "[AppObserver] HWND {:#x} closed during get_app_info; skipping.",
-                            snapshot.hwnd
-                        );
-                        continue;
-                    }
-
-                    let (tid2, pid2) = get_window_thread_process_id(hwnd);
-                    if pid2 != snapshot.pid || tid2 != snapshot.tid {
-                        debug!(
-                            "[AppObserver] Handle recycled during get_app_info: expected pid={}/tid={}, got pid={}/tid={}; skipping.",
-                            snapshot.pid, snapshot.tid, pid2, tid2
-                        );
-                        continue;
-                    }
-
-                    let window = match WindowManager::get_window_info(hwnd) {
-                        Some(w) => w,
-                        None => {
-                            debug!("[AppObserver] Failed to get window info for HWND: {:#x}", snapshot.hwnd);
-                            continue;
-                        }
-                    };
-                    if !window.is_valid() {
-                        debug!("[AppObserver] Empty window info for HWND: {:#x}", snapshot.hwnd);
-                        continue;
-                    }
-
-                    info!(
-                        "[AppObserver] Foreground changed -> [{}] {} | title: {} | class: {}",
-                        app.app_type, app.process, window.title, window.class_name
+                if !is_valid_visible_window(hwnd) {
+                    debug!(
+                        target: "app_observer",
+                        "HWND {:#x} closed before resolver could process it; skipping.",
+                        snapshot.hwnd
                     );
-                    let event = AppActiveEvent {
-                        app,
-                        window,
-                    };
-                    if let Err(e) = tx2.send(event) {
-                        tracing::warn!("[AppObserver] Broadcast closed, resolver exiting: {}", e);
-                        break;
-                    }
+                    continue;
                 }
-            }));
 
-            if let Err(e) = result {
-                if let Some(s) = e.downcast_ref::<String>() {
-                    tracing::error!("[AppObserver] Resolver thread panicked: {}", s);
-                } else if let Some(s) = e.downcast_ref::<&str>() {
-                    tracing::error!("[AppObserver] Resolver thread panicked: {}", s);
-                } else {
-                    tracing::error!("[AppObserver] Resolver thread panicked");
+                let (current_tid, current_pid) = get_window_thread_process_id(hwnd);
+                if current_pid != snapshot.pid || current_tid != snapshot.tid {
+                    info!(
+                        target: "app_observer",
+                        "Handle recycled: expected pid={}/tid={}, got pid={}/tid={}; skipping.",
+                        snapshot.pid, snapshot.tid, current_pid, current_tid
+                    );
+                    continue;
+                }
+
+                let app = match app_manager.get_app_info(hwnd) {
+                    Ok(app) => app,
+                    Err(e) => {
+                        debug!(target: "app_observer", "Failed to get app info for HWND: {:#x}: {:?}", snapshot.hwnd, e);
+                        continue;
+                    }
+                };
+
+                if !is_valid_visible_window(hwnd) {
+                    debug!(
+                        target: "app_observer",
+                        "HWND {:#x} closed during get_app_info; skipping.",
+                        snapshot.hwnd
+                    );
+                    continue;
+                }
+
+                let (tid2, pid2) = get_window_thread_process_id(hwnd);
+                if pid2 != snapshot.pid || tid2 != snapshot.tid {
+                    debug!(
+                        target: "app_observer",
+                        "Handle recycled during get_app_info: expected pid={}/tid={}, got pid={}/tid={}; skipping.",
+                        snapshot.pid, snapshot.tid, pid2, tid2
+                    );
+                    continue;
+                }
+
+                let window = match get_window_info(hwnd) {
+                    Some(w) => w,
+                    None => {
+                        debug!(target: "app_observer", "Failed to get window info for HWND: {:#x}", snapshot.hwnd);
+                        continue;
+                    }
+                };
+
+                info!(
+                    target: "app_observer",
+                    "Foreground changed -> [{}] {} | title: {} | class: {}",
+                    app.app_type, app.process, window.title, window.class_name
+                );
+                let event = AppActiveEvent { app, window };
+                if let Err(e) = tx2.send(event) {
+                    tracing::warn!(target: "app_observer", "Broadcast closed, resolver exiting: {}", e);
+                    break;
                 }
             }
         });
 
         let hwnd_tx2 = hwnd_tx.clone();
-        let thread_id_shared = Arc::new(AtomicU32::new(0));
-        let thread_id_clone = Arc::clone(&thread_id_shared);
+
+        // 使用 mpsc 替代 busy loop + AtomicU32 等待 tid
+        let (tid_tx, tid_rx) = std::sync::mpsc::channel::<u32>();
 
         let thread = thread::spawn(move || {
             unsafe {
                 let tid = windows::Win32::System::Threading::GetCurrentThreadId();
-                thread_id_clone.store(tid, Ordering::Relaxed);
+                let _ = tid_tx.send(tid);
                 LOOP_TID.with(|t| t.set(tid));
 
                 let hook = match set_win_event_hook(
@@ -156,7 +140,7 @@ impl AppObserver {
                 ) {
                     Ok(h) => h,
                     Err(e) => {
-                        tracing::error!("[AppObserver] SetWinEventHook failed: {}", e);
+                        tracing::error!(target: "app_observer", "SetWinEventHook failed: {}", e);
                         LOOP_TID.with(|t| t.set(0));
                         return;
                     }
@@ -170,17 +154,16 @@ impl AppObserver {
                         hwnd: hwnd.0 as usize,
                         pid: pid_fg,
                         tid: tid_fg,
-
                     };
                     if let Err(e) = hwnd_tx2.send(snapshot) {
                         tracing::warn!(
-                            "[AppObserver] Failed to send initial hwnd to resolver: {}",
-                            e
+                            target: "app_observer",
+                            "Failed to send initial hwnd to resolver: {}", e
                         );
                     }
                 }
 
-                info!("[AppObserver] Started");
+                info!(target: "app_observer", "Started");
 
                 let mut msg = windows::Win32::UI::WindowsAndMessaging::MSG::default();
                 loop {
@@ -194,7 +177,7 @@ impl AppObserver {
                         break; // WM_QUIT
                     }
                     if result.0 == -1 {
-                        tracing::error!("[AppObserver] GetMessage failed");
+                        tracing::error!(target: "app_observer", "GetMessage failed");
                         break;
                     }
 
@@ -206,37 +189,37 @@ impl AppObserver {
                                 hwnd: hwnd.0 as usize,
                                 pid: pid_fg,
                                 tid: tid_fg,
-        
                             };
-                            if let Err(e) = hwnd_tx2.send(snapshot) {
-                                tracing::warn!(
-                                    "[AppObserver] Failed to send foreground change to resolver: {}",
-                                    e
-                                );
+                            // 有界 channel 满时丢弃，避免消息循环线程阻塞
+                            match hwnd_tx2.try_send(snapshot) {
+                                Ok(()) => {}
+                                Err(crossbeam::channel::TrySendError::Full(_)) => {
+                                    tracing::warn!(target: "app_observer", "Resolver queue full, dropping foreground change");
+                                }
+                                Err(crossbeam::channel::TrySendError::Disconnected(_)) => {
+                                    tracing::warn!(target: "app_observer", "Resolver channel disconnected, dropping foreground change");
+                                }
                             }
                         }
                         continue;
                     }
 
-                    let _ = windows::Win32::UI::WindowsAndMessaging::TranslateMessage(&msg);
+                    if !windows::Win32::UI::WindowsAndMessaging::TranslateMessage(&msg).as_bool() {
+                        tracing::debug!(target: "app_observer", "TranslateMessage returned false");
+                    }
                     windows::Win32::UI::WindowsAndMessaging::DispatchMessageW(&msg);
                 }
 
                 unhook_win_event(hook);
                 LOOP_TID.with(|t| t.set(0));
-                info!("[AppObserver] Message loop ended");
+                info!(target: "app_observer", "Message loop ended");
             }
         });
 
-        // 等待消息循环线程报告其 tid（最多 5 秒）
-        let start = std::time::Instant::now();
-        while thread_id_shared.load(Ordering::Relaxed) == 0 {
-            if start.elapsed() > std::time::Duration::from_secs(5) {
-                panic!("AppObserver message loop thread failed to start within 5 seconds");
-            }
-            std::thread::yield_now();
-        }
-        let thread_id = thread_id_shared.load(Ordering::Relaxed);
+        let thread_id = match tid_rx.recv_timeout(std::time::Duration::from_secs(5)) {
+            Ok(id) => id,
+            Err(_) => panic!("AppObserver message loop thread failed to start within 5 seconds"),
+        };
 
         Self {
             tx,
@@ -263,19 +246,23 @@ impl Drop for AppObserver {
         if self.thread_id != 0 {
             unsafe {
                 if let Err(e) = PostThreadMessageW(self.thread_id, WM_QUIT, WPARAM(0), LPARAM(0)) {
-                    tracing::warn!("[AppObserver] PostThreadMessageW(WM_QUIT) failed: {}", e);
+                    tracing::warn!(target: "app_observer", "PostThreadMessageW(WM_QUIT) failed: {}", e);
                 }
             }
         }
 
         // 等待消息循环线程结束
         if let Some(t) = self.thread.take() {
-            let _ = t.join();
+            if let Err(e) = t.join() {
+                tracing::error!(target: "app_observer", "Message loop thread panicked: {:?}", e);
+            }
         }
 
         // 等待 resolver 线程结束
         if let Some(t) = self.resolver_thread.take() {
-            let _ = t.join();
+            if let Err(e) = t.join() {
+                tracing::error!(target: "app_observer", "Resolver thread panicked: {:?}", e);
+            }
         }
     }
 }
@@ -292,7 +279,9 @@ unsafe extern "system" fn win_event_callback(
     LOOP_TID.with(|tid| {
         let t = tid.get();
         if t != 0 {
-            let _ = PostThreadMessageW(t, WM_FOREGROUND_CHANGED, WPARAM(hwnd.0 as usize), LPARAM(0));
+            if let Err(e) = PostThreadMessageW(t, WM_FOREGROUND_CHANGED, WPARAM(hwnd.0 as usize), LPARAM(0)) {
+                tracing::debug!(target: "app_observer", "PostThreadMessageW in callback failed: {:?}", e);
+            }
         }
     });
 }

@@ -24,42 +24,40 @@ impl AppTimerService {
         req: UpdateAppDurationRequest,
         config_service: &ConfigService,
     ) -> Result<(), AppError> {
-        let process_ = req.process_name;
-        let duration_ = req.duration;
-        let start_time_ = req.start_date_time;
+        let process = req.process_name;
+        let start_time = req.start_date_time;
 
-        if process_.is_empty() || duration_ <= 0 {
+        if process.is_empty() || req.duration <= 0 {
             debug!("update_app_duration: skip empty process or zero duration");
             return Ok(());
         }
 
         // 应用忽略/白名单过滤
-        if config_service.should_ignore_app(&process_, req.file.as_deref()).await {
-            debug!("update_app_duration: app ignored by config: {}", process_);
+        if config_service.should_ignore_app(&process, req.file.as_deref()).await {
+            debug!("update_app_duration: app ignored by config: {}", process);
             return Ok(());
         }
 
         // 过滤掉明显无效的时间
-        if start_time_.year() < constants::MIN_VALID_YEAR {
+        if start_time.year() < constants::MIN_VALID_YEAR {
             debug!("update_app_duration: skip invalid timestamp");
             return Ok(());
         }
 
         // 单次上报时长不超过 24 小时，防止异常膨胀数据库
         const MAX_DURATION_SECS: i64 = constants::SECS_PER_DAY;
-        let mut duration_ = duration_;
-        if duration_ > MAX_DURATION_SECS {
+        let duration = req.duration.min(MAX_DURATION_SECS);
+        if duration < req.duration {
             tracing::warn!(
                 "update_app_duration: duration {}s exceeds max {}s for {}, truncating",
-                duration_, MAX_DURATION_SECS, process_
+                req.duration, MAX_DURATION_SECS, process
             );
-            duration_ = MAX_DURATION_SECS;
         }
 
         let mut tx = pool.begin().await?;
 
         // 同一进程在同一开始时间的上报只处理一次（StartDateTime 统一为 UTC，RFC3339 格式）
-        let start_time_key = start_time_.to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let start_time_key = start_time.to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
         let dedup_result = sqlx::query(
             r#"
             INSERT INTO AppDurationRequests (ProcessName, StartDateTime, Duration)
@@ -67,16 +65,16 @@ impl AppTimerService {
             ON CONFLICT(ProcessName, StartDateTime) DO NOTHING
             "#,
         )
-        .bind(&process_)
+        .bind(&process)
         .bind(&start_time_key)
-        .bind(duration_)
+        .bind(duration)
         .execute(&mut *tx)
         .await?;
 
         if dedup_result.rows_affected() == 0 {
             debug!(
                 "update_app_duration: duplicate request skipped for {}@{}",
-                process_, start_time_key
+                process, start_time_key
             );
             tx.commit().await?;
             return Ok(());
@@ -84,20 +82,16 @@ impl AppTimerService {
 
         debug!(
             "update_app_duration: process={}, duration={}, start={}",
-            process_, duration_, start_time_
+            process, duration, start_time
         );
 
         let start_time_max_hours_duration =
-            (59 - start_time_.minute() as i64) * 60 + (60 - start_time_.second() as i64);
-        let start_time_hours_duration = if duration_ > start_time_max_hours_duration {
-            start_time_max_hours_duration
-        } else {
-            duration_
-        };
-        let out_hours_duration = duration_ - start_time_hours_duration;
+            (59 - start_time.minute() as i64) * 60 + (60 - start_time.second() as i64);
+        let start_time_hours_duration = duration.min(start_time_max_hours_duration);
+        let out_hours_duration = duration - start_time_hours_duration;
 
         // UTC 小时整点，直接存入数据库
-        let utc_hour_start = start_time_
+        let utc_hour_start = start_time
             .with_minute(0)
             .unwrap()
             .with_second(0)
@@ -115,27 +109,23 @@ impl AppTimerService {
             }
             if out_hours_duration % 3600 > 0 {
                 let next_utc = utc_hour_start + Duration::hours(out_hours + 1);
-                let duration = out_hours_duration - out_hours * 3600;
-                duration_hours_data.insert(next_utc, duration);
+                let remaining = out_hours_duration - out_hours * 3600;
+                duration_hours_data.insert(next_utc, remaining);
             }
         }
 
         // DailyLog 按 UTC 日期汇总
-        let utc_date = start_time_.date_naive();
+        let utc_date = start_time.date_naive();
         let utc_next_day_start = utc_date
             .succ_opt()
             .unwrap()
             .and_hms_opt(0, 0, 0)
             .unwrap();
         let start_time_max_day_duration = Utc.from_utc_datetime(&utc_next_day_start)
-            .signed_duration_since(start_time_)
+            .signed_duration_since(start_time)
             .num_seconds();
-        let start_time_day_duration = if duration_ > start_time_max_day_duration {
-            start_time_max_day_duration
-        } else {
-            duration_
-        };
-        let out_day_duration = duration_ - start_time_day_duration;
+        let start_time_day_duration = duration.min(start_time_max_day_duration);
+        let out_day_duration = duration - start_time_day_duration;
         let mut duration_day_data = HashMap::new();
         duration_day_data.insert(utc_date, start_time_day_duration);
 
@@ -148,13 +138,13 @@ impl AppTimerService {
             }
             if out_day_duration % 86400 > 0 {
                 out_utc_date = out_utc_date.succ_opt().unwrap();
-                let duration = out_day_duration - out_days * 86400;
-                duration_day_data.insert(out_utc_date, duration);
+                let remaining = out_day_duration - out_days * 86400;
+                duration_day_data.insert(out_utc_date, remaining);
             }
         }
 
         let app_id = match sqlx::query_as::<_, (i64,)>("SELECT ID FROM AppModels WHERE Name = ?")
-            .bind(&process_)
+            .bind(&process)
             .fetch_optional(&mut *tx)
             .await?
         {
@@ -174,12 +164,12 @@ impl AppTimerService {
                 id
             }
             None => {
-                info!("update_app_duration: auto-creating AppModel for '{}'", process_);
+                info!("update_app_duration: auto-creating AppModel for '{}'", process);
                 let default_category_id = CategoryService::get_system_category_id(&mut *tx).await?;
                 let result = sqlx::query(
                     "INSERT INTO AppModels (Name, Alias, CategoryID, TotalTime, File, IconFile, Description) VALUES (?, ?, ?, 0, ?, ?, ?)",
                 )
-                .bind(&process_)
+                .bind(&process)
                 .bind(None::<&str>)
                 .bind(default_category_id)
                 .bind(&req.file)
@@ -192,7 +182,7 @@ impl AppTimerService {
         };
 
         sqlx::query("UPDATE AppModels SET TotalTime = TotalTime + ? WHERE ID = ?")
-            .bind(duration_)
+            .bind(duration)
             .bind(app_id)
             .execute(&mut *tx)
             .await?;

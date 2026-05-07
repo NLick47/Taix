@@ -1,3 +1,4 @@
+use crate::models::WindowInfo;
 use std::path::Path;
 use windows::Win32::Foundation::{HWND, LPARAM, RECT};
 use windows::Win32::Graphics::Gdi::{
@@ -31,9 +32,11 @@ pub fn get_window_text(hwnd: HWND) -> String {
         let mut buf = vec![0u16; (len + 1) as usize];
         let actual = GetWindowTextW(hwnd, &mut buf);
         if actual > 0 {
-            String::from_utf16_lossy(&buf[..actual as usize])
-                .trim_end_matches('\0')
-                .to_string()
+            let mut s = String::from_utf16_lossy(&buf[..actual as usize]);
+            if let Some(pos) = s.find('\0') {
+                s.truncate(pos);
+            }
+            s
         } else {
             String::new()
         }
@@ -45,9 +48,11 @@ pub fn get_window_class_name(hwnd: HWND) -> String {
         let mut buf = vec![0u16; 256];
         let len = GetClassNameW(hwnd, &mut buf);
         if len > 0 {
-            String::from_utf16_lossy(&buf[..len as usize])
-                .trim_end_matches('\0')
-                .to_string()
+            let mut s = String::from_utf16_lossy(&buf[..len as usize]);
+            if let Some(pos) = s.find('\0') {
+                s.truncate(pos);
+            }
+            s
         } else {
             String::new()
         }
@@ -70,6 +75,20 @@ pub fn get_window_thread_process_id(hwnd: HWND) -> (u32, u32) {
     }
 }
 
+pub fn get_window_info(hwnd: HWND) -> Option<WindowInfo> {
+    let title = get_window_text(hwnd);
+    if get_window_rect(hwnd).is_none() {
+        tracing::error!(target: "win32::window", "GetWindowRect failed for hwnd={:?}", hwnd);
+        return None;
+    }
+    let class_name = get_window_class_name(hwnd);
+    Some(WindowInfo {
+        class_name,
+        title,
+        _handle: hwnd.0 as isize,
+    })
+}
+
 pub unsafe fn set_win_event_hook(
     event_min: u32,
     event_max: u32,
@@ -89,18 +108,18 @@ pub unsafe fn set_win_event_hook(
 pub unsafe fn unhook_win_event(
     hook: windows::Win32::UI::Accessibility::HWINEVENTHOOK,
 ) {
-    let _ = UnhookWinEvent(hook);
+    if !UnhookWinEvent(hook).as_bool() {
+        tracing::debug!(target: "win32::window", "UnhookWinEvent returned false");
+    }
 }
 
 pub fn enum_child_windows(parent: HWND) -> Vec<HWND> {
     let mut children: Vec<HWND> = Vec::new();
     unsafe {
         let ptr = LPARAM(&mut children as *mut _ as isize);
-        let _ = EnumChildWindows(
-            Some(parent),
-            Some(enum_child_proc),
-            ptr,
-        );
+        if !EnumChildWindows(Some(parent), Some(enum_child_proc), ptr).as_bool() {
+            tracing::debug!(target: "win32::window", "EnumChildWindows returned false");
+        }
     }
     children
 }
@@ -125,17 +144,23 @@ pub fn extract_icon_to_png(exe_path: &str, output_path: &Path) -> Result<(), Box
         );
         if count == 0 || large.is_invalid() {
             if !small.is_invalid() {
-                let _ = DestroyIcon(small);
+                if DestroyIcon(small).is_err() {
+                    tracing::debug!(target: "win32::window", "DestroyIcon(small) failed");
+                }
             }
             return Err("No icon found".into());
         }
         if !small.is_invalid() {
-            let _ = DestroyIcon(small);
+            if let Err(e) = DestroyIcon(small) {
+                tracing::debug!(target: "win32::window", "DestroyIcon(small) failed: {:?}", e);
+            }
         }
 
         let mut info = windows::Win32::UI::WindowsAndMessaging::ICONINFO::default();
         if GetIconInfo(large, &mut info as *mut _).is_err() {
-            let _ = DestroyIcon(large);
+            if DestroyIcon(large).is_err() {
+                tracing::debug!(target: "win32::window", "DestroyIcon(large) failed");
+            }
             return Err("GetIconInfo failed".into());
         }
 
@@ -189,20 +214,36 @@ pub fn extract_icon_to_png(exe_path: &str, output_path: &Path) -> Result<(), Box
 
         if lines == 0 {
             if !info.hbmColor.is_invalid() {
-                let _ = DeleteObject(HGDIOBJ::from(info.hbmColor));
+                if !DeleteObject(HGDIOBJ::from(info.hbmColor)).as_bool() {
+                    tracing::debug!(target: "win32::window", "DeleteObject(hbmColor) returned false");
+                }
             }
-            let _ = DeleteObject(HGDIOBJ::from(info.hbmMask));
-            let _ = ReleaseDC(None, hdc);
-            let _ = DestroyIcon(large);
+            if !DeleteObject(HGDIOBJ::from(info.hbmMask)).as_bool() {
+                tracing::debug!(target: "win32::window", "DeleteObject(hbmMask) returned false");
+            }
+            if ReleaseDC(None, hdc) == 0 {
+                tracing::debug!(target: "win32::window", "ReleaseDC returned 0");
+            }
+            if DestroyIcon(large).is_err() {
+                tracing::debug!(target: "win32::window", "DestroyIcon(large) failed");
+            }
             return Err("GetDIBits failed".into());
         }
 
         if !info.hbmColor.is_invalid() {
-            let _ = DeleteObject(HGDIOBJ::from(info.hbmColor));
+            if !DeleteObject(HGDIOBJ::from(info.hbmColor)).as_bool() {
+                tracing::debug!(target: "win32::window", "DeleteObject(hbmColor) returned false");
+            }
         }
-        let _ = DeleteObject(HGDIOBJ::from(info.hbmMask));
-        let _ = ReleaseDC(None, hdc);
-        let _ = DestroyIcon(large);
+        if !DeleteObject(HGDIOBJ::from(info.hbmMask)).as_bool() {
+            tracing::debug!(target: "win32::window", "DeleteObject(hbmMask) returned false");
+        }
+        if ReleaseDC(None, hdc) == 0 {
+            tracing::debug!(target: "win32::window", "ReleaseDC returned 0");
+        }
+        if DestroyIcon(large).is_err() {
+            tracing::debug!(target: "win32::window", "DestroyIcon(large) failed");
+        }
 
         let mut img = image::RgbaImage::new(width as u32, height as u32);
         for y in 0..height {

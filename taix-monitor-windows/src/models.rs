@@ -7,7 +7,7 @@ pub enum SleepStatus {
     Sleep,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AppType {
     Win32,
     Uwp,
@@ -24,6 +24,7 @@ impl fmt::Display for AppType {
     }
 }
 
+/// 应用信息。process 字段为空是不合法状态，应由构造者保证。
 #[derive(Debug, Clone)]
 pub struct AppInfo {
     pub process: String,
@@ -33,40 +34,20 @@ pub struct AppInfo {
     pub app_type: AppType,
 }
 
-impl AppInfo {
-    pub fn empty() -> Self {
-        Self {
-            process: String::new(),
-            description: String::new(),
-            executable_path: String::new(),
-            icon_path: String::new(),
-            app_type: AppType::Win32,
-        }
-    }
-
-    pub fn is_valid(&self) -> bool {
-        !self.process.is_empty()
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct WindowInfo {
     pub class_name: String,
     pub title: String,
-    pub handle: isize,
+    pub _handle: isize,
 }
 
 impl WindowInfo {
-    pub fn empty() -> Self {
+    pub fn new(class_name: String, title: String, handle: isize) -> Self {
         Self {
-            class_name: String::new(),
-            title: String::new(),
-            handle: 0,
+            class_name,
+            title,
+            _handle: handle,
         }
-    }
-
-    pub fn is_valid(&self) -> bool {
-        self.handle != 0 && (!self.class_name.is_empty() || !self.title.is_empty())
     }
 }
 

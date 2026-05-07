@@ -25,14 +25,14 @@ impl AudioState {
 pub struct AudioMonitor {
     handle: Option<thread::JoinHandle<()>>,
     state: AudioState,
-    wake_tx: std::sync::mpsc::Sender<()>,
+    shutdown_tx: std::sync::mpsc::Sender<()>,
 }
 
 impl AudioMonitor {
     pub fn start() -> Self {
         let is_playing = Arc::new(AtomicBool::new(false));
         let running = Arc::new(AtomicBool::new(true));
-        let (wake_tx, wake_rx) = std::sync::mpsc::channel::<()>();
+        let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel::<()>();
 
         let is_playing_clone = Arc::clone(&is_playing);
         let running_clone = Arc::clone(&running);
@@ -41,6 +41,7 @@ impl AudioMonitor {
             unsafe {
                 let hr = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
                 if hr.is_err() {
+                    tracing::error!(target: "audio_monitor", "CoInitializeEx failed");
                     return;
                 }
 
@@ -50,7 +51,8 @@ impl AudioMonitor {
                     CLSCTX_ALL,
                 ) {
                     Ok(e) => e,
-                    Err(_) => {
+                    Err(e) => {
+                        tracing::error!(target: "audio_monitor", "CoCreateInstance(MMDeviceEnumerator) failed: {:?}", e);
                         CoUninitialize();
                         return;
                     }
@@ -64,23 +66,32 @@ impl AudioMonitor {
                             match meter {
                                 Ok(m) => match m.GetPeakValue() {
                                     Ok(peak) => peak > 0.0001,
-                                    Err(_) => false,
+                                    Err(e) => {
+                                        tracing::debug!(target: "audio_monitor", "GetPeakValue failed: {:?}", e);
+                                        false
+                                    }
                                 },
-                                Err(_) => false,
+                                Err(e) => {
+                                    tracing::debug!(target: "audio_monitor", "Activate(IAudioMeterInformation) failed: {:?}", e);
+                                    false
+                                }
                             }
                         }
-                        Err(_) => false,
+                        Err(e) => {
+                            tracing::debug!(target: "audio_monitor", "GetDefaultAudioEndpoint failed: {:?}", e);
+                            false
+                        }
                     };
 
                     is_playing_clone.store(playing, Ordering::Relaxed);
 
-                    match wake_rx.recv_timeout(Duration::from_secs(5)) {
-                        Ok(()) | Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+                    match shutdown_rx.recv_timeout(Duration::from_secs(5)) {
+                        Ok(()) => break,
+                        Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
                         Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
                     }
                 }
 
-                // enumerator 离开作用域自动 release
                 CoUninitialize();
             }
         });
@@ -88,7 +99,7 @@ impl AudioMonitor {
         Self {
             handle: Some(handle),
             state: AudioState { is_playing },
-            wake_tx,
+            shutdown_tx,
         }
     }
 
@@ -97,9 +108,13 @@ impl AudioMonitor {
     }
 
     pub fn stop(mut self) {
-        let _ = self.wake_tx.send(());
+        if let Err(e) = self.shutdown_tx.send(()) {
+            tracing::warn!(target: "audio_monitor", "Shutdown signal failed: {:?}", e);
+        }
         if let Some(h) = self.handle.take() {
-            let _ = h.join();
+            if let Err(e) = h.join() {
+                tracing::error!(target: "audio_monitor", "Audio thread panicked: {:?}", e);
+            }
         }
     }
 }

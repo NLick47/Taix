@@ -73,6 +73,9 @@ jobs:
           Copy-Item "taix-server/target/x86_64-pc-windows-msvc/release/taix-server.exe"       -Destination $publishDir -Force
           Copy-Item "taix-monitor-windows/target/x86_64-pc-windows-msvc/release/taix-monitor-windows.exe" -Destination $publishDir -Force
 
+          # Copy monitor default config
+          Copy-Item "taix-monitor-windows/config.json" -Destination $publishDir -Force
+
           # Copy install scripts
           Copy-Item "script/install.ps1"   -Destination $publishDir -Force
           Copy-Item "script/uninstall.ps1" -Destination $publishDir -Force

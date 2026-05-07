@@ -107,12 +107,16 @@ async fn handle_client(
             Ok(msg) => match msg.t.as_str() {
                 "sleep" => {
                     *state.is_sleep.write().await = true;
-                    let _ = state.tx.send("sleep".to_string());
+                    if let Err(e) = state.tx.send("sleep".to_string()) {
+                        tracing::debug!("[Pipe] Broadcast sleep failed (no subscribers): {}", e);
+                    }
                     tracing::info!("[Pipe] Broadcast sleep");
                 }
                 "wake" => {
                     *state.is_sleep.write().await = false;
-                    let _ = state.tx.send("wake".to_string());
+                    if let Err(e) = state.tx.send("wake".to_string()) {
+                        tracing::debug!("[Pipe] Broadcast wake failed (no subscribers): {}", e);
+                    }
                     tracing::info!("[Pipe] Broadcast wake");
                 }
                 "app" => {

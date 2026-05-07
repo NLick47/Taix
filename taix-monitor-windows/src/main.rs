@@ -9,7 +9,6 @@ mod models;
 mod sleep_detector;
 mod transport;
 mod win32;
-mod window_manager;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -25,7 +24,12 @@ fn parse_data_dir(args: &[String]) -> Option<PathBuf> {
             return Some(PathBuf::from(&args[i + 1]));
         }
     }
-    std::env::var("TAIX_DATA_DIR").ok().map(PathBuf::from)
+    if let Ok(dir) = std::env::var("TAIX_DATA_DIR") {
+        return Some(PathBuf::from(dir));
+    }
+    std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
 }
 
 /// 崩溃恢复：从 active_session.json 读取上次活跃会话并上报
@@ -35,13 +39,27 @@ async fn recover_session(data_dir: &std::path::Path, client: &transport::client:
         return;
     }
 
-    let recovered = std::fs::read_to_string(&cp_path)
-        .ok()
-        .and_then(|s| serde_json::from_str::<SessionCheckpoint>(&s).ok());
+    let recovered = match std::fs::read_to_string(&cp_path) {
+        Ok(s) => match serde_json::from_str::<SessionCheckpoint>(&s) {
+            Ok(cp) => Some(cp),
+            Err(e) => {
+                tracing::warn!(target: "main", "Corrupt checkpoint: {}", e);
+                None
+            }
+        },
+        Err(e) => {
+            tracing::warn!(target: "main", "Failed to read checkpoint: {}", e);
+            None
+        }
+    };
 
-    let cp_mtime = std::fs::metadata(&cp_path)
-        .ok()
-        .and_then(|m| m.modified().ok());
+    let cp_mtime = match std::fs::metadata(&cp_path) {
+        Ok(m) => m.modified().ok(),
+        Err(e) => {
+            tracing::warn!(target: "main", "Failed to read checkpoint metadata: {}", e);
+            None
+        }
+    };
 
     if let Some(cp) = recovered {
         let now = chrono::Local::now();
@@ -62,19 +80,22 @@ async fn recover_session(data_dir: &std::path::Path, client: &transport::client:
 
         if idle >= inactive_threshold {
             info!(
-                "[Program] Recovery skipped: system is currently idle ({:?} >= {:?}), assuming sleep state | last app: {}",
+                target: "main",
+                "Recovery skipped: system is currently idle ({:?} >= {:?}), assuming sleep state | last app: {}",
                 idle, inactive_threshold, cp.process
             );
         } else if too_old {
             info!(
-                "[Program] Recovery skipped: checkpoint too old, last app: {}",
+                target: "main",
+                "Recovery skipped: checkpoint too old, last app: {}",
                 cp.process
             );
         } else {
             let delta = (now - since).num_seconds().max(0);
             let delta = delta.min(3600);
             info!(
-                "[Program] Recovered session: {} ({}s since checkpoint, idle={:?})",
+                target: "main",
+                "Recovered session: {} ({}s since checkpoint, idle={:?})",
                 cp.process, delta, idle
             );
             let exe = (!cp.exe_path.is_empty()).then_some(cp.exe_path.as_str());
@@ -84,12 +105,16 @@ async fn recover_session(data_dir: &std::path::Path, client: &transport::client:
             } else {
                 Some(cp.process.as_str())
             };
-            client.send_app_duration(&cp.process, delta, since, exe, icon, desc);
+            client.send_app_duration(&cp.process, delta, since, exe, icon, desc).await;
         }
     }
 
-    let _ = std::fs::remove_file(&cp_path);
-    let _ = std::fs::remove_file(data_dir.join("active_session.json.tmp"));
+    if let Err(e) = std::fs::remove_file(&cp_path) {
+        tracing::debug!(target: "main", "Failed to remove checkpoint: {}", e);
+    }
+    if let Err(e) = std::fs::remove_file(data_dir.join("active_session.json.tmp")) {
+        tracing::debug!(target: "main", "Failed to remove checkpoint tmp: {}", e);
+    }
 }
 
 #[tokio::main]
@@ -98,14 +123,14 @@ async fn main() {
 
     let default_panic = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
-        tracing::error!("[Program] Panic: {}", info);
+        tracing::error!(target: "main", "Panic: {}", info);
         default_panic(info);
     }));
 
     let _single_instance = match win32::single_instance::try_acquire("Global\\TaixMonitorSingleInstance") {
         Some(guard) => guard,
         None => {
-            tracing::error!("[Taix.Monitor] Another instance is already running. Exiting.");
+            tracing::error!(target: "main", "Another instance is already running. Exiting.");
             return;
         }
     };
@@ -113,7 +138,7 @@ async fn main() {
     let args: Vec<String> = std::env::args().collect();
     let data_dir = parse_data_dir(&args);
 
-    info!("[Taix.Monitor] Starting... dataDir={:?}", data_dir);
+    info!(target: "main", "Starting... dataDir={:?}", data_dir);
 
     let config = config::load_or_create(data_dir.as_deref());
     let ignore_processes = config.ignore_processes;
@@ -158,15 +183,16 @@ async fn main() {
                         exe,
                         icon,
                         desc,
-                    );
+                    ).await;
                     info!(
-                        "[Program] Queued app duration: {} = {}s",
+                        target: "main",
+                        "Queued app duration: {} = {}s",
                         event.app.process,
                         event.duration_secs,
                     );
                 }
                 Err(broadcast::error::RecvError::Lagged(n)) => {
-                    tracing::warn!("[Program] Duration events lagged by {} messages", n);
+                    tracing::warn!(target: "main", "Duration events lagged by {} messages", n);
                 }
                 Err(broadcast::error::RecvError::Closed) => break,
             }
@@ -182,19 +208,19 @@ async fn main() {
                 Ok(status) => {
                     match status {
                         models::SleepStatus::Sleep => {
-                            info!("[Program] System sleep detected, sending notification...");
-                            client_clone.send_sleep();
-                            info!("[Program] Sleep notification queued");
+                            info!(target: "main", "System sleep detected, sending notification...");
+                            client_clone.send_sleep().await;
+                            info!(target: "main", "Sleep notification queued");
                         }
                         models::SleepStatus::Wake => {
-                            info!("[Program] System wake detected, sending notification...");
-                            client_clone.send_wake();
-                            info!("[Program] Wake notification queued");
+                            info!(target: "main", "System wake detected, sending notification...");
+                            client_clone.send_wake().await;
+                            info!(target: "main", "Wake notification queued");
                         }
                     }
                 }
                 Err(broadcast::error::RecvError::Lagged(n)) => {
-                    tracing::warn!("[Program] Sleep events lagged by {} messages", n);
+                    tracing::warn!(target: "main", "Sleep events lagged by {} messages", n);
                 }
                 Err(broadcast::error::RecvError::Closed) => break,
             }
@@ -205,48 +231,56 @@ async fn main() {
     let timer_handle = tokio::spawn(app_timer.run());
     let sleep_handle = tokio::spawn(sleep_detector.clone().run());
 
-    info!("[Taix.Monitor] Running. Press Ctrl+C to exit.");
+    info!(target: "main", "Running. Press Ctrl+C to exit.");
 
     if let Err(e) = signal::ctrl_c().await {
-        error!("[Program] Failed to listen for ctrl-c: {}", e);
+        error!(target: "main", "Failed to listen for ctrl-c: {}", e);
     }
 
-    info!("[Taix.Monitor] Stopping...");
+    info!(target: "main", "Stopping...");
 
     // 发送关机信号
     sleep_detector.shutdown();
     // drop observer，AppTimer 刷出剩余时长后退出
     drop(app_observer);
-    info!("[Taix.Monitor] AppObserver stopped");
+    info!(target: "main", "AppObserver stopped");
 
     // 等待 AppTimer 结束，需在 duration_handle 之前
-    let _ = tokio::time::timeout(std::time::Duration::from_secs(2), timer_handle).await;
-    info!("[Taix.Monitor] AppTimer stopped");
+    if let Err(e) = tokio::time::timeout(std::time::Duration::from_secs(2), timer_handle).await {
+        tracing::warn!(target: "main", "AppTimer shutdown timed out: {}", e);
+    }
+    info!(target: "main", "AppTimer stopped");
 
     // 等待 duration_handle 处理剩余事件
-    let _ = tokio::time::timeout(std::time::Duration::from_secs(2), duration_handle).await;
-    info!("[Taix.Monitor] Duration handler stopped");
+    if let Err(e) = tokio::time::timeout(std::time::Duration::from_secs(2), duration_handle).await {
+        tracing::warn!(target: "main", "Duration handler shutdown timed out: {}", e);
+    }
+    info!(target: "main", "Duration handler stopped");
 
     // 等待 sleep detector 结束
-    let _ = tokio::time::timeout(std::time::Duration::from_secs(2), sleep_handle).await;
-    info!("[Taix.Monitor] Sleep detector stopped");
+    if let Err(e) = tokio::time::timeout(std::time::Duration::from_secs(2), sleep_handle).await {
+        tracing::warn!(target: "main", "Sleep detector shutdown timed out: {}", e);
+    }
+    info!(target: "main", "Sleep detector stopped");
 
     // 停止音频监控线程（专用 COM 线程，不依赖 tokio 线程池）
     audio_monitor.stop();
-    info!("[Taix.Monitor] Audio monitor stopped");
+    info!(target: "main", "Audio monitor stopped");
 
     // drop sleep_detector，sleep_event_handle 退出
     drop(sleep_detector);
-    let _ = tokio::time::timeout(std::time::Duration::from_secs(2), sleep_event_handle).await;
-    info!("[Taix.Monitor] Sleep event handler stopped");
+    if let Err(e) = tokio::time::timeout(std::time::Duration::from_secs(2), sleep_event_handle).await {
+        tracing::warn!(target: "main", "Sleep event handler shutdown timed out: {}", e);
+    }
+    info!(target: "main", "Sleep event handler stopped");
 
     // 等待 client 任务结束
     if let Ok(client) = Arc::try_unwrap(client) {
         client.shutdown().await;
     } else {
-        tracing::warn!("[Taix.Monitor] Could not unwrap Arc for client shutdown; background tasks may still hold references");
+        tracing::warn!(target: "main", "Could not unwrap Arc for client shutdown; background tasks may still hold references");
     }
-    info!("[Taix.Monitor] MonitorClient stopped");
+    info!(target: "main", "MonitorClient stopped");
 
-    info!("[Taix.Monitor] Stopped.");
+    info!(target: "main", "Stopped.");
 }
