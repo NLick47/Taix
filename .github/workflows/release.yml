@@ -98,8 +98,8 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
-          path: ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
+          name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}
+          path: ./output/${{ matrix.cpu }}/**
 
       - name: Read release notes from file
         id: release-notes
