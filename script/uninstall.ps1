@@ -1,13 +1,14 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Uninstall Taix suite: remove shortcuts, stop processes, and delete executables.
+    卸载 Taix：删快捷方式、停进程、清任务。
 
 .DESCRIPTION
-    Removes Start Menu and Desktop shortcuts for Taix, deletes taix-server and
-    taix-monitor-windows shortcuts from the Startup folder, stops any running
-    Taix processes, and removes the executable files from the install directory.
-    User data (config files, databases, logs, etc.) are preserved.
+    删掉开始菜单和桌面的快捷方式，从任务计划注销组件，
+    停掉正在跑的进程，清理旧注册表，最后删掉可执行文件。
+    用户数据（配置、数据库、日志等）会保留。
+
+    组件配置在最上面的表里，改那儿就行。
 #>
 
 [CmdletBinding()]
@@ -20,29 +21,77 @@ if (-not $InstallDir) {
     $InstallDir = (Get-Location).Path
 }
 
+# ---- 组件配置表，必须和 install.ps1 保持一致 ----
+$Components = @(
+    [pscustomobject]@{
+        Name       = "Monitor"
+        ExeName    = "taix-monitor-windows.exe"
+        TaskName   = "TaixMonitor"
+        InstallVia = "builtin"
+    },
+    [pscustomobject]@{
+        Name       = "Server"
+        ExeName    = "taix-server.exe"
+        TaskName   = "TaixServer"
+        InstallVia = "taskscheduler"
+    }
+)
+
+function Unregister-TaskSchedulerJob {
+    param([string]$TaskName)
+    $proc = Start-Process -FilePath "schtasks.exe" `
+        -ArgumentList "/DELETE","/F","/TN","`"$TaskName`"" `
+        -Wait -PassThru -NoNewWindow
+    # 任务不存在也视为成功
+    return ($proc.ExitCode -eq 0)
+}
+
+# 删快捷方式
 $WshShell     = New-Object -ComObject WScript.Shell
 $StartMenuDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs"
 $StartupDir   = $WshShell.SpecialFolders("Startup")
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($WshShell) | Out-Null
 
-# Remove shortcuts
 $shortcuts = @(
     (Join-Path $StartMenuDir "Taix.lnk"),
-    (Join-Path $env:USERPROFILE "Desktop\Taix.lnk"),
-    (Join-Path $StartupDir "Taix Server.lnk"),
-    (Join-Path $StartupDir "Taix Monitor.lnk"),
-    # Legacy compatibility
-    (Join-Path $StartupDir "Taix.lnk")
+    (Join-Path $env:USERPROFILE "Desktop\Taix.lnk")
 )
 
 foreach ($sc in $shortcuts) {
     if (Test-Path $sc) {
-        Remove-Item $sc -Force
-        Write-Host "[+] Removed: $sc"
+        try {
+            Remove-Item $sc -Force -ErrorAction Stop
+            Write-Host "[+] Removed: $sc"
+        } catch {
+            Write-Host "[-] Could not remove: $sc (locked by another process)" -ForegroundColor Yellow
+        }
     }
 }
 
-# Stop running processes
+# 注销组件
+foreach ($c in $Components) {
+    $exePath = Join-Path $InstallDir $c.ExeName
+
+    if ($c.InstallVia -eq "builtin" -and (Test-Path $exePath)) {
+        Write-Host "[+] Unregistering $($c.TaskName) (via builtin uninstall)..."
+        $proc = Start-Process -FilePath $exePath -ArgumentList "uninstall" `
+            -Wait -PassThru -NoNewWindow
+        if ($proc.ExitCode -eq 0) {
+            Write-Host "[+] $($c.TaskName) unregistered"
+        } else {
+            Write-Host "Warning: $($c.TaskName) uninstall returned exit code $($proc.ExitCode)" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "[+] Unregistering $($c.TaskName) from Task Scheduler..."
+        if (Unregister-TaskSchedulerJob -TaskName $c.TaskName) {
+            Write-Host "[+] $($c.TaskName) unregistered"
+        } else {
+            Write-Host "Warning: could not unregister $($c.TaskName) (may not exist)" -ForegroundColor Yellow
+        }
+    }
+}
+
+# 停掉运行中的进程
 $processNames = @("taix-server", "taix-monitor-windows", "Taix")
 foreach ($procName in $processNames) {
     $running = Get-Process -Name $procName -ErrorAction SilentlyContinue
@@ -52,10 +101,10 @@ foreach ($procName in $processNames) {
     }
 }
 
-# Wait a moment for file handles to be released
+# 等句柄释放
 Start-Sleep -Seconds 1
 
-# Clean up legacy registry entries (for users who previously used HKCU Run)
+# 清理旧注册表
 $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
 $oldKeys = @("Taix", "TaixServer", "TaixMonitor")
 foreach ($key in $oldKeys) {
@@ -66,7 +115,7 @@ foreach ($key in $oldKeys) {
     }
 }
 
-# Remove executables only (preserve user data)
+# 删可执行文件
 $exeFiles = @(
     (Join-Path $InstallDir "Taix.exe"),
     (Join-Path $InstallDir "taix-server.exe"),
@@ -85,7 +134,6 @@ Write-Host "  Taix uninstallation complete!"          -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Note: executables have been removed, but user data"
-Write-Host "(configs, databases, logs, etc.) in the install directory"
-Write-Host "were preserved."
+Write-Host "(configs, databases, logs, etc.) were preserved."
 Write-Host ""
 Read-Host "Press Enter to exit"

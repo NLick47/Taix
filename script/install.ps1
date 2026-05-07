@@ -1,28 +1,21 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
-    Install Taix suite: create shortcuts and add to Windows startup folder.
+    安装 Taix：创建快捷方式并注册任务计划。
 
 .DESCRIPTION
-    Creates a Start Menu shortcut for the Taix client, and places shortcuts
-    for taix-server and taix-monitor-windows into the Windows Startup folder
-    for auto-launch on login (zero registry writes).
+    给客户端创建开始菜单快捷方式，把 monitor 和 server 注册成
+    任务计划实现开机自启，装完直接启动它们。
+
+    要加新组件的话，改一下最上面那张表就行。
 
 .PARAMETER DesktopShortcut
-    Also create a shortcut on the Desktop.
-
-.PARAMETER StartServer
-    Launch taix-server immediately after installation.
-
-.PARAMETER StartMonitor
-    Launch taix-monitor-windows immediately after installation.
+    顺便在桌面也建个快捷方式。
 #>
 
 [CmdletBinding()]
 param(
-    [switch]$DesktopShortcut,
-    [switch]$StartServer,
-    [switch]$StartMonitor
+    [switch]$DesktopShortcut
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,18 +25,104 @@ if (-not $InstallDir) {
     $InstallDir = (Get-Location).Path
 }
 
-$ExeNames = @{
-    Client  = "Taix.exe"
-    Server  = "taix-server.exe"
-    Monitor = "taix-monitor-windows.exe"
+# ---- 组件配置表，新增组件往下加就行 ----
+$Components = @(
+    [pscustomobject]@{
+        Name       = "Monitor"
+        ExeName    = "taix-monitor-windows.exe"
+        TaskName   = "TaixMonitor"
+        InstallVia = "builtin"        # 调用 .exe install / uninstall
+    },
+    [pscustomobject]@{
+        Name       = "Server"
+        ExeName    = "taix-server.exe"
+        TaskName   = "TaixServer"
+        InstallVia = "taskscheduler"  # 通过通用 XML 注册
+        DelaySec   = 10
+    }
+)
+
+function Register-TaskSchedulerJob {
+    param(
+        [string]$TaskName,
+        [string]$ExePath,
+        [string]$Arguments = "",
+        [string]$WorkingDirectory = $InstallDir,
+        [int]$DelaySeconds = 30
+    )
+
+    $xml = @"
+<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>$([System.Security.SecurityElement]::Escape($TaskName)) auto-launch task</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <LogonTrigger>
+      <Enabled>true</Enabled>
+      <Delay>PT${DelaySeconds}S</Delay>
+    </LogonTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>true</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <RestartOnFailure>
+      <Interval>PT1M</Interval>
+      <Count>999</Count>
+    </RestartOnFailure>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>$([System.Security.SecurityElement]::Escape($ExePath))</Command>
+      <Arguments>$([System.Security.SecurityElement]::Escape($Arguments))</Arguments>
+      <WorkingDirectory>$([System.Security.SecurityElement]::Escape($WorkingDirectory))</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>
+"@
+
+    $tempXml = Join-Path $env:TEMP "$TaskName.xml"
+    $bytes     = [System.Text.Encoding]::Unicode.GetBytes($xml)
+    $bom       = [byte[]]@(0xFF, 0xFE)
+    $allBytes  = $bom + $bytes
+    [System.IO.File]::WriteAllBytes($tempXml, $allBytes)
+
+    $proc = Start-Process -FilePath "schtasks.exe" `
+        -ArgumentList "/CREATE","/XML","`"$tempXml`"","/TN","`"$TaskName`"" `
+        -Wait -PassThru -NoNewWindow
+
+    Remove-Item $tempXml -Force -ErrorAction SilentlyContinue
+
+    if ($proc.ExitCode -ne 0) {
+        throw "schtasks.exe failed with exit code $($proc.ExitCode)"
+    }
 }
 
-# Verify required executables exist
+# 检查可执行文件有没有缺
 $missing = @()
-foreach ($key in $ExeNames.Keys) {
-    $path = Join-Path $InstallDir $ExeNames[$key]
-    if (-not (Test-Path $path)) {
-        $missing += $ExeNames[$key]
+foreach ($c in $Components) {
+    $p = Join-Path $InstallDir $c.ExeName
+    if (-not (Test-Path $p)) {
+        $missing += $c.ExeName
     }
 }
 if ($missing.Count -gt 0) {
@@ -54,73 +133,87 @@ if ($missing.Count -gt 0) {
     exit 1
 }
 
-$WshShell     = New-Object -ComObject WScript.Shell
-$StartMenuDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs"
-$StartupDir   = $WshShell.SpecialFolders("Startup")
+# 客户端快捷方式
+$clientExe       = Join-Path $InstallDir "Taix.exe"
+$StartMenuDir    = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs"
+$startMenuSc     = Join-Path $StartMenuDir "Taix.lnk"
 
-function New-AppShortcut {
-    param(
-        [string]$TargetPath,
-        [string]$ShortcutPath,
-        [string]$WorkingDirectory = $InstallDir
-    )
-    $sc = $WshShell.CreateShortcut($ShortcutPath)
-    $sc.TargetPath       = $TargetPath
-    $sc.WorkingDirectory = $WorkingDirectory
-    $sc.Save()
-}
-
-# Client shortcut (Start Menu + optional Desktop)
-$clientExe         = Join-Path $InstallDir $ExeNames.Client
-$startMenuShortcut = Join-Path $StartMenuDir "Taix.lnk"
-
-New-AppShortcut -TargetPath $clientExe -ShortcutPath $startMenuShortcut
-Write-Host "[+] Created Start Menu shortcut: $startMenuShortcut"
+$WshShell = New-Object -ComObject WScript.Shell
+$sc = $WshShell.CreateShortcut($startMenuSc)
+$sc.TargetPath       = $clientExe
+$sc.WorkingDirectory = $InstallDir
+$sc.Save()
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($WshShell) | Out-Null
+Write-Host "[+] Created Start Menu shortcut: $startMenuSc"
 
 if ($DesktopShortcut) {
-    $desktopShortcut = Join-Path $env:USERPROFILE "Desktop\Taix.lnk"
-    New-AppShortcut -TargetPath $clientExe -ShortcutPath $desktopShortcut
-    Write-Host "[+] Created Desktop shortcut: $desktopShortcut"
+    $desktopSc = Join-Path $env:USERPROFILE "Desktop\Taix.lnk"
+    $WshShell = New-Object -ComObject WScript.Shell
+    $sc = $WshShell.CreateShortcut($desktopSc)
+    $sc.TargetPath       = $clientExe
+    $sc.WorkingDirectory = $InstallDir
+    $sc.Save()
+    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($WshShell) | Out-Null
+    Write-Host "[+] Created Desktop shortcut: $desktopSc"
 }
 
-# Add to Startup folder (auto-launch, zero registry)
-$serverExe   = Join-Path $InstallDir $ExeNames.Server
-$monitorExe  = Join-Path $InstallDir $ExeNames.Monitor
+# 注册组件
+foreach ($c in $Components) {
+    $exePath = Join-Path $InstallDir $c.ExeName
 
-$serverStartupSc  = Join-Path $StartupDir "Taix Server.lnk"
-$monitorStartupSc = Join-Path $StartupDir "Taix Monitor.lnk"
+    # 覆盖安装时先把旧任务清掉，不然 schtasks 会报错
+    $null = Start-Process -FilePath "schtasks.exe" `
+        -ArgumentList "/DELETE","/F","/TN","`"$($c.TaskName)`"" `
+        -Wait -PassThru -NoNewWindow -ErrorAction SilentlyContinue
 
-New-AppShortcut -TargetPath $serverExe  -ShortcutPath $serverStartupSc
-Write-Host "[+] Added taix-server to Startup folder"
-
-New-AppShortcut -TargetPath $monitorExe -ShortcutPath $monitorStartupSc
-Write-Host "[+] Added taix-monitor-windows to Startup folder"
-
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($WshShell) | Out-Null
-
-# Optional: start immediately
-if ($StartServer) {
-    Start-Process -FilePath $serverExe -WorkingDirectory $InstallDir
-    Write-Host "[+] Started taix-server"
+    if ($c.InstallVia -eq "builtin") {
+        Write-Host "[+] Registering $($c.TaskName) (via builtin install)..."
+        $proc = Start-Process -FilePath $exePath -ArgumentList "install" `
+            -WorkingDirectory $InstallDir -Wait -PassThru -NoNewWindow
+        if ($proc.ExitCode -eq 0) {
+            Write-Host "[+] $($c.TaskName) registered successfully"
+        } else {
+            Write-Host "Warning: $($c.TaskName) install returned exit code $($proc.ExitCode)" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "[+] Registering $($c.TaskName) (via Task Scheduler)..."
+        Register-TaskSchedulerJob -TaskName $c.TaskName -ExePath $exePath -DelaySeconds $c.DelaySec
+        Write-Host "[+] $($c.TaskName) registered successfully"
+    }
 }
 
-if ($StartMonitor) {
-    Start-Process -FilePath $monitorExe -WorkingDirectory $InstallDir
-    Write-Host "[+] Started taix-monitor-windows"
+# 启动组件
+foreach ($c in $Components) {
+    $exePath = Join-Path $InstallDir $c.ExeName
+    Write-Host "[+] Starting $($c.Name)..."
+    Start-Process -FilePath $exePath -WorkingDirectory $InstallDir
 }
 
+# 等几秒让进程起来
+Start-Sleep -Seconds 2
+
+# 看看进程跑了没
+foreach ($c in $Components) {
+    $procName = [System.IO.Path]::GetFileNameWithoutExtension($c.ExeName)
+    $running = Get-Process -Name $procName -ErrorAction SilentlyContinue
+    if ($running) {
+        Write-Host "[+] Verified $($c.Name) is running"
+    } else {
+        Write-Host "Warning: $($c.Name) does not appear to be running" -ForegroundColor Yellow
+    }
+}
+
+# 完工
 Write-Host "`n========================================" -ForegroundColor Green
 Write-Host "  Taix installation complete!"            -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Install directory: $InstallDir"
 Write-Host ""
-Write-Host "Auto-launch method: Startup folder (zero registry)"
-Write-Host "  - Taix Server.lnk   (local API service)"
-Write-Host "  - Taix Monitor.lnk  (app usage tracker)"
-Write-Host ""
-Write-Host "You can view them by typing the following in File Explorer:"
-Write-Host "  shell:startup" -ForegroundColor Cyan
+Write-Host "Auto-launch configuration:"
+foreach ($c in $Components) {
+    Write-Host "  - $($c.TaskName)  -> Task Scheduler ($($c.InstallVia))"
+}
 Write-Host ""
 if (-not $DesktopShortcut) {
     Write-Host "Tip: to also create a Desktop shortcut, run:" -ForegroundColor Cyan
