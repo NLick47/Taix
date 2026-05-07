@@ -128,11 +128,16 @@ impl AppManager {
             .and_then(get_file_description)
             .unwrap_or_default();
 
+        let icon_path = exe_path
+            .as_deref()
+            .and_then(|p| extract_icon(&self.data_dir, p, &process_name))
+            .unwrap_or_default();
+
         let info = AppInfo {
             process: process_name.to_string(),
             description,
             executable_path: exe_path.clone().unwrap_or_default(),
-            icon_path: String::new(),
+            icon_path,
             app_type,
         };
 
@@ -141,30 +146,6 @@ impl AppManager {
         self.cache.insert(cache_key.clone(), CachedApp {
             info: info.clone(),
             time: Instant::now(),
-        });
-
-        // 后台异步提取图标，完成后回填缓存
-        let cache = Arc::clone(&self.cache);
-        let data_dir = self.data_dir.clone();
-        let exe_path_for_icon = exe_path.clone();
-        let process_name_for_icon = process_name.clone();
-        let cache_key_for_fill = cache_key.clone();
-        std::thread::spawn(move || {
-            let icon_path = exe_path_for_icon
-                .as_deref()
-                .and_then(|p| extract_icon(&data_dir, p, &process_name_for_icon))
-                .unwrap_or_default();
-
-            if let Some(mut entry) = cache.get_mut(&cache_key_for_fill) {
-                entry.info.icon_path = icon_path;
-                entry.time = Instant::now();
-                debug!(
-                    target: "app_manager",
-                    "Async filled icon for key={:?}, icon_len={}",
-                    cache_key_for_fill,
-                    entry.info.icon_path.len()
-                );
-            }
         });
 
         debug!(target: "app_manager", "Resolved app: name={}, type={}, path={}",
