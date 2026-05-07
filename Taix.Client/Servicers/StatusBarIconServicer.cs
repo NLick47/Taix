@@ -14,7 +14,7 @@ using Taix.Client.Views;
 
 namespace Taix.Client.Servicers;
 
-public class StatusBarIconServicer : IStatusBarIconServicer
+public class StatusBarIconServicer : IStatusBarIconServicer, IDisposable
 {
     public enum IconType
     {
@@ -46,6 +46,7 @@ public class StatusBarIconServicer : IStatusBarIconServicer
         _shutdownService = shutdownService;
         _config = config;
         _shutdownService.AddHandler(OnShuttingDown);
+        _appConfig.ConfigChanged += OnConfigChanged;
     }
 
     public void Init()
@@ -56,6 +57,12 @@ public class StatusBarIconServicer : IStatusBarIconServicer
 
         Dispatcher.UIThread.InvokeAsync(() =>
         {
+            if (_trayIcon != null)
+            {
+                _trayIcon.IsVisible = true;
+                return;
+            }
+
             _trayIcon = new TrayIcon();
             SetIcon(IconType.Normal);
             InitMenu();
@@ -175,7 +182,7 @@ public class StatusBarIconServicer : IStatusBarIconServicer
                 {
                     await _config.LoadAsync();
                     await mainVM.LoadDefaultPageAsync();
-                    if (config.General.IsEnableTray)
+                    if (_appConfig.GetConfig().General.IsEnableTray)
                     {
                         Init();
                     }
@@ -206,5 +213,35 @@ public class StatusBarIconServicer : IStatusBarIconServicer
 
         if (existingWindow.WindowState == WindowState.Minimized) existingWindow.WindowState = WindowState.Normal;
         existingWindow.Activate();
+    }
+
+    private void OnConfigChanged(object? sender, Shared.Event.ConfigChangedEventArgs e)
+    {
+        if (!e.HasChange("General.IsEnableTray"))
+            return;
+
+        if (e.NewConfig.General.IsEnableTray)
+        {
+            Init();
+        }
+        else
+        {
+            if (_trayIcon != null)
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (_trayIcon != null)
+                    {
+                        _trayIcon.IsVisible = false;
+                        _trayIcon = null;
+                    }
+                });
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        _appConfig.ConfigChanged -= OnConfigChanged;
     }
 }
