@@ -14,8 +14,20 @@ pub fn parse_timezone(tz_id: &str) -> Tz {
 
 /// 将指定时区的本地日期转换为 UTC 的 [00:00, 次日 00:00) 范围
 pub fn tz_date_to_utc_range(date: NaiveDate, tz: &Tz) -> (DateTime<Utc>, DateTime<Utc>) {
-    let local_start = tz.from_local_datetime(&date.and_hms_opt(0, 0, 0).unwrap()).unwrap();
-    let local_end = tz.from_local_datetime(&date.succ_opt().unwrap().and_hms_opt(0, 0, 0).unwrap()).unwrap();
+    let naive_start = date.and_hms_opt(0, 0, 0).unwrap();
+    let local_start = match tz.from_local_datetime(&naive_start) {
+        chrono::LocalResult::Single(dt) => dt,
+        chrono::LocalResult::Ambiguous(earliest, _) => earliest,
+        chrono::LocalResult::None => tz.from_utc_datetime(&naive_start),
+    };
+
+    let naive_end = date.succ_opt().unwrap().and_hms_opt(0, 0, 0).unwrap();
+    let local_end = match tz.from_local_datetime(&naive_end) {
+        chrono::LocalResult::Single(dt) => dt,
+        chrono::LocalResult::Ambiguous(earliest, _) => earliest,
+        chrono::LocalResult::None => tz.from_utc_datetime(&naive_end),
+    };
+
     (local_start.with_timezone(&Utc), local_end.with_timezone(&Utc))
 }
 
