@@ -30,12 +30,8 @@ public interface ITaixApiClient
     Task DeleteCategoryAsync(int id);
 
     // Data
-    Task<List<DailyLogModel>> GetTodayLogListAsync(CancellationToken cancellationToken = default);
     Task<List<DailyLogModel>> GetDateRangeLogListAsync(DateTime start, DateTime end, int take = -1, int skip = -1, CancellationToken cancellationToken = default);
-    Task<List<DailyLogModel>> GetThisWeekLogListAsync(CancellationToken cancellationToken = default);
-    Task<List<DailyLogModel>> GetLastWeekLogListAsync(CancellationToken cancellationToken = default);
     Task<List<DailyLogModel>> GetProcessMonthLogListAsync(int appId, DateTime month, CancellationToken cancellationToken = default);
-    Task<DailyLogModel?> GetProcessDayAsync(int appId, DateTime day);
     Task ClearAppDataAsync(int appId, DateTime? month = null);
     Task ClearRangeAsync(DateTime start, DateTime end);
     Task<List<HoursLogModel>> GetTimeRangeLogListAsync(DateTime time, CancellationToken cancellationToken = default);

@@ -28,12 +28,6 @@ public class ApiData : IData
         return _apiClient.UpdateAppDurationAsync(processName, duration, startDateTime);
     }
 
-    public async Task<IReadOnlyList<DailyLogModel>> GetTodaylogListAsync(CancellationToken cancellationToken = default)
-    {
-        var result = await _apiClient.GetTodayLogListAsync(cancellationToken);
-        return result.AsReadOnly();
-    }
-
     public async Task<IEnumerable<DailyLogModel>> GetDateRangelogListAsync(DateTime start, DateTime end, int take = -1, int skip = -1, CancellationToken cancellationToken = default)
     {
         return await _apiClient.GetDateRangeLogListAsync(start, end, take, skip, cancellationToken);
@@ -45,11 +39,6 @@ public class ApiData : IData
         return await GetDateRangelogListAsync(week[0], week[1], cancellationToken: cancellationToken);
     }
 
-    public async Task<IEnumerable<DailyLogModel>> GetLastWeeklogListAsync(CancellationToken cancellationToken = default)
-    {
-        return await _apiClient.GetLastWeekLogListAsync(cancellationToken);
-    }
-
     public async Task<IReadOnlyList<DailyLogModel>> GetProcessMonthLogListAsync(int appId, DateTime month, CancellationToken cancellationToken = default)
     {
         var result = await _apiClient.GetProcessMonthLogListAsync(appId, month, cancellationToken);
@@ -59,12 +48,6 @@ public class ApiData : IData
     public Task ClearAsync(int appId, DateTime month)
     {
         return _apiClient.ClearAppDataAsync(appId, month);
-    }
-
-    public async Task<DailyLogModel> GetProcessAsync(int appId, DateTime day)
-    {
-        var result = await _apiClient.GetProcessDayAsync(appId, day);
-        return result!;
     }
 
     public async Task<IReadOnlyList<ColumnDataModel>> GetCategoryHoursDataAsync(DateTime date, CancellationToken cancellationToken = default)

@@ -227,19 +227,11 @@ public class TaixApiClient : ITaixApiClient
         return $"{url}{sep}timezone={Uri.EscapeDataString(TimeZoneHelper.GetIanaTimeZoneId())}";
     }
 
-    public Task<List<DailyLogModel>> GetTodayLogListAsync(CancellationToken cancellationToken = default) => GetAsync<List<DailyLogModel>>(TzQuery($"api/data/today?date={Uri.EscapeDataString(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
-
     public Task<List<DailyLogModel>> GetDateRangeLogListAsync(DateTime start, DateTime end, int take = -1, int skip = -1, CancellationToken cancellationToken = default) =>
         GetAsync<List<DailyLogModel>>(TzQuery($"api/data/range?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}&take={take}&skip={skip}"), cancellationToken);
 
-    public Task<List<DailyLogModel>> GetThisWeekLogListAsync(CancellationToken cancellationToken = default) => GetAsync<List<DailyLogModel>>(TzQuery($"api/data/this-week?date={Uri.EscapeDataString(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
-    public Task<List<DailyLogModel>> GetLastWeekLogListAsync(CancellationToken cancellationToken = default) => GetAsync<List<DailyLogModel>>(TzQuery($"api/data/last-week?date={Uri.EscapeDataString(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
-
     public Task<List<DailyLogModel>> GetProcessMonthLogListAsync(int appId, DateTime month, CancellationToken cancellationToken = default) =>
         GetAsync<List<DailyLogModel>>(TzQuery($"api/data/process-month?appId={appId}&month={Uri.EscapeDataString(month.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
-
-    public Task<DailyLogModel?> GetProcessDayAsync(int appId, DateTime day) =>
-        GetAsync<DailyLogModel?>(TzQuery($"api/data/process-day?appId={appId}&day={Uri.EscapeDataString(day.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
 
     public Task ClearAppDataAsync(int appId, DateTime? month = null) =>
         DeleteAsync(month.HasValue

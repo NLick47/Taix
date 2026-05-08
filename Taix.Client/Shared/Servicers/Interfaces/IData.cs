@@ -18,12 +18,6 @@ public interface IData
     Task UpdateAppDurationAsync(string processName, int duration, DateTime startDateTime);
 
     /// <summary>
-    /// 获取今天的数据
-    /// </summary>
-    /// <returns></returns>
-    Task<IReadOnlyList<DailyLogModel>> GetTodaylogListAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// 查询指定范围数据
     /// </summary>
     /// <param name="start"></param>
@@ -43,12 +37,6 @@ public interface IData
     Task<IEnumerable<DailyLogModel>> GetThisWeeklogListAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取上周的数据
-    /// </summary>
-    /// <returns></returns>
-    Task<IEnumerable<DailyLogModel>> GetLastWeeklogListAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// 获取指定进程某个月的数据
     /// </summary>
     /// <param name="processName"></param>
@@ -62,14 +50,6 @@ public interface IData
     /// </summary>
     /// <param name="processName"></param>
     Task ClearAsync(int appId, DateTime month);
-
-    /// <summary>
-    /// 获取指定进程某天的数据
-    /// </summary>
-    /// <param name="processName"></param>
-    /// <param name="day"></param>
-    /// <returns></returns>
-    Task<DailyLogModel> GetProcessAsync(int appId, DateTime day);
 
     /// <summary>
     /// 获取指定日期所有分类时段统计数据

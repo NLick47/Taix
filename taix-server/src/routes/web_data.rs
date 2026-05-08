@@ -78,7 +78,6 @@ pub fn router() -> Router<SqlitePool> {
         .route("/api/webdata/sites", get(get_web_sites))
         .route("/api/webdata/sites-count", get(get_web_sites_count))
         .route("/api/webdata/sites/:id", get(get_web_site).put(update_web_site))
-        .route("/api/webdata/site/:id", get(get_web_site))
         .route("/api/webdata/site-by-domain", get(get_web_site_by_domain))
         .route("/api/webdata/categories", get(get_web_site_categories).post(create_web_site_category))
         .route("/api/webdata/categories/:id", put(update_web_site_category).delete(delete_web_site_category))

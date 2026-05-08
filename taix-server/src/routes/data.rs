@@ -33,14 +33,6 @@ struct ProcessMonthQuery {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct ProcessDayQuery {
-    app_id: i64,
-    day: NaiveDateTime,
-    timezone: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct ClearQuery {
     month: Option<NaiveDateTime>,
     timezone: String,
@@ -96,12 +88,8 @@ fn default_neg() -> i64 { -1 }
 
 pub fn router() -> Router<SqlitePool> {
     Router::new()
-        .route("/api/data/today", get(get_today_log_list))
         .route("/api/data/range", get(get_date_range_log_list))
-        .route("/api/data/this-week", get(get_this_week_log_list))
-        .route("/api/data/last-week", get(get_last_week_log_list))
         .route("/api/data/process-month", get(get_process_month_log_list))
-        .route("/api/data/process-day", get(get_process_day))
         .route("/api/data/clear/:app_id", delete(clear_app_data))
         .route("/api/data/clear-range", delete(clear_range))
         .route("/api/data/time-range", get(get_time_range_log_list))
@@ -117,20 +105,6 @@ pub fn router() -> Router<SqlitePool> {
         .route("/api/data/export", get(get_export_data))
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct TodayQuery {
-    date: NaiveDateTime,
-    timezone: String,
-}
-
-async fn get_today_log_list(State(pool): State<SqlitePool>, Query(q): Query<TodayQuery>) -> Json<ApiResponse<Vec<DailyLogModel>>> {
-    match DataService::get_today_log_list(&pool, q.date.date(), &q.timezone).await {
-        Ok(data) => Json(ApiResponse::ok(data)),
-        Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
-    }
-}
-
 async fn get_date_range_log_list(State(pool): State<SqlitePool>, Query(q): Query<RangeQuery>) -> Json<ApiResponse<Vec<DailyLogModel>>> {
     match DataService::get_date_range_log_list(&pool, q.start.date(), q.end.date(), q.take, q.skip, &q.timezone).await {
         Ok(data) => Json(ApiResponse::ok(data)),
@@ -138,29 +112,8 @@ async fn get_date_range_log_list(State(pool): State<SqlitePool>, Query(q): Query
     }
 }
 
-async fn get_this_week_log_list(State(pool): State<SqlitePool>, Query(q): Query<TodayQuery>) -> Json<ApiResponse<Vec<DailyLogModel>>> {
-    match DataService::get_this_week_log_list(&pool, q.date.date(), &q.timezone).await {
-        Ok(data) => Json(ApiResponse::ok(data)),
-        Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
-    }
-}
-
-async fn get_last_week_log_list(State(pool): State<SqlitePool>, Query(q): Query<TodayQuery>) -> Json<ApiResponse<Vec<DailyLogModel>>> {
-    match DataService::get_last_week_log_list(&pool, q.date.date(), &q.timezone).await {
-        Ok(data) => Json(ApiResponse::ok(data)),
-        Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
-    }
-}
-
 async fn get_process_month_log_list(State(pool): State<SqlitePool>, Query(q): Query<ProcessMonthQuery>) -> Json<ApiResponse<Vec<DailyLogModel>>> {
     match DataService::get_process_month_log_list(&pool, q.app_id, q.month.date(), &q.timezone).await {
-        Ok(data) => Json(ApiResponse::ok(data)),
-        Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
-    }
-}
-
-async fn get_process_day(State(pool): State<SqlitePool>, Query(q): Query<ProcessDayQuery>) -> Json<ApiResponse<Option<DailyLogModel>>> {
-    match DataService::get_process_day(&pool, q.app_id, q.day.date(), &q.timezone).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
