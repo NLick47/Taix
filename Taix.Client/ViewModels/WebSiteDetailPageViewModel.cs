@@ -168,7 +168,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var list = await _webData.GetBrowseDataStatisticsAsync(startDate, endDate, WebSite.ID);
+        var list = await _webData.GetBrowseDataStatisticsAsync(startDate, endDate, WebSite.ID, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         ChartData =
         [
@@ -192,7 +192,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
     private async Task LoadCategoriesAsync(CancellationToken cancellationToken)
     {
         if (WebSite == null) return;
-        var data = await _webData.GetWebSiteCategoriesAsync(true);
+        var data = await _webData.GetWebSiteCategoriesAsync(true, cancellationToken);
         var list = new List<SelectItemModel>();
         foreach (var category in data)
         {

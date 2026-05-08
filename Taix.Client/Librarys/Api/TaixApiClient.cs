@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Taix.Client.Shared.Librarys;
@@ -28,11 +29,11 @@ public class TaixApiClient : ITaixApiClient
 
     [UnconditionalSuppressMessage("Trimming", "IL2026")]
     [UnconditionalSuppressMessage("AOT", "IL3050")]
-    private async Task<TResponse> GetAsync<TResponse>(string url)
+    private async Task<TResponse> GetAsync<TResponse>(string url, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.GetAsync(url);
+        var response = await _httpClient.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         var result = JsonSerializer.Deserialize<ApiResponse<TResponse>>(json, JsonOptions);
         if (result == null) throw new InvalidOperationException("Empty response");
         if (result.Code != 0) throw new InvalidOperationException(result.Message);
@@ -183,11 +184,11 @@ public class TaixApiClient : ITaixApiClient
         GetAsync<List<AppModel>>($"api/appdata/by-category/{categoryId}");
 
     // Category
-    public Task<List<CategoryModel>> GetCategoriesAsync(bool containSystemCategory = false) =>
-        GetAsync<List<CategoryModel>>($"api/category?containSystemCategory={containSystemCategory}");
+    public Task<List<CategoryModel>> GetCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default) =>
+        GetAsync<List<CategoryModel>>($"api/category?containSystemCategory={containSystemCategory}", cancellationToken);
 
-    public Task<CategoryModel?> GetCategoryAsync(int id) =>
-        GetAsync<CategoryModel?>($"api/category/{id}");
+    public Task<CategoryModel?> GetCategoryAsync(int id, CancellationToken cancellationToken = default) =>
+        GetAsync<CategoryModel?>($"api/category/{id}", cancellationToken);
 
     public async Task<CategoryModel> CreateCategoryAsync(CategoryModel category)
     {
@@ -226,16 +227,16 @@ public class TaixApiClient : ITaixApiClient
         return $"{url}{sep}timezone={Uri.EscapeDataString(TimeZoneHelper.GetIanaTimeZoneId())}";
     }
 
-    public Task<List<DailyLogModel>> GetTodayLogListAsync() => GetAsync<List<DailyLogModel>>(TzQuery($"api/data/today?date={Uri.EscapeDataString(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<DailyLogModel>> GetTodayLogListAsync(CancellationToken cancellationToken = default) => GetAsync<List<DailyLogModel>>(TzQuery($"api/data/today?date={Uri.EscapeDataString(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<List<DailyLogModel>> GetDateRangeLogListAsync(DateTime start, DateTime end, int take = -1, int skip = -1) =>
-        GetAsync<List<DailyLogModel>>(TzQuery($"api/data/range?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}&take={take}&skip={skip}"));
+    public Task<List<DailyLogModel>> GetDateRangeLogListAsync(DateTime start, DateTime end, int take = -1, int skip = -1, CancellationToken cancellationToken = default) =>
+        GetAsync<List<DailyLogModel>>(TzQuery($"api/data/range?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}&take={take}&skip={skip}"), cancellationToken);
 
-    public Task<List<DailyLogModel>> GetThisWeekLogListAsync() => GetAsync<List<DailyLogModel>>(TzQuery($"api/data/this-week?date={Uri.EscapeDataString(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
-    public Task<List<DailyLogModel>> GetLastWeekLogListAsync() => GetAsync<List<DailyLogModel>>(TzQuery($"api/data/last-week?date={Uri.EscapeDataString(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<DailyLogModel>> GetThisWeekLogListAsync(CancellationToken cancellationToken = default) => GetAsync<List<DailyLogModel>>(TzQuery($"api/data/this-week?date={Uri.EscapeDataString(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
+    public Task<List<DailyLogModel>> GetLastWeekLogListAsync(CancellationToken cancellationToken = default) => GetAsync<List<DailyLogModel>>(TzQuery($"api/data/last-week?date={Uri.EscapeDataString(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<List<DailyLogModel>> GetProcessMonthLogListAsync(int appId, DateTime month) =>
-        GetAsync<List<DailyLogModel>>(TzQuery($"api/data/process-month?appId={appId}&month={Uri.EscapeDataString(month.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<DailyLogModel>> GetProcessMonthLogListAsync(int appId, DateTime month, CancellationToken cancellationToken = default) =>
+        GetAsync<List<DailyLogModel>>(TzQuery($"api/data/process-month?appId={appId}&month={Uri.EscapeDataString(month.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
     public Task<DailyLogModel?> GetProcessDayAsync(int appId, DateTime day) =>
         GetAsync<DailyLogModel?>(TzQuery($"api/data/process-day?appId={appId}&day={Uri.EscapeDataString(day.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
@@ -248,35 +249,35 @@ public class TaixApiClient : ITaixApiClient
     public Task ClearRangeAsync(DateTime start, DateTime end) =>
         DeleteAsync(TzQuery($"api/data/clear-range?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
 
-    public Task<List<HoursLogModel>> GetTimeRangeLogListAsync(DateTime time) =>
-        GetAsync<List<HoursLogModel>>(TzQuery($"api/data/time-range?time={Uri.EscapeDataString(time.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<HoursLogModel>> GetTimeRangeLogListAsync(DateTime time, CancellationToken cancellationToken = default) =>
+        GetAsync<List<HoursLogModel>>(TzQuery($"api/data/time-range?time={Uri.EscapeDataString(time.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<double[]> GetRangeTotalDataAsync(DateTime start, DateTime end) =>
-        GetAsync<double[]>(TzQuery($"api/data/range-total?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<double[]> GetRangeTotalDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<double[]>(TzQuery($"api/data/range-total?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<double[]> GetMonthTotalDataAsync(DateTime year) =>
-        GetAsync<double[]>(TzQuery($"api/data/month-total?year={Uri.EscapeDataString(year.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<double[]> GetMonthTotalDataAsync(DateTime year, CancellationToken cancellationToken = default) =>
+        GetAsync<double[]>(TzQuery($"api/data/month-total?year={Uri.EscapeDataString(year.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<int> GetDateRangeAppCountAsync(DateTime start, DateTime end) =>
-        GetAsync<int>(TzQuery($"api/data/range-app-count?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<int> GetDateRangeAppCountAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<int>(TzQuery($"api/data/range-app-count?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<List<ColumnDataModel>> GetCategoryHoursDataAsync(DateTime date) =>
-        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/category-hours?date={Uri.EscapeDataString(date.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<ColumnDataModel>> GetCategoryHoursDataAsync(DateTime date, CancellationToken cancellationToken = default) =>
+        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/category-hours?date={Uri.EscapeDataString(date.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<List<ColumnDataModel>> GetCategoryRangeDataAsync(DateTime start, DateTime end) =>
-        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/category-range?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<ColumnDataModel>> GetCategoryRangeDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/category-range?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<List<ColumnDataModel>> GetCategoryYearDataAsync(DateTime date) =>
-        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/category-year?date={Uri.EscapeDataString(date.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<ColumnDataModel>> GetCategoryYearDataAsync(DateTime date, CancellationToken cancellationToken = default) =>
+        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/category-year?date={Uri.EscapeDataString(date.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<List<ColumnDataModel>> GetAppDayDataAsync(int appId, DateTime date) =>
-        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/app-day?appId={appId}&date={Uri.EscapeDataString(date.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<ColumnDataModel>> GetAppDayDataAsync(int appId, DateTime date, CancellationToken cancellationToken = default) =>
+        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/app-day?appId={appId}&date={Uri.EscapeDataString(date.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<List<ColumnDataModel>> GetAppRangeDataAsync(int appId, DateTime start, DateTime end) =>
-        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/app-range?appId={appId}&start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<ColumnDataModel>> GetAppRangeDataAsync(int appId, DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/app-range?appId={appId}&start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<List<ColumnDataModel>> GetAppYearDataAsync(int appId, DateTime date) =>
-        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/app-year?appId={appId}&date={Uri.EscapeDataString(date.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<ColumnDataModel>> GetAppYearDataAsync(int appId, DateTime date, CancellationToken cancellationToken = default) =>
+        GetAsync<List<ColumnDataModel>>(TzQuery($"api/data/app-year?appId={appId}&date={Uri.EscapeDataString(date.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
     public Task<ExportDataResult> GetExportDataAsync(DateTime start, DateTime end) =>
         GetAsync<ExportDataResult>(TzQuery($"api/data/export?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
@@ -293,11 +294,11 @@ public class TaixApiClient : ITaixApiClient
         });
     }
 
-    public Task<List<WebSiteModel>> GetWebSitesAsync(int? categoryId = null) =>
-        GetAsync<List<WebSiteModel>>(categoryId.HasValue ? $"api/webdata/sites?categoryId={categoryId}" : "api/webdata/sites");
+    public Task<List<WebSiteModel>> GetWebSitesAsync(int? categoryId = null, CancellationToken cancellationToken = default) =>
+        GetAsync<List<WebSiteModel>>(categoryId.HasValue ? $"api/webdata/sites?categoryId={categoryId}" : "api/webdata/sites", cancellationToken);
 
-    public Task<List<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(bool containSystemCategory = false) =>
-        GetAsync<List<WebSiteCategoryModel>>($"api/webdata/categories?containSystemCategory={containSystemCategory}");
+    public Task<List<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default) =>
+        GetAsync<List<WebSiteCategoryModel>>($"api/webdata/categories?containSystemCategory={containSystemCategory}", cancellationToken);
 
     public Task<WebSiteCategoryModel> CreateWebSiteCategoryAsync(WebSiteCategoryModel data) =>
         PostAsync<WebSiteCategoryModel, WebSiteCategoryModel>("api/webdata/categories", data);
@@ -320,8 +321,8 @@ public class TaixApiClient : ITaixApiClient
     public Task UpdateWebSitesCategoryAsync(int[] siteIds, int categoryId) =>
         PostAsync<UpdateSitesCategoryRequest>("api/webdata/update-sites-category", new UpdateSitesCategoryRequest { SiteIds = siteIds, CategoryId = categoryId });
 
-    public Task<List<WebSiteModel>> GetUnSetCategoryWebSitesAsync() =>
-        GetAsync<List<WebSiteModel>>("api/webdata/unset-category-sites");
+    public Task<List<WebSiteModel>> GetUnSetCategoryWebSitesAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<List<WebSiteModel>>("api/webdata/unset-category-sites", cancellationToken);
 
     public Task ClearWebDataAsync(DateTime? start = null, DateTime? end = null, int? siteId = null)
     {
@@ -333,35 +334,35 @@ public class TaixApiClient : ITaixApiClient
         return DeleteAsync(TzQuery($"api/webdata/clear{qs}"));
     }
 
-    public Task<List<WebSiteModel>> GetDateRangeWebSiteListAsync(DateTime start, DateTime end, int take = 0, int skip = -1, bool isTime = false) =>
-        GetAsync<List<WebSiteModel>>(TzQuery($"api/webdata/range?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}&take={take}&skip={skip}&isTime={isTime}"));
+    public Task<List<WebSiteModel>> GetDateRangeWebSiteListAsync(DateTime start, DateTime end, int take = 0, int skip = -1, bool isTime = false, CancellationToken cancellationToken = default) =>
+        GetAsync<List<WebSiteModel>>(TzQuery($"api/webdata/range?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}&take={take}&skip={skip}&isTime={isTime}"), cancellationToken);
 
     public Task<int> GetWebSitesCountAsync(int categoryId) =>
         GetAsync<int>($"api/webdata/sites-count?categoryId={categoryId}");
 
-    public Task<List<InfrastructureDataModel>> GetCategoriesStatisticsAsync(DateTime start, DateTime end) =>
-        GetAsync<List<InfrastructureDataModel>>(TzQuery($"api/webdata/categories-statistics?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<InfrastructureDataModel>> GetCategoriesStatisticsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<List<InfrastructureDataModel>>(TzQuery($"api/webdata/categories-statistics?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<List<InfrastructureDataModel>> GetBrowseDataStatisticsAsync(DateTime start, DateTime end, int siteId = 0) =>
-        GetAsync<List<InfrastructureDataModel>>(TzQuery($"api/webdata/browse-statistics?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}&siteId={siteId}"));
+    public Task<List<InfrastructureDataModel>> GetBrowseDataStatisticsAsync(DateTime start, DateTime end, int siteId = 0, CancellationToken cancellationToken = default) =>
+        GetAsync<List<InfrastructureDataModel>>(TzQuery($"api/webdata/browse-statistics?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}&siteId={siteId}"), cancellationToken);
 
-    public Task<List<ColumnDataModel>> GetBrowseDataByCategoryStatisticsAsync(DateTime start, DateTime end) =>
-        GetAsync<List<ColumnDataModel>>(TzQuery($"api/webdata/browse-category-statistics?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<ColumnDataModel>> GetBrowseDataByCategoryStatisticsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<List<ColumnDataModel>>(TzQuery($"api/webdata/browse-category-statistics?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<int> GetBrowseDurationTotalAsync(DateTime start, DateTime end) =>
-        GetAsync<int>(TzQuery($"api/webdata/browse-duration-total?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<int> GetBrowseDurationTotalAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<int>(TzQuery($"api/webdata/browse-duration-total?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<int> GetBrowseSitesTotalAsync(DateTime start, DateTime end) =>
-        GetAsync<int>(TzQuery($"api/webdata/browse-sites-total?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<int> GetBrowseSitesTotalAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<int>(TzQuery($"api/webdata/browse-sites-total?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<int> GetBrowsePagesTotalAsync(DateTime start, DateTime end) =>
-        GetAsync<int>(TzQuery($"api/webdata/browse-pages-total?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<int> GetBrowsePagesTotalAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<int>(TzQuery($"api/webdata/browse-pages-total?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
-    public Task<List<WebBrowseLogModel>> GetBrowseLogListAsync(DateTime start, DateTime end, int siteId = 0) =>
-        GetAsync<List<WebBrowseLogModel>>(TzQuery($"api/webdata/browse-log-list?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}&siteId={siteId}"));
+    public Task<List<WebBrowseLogModel>> GetBrowseLogListAsync(DateTime start, DateTime end, int siteId = 0, CancellationToken cancellationToken = default) =>
+        GetAsync<List<WebBrowseLogModel>>(TzQuery($"api/webdata/browse-log-list?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}&siteId={siteId}"), cancellationToken);
 
-    public Task<List<WebSiteModel>> GetWebSiteLogListAsync(DateTime start, DateTime end) =>
-        GetAsync<List<WebSiteModel>>(TzQuery($"api/webdata/site-log-list?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
+    public Task<List<WebSiteModel>> GetWebSiteLogListAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<List<WebSiteModel>>(TzQuery($"api/webdata/site-log-list?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
     public Task<WebExportDataResult> GetWebExportDataAsync(DateTime start, DateTime end) =>
         GetAsync<WebExportDataResult>(TzQuery($"api/webdata/export?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));

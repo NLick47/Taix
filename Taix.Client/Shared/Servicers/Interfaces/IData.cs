@@ -21,7 +21,7 @@ public interface IData
     /// 获取今天的数据
     /// </summary>
     /// <returns></returns>
-    Task<IReadOnlyList<DailyLogModel>> GetTodaylogListAsync();
+    Task<IReadOnlyList<DailyLogModel>> GetTodaylogListAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 查询指定范围数据
@@ -40,13 +40,13 @@ public interface IData
     /// 获取本周的数据
     /// </summary>
     /// <returns></returns>
-    Task<IEnumerable<DailyLogModel>> GetThisWeeklogListAsync();
+    Task<IEnumerable<DailyLogModel>> GetThisWeeklogListAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取上周的数据
     /// </summary>
     /// <returns></returns>
-    Task<IEnumerable<DailyLogModel>> GetLastWeeklogListAsync();
+    Task<IEnumerable<DailyLogModel>> GetLastWeeklogListAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取指定进程某个月的数据
@@ -54,7 +54,7 @@ public interface IData
     /// <param name="processName"></param>
     /// <param name="month"></param>
     /// <returns></returns>
-    Task<IReadOnlyList<DailyLogModel>> GetProcessMonthLogListAsync(int appId, DateTime month);
+    Task<IReadOnlyList<DailyLogModel>> GetProcessMonthLogListAsync(int appId, DateTime month, CancellationToken cancellationToken = default);
 
 
     /// <summary>
@@ -92,9 +92,9 @@ public interface IData
     /// <returns></returns>
     Task<IReadOnlyList<ColumnDataModel>> GetCategoryYearDataAsync(DateTime date, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<ColumnDataModel>> GetAppDayDataAsync(int appId, DateTime date);
-    Task<IReadOnlyList<ColumnDataModel>> GetAppRangeDataAsync(int appId, DateTime start, DateTime end);
-    Task<IReadOnlyList<ColumnDataModel>> GetAppYearDataAsync(int appId, DateTime date);
+    Task<IReadOnlyList<ColumnDataModel>> GetAppDayDataAsync(int appId, DateTime date, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ColumnDataModel>> GetAppRangeDataAsync(int appId, DateTime start, DateTime end, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ColumnDataModel>> GetAppYearDataAsync(int appId, DateTime date, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 清空指定时间范围数据

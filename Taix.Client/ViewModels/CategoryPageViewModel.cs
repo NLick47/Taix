@@ -647,7 +647,7 @@ public class CategoryPageViewModel : CategoryPageModel
     private async Task LoadDataCoreAsync(CancellationToken cancellationToken)
     {
         Data.Clear();
-        var categories = await _categoryService.GetCategoriesAsync(true);
+        var categories = await _categoryService.GetCategoriesAsync(true, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         foreach (var item in categories)
         {
@@ -661,7 +661,7 @@ public class CategoryPageViewModel : CategoryPageModel
         }
 
         WebCategoryData.Clear();
-        var webCategories = await _webDataService.GetWebSiteCategoriesAsync(true);
+        var webCategories = await _webDataService.GetWebSiteCategoriesAsync(true, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         foreach (var item in webCategories)
         {

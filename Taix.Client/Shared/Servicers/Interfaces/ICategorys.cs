@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Taix.Client.Shared.Models;
 
@@ -6,9 +7,9 @@ namespace Taix.Client.Shared.Servicers.Interfaces;
 
 public interface ICategorys
 {
-    Task<List<CategoryModel>> GetCategoriesAsync(bool containSystemCategory = false);
+    Task<List<CategoryModel>> GetCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default);
 
-    Task<CategoryModel?> GetCategoryAsync(int id);
+    Task<CategoryModel?> GetCategoryAsync(int id, CancellationToken cancellationToken = default);
 
     Task<CategoryModel> CreateAsync(CategoryModel category);
 

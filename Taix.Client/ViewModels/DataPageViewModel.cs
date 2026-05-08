@@ -126,13 +126,13 @@ public class DataPageViewModel : DataPageModel
             List<ChartsDataModel> chartData;
             if (ShowType.Id == 0)
             {
-                var result = await _dataService.GetDateRangelogListAsync(start, end);
+                var result = await _dataService.GetDateRangelogListAsync(start, end, cancellationToken: ct);
                 ct.ThrowIfCancellationRequested();
                 chartData = ChartDataMapper.MapFromDailyLogs(result, includeBadges: true, ignoreList);
             }
             else
             {
-                var result = await _webDataService.GetWebSiteLogListAsync(start, end);
+                var result = await _webDataService.GetWebSiteLogListAsync(start, end, ct);
                 ct.ThrowIfCancellationRequested();
                 chartData = ChartDataMapper.MapFromWebSites(result, includeBadges: true, ignoreUrlList);
             }

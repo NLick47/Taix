@@ -121,8 +121,8 @@ public class IndexPageViewModel : IndexPageModel
     {
         var week = Time.GetThisWeekDate();
 
-        var appDataTask = _dataService.GetThisWeeklogListAsync();
-        var webDataTask = _webDataService.GetDateRangeWebSiteListAsync(week[0], week[1]);
+        var appDataTask = _dataService.GetThisWeeklogListAsync(cancellationToken);
+        var webDataTask = _webDataService.GetDateRangeWebSiteListAsync(week[0], week[1], cancellationToken: cancellationToken);
 
         await Task.WhenAll(appDataTask, webDataTask);
         cancellationToken.ThrowIfCancellationRequested();
@@ -146,8 +146,8 @@ public class IndexPageViewModel : IndexPageModel
     {
         var today = DateTime.Now.Date;
 
-        var appDataTask = _dataService.GetDateRangelogListAsync(today, today);
-        var webDataTask = _webDataService.GetDateRangeWebSiteListAsync(today, today);
+        var appDataTask = _dataService.GetDateRangelogListAsync(today, today, cancellationToken: cancellationToken);
+        var webDataTask = _webDataService.GetDateRangeWebSiteListAsync(today, today, cancellationToken: cancellationToken);
 
         await Task.WhenAll(appDataTask, webDataTask);
         cancellationToken.ThrowIfCancellationRequested();

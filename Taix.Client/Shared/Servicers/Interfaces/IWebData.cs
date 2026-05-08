@@ -32,7 +32,7 @@ public interface IWebData
     /// 获取网站所有分类
     /// </summary>
     /// <returns></returns>
-    Task<IReadOnlyList<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(bool containSystemCategory = false);
+    Task<IReadOnlyList<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 创建网站分类
@@ -52,7 +52,7 @@ public interface IWebData
     /// <summary>
     /// 通过分类ID获取网站列表
     /// </summary>
-    Task<IReadOnlyCollection<WebSiteModel>> GetWebSitesAsync(int categoryId);
+    Task<IReadOnlyCollection<WebSiteModel>> GetWebSitesAsync(int categoryId, CancellationToken cancellationToken = default);
 
     /// <summary>直接从远程 API 获取指定分类的网站数量</summary>
     Task<int> GetWebSitesCountAsync(int categoryId);
@@ -66,7 +66,7 @@ public interface IWebData
     /// 获取未设置分类的站点列表
     /// </summary>
     /// <returns></returns>
-    Task<IReadOnlyCollection<WebSiteModel>> GetUnSetCategoryWebSitesAsync();
+    Task<IReadOnlyCollection<WebSiteModel>> GetUnSetCategoryWebSitesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量更新站点分类
@@ -87,7 +87,7 @@ public interface IWebData
     /// 获取指定时间段的浏览时长统计数据
     /// </summary>
     Task<IReadOnlyList<InfrastructureDataModel>> GetBrowseDataStatisticsAsync(DateTime start, DateTime end,
-        int siteId = 0);
+        int siteId = 0, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取指定时间段按照分类统计的浏览时长数据
@@ -112,7 +112,7 @@ public interface IWebData
     /// <summary>
     /// 获取指定时间段的网页浏览记录
     /// </summary>
-    Task<IReadOnlyList<WebBrowseLogModel>> GetBrowseLogListAsync(DateTime start, DateTime end, int siteId = 0);
+    Task<IReadOnlyList<WebBrowseLogModel>> GetBrowseLogListAsync(DateTime start, DateTime end, int siteId = 0, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取网站数据
@@ -129,7 +129,7 @@ public interface IWebData
     /// </summary>
     Task ClearAsync(DateTime start, DateTime end);
 
-    Task<IReadOnlyList<WebSiteModel>> GetWebSiteLogListAsync(DateTime start, DateTime end);
+    Task<IReadOnlyList<WebSiteModel>> GetWebSiteLogListAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 清空所有统计数据

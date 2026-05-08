@@ -136,14 +136,14 @@ public class DetailPageViewModel : DetailPageModel
     {
         if (App == null) return;
 
-        var monthData = await _dataService.GetProcessMonthLogListAsync(App.ID, Date);
+        var monthData = await _dataService.GetProcessMonthLogListAsync(App.ID, Date, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         var monthTotal = monthData.Sum(m => m.Time);
         Total = Time.ToString(monthTotal);
 
         var start = new DateTime(Date.Year, Date.Month, 1);
         var end = new DateTime(Date.Year, Date.Month, DateTime.DaysInMonth(Date.Year, Date.Month));
-        var monthAllData = await _dataService.GetDateRangelogListAsync(start, end);
+        var monthAllData = await _dataService.GetDateRangelogListAsync(start, end, cancellationToken: cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
         LongDay = ResourceStrings.NoData;
@@ -516,7 +516,7 @@ public class DetailPageViewModel : DetailPageModel
         if (TabbarSelectedIndex != 0) return;
         DataMaximum = 3600;
         if (App == null) return;
-        var list = await _dataService.GetAppDayDataAsync(App.ID, ChartDate);
+        var list = await _dataService.GetAppDayDataAsync(App.ID, ChartDate, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         ChartData = list.Select(item => new ChartsDataModel
         {
@@ -538,7 +538,7 @@ public class DetailPageViewModel : DetailPageModel
         var toText = Application.Current?.Resources["To"] as string ?? "To";
         WeekDateStr = $"{weekDateArr[0].ToString("d", culture)} {toText} {weekDateArr[1].ToString("d", culture)}";
 
-        var list = await _dataService.GetAppRangeDataAsync(App.ID, weekDateArr[0], weekDateArr[1]);
+        var list = await _dataService.GetAppRangeDataAsync(App.ID, weekDateArr[0], weekDateArr[1], cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         string[] weekNames =
         [
@@ -560,7 +560,7 @@ public class DetailPageViewModel : DetailPageModel
         DataMaximum = 0;
         if (App == null) return;
         var dateArr = Time.GetMonthDate(MonthDate);
-        var list = await _dataService.GetAppRangeDataAsync(App.ID, dateArr[0], dateArr[1]);
+        var list = await _dataService.GetAppRangeDataAsync(App.ID, dateArr[0], dateArr[1], cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         ChartData = list.Select(item => new ChartsDataModel
         {
@@ -575,7 +575,7 @@ public class DetailPageViewModel : DetailPageModel
         if (TabbarSelectedIndex != 3) return;
         DataMaximum = 0;
         if (App == null) return;
-        var list = await _dataService.GetAppYearDataAsync(App.ID, YearDate);
+        var list = await _dataService.GetAppYearDataAsync(App.ID, YearDate, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         var names = new string[12];
         for (var i = 0; i < 12; i++)

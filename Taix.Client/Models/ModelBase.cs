@@ -84,8 +84,9 @@ public class ModelBase : UINotifyPropertyChanged
         {
             await action(capturedCts.Token);
         }
-        catch (OperationCanceledException) when (capturedCts.Token.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
+            // 忽略所有取消异常，这是预期的行为（如用户快速切换Tab）
         }
         catch (Exception ex)
         {
@@ -117,8 +118,9 @@ public class ModelBase : UINotifyPropertyChanged
                 {
                     await handler(value);
                 }
-                catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
+                catch (OperationCanceledException)
                 {
+                    // 忽略所有取消异常，这是预期的行为（如用户快速切换Tab）
                 }
                 catch (Exception ex)
                 {

@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables.Fluent;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using ReactiveUI;
+using ReactiveUI.Avalonia;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Librarys;
@@ -96,9 +98,21 @@ public class ChartPageViewModel : ChartPageModel
         WhenPropertyChanged(this, x => x.SelectedWeek, _ => OnSelectedWeekChangedAsync());
         WhenPropertyChanged(this, x => x.MonthDate, _ => OnMonthDateChangedAsync());
         WhenPropertyChanged(this, x => x.YearDate, _ => OnYearDateChangedAsync());
-        WhenPropertyChanged(this, x => x.ColumnSelectedIndex, _ => LoadSelectedColDataAsync());
+        this.WhenAnyValue(x => x.ColumnSelectedIndex)
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Select(_ => Observable.FromAsync(async ct => await LoadSelectedColDataAsync(ct)))
+            .Switch()
+            .Subscribe()
+            .DisposeWith(Disposables);
+
         WhenPropertyChanged(this, x => x.ChartDataMode, _ => OnChartDataModeChangedAsync());
-        WhenPropertyChanged(this, x => x.WebColSelectedIndex, _ => LoadWebSitesColSelectedDataAsync());
+
+        this.WhenAnyValue(x => x.WebColSelectedIndex)
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Select(_ => Observable.FromAsync(async ct => await LoadWebSitesColSelectedDataAsync(ct)))
+            .Switch()
+            .Subscribe()
+            .DisposeWith(Disposables);
     }
 
     public override Task OnNavigatedToAsync()
@@ -298,7 +312,7 @@ public class ChartPageViewModel : ChartPageModel
         var categoryData = new List<ChartsDataModel>();
         foreach (var item in list)
         {
-            var category = await _categoryService.GetCategoryAsync(item.CategoryID);
+            var category = await _categoryService.GetCategoryAsync(item.CategoryID, cancellationToken);
             category ??= new CategoryModel { Name = "Unknown", Color = "#ccc", IconFile = "" };
             categoryData.Add(new ChartsDataModel
             {
@@ -477,7 +491,7 @@ public class ChartPageViewModel : ChartPageModel
 
     private async Task LoadWebDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken)
     {
-        var categories = await _webDataService.GetWebSiteCategoriesAsync(true);
+        var categories = await _webDataService.GetWebSiteCategoriesAsync(true, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
         await Task.WhenAll(

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Taix.Client.Librarys.Api;
 using Taix.Client.Shared.Models;
@@ -15,14 +16,14 @@ public class ApiCategorys : ICategorys
         _apiClient = apiClient;
     }
 
-    public async Task<List<CategoryModel>> GetCategoriesAsync(bool containSystemCategory = false)
+    public async Task<List<CategoryModel>> GetCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default)
     {
-        return await _apiClient.GetCategoriesAsync(containSystemCategory);
+        return await _apiClient.GetCategoriesAsync(containSystemCategory, cancellationToken);
     }
 
-    public async Task<CategoryModel?> GetCategoryAsync(int id)
+    public async Task<CategoryModel?> GetCategoryAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await _apiClient.GetCategoryAsync(id);
+        return await _apiClient.GetCategoryAsync(id, cancellationToken);
     }
 
     public async Task<CategoryModel> CreateAsync(CategoryModel category)
