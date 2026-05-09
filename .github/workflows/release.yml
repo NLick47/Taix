@@ -39,6 +39,7 @@ jobs:
           workspaces: |
             taix-server
             taix-monitor-windows
+            taix-shell
 
       - name: Set APP_VERSION environment variable
         shell: pwsh
@@ -60,6 +61,11 @@ jobs:
           cd taix-monitor-windows
           cargo build --release --target x86_64-pc-windows-msvc
 
+      - name: Build Rust taix-shell
+        run: |
+          cd taix-shell
+          cargo build --release --target x86_64-pc-windows-msvc
+
       - name: Build and Publish .NET Client
         run: |
           dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:DebugType=None -p:DebugSymbols=false Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
@@ -72,9 +78,13 @@ jobs:
           # Copy Rust binaries
           Copy-Item "taix-server/target/x86_64-pc-windows-msvc/release/taix-server.exe"       -Destination $publishDir -Force
           Copy-Item "taix-monitor-windows/target/x86_64-pc-windows-msvc/release/taix-monitor-windows.exe" -Destination $publishDir -Force
+          Copy-Item "taix-shell/target/x86_64-pc-windows-msvc/release/taix-shell.exe"         -Destination $publishDir -Force
 
           # Copy monitor default config
           Copy-Item "taix-monitor-windows/config.json" -Destination $publishDir -Force
+
+          # Copy taix-shell resources (tray icon etc.)
+          Copy-Item "taix-shell/resources" -Destination $publishDir -Recurse -Force
 
           # Copy install scripts
           Copy-Item "script/install.ps1"   -Destination $publishDir -Force

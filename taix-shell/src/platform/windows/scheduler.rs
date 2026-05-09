@@ -21,7 +21,7 @@ fn build_task_xml(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) 
     let work_str = xml_escape(work_dir);
 
     let args = if let Some(dir) = data_dir {
-        format!("--data-dir {}", xml_escape(&dir.to_string_lossy()))
+        format!(r#"--data-dir "{}""#, xml_escape(&dir.to_string_lossy()))
     } else {
         String::new()
     };

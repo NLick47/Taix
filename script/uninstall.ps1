@@ -1,15 +1,4 @@
 #Requires -Version 5.1
-<#
-.SYNOPSIS
-    卸载 Taix：删快捷方式、停进程、清任务。
-
-.DESCRIPTION
-    删掉开始菜单和桌面的快捷方式，从任务计划注销组件，
-    停掉正在跑的进程，清理旧注册表，最后删掉可执行文件。
-    用户数据（配置、数据库、日志等）会保留。
-
-    组件配置在最上面的表里，改那儿就行。
-#>
 
 [CmdletBinding()]
 param()
@@ -21,19 +10,12 @@ if (-not $InstallDir) {
     $InstallDir = (Get-Location).Path
 }
 
-# ---- 组件配置表，必须和 install.ps1 保持一致 ----
 $Components = @(
     [pscustomobject]@{
-        Name       = "Monitor"
-        ExeName    = "taix-monitor-windows.exe"
-        TaskName   = "TaixMonitor"
-        InstallVia = "taskscheduler"
-    },
-    [pscustomobject]@{
-        Name       = "Server"
-        ExeName    = "taix-server.exe"
-        TaskName   = "TaixServer"
-        InstallVia = "taskscheduler"
+        Name       = "Shell"
+        ExeName    = "taix-shell.exe"
+        TaskName   = "TaixShell"
+        InstallVia = "builtin"
     }
 )
 
@@ -42,11 +24,9 @@ function Unregister-TaskSchedulerJob {
     $proc = Start-Process -FilePath "schtasks.exe" `
         -ArgumentList "/DELETE","/F","/TN","`"$TaskName`"" `
         -Wait -PassThru -NoNewWindow
-    # 任务不存在也视为成功
     return ($proc.ExitCode -eq 0)
 }
 
-# 删快捷方式
 $WshShell     = New-Object -ComObject WScript.Shell
 $StartMenuDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs"
 $StartupDir   = $WshShell.SpecialFolders("Startup")
@@ -68,7 +48,17 @@ foreach ($sc in $shortcuts) {
     }
 }
 
-# 注销组件
+$processNames = @("taix-shell", "taix-server", "taix-monitor-windows", "Taix")
+foreach ($procName in $processNames) {
+    $running = Get-Process -Name $procName -ErrorAction SilentlyContinue
+    if ($running) {
+        $running | Stop-Process -Force -ErrorAction SilentlyContinue
+        Write-Host "[+] Stopped process: $procName"
+    }
+}
+
+Start-Sleep -Seconds 1
+
 foreach ($c in $Components) {
     $exePath = Join-Path $InstallDir $c.ExeName
 
@@ -91,22 +81,18 @@ foreach ($c in $Components) {
     }
 }
 
-# 停掉运行中的进程
-$processNames = @("taix-server", "taix-monitor-windows", "Taix")
-foreach ($procName in $processNames) {
-    $running = Get-Process -Name $procName -ErrorAction SilentlyContinue
-    if ($running) {
-        $running | Stop-Process -Force -ErrorAction SilentlyContinue
-        Write-Host "[+] Stopped process: $procName"
+$legacyTasks = @("TaixMonitor", "TaixServer")
+foreach ($task in $legacyTasks) {
+    $proc = Start-Process -FilePath "schtasks.exe" `
+        -ArgumentList "/DELETE","/F","/TN","`"$task`"" `
+        -Wait -PassThru -NoNewWindow -ErrorAction SilentlyContinue
+    if ($proc.ExitCode -eq 0) {
+        Write-Host "[+] Cleaned legacy task: $task"
     }
 }
 
-# 等句柄释放
-Start-Sleep -Seconds 1
-
-# 清理旧注册表
 $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
-$oldKeys = @("Taix", "TaixServer", "TaixMonitor")
+$oldKeys = @("Taix", "TaixServer", "TaixMonitor", "TaixShell")
 foreach ($key in $oldKeys) {
     $prop = Get-ItemProperty -Path $regPath -Name $key -ErrorAction SilentlyContinue
     if ($prop) {
@@ -115,9 +101,9 @@ foreach ($key in $oldKeys) {
     }
 }
 
-# 删可执行文件
 $exeFiles = @(
     (Join-Path $InstallDir "Taix.exe"),
+    (Join-Path $InstallDir "taix-shell.exe"),
     (Join-Path $InstallDir "taix-server.exe"),
     (Join-Path $InstallDir "taix-monitor-windows.exe")
 )

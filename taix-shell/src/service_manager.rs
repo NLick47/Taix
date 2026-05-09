@@ -358,12 +358,12 @@ fn find_existing_process(exe_name: &str) -> Option<u32> {
 
     // SAFETY: pids 是有效的栈数组，指针和长度均合法。
     unsafe {
-        if EnumProcesses(pids.as_mut_ptr(), (pids.len() * 4) as u32, &mut needed).is_err() {
+        if EnumProcesses(pids.as_mut_ptr(), (pids.len() * std::mem::size_of::<u32>()) as u32, &mut needed).is_err() {
             return None;
         }
     }
 
-    let count = ((needed / 4) as usize).min(pids.len());
+    let count = ((needed / std::mem::size_of::<u32>() as u32) as usize).min(pids.len());
     let current_pid = std::process::id();
     let exe_wide: Vec<u16> = exe_name.encode_utf16().collect();
 
