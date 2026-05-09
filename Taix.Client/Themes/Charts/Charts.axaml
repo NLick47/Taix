@@ -223,7 +223,7 @@
                                                   Stroke="{DynamicResource PopupBackgroundBrush}"
                                                   StrokeThickness="1"
                                                   VerticalAlignment="Bottom"
-                                                  HorizontalAlignment="Left"
+                                                  HorizontalAlignment="Center"
                                                   Margin="0,0,0,-22" />
 
                                             <ListBox ItemsSource="{TemplateBinding ColumnValuesInfoList}"

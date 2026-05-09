@@ -277,7 +277,7 @@ public class Charts : TemplatedControl
     private string _total;
 
     /// <summary>
-    /// ����
+    /// 临时容器
     /// </summary>
     private StackPanel _typeATempContainer;
 
@@ -295,12 +295,12 @@ public class Charts : TemplatedControl
     private WrapPanel CardContainer;
 
     /// <summary>
-    /// �Ƿ�����Ⱦ��
+    /// 是否正在渲染
     /// </summary>
     private bool isRendering;
 
     /// <summary>
-    /// �������ֵ
+    /// 最大值
     /// </summary>
     private double maxValue;
 
@@ -308,7 +308,7 @@ public class Charts : TemplatedControl
     private Border RadarContainer;
 
     /// <summary>
-    /// �����ؼ��֣����б���ʽ��Ч
+    /// 搜索关键字，对列表形式有效
     /// </summary>
     private string searchKey;
 
@@ -321,7 +321,7 @@ public class Charts : TemplatedControl
 
     private void Charts_Loaded(object? sender, RoutedEventArgs e)
     {
-        // Tab �л����������¶��� SizeChanged����Ϊ Unloaded ����ȡ������
+        // Tab 切换时触发更新绑定 SizeChanged，因为 Unloaded 里取消不了
         if (ChartsType == ChartsType.Column && _typeColumnCanvas != null)
         {
             _typeColumnCanvas.SizeChanged -= _typeColumnCanvas_SizeChanged;
@@ -334,7 +334,7 @@ public class Charts : TemplatedControl
             _commonCanvas.SizeChanged += _commonCanvas_SizeChanged;
         }
 
-        // �����ػ棬��ֹ�� Data δ�����������Ⱦʱ��
+        // 重新渲染，防止在 Data 未加载完成前渲染时出错
         Render();
     }
 
@@ -562,7 +562,7 @@ public class Charts : TemplatedControl
     }
 
     /// <summary>
-    /// �����Ŀʱ����
+    /// 项目点击事件
     /// </summary>
     public event EventHandler OnItemClick;
 
@@ -634,16 +634,16 @@ public class Charts : TemplatedControl
     {
         if (Data == null || ChartsType == ChartsType.Column) return;
 
-        //  �������ֵ
-        //  ��������˹̶������ֵ��ʹ�ã�������������е����ֵ
+        //  计算最大值
+        //  如果设置了固定的最大值则使用，否则取数据中的最大值
         maxValue = MaxValueLimit > 0 ? MaxValueLimit : Data.Count() > 0 ? Data.Max(m => m.Value) : 0;
 
         if (ChartsType == ChartsType.List)
         {
-            //���������ֵС��10������Ч�����ÿ�
+            //如果最大值小于10则无效，设置开口
             if (maxValue < 10) maxValue = 10;
 
-            //  �ʵ��������ֵ
+            //  取偶数最大值
             maxValue = Math.Round(maxValue / 2, MidpointRounding.AwayFromZero) * 2 + 2;
             if (_countText != null) _countText.Text = Data.Count().ToString();
         }
@@ -710,7 +710,7 @@ public class Charts : TemplatedControl
         }
     }
 
-    #region ��Ⱦ��Ƭ��ʽCard
+    #region 渲染卡片样式Card
 
     private void RenderCardStyle()
     {
@@ -766,7 +766,7 @@ public class Charts : TemplatedControl
 
     #endregion
 
-    #region ��Ⱦ�״�ͼ
+    #region 渲染雷达图
 
     private void RenderLadarStyle()
     {
@@ -777,11 +777,11 @@ public class Charts : TemplatedControl
             return;
         }
 
-      
-        //  �������ֵ
+
+        //  计算最大值
         foreach (var item in Data)
         {
-            //  �������ֵ
+            //  计算最大值
             var max = item.Values.Sum();
             if (max > maxValue) maxValue = max;
         }
@@ -802,7 +802,7 @@ public class Charts : TemplatedControl
 
     #endregion
 
-    #region ��ͼ
+    #region 饼图
 
     private void RenderPieStyle()
     {
@@ -877,7 +877,7 @@ public class Charts : TemplatedControl
         };
     }
 
-    #region ��Ⱦ�б���ʽ
+    #region 渲染列表样式
 
     private void RenderListStyle()
     {
@@ -993,7 +993,7 @@ public class Charts : TemplatedControl
 
     #endregion
 
-    #region ��Ⱦ�·���ʽ
+    #region 渲染月份样式
 
     private void RenderMonthStyle()
     {
@@ -1002,7 +1002,7 @@ public class Charts : TemplatedControl
 
         var days = DateTime.DaysInMonth(month.Year, month.Month);
 
-        //  ��������
+        //  计算天数
         var headerGrid = new Grid();
         headerGrid.Margin = new Thickness(0, 0, 0, 10);
 
@@ -1029,7 +1029,7 @@ public class Charts : TemplatedControl
                 Width = new GridLength(1, GridUnitType.Star)
             });
 
-            //  ���ͷ��
+            //  添加头部
             var header = new TextBlock();
             header.Text = week[i];
             header.VerticalAlignment = VerticalAlignment.Center;
@@ -1044,7 +1044,7 @@ public class Charts : TemplatedControl
                 Height = new GridLength(1, GridUnitType.Star)
             });
 
-        //  ��������
+        //  添加数据
         for (var i = 0; i < days; i++)
         {
             var date = new DateTime(month.Year, month.Month, i + 1);
@@ -1060,18 +1060,18 @@ public class Charts : TemplatedControl
             Debug.WriteLine(i + 1 + " -> " + location[0] + "," + location[1]);
         }
 
-        //  �����Ч����
+        //  添加空占位
         foreach (var item in data)
             {
                 var day = item.DateTime.Day;
 
-                Debug.WriteLine("���ڣ�" + day + "��");
+                Debug.WriteLine("日期：" + day + "日");
                 var chartsItem = new ChartsItemTypeMonth();
                 chartsItem.Data = item;
                 chartsItem.ToolTip = item.PopupText;
                 chartsItem.MaxValue = maxValue;
 
-                //  ��������¼�
+                //  添加点击事件
                 HandleItemClick(chartsItem, item);
 
                 var location = CalGridLocation(item.DateTime);
@@ -1096,7 +1096,7 @@ public class Charts : TemplatedControl
     private int[] CalGridLocation(DateTime date)
     {
         var res = new int[2];
-        //  �ж�1�������ڼ�
+        //  判断1号是周几
         var firstDayWeekNum = (int)new DateTime(date.Year, date.Month, 1).DayOfWeek;
         if (firstDayWeekNum == 0) firstDayWeekNum = 7;
 
@@ -1124,7 +1124,7 @@ public class Charts : TemplatedControl
 
     #endregion
 
-    #region ��Ⱦ����ͼ
+    #region 渲染柱状图
 
     private void SetColBorderActiveBg(int oldIndex, int newIndex)
     {
@@ -1146,7 +1146,7 @@ public class Charts : TemplatedControl
     }
 
     /// <summary>
-    /// ��Ⱦ����ͼ
+    /// 渲染柱状图
     /// </summary>
     private void RenderColumnStyle()
     {
@@ -1180,7 +1180,7 @@ public class Charts : TemplatedControl
         }
 
         double total = 0;
-        //  �������ֵ
+        //  计算最大值
         var colValueCount = firstData.Values.Length;
         var tempValueArr = new double[colValueCount];
 
@@ -1188,7 +1188,7 @@ public class Charts : TemplatedControl
         {
             for (var i = 0; i < colValueCount; i++) tempValueArr[i] += item.Values[i];
 
-            //  �������ֵ
+            //  计算最大值
             var max = item.Values.Max();
             if (max > maxValue) maxValue = max;
 
@@ -1210,11 +1210,10 @@ public class Charts : TemplatedControl
         Median = Covervalue(maxValue / 2);
         Total = Covervalue(total);
 
-        //  ����
+        //  列数
         var columns = Data.FirstOrDefault().Values.Length;
 
-        double pa = 0;
-        //  ���
+        //  间隔
         var margin = 5;
 
         if (columns <= 7)
@@ -1224,35 +1223,33 @@ public class Charts : TemplatedControl
         else if (columns <= 12)
         {
             margin = 15;
-            pa = 1;
         }
         else if (columns >= 20)
         {
             margin = 2;
-            pa = 16;
         }
 
         var columnCount = Data.Count();
         var list = Data.ToList();
 
-        //  �����߶�
+        //  计算高度
         const double colNameHeight = 30;
-        //  �����±߾�
+        //  列名高度
         const double colNameBottomMargin = 5;
-        //  �����߶�
+        //  画布高度
         var canvasHeight = _typeColumnCanvas.Bounds.Height - colNameHeight - colNameBottomMargin;
-        //  ��������
+        //  画布宽度
         var canvasWidth = _typeColumnCanvas.Bounds.Width;
-        //  �߿����
+        //  边框宽度
         var columnBorderWidth = _typeColumnCanvas.Bounds.Width / columns;
-        //  ��ֵ����
+        //  数值宽度
         var colValueRectWidth = _typeColumnCanvas.Bounds.Width / columns - margin * 2;
         if (colValueRectWidth <= 0) colValueRectWidth = 1;
         if (canvasHeight <= 0) canvasHeight = 1;
 
         for (var i = 0; i < columns; i++)
         {
-            //  �����б߿�
+            //  创建列边框
             var columnBorder = new Rectangle();
             columnBorder.Width = columnBorderWidth;
             columnBorder.Height = canvasHeight;
@@ -1263,11 +1260,11 @@ public class Charts : TemplatedControl
             _typeColumnCanvas.Children.Add(columnBorder);
             _typeColBorderRectMap.Add(i, columnBorder);
 
-            //  ����
+            //  列名
             var colName = list[0].ColumnNames != null && list[0].ColumnNames.Length > 0
                 ? list[0].ColumnNames[i]
                 : (i + NameIndexStart).ToString();
-            //  ��������
+            //  列名文本
             var colNameText = new TextBlock();
             colNameText.TextAlignment = TextAlignment.Center;
             colNameText.Width = columnBorderWidth;
@@ -1293,7 +1290,7 @@ public class Charts : TemplatedControl
                 var value = item.Values[i];
                 if (value > 0)
                 {
-                    //  ������
+                    //  数值块
                     var colValueRect = new Rectangle();
                     colValueRect.Width = colValueRectWidth;
                     colValueRect.Height = value / maxValue * canvasHeight;
@@ -1310,7 +1307,7 @@ public class Charts : TemplatedControl
                     _typeColumnCanvas.Children.Add(colValueRect);
                     _typeColValueRectMap[i].Add(colValueRect);
 
-                    //  �з���ͳ������
+                    //  列数值统计信息
                     valuesPopupList.Add(new ChartColumnInfoModel
                     {
                         Color = item.Color,
@@ -1339,7 +1336,7 @@ public class Charts : TemplatedControl
                 ValuesPopupPlacementTarget = columnBorder;
                 IsShowValuesPopup = valuesPopupList.Count > 0;
 
-                ValuesPopupHorizontalOffset = columnBorder.Bounds.Width / 2 + pa * margin;
+                ValuesPopupHorizontalOffset = 0;
 
                 if (ColumnSelectedIndex != index)
                 {
@@ -1355,7 +1352,7 @@ public class Charts : TemplatedControl
             if (IsCanColumnSelect) columnBorder.PointerPressed += (e, c) => { ColumnSelectedIndex = index; };
         }
 
-        //  ������ֵ zindex
+        //  调整数值 zindex
         foreach (var item in _typeColValueRectMap)
         {
             var rectList = IsStack ? item.Value : item.Value.OrderByDescending(m => m.Height).ToList();
@@ -1380,12 +1377,12 @@ public class Charts : TemplatedControl
         }
 
 
-        //  ���
+        //  最高
         var topValueText = new TextBlock();
         topValueText.Text = Maximum;
         topValueText.FontSize = 12;
         topValueText.Foreground = Client.Base.Color.Colors.GetFromString("#ccc");
-        ToolTip.SetTip(topValueText, "���ֵ");
+        ToolTip.SetTip(topValueText, "最大值");
         var topValueTextSize = UIHelper.MeasureString(topValueText);
         topValueText.ZIndex = 1000;
         Canvas.SetRight(topValueText, 0);
@@ -1402,14 +1399,14 @@ public class Charts : TemplatedControl
         };
         _typeColumnCanvas.Children.Add(topValueLine);
 
-        //  �м�ֵ
+        //  中间值
         var midY = maxValue / 2 / maxValue * canvasHeight + colNameBottomMargin;
 
         var midValueText = new TextBlock();
         midValueText.Text = Median;
         midValueText.FontSize = 12;
         midValueText.Foreground = Client.Base.Color.Colors.GetFromString("#ccc");
-        ToolTip.SetTip(midValueText, "�м�ֵ");
+        ToolTip.SetTip(midValueText, "中间值");
         var midValueTextSize = UIHelper.MeasureString(midValueText);
         midValueText.ZIndex = 1000;
         Canvas.SetRight(midValueText, 0);
@@ -1427,7 +1424,7 @@ public class Charts : TemplatedControl
         _typeColumnCanvas.Children.Add(midValueLine);
 
 
-        //  ƽ��
+        //  平均
         var avg = tempValueArr.Average();
         var avgY = avg / maxValue * canvasHeight;
 
@@ -1435,7 +1432,7 @@ public class Charts : TemplatedControl
         avgValueText.Text = Covervalue(avg);
         avgValueText.FontSize = 12;
         avgValueText.Foreground = Client.Base.Color.Colors.GetFromString(StateData.ThemeColor);
-        ToolTip.SetTip(avgValueText, "ƽ��ֵ");
+        ToolTip.SetTip(avgValueText, "平均值");
         var avgValueTextSize = UIHelper.MeasureString(avgValueText);
         avgValueText.ZIndex = 1000;
         Canvas.SetRight(avgValueText, 0);
@@ -1454,7 +1451,7 @@ public class Charts : TemplatedControl
             canvasHeight - avgY + colNameBottomMargin + avgValueLine.StrokeThickness);
         _typeColumnCanvas.Children.Add(avgValueLine);
 
-        //  ��װ����ͳ������
+        //  组装统计信息
         var infoList = new List<ChartColumnInfoModel>();
         list = list.OrderByDescending(m => m.Values.Sum()).ToList();
         foreach (var item in list)
