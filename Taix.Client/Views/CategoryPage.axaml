@@ -179,6 +179,7 @@
 
                         <ListBox Margin="10,20,10,0" ItemsSource="{Binding Data}"
                                  SelectedItem="{Binding SelectedAppCategoryItem,Mode=TwoWay}"
+                                 PointerPressed="OnAppCategoryListBoxPointerPressed"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                             <Interaction.Behaviors>
                                 <EventTriggerBehavior EventName="PointerReleased">
@@ -380,6 +381,7 @@
                         <ListBox Margin="10,20,10,0"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                  SelectedItem="{Binding SelectedWebCategoryItem,Mode=TwoWay}"
+                                 PointerPressed="OnWebCategoryListBoxPointerPressed"
                                  ItemsSource="{Binding WebCategoryData}">
 
                             <Interaction.Behaviors>
@@ -396,6 +398,7 @@
                                     <MenuItem Header="{DynamicResource Edit}" Command="{Binding EditCommand}"
                                               CommandParameter="{Binding SelectedWebCategoryItem}" />
                                     <MenuItem Header="{DynamicResource DeleteCategory}" Command="{Binding DelCommand}"
+                                              IsVisible="{Binding !SelectedWebCategoryItem.Data.IsSystem}"
                                               CommandParameter="{Binding SelectedWebCategoryItem}" />
                                 </ContextMenu>
                             </ListBox.ContextMenu>

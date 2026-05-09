@@ -1,10 +1,15 @@
 using System;
 using System.Collections.Specialized;
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using ReactiveUI;
 using Taix.Client.Controls;
+using Taix.Client.Models;
+using Taix.Client.Models.Category;
 using Taix.Client.ViewModels;
 
 namespace Taix.Client.Views;
@@ -63,6 +68,52 @@ public partial class CategoryPage : TPage
         else
         {
             viewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+        }
+    }
+
+    private void OnAppCategoryListBoxPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
+            return;
+
+        if (sender is not ListBox listBox) return;
+
+        var point = e.GetPosition(listBox);
+        var hit = listBox.InputHitTest(point) as Visual;
+
+        Visual? visual = hit;
+        while (visual != null && visual is not ListBoxItem)
+        {
+            visual = visual.GetVisualParent();
+        }
+
+        if (visual is ListBoxItem listBoxItem && listBoxItem.DataContext is CategoryModel category)
+        {
+            _model.SelectedAppCategoryItem = category;
+            _model.IsSelectedSysCategory = category.Data?.IsSystem ?? false;
+        }
+    }
+
+    private void OnWebCategoryListBoxPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
+            return;
+
+        if (sender is not ListBox listBox) return;
+
+        var point = e.GetPosition(listBox);
+        var hit = listBox.InputHitTest(point) as Visual;
+
+        Visual? visual = hit;
+        while (visual != null && visual is not ListBoxItem)
+        {
+            visual = visual.GetVisualParent();
+        }
+
+        if (visual is ListBoxItem listBoxItem && listBoxItem.DataContext is CategoryPageModel.WebCategoryModel category)
+        {
+            _model.SelectedWebCategoryItem = category;
+            _model.IsSelectedSysCategory = category.Data?.IsSystem ?? false;
         }
     }
 }
