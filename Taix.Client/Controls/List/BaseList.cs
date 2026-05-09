@@ -72,6 +72,13 @@ public class BaseList : TemplatedControl
         }
     }
 
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        AddCollectionChangedHandler();
+        Render();
+    }
+
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
