@@ -118,7 +118,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         }
         catch (Exception ex)
         {
-            Logger.Error($"编辑别名失败: {ex.Message}", ex);
+            Logger.Error($"缂栬緫鍒悕澶辫触: {ex.Message}", ex);
         }
     }
 
@@ -155,7 +155,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         }
         catch (Exception ex)
         {
-            Logger.Error($"网站上下文菜单打开失败: {ex.Message}", ex);
+            Logger.Error($"缃戠珯涓婁笅鏂囪彍鍗曟墦寮�澶辫触: {ex.Message}", ex);
         }
     }
 
@@ -193,7 +193,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
             }
             catch (Exception ex)
             {
-                Logger.Error("打开网址链接" + ex);
+                Logger.Error("鎵撳紑缃戝潃閾炬帴" + ex);
             }
         }
     }

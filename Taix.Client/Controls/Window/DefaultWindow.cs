@@ -193,7 +193,7 @@ public class DefaultWindow : Avalonia.Controls.Window
     }
 
     /// <summary>
-    /// �Ƿ���Է���
+    /// 是否可以返回
     /// </summary>
     public bool IsCanBack
     {
@@ -315,7 +315,7 @@ public class DefaultWindow : Avalonia.Controls.Window
         ActionDialogBorder.RenderTransform = TransformOperations.Parse("translateY(0px)");
         Masklayer.Opacity = 0.6;
 
-        // ����ɰ�ť����̬�����°�ť
+        // 清空按钮面板并动态添加新按钮
         if (ActionDialogButtonsPanel != null)
         {
             ActionDialogButtonsPanel.Children.Clear();
@@ -573,7 +573,7 @@ public class DefaultWindow : Avalonia.Controls.Window
         }
     }
 
-    
+
     #region sys command
 
     public static ReactiveCommand<Unit, Unit> MinimizeWindowCommand { get; private set; }

@@ -68,7 +68,7 @@ public class ChartsItemTypeMonth : TemplatedControl
     }
 
     /// <summary>
-    /// Êı¾İ
+    /// æ•°æ®
     /// </summary>
     public ChartsDataModel Data
     {
@@ -83,7 +83,7 @@ public class ChartsItemTypeMonth : TemplatedControl
     }
 
     /// <summary>
-    /// ÊÇ·ñÕıÔÚ¼ÓÔØÖĞ
+    /// æ˜¯å¦æ­£åœ¨åŠ è½½ä¸­
     /// </summary>
     public bool IsLoading
     {
@@ -92,7 +92,7 @@ public class ChartsItemTypeMonth : TemplatedControl
     }
 
     /// <summary>
-    /// ÊÇ·ñÑ¡ÖĞ
+    /// æ˜¯å¦é€‰ä¸­
     /// </summary>
     public bool IsSelected
     {
@@ -135,21 +135,21 @@ public class ChartsItemTypeMonth : TemplatedControl
         //};
 
         var size = Data.Value / MaxValue * Bounds.Width;
-        if (size > 0 && size < 8) //·ÀÖ¹ÀúÊ·ÊıÖµÌ«Ğ¡½çÃæÎŞÏÔÊ¾Ğ§¹û
+        if (size > 0 && size < 8) //é˜²æ­¢å†å²æ•°å€¼å¤ªå°ç•Œé¢æ— æ˜¾ç¤ºæ•ˆæœ
             size = 8;
         ValueBlockObj.Width = ValueBlockObj.Height = size;
-        ToolTip = Data.DateTime.ToString("yyyyÄêMMÔÂddÈÕ") + " " + (string.IsNullOrEmpty(Data.Tag) ? "ÎŞÊı¾İ" : Data.Tag);
+        ToolTip = Data.DateTime.ToString("yyyyå¹´MMæœˆddæ—¥") + " " + (string.IsNullOrEmpty(Data.Tag) ? "æ— æ•°æ®" : Data.Tag);
 
         if (Data.DateTime.Date == DateTime.Now.Date)
         {
             IsSelected = true;
-            ToolTip = "[½ñÈÕ] " + ToolTip;
+            ToolTip = "[ä»Šæ—¥] " + ToolTip;
         }
         //ValueTextObj.Text = Data.DateTime.Day.ToString();
         //NameTextObj.Text = Data.Name;
         //NameTextObj.SizeChanged += (e, c) =>
         //{
-        //    //  ´¦ÀíÎÄ×Ö¹ı³¤ÏÔÊ¾
+        //    //  å¤„ç†æ–‡å­—è¿‡é•¿æ˜¾ç¤º
         //    if (NameTextObj.ActualWidth > 121 && NameTextObj.FontSize > 8)
         //    {
         //        NameTextObj.FontSize = NameTextObj.FontSize - 1;

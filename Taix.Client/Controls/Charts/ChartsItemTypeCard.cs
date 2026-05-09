@@ -4,7 +4,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
-using Avalonia.Media;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
 
@@ -115,7 +114,7 @@ public class ChartsItemTypeCard : TemplatedControl
             NameTextObj.SizeChanged -= _nameSizeChangedHandler;
         _nameSizeChangedHandler = (e, c) =>
         {
-            //  处理文字过长显示
+            //  澶勭悊鏂囧瓧杩囬暱鏄剧ず
             if (NameTextObj.Bounds.Width > 121 && NameTextObj.FontSize > 8)
                 NameTextObj.FontSize = NameTextObj.FontSize - 1;
         };
@@ -128,7 +127,7 @@ public class ChartsItemTypeCard : TemplatedControl
         _valueSizeChangedHandler = (e, c) =>
         {
             var size = Data.Value / MaxValue * Bounds.Width / 3;
-            // 光晕元素已从模板中移除，若存在则保持兼容
+            // 鍏夋檿鍏冪礌宸蹭粠妯℃澘涓Щ闄わ紝鑻ュ瓨鍦ㄥ垯淇濇寔鍏煎
             if (ValueBlockObj != null)
             {
                 ValueBlockObj.Width = ValueBlockObj.Height = size * 4;

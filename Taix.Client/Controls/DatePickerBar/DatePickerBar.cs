@@ -52,7 +52,7 @@ public class DatePickerBar : TemplatedControl
 
     private Border Date;
 
-    //  ÈÕÆÚÑ¡Ôñµ¯³ö²ã
+    //  æ—¥æœŸé€‰æ‹©å¼¹å‡ºå±‚
     private Popup DatePickerPopup;
     private StackPanel MonthSelect;
     private int renderIndex;
@@ -118,13 +118,13 @@ public class DatePickerBar : TemplatedControl
 
         Init();
 
-        //  äÖÈ¾ÈÕÆÚ
+        //  æ¸²æŸ“æ—¥æœŸ
         Render(DateTime.Now);
     }
 
     private void Init()
     {
-        //  Ìî³äÄê·İÊı¾İ
+        //  å¡«å……å¹´ä»½æ•°æ®
         YearsList.SelectedItem = DateTime.Now.Year.ToString();
         //YearsList.SelectedItem = "2073";
         Date.PointerPressed += OnDatePointerPressed;
@@ -133,7 +133,7 @@ public class DatePickerBar : TemplatedControl
 
         if (ShowType == DatePickerShowType.Day)
         {
-            //  Ìî³äÔÂ·İÊı¾İ
+            //  å¡«å……æœˆä»½æ•°æ®
             MonthSelect.IsVisible = true;
 
             MonthsList.SelectedItem = DateTime.Now.Month.ToString();
@@ -202,7 +202,7 @@ public class DatePickerBar : TemplatedControl
                         ScrollToActive(SelectedDate);
                     }
                 };
-            //  ºóÒ»Ìì
+            //  åä¸€å¤©
             var next = DateList.IndexOf(date.AddDays(+1));
 
             if (next != -1)
@@ -298,7 +298,7 @@ public class DatePickerBar : TemplatedControl
 
         if (!ItemsDictionary.ContainsKey(date)) return;
         if (ItemsDictionary.ContainsKey(SelectedDate))
-            //  Èç¹û´æÔÚ¾ÉµÄÑ¡ÖĞ£¬ÏÈÈ¡Ïû
+            //  å¦‚æœå­˜åœ¨æ—§çš„é€‰ä¸­ï¼Œå…ˆå–æ¶ˆ
             ItemsDictionary[SelectedDate].IsSelected = false;
 
         if (date != SelectedDate) SelectedDate = date;

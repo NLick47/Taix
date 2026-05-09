@@ -214,7 +214,7 @@ public class Navigation : TemplatedControl
 
             if (properties.IsLeftButtonPressed)
             {
-                // ×ó¼üÑ¡ÖĞ
+                // å·¦é”®é€‰ä¸­
                 SelectedItem = Data.First(m => m.ID == navitem.ID);
                 OnSelected?.Invoke(this, EventArgs.Empty);
 
@@ -222,7 +222,7 @@ public class Navigation : TemplatedControl
             }
             else if (properties.IsRightButtonPressed)
             {
-                // ÓÒ¼ü
+                // å³é”®
                 var args = new RoutedEventArgs();
                 args.RoutedEvent = e.RoutedEvent;
                 args.Source = Data.FirstOrDefault(m => m.ID == navitem.ID);
@@ -241,7 +241,7 @@ public class Navigation : TemplatedControl
 
     private void ScrollToActive(double animationDuration = 0.35)
     {
-        //  »ñÈ¡Ñ¡ÖĞÏî
+        //  è·å–é€‰ä¸­é¡¹
         if (SelectedItem == null || ItemsDictionary.Count == 0 || !ItemsDictionary.ContainsKey(SelectedItem.ID)) return;
 
         var item = ItemsDictionary[SelectedItem.ID];
