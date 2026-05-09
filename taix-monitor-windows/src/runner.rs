@@ -94,13 +94,14 @@ pub async fn run(
     data_dir: Option<PathBuf>,
     mut shutdown_rx: tokio::sync::watch::Receiver<()>,
 ) {
-    let _logging_guard = crate::logging::init();
+    let log_filter = if cfg!(debug_assertions) {
+        "taix_monitor_windows=info"
+    } else {
+        "taix_monitor_windows=warn"
+    };
 
-    let default_panic = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |info| {
-        tracing::error!(target: "main", "Panic: {}", info);
-        default_panic(info);
-    }));
+    let _logging_guard =
+        taix_logging::init("taix-monitor", log_filter, taix_logging::PanicMode::LogOnly);
 
     let _single_instance = match crate::win32::single_instance::try_acquire("Global\\TaixMonitorSingleInstance") {
         Some(guard) => guard,

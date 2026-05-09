@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -21,9 +23,11 @@ namespace Taix.Client;
 
 public class App : Application
 {
-#pragma warning disable CS0169
-    private Mutex mutex;
-#pragma warning restore CS0169
+#if !DEBUG
+ private Mutex _mutex;
+#endif
+
+
 
     private void ConfigureServices(IServiceCollection services)
     {
@@ -53,7 +57,6 @@ public class App : Application
         services.AddSingleton<IMainServicer, MainServicer>();
 
         services.AddSingleton<IWebSiteContextMenuServicer, WebSiteContextMenuServicer>();
-        services.AddSingleton<IStatusBarIconServicer, StatusBarIconServicer>();
         services.AddSingleton<IShutdownService, ShutdownService>();
 
         services.AddSingleton<MainViewModel>();
@@ -100,8 +103,53 @@ public class App : Application
         var mutexName = "Taix";
         bool createdNew;
         mutex = new Mutex(true, mutexName, out createdNew);
-        return !createdNew;
+        if (createdNew) return false;
+
+        try
+        {
+            using var pipe = new NamedPipeClientStream(".", "TaixClient", PipeDirection.Out);
+            pipe.Connect(1000);
+            using var writer = new StreamWriter(pipe);
+            writer.WriteLine("show");
+        }
+        catch { }
+
+        return true;
 #endif
+    }
+
+    private void StartWakePipeServer()
+    {
+        _ = Task.Run(async () =>
+        {
+            while (!IsShuttingDown)
+            {
+                try
+                {
+                    await using var pipe = new NamedPipeServerStream("TaixClient", PipeDirection.In, 1);
+                    await pipe.WaitForConnectionAsync();
+                    using var reader = new StreamReader(pipe);
+                    var cmd = await reader.ReadLineAsync();
+                    if (cmd == "show")
+                    {
+                        await Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            var desk = Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                            if (desk?.MainWindow is MainWindow mw)
+                            {
+                                if (!mw.IsVisible) mw.IsVisible = true;
+                                if (mw.WindowState == WindowState.Minimized) mw.WindowState = WindowState.Normal;
+                                mw.Activate();
+                            }
+                        });
+                    }
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+        });
     }
 
     public override void Initialize()
@@ -167,6 +215,7 @@ public class App : Application
     private async Task OnStartupAsync(object sender, string[] args)
     {
         if (IsRunned()) Environment.Exit(0);
+        StartWakePipeServer();
         var main = ServiceLocator.GetService<IMainServicer>();
         await main.Start();
     }

@@ -27,7 +27,7 @@ $Components = @(
         Name       = "Monitor"
         ExeName    = "taix-monitor-windows.exe"
         TaskName   = "TaixMonitor"
-        InstallVia = "builtin"
+        InstallVia = "taskscheduler"
     },
     [pscustomobject]@{
         Name       = "Server"

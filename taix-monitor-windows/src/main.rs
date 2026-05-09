@@ -4,10 +4,8 @@ mod app_manager;
 mod app_observer;
 mod app_timer;
 mod config;
-mod logging;
 mod models;
 mod runner;
-mod scheduler;
 mod sleep_detector;
 mod transport;
 mod win32;
@@ -29,20 +27,9 @@ fn parse_data_dir(args: &[String]) -> Option<PathBuf> {
         .and_then(|p| p.parent().map(|p| p.to_path_buf()))
 }
 
-fn parse_task_name(args: &[String]) -> String {
-    for i in 0..args.len() {
-        if args[i] == "--task-name" && i + 1 < args.len() {
-            return args[i + 1].clone();
-        }
-    }
-    "TaixMonitor".to_string()
-}
-
 fn print_usage(program: &str) {
     eprintln!("Usage:");
     eprintln!("  {} [run] [--data-dir <path>]", program);
-    eprintln!("  {} install [--data-dir <path>] [--task-name <name>]", program);
-    eprintln!("  {} uninstall [--task-name <name>]", program);
 }
 
 fn main() {
@@ -55,39 +42,6 @@ fn main() {
     let is_flag = cmd.starts_with('-');
 
     match cmd {
-        "install" if !is_flag => {
-            let task_name = parse_task_name(&args);
-            let exe_path = std::env::current_exe().expect("Failed to get current executable path");
-
-            // install 时 data-dir 策略与 run 模式完全一致
-            let install_data_dir = parse_data_dir(&args);
-
-            match scheduler::install(&exe_path, install_data_dir.as_ref(), &task_name) {
-                Ok(()) => {
-                    println!("'{}' task installed successfully.", task_name);
-                    if let Some(ref dir) = install_data_dir {
-                        println!("Data directory: {}", dir.display());
-                    }
-                    println!("The monitor will start automatically on next logon.");
-                }
-                Err(e) => {
-                    eprintln!("Failed to install task: {}", e);
-                    std::process::exit(1);
-                }
-            }
-        }
-        "uninstall" if !is_flag => {
-            let task_name = parse_task_name(&args);
-            match scheduler::uninstall(&task_name) {
-                Ok(()) => {
-                    println!("'{}' task uninstalled successfully.", task_name);
-                }
-                Err(e) => {
-                    eprintln!("Failed to uninstall task: {}", e);
-                    std::process::exit(1);
-                }
-            }
-        }
         "run" | _ => {
             if !is_flag && cmd != "run" {
                 eprintln!("Unknown command: {}", cmd);

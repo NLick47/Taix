@@ -31,7 +31,7 @@ $Components = @(
         Name       = "Monitor"
         ExeName    = "taix-monitor-windows.exe"
         TaskName   = "TaixMonitor"
-        InstallVia = "builtin"        # 调用 .exe install / uninstall
+        InstallVia = "taskscheduler"  # 通过通用 XML 注册
     },
     [pscustomobject]@{
         Name       = "Server"

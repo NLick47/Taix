@@ -65,7 +65,7 @@ public class GeneralModel
 
     [Config(Name = "系统托盘", Description = "关闭窗口时最小化到系统托盘而非退出程序", Group = "界面",CultureCode = CultureCode.ZhCn)]
     [Config(Name = "System Tray", Description = "Minimize to system tray instead of exiting when closing window", Group = "Interface", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
-    public bool IsEnableTray { get; set; } = false;
+    public bool IsEnableTray { get; set; } = true;
 
     [Config(Name = "保存窗口大小", Description = "重启软件时恢复上次窗口尺寸", Group = "界面", CultureCode = CultureCode.ZhCn)]
     [Config(Name = "Save Window Size", Description = "Restore the last window size when restarting", Group = "Interface", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]

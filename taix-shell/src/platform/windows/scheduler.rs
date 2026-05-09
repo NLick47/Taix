@@ -79,7 +79,6 @@ fn build_task_xml(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) 
 
 fn write_utf16_le_xml(path: &Path, content: &str) -> Result<(), String> {
     let mut bytes: Vec<u8> = Vec::new();
-    // UTF-16 LE BOM
     bytes.extend_from_slice(&[0xFF, 0xFE]);
     for unit in content.encode_utf16() {
         bytes.extend_from_slice(&unit.to_le_bytes());
@@ -88,8 +87,6 @@ fn write_utf16_le_xml(path: &Path, content: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to write temp XML file: {}", e))
 }
 
-/// 注册 Task Scheduler 任务。
-/// `task_name` 为任务在系统中的唯一名称（如 "TaixMonitor" / "TaixServer"）。
 pub fn install(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) -> Result<(), String> {
     let xml = build_task_xml(exe_path, data_dir, task_name);
     let temp_xml = std::env::temp_dir().join(format!("{}_task.xml", task_name));
@@ -114,7 +111,6 @@ pub fn install(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) -> 
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let stdout = String::from_utf8_lossy(&output.stdout);
-        // 如果任务已存在，提供明确提示
         if stderr.contains("already exists") || stdout.contains("already exists") {
             return Err(format!(
                 "Task '{}' already exists. Run 'uninstall' first if you want to reconfigure.",
@@ -130,7 +126,6 @@ pub fn install(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) -> 
     }
 }
 
-/// 注销 Task Scheduler 任务。
 pub fn uninstall(task_name: &str) -> Result<(), String> {
     let output = Command::new(SCHTASKS)
         .args(&["/DELETE", "/F", "/TN", task_name])
@@ -142,7 +137,6 @@ pub fn uninstall(task_name: &str) -> Result<(), String> {
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let stderr_lower = stderr.to_lowercase();
-        // 任务不存在视为已卸载成功
         if stderr_lower.contains("cannot find")
             || stderr_lower.contains("not exist")
             || stderr_lower.contains("不存在")
@@ -156,13 +150,4 @@ pub fn uninstall(task_name: &str) -> Result<(), String> {
             stderr.trim()
         ))
     }
-}
-
-#[allow(dead_code)]
-pub fn is_installed(task_name: &str) -> bool {
-    Command::new(SCHTASKS)
-        .args(&["/QUERY", "/TN", task_name, "/FO", "LIST"])
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
 }

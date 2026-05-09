@@ -13,8 +13,7 @@ chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 tracing = "0.1"
-tracing-appender = "0.2"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+taix-logging = { path = "../taix-logging" }
 anyhow = "1"
 thiserror = "2"
 dirs = "5"

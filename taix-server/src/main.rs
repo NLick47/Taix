@@ -20,9 +20,6 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
-use tracing_subscriber::Layer;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
 use routes::web_sentry::SentryState;
 use services::config::ConfigService;
 
@@ -35,14 +32,21 @@ async fn main() {
 
     let log_dir = exe_dir.join("Logs");
 
-    if let Err(e) = run(&exe_dir, &log_dir).await {
-        let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ");
-        let message = format!(
-            "[{}] ERROR taix_server: FATAL: {}\n",
-            now, e
-        );
+    let log_filter = if cfg!(debug_assertions) {
+        "taix_server=debug,tower_http=debug"
+    } else {
+        "taix_server=info,tower_http=warn"
+    };
 
-        // 同步写入当天的主日志文件，作为兜底记录
+    let _logging_guard =
+        taix_logging::init("taix-server", log_filter, taix_logging::PanicMode::SyncFile);
+
+    if let Err(e) = run(&exe_dir).await {
+        tracing::error!("FATAL: {}", e);
+
+        let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ");
+        let message = format!("[{}] ERROR taix_server: FATAL: {}\n", now, e);
+
         let today = chrono::Utc::now().format("%Y-%m-%d");
         let log_path = log_dir.join(format!("taix-server.{}.log", today));
         if let Ok(mut file) = std::fs::OpenOptions::new()
@@ -51,93 +55,21 @@ async fn main() {
             .open(&log_path)
         {
             use std::io::Write;
-            if let Err(e) = file.write_all(message.as_bytes()) {
-                eprintln!("Failed to write fatal error to log: {}", e);
-            }
-            if let Err(e) = file.flush() {
-                eprintln!("Failed to flush fatal error log: {}", e);
-            }
+            let _ = file.write_all(message.as_bytes());
+            let _ = file.flush();
         }
 
         eprintln!("{}", message);
     }
 }
 
-async fn run(exe_dir: &Path, log_dir: &Path) -> anyhow::Result<()> {
+async fn run(exe_dir: &Path) -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().collect();
 
     let data_dir = parse_data_dir(&args, exe_dir);
 
     let _single_instance = single_instance::try_acquire("Global\\TaixServerSingleInstance")
         .ok_or_else(|| anyhow::anyhow!("Another instance of taix-server is already running"))?;
-
-    tokio::fs::create_dir_all(log_dir).await?;
-    let file_appender = tracing_appender::rolling::RollingFileAppender::builder()
-        .rotation(tracing_appender::rolling::Rotation::DAILY)
-        .filename_prefix("taix-server")
-        .filename_suffix("log")
-        .max_log_files(constants::MAX_LOG_RETENTION_DAYS)
-        .build(log_dir)?;
-    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
-
-    let filter = tracing_subscriber::EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| "taix_server=debug,tower_http=debug".into());
-
-    let stdout_layer = tracing_subscriber::fmt::layer().boxed();
-    let file_layer = tracing_subscriber::fmt::layer()
-        .with_writer(non_blocking)
-        .with_ansi(false)
-        .boxed();
-
-    tracing_subscriber::registry()
-        .with(filter)
-        .with(stdout_layer)
-        .with(file_layer)
-        .init();
-
-    // 捕获 panic 并记录到日志
-    let panic_log_dir = log_dir.to_path_buf();
-    std::panic::set_hook(Box::new(move |info| {
-        let payload = if let Some(s) = info.payload().downcast_ref::<&str>() {
-            s.to_string()
-        } else if let Some(s) = info.payload().downcast_ref::<String>() {
-            s.clone()
-        } else {
-            "Unknown panic payload".to_string()
-        };
-
-        let location = if let Some(loc) = info.location() {
-            format!("{}:{}:{}", loc.file(), loc.line(), loc.column())
-        } else {
-            "unknown location".to_string()
-        };
-
-        let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ");
-        let message = format!(
-            "[{}] ERROR taix_server: PANIC occurred at {}\n    payload: {}\n",
-            now, location, payload
-        );
-
-        // 同步写入当天的主日志文件，确保 panic 信息落盘（non-blocking appender 在 abort 时可能丢失）
-        let today = chrono::Utc::now().format("%Y-%m-%d");
-        let log_path = panic_log_dir.join(format!("taix-server.{}.log", today));
-        if let Ok(mut file) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&log_path)
-        {
-            use std::io::Write;
-            if let Err(e) = file.write_all(message.as_bytes()) {
-                eprintln!("Failed to write fatal error to log: {}", e);
-            }
-            if let Err(e) = file.flush() {
-                eprintln!("Failed to flush fatal error log: {}", e);
-            }
-        }
-
-        // 输出到 stderr，方便调试时直接看到
-        eprintln!("{}", message);
-    }));
 
     let web_favicons_dir = exe_dir.join("WebFavicons");
 
