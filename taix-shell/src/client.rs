@@ -13,17 +13,34 @@ pub async fn launch_or_wake() -> anyhow::Result<()> {
 }
 
 async fn try_wake_existing() -> anyhow::Result<bool> {
-    let client = ClientOptions::new().open(CLIENT_PIPE_NAME);
-
-    match client {
-        Ok(mut c) => {
-            c.write_all(b"show\n")
-                .await
-                .map_err(|e| anyhow::anyhow!("pipe write failed: {}", e))?;
-            Ok(true)
+    let mut client = match ClientOptions::new().open(CLIENT_PIPE_NAME) {
+        Ok(c) => c,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            tracing::debug!(target: "taix_shell::client", "no existing client pipe found");
+            return Ok(false);
         }
-        Err(_) => Ok(false),
+        Err(e) => {
+            tracing::warn!(target: "taix_shell::client", "failed to open client pipe: {}", e);
+            return Ok(false);
+        }
+    };
+
+    if let Err(e) = client.write_all(b"show\n").await {
+        tracing::warn!(target: "taix_shell::client", "pipe write failed: {}", e);
+        return Ok(false);
     }
+
+    if let Err(e) = client.flush().await {
+        tracing::warn!(target: "taix_shell::client", "pipe flush failed: {}", e);
+        return Ok(false);
+    }
+
+    if let Err(e) = client.shutdown().await {
+        tracing::debug!(target: "taix_shell::client", "pipe shutdown failed: {}", e);
+    }
+
+    tracing::info!(target: "taix_shell::client", "wake signal sent to existing client");
+    Ok(true)
 }
 
 fn spawn_new_process() -> anyhow::Result<()> {

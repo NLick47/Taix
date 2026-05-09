@@ -56,7 +56,6 @@ public class CategoryPageViewModel : CategoryPageModel
         RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync).DisposeWith(Disposables);
         AddDirectoryCommand = ReactiveCommand.CreateFromTask<object>(OnAddDirectoryAsync).DisposeWith(Disposables);
         DirectoriesCommand = ReactiveCommand.Create<object>(OnDirectoriesCommand).DisposeWith(Disposables);
-        ListBoxContextRequestedCommand = ReactiveCommand.Create<object>(OnListBoxContextRequested).DisposeWith(Disposables);
         RestoreSystemCategoryCommand = ReactiveCommand.CreateFromTask<object>(OnRestoreSystemCategoryAsync).DisposeWith(Disposables);
     }
 
@@ -74,7 +73,6 @@ public class CategoryPageViewModel : CategoryPageModel
     public ReactiveCommand<object, Unit> RefreshCommand { get; }
     public ReactiveCommand<object, Unit> AddDirectoryCommand { get; }
     public ReactiveCommand<object, Unit> DirectoriesCommand { get; }
-    public ReactiveCommand<object, Unit> ListBoxContextRequestedCommand { get; }
     public ReactiveCommand<object, Unit> RestoreSystemCategoryCommand { get; }
 
     private Task OnRefreshAsync(object _) => ExecuteAsync(LoadDataCoreAsync);
@@ -98,27 +96,6 @@ public class CategoryPageViewModel : CategoryPageModel
                 Count = originalCount,
                 Data = restored
             };
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex.Message, ex);
-        }
-    }
-
-    private void OnListBoxContextRequested(object arg)
-    {
-        try
-        {
-            if (arg is CategoryModel appCategory && appCategory.Data != null)
-            {
-                IsSelectedSysCategory = appCategory.Data.IsSystem;
-                return;
-            }
-
-            if (arg is WebCategoryModel)
-            {
-                IsSelectedSysCategory = false;
-            }
         }
         catch (Exception ex)
         {

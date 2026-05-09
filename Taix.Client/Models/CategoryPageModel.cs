@@ -16,7 +16,6 @@ public class CategoryPageModel : ModelBase
     private bool _editVisibility;
     private bool _isCreate;
     private bool _isEditError;
-    private bool _isRightClickSelected;
     private bool _isSysCategory;
     private CategoryModel? _selectedAppCategoryItem;
     private WebCategoryModel? _selectedWebCategoryItem;
@@ -133,16 +132,6 @@ public class CategoryPageModel : ModelBase
         set
         {
             _editColor = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public bool IsSelectedSysCategory
-    {
-        get => _isRightClickSelected;
-        set
-        {
-            _isRightClickSelected = value;
             OnPropertyChanged();
         }
     }

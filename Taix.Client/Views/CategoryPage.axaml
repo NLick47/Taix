@@ -188,11 +188,6 @@
 
                                 </EventTriggerBehavior>
                                 
-                                <EventTriggerBehavior EventName="SelectionChanged">
-                                    <InvokeCommandAction Command="{Binding ListBoxContextRequestedCommand}"
-                                                         CommandParameter="{Binding SelectedAppCategoryItem}" />
-                                </EventTriggerBehavior>
-
                          
                             </Interaction.Behaviors>
 
@@ -204,12 +199,12 @@
                                     <MenuItem Header="{DynamicResource Edit}" Command="{Binding EditCommand}"
                                               CommandParameter="{Binding SelectedAppCategoryItem}" />
                                     <MenuItem Header="{DynamicResource DeleteCategory}" Command="{Binding DelCommand}"
-                                              IsVisible="{Binding !IsSelectedSysCategory}"
+                                              IsVisible="{Binding !SelectedAppCategoryItem.Data.IsSystem}"
                                               CommandParameter="{Binding SelectedAppCategoryItem}" />
 
                                     <MenuItem Header="{DynamicResource RestoreSystemCategory}"
                                               Command="{Binding RestoreSystemCategoryCommand}"
-                                              IsVisible="{Binding IsSelectedSysCategory}"
+                                              IsVisible="{Binding SelectedAppCategoryItem.Data.IsSystem}"
                                               CommandParameter="{Binding SelectedAppCategoryItem}" />
                                 </ContextMenu>
                             </ListBox.ContextMenu>

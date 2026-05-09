@@ -102,17 +102,20 @@ public class App : Application
 #else
         var mutexName = "Taix";
         bool createdNew;
-        mutex = new Mutex(true, mutexName, out createdNew);
+        _mutex = new Mutex(true, mutexName, out createdNew);
         if (createdNew) return false;
 
         try
         {
             using var pipe = new NamedPipeClientStream(".", "TaixClient", PipeDirection.Out);
             pipe.Connect(1000);
-            using var writer = new StreamWriter(pipe);
+            using var writer = new StreamWriter(pipe) { AutoFlush = true };
             writer.WriteLine("show");
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.Warn($"[SingleInstance] Wake pipe failed: {ex.Message}");
+        }
 
         return true;
 #endif
@@ -126,7 +129,7 @@ public class App : Application
             {
                 try
                 {
-                    await using var pipe = new NamedPipeServerStream("TaixClient", PipeDirection.In, 1);
+                    await using var pipe = new NamedPipeServerStream("TaixClient", PipeDirection.In, 10);
                     await pipe.WaitForConnectionAsync();
                     using var reader = new StreamReader(pipe);
                     var cmd = await reader.ReadLineAsync();
@@ -144,9 +147,10 @@ public class App : Application
                         });
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // ignored
+                    Logger.Warn($"[WakePipeServer] Error: {ex.Message}");
+                    await Task.Delay(100);
                 }
             }
         });

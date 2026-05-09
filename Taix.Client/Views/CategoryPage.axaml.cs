@@ -90,7 +90,7 @@ public partial class CategoryPage : TPage
         if (visual is ListBoxItem listBoxItem && listBoxItem.DataContext is CategoryModel category)
         {
             _model.SelectedAppCategoryItem = category;
-            _model.IsSelectedSysCategory = category.Data?.IsSystem ?? false;
+
         }
     }
 
@@ -113,7 +113,7 @@ public partial class CategoryPage : TPage
         if (visual is ListBoxItem listBoxItem && listBoxItem.DataContext is CategoryPageModel.WebCategoryModel category)
         {
             _model.SelectedWebCategoryItem = category;
-            _model.IsSelectedSysCategory = category.Data?.IsSystem ?? false;
+
         }
     }
 }
