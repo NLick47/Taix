@@ -33,7 +33,7 @@ public class App : Application
     {
         services.AddHttpClient("TaixApi", client =>
         {
-            var serverUrl = Environment.GetEnvironmentVariable("TAIX_SERVER") ?? "http://localhost:37091";
+            var serverUrl = Environment.GetEnvironmentVariable("TAIX_SERVER") ?? "http://127.0.0.1:37091";
             client.BaseAddress = new Uri(serverUrl);
             client.Timeout = TimeSpan.FromSeconds(6);
         });
