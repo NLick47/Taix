@@ -160,8 +160,8 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
             },
             new NavigationItemModel
             {
-                UnSelectedIcon = IconTypes.FourBars,
-                SelectedIcon = IconTypes.FourBars,
+                UnSelectedIcon = IconTypes.ZeroBars,
+                SelectedIcon = IconTypes.ZeroBars,
                 Uri = nameof(ChartPage),
                 ID = 1
             },
