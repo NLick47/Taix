@@ -136,6 +136,12 @@ DELETE FROM WebBrowseLogModels WHERE EXISTS (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_webbrowselog_logtime_urlid ON WebBrowseLogModels(LogTime, UrlId);
 "#;
 
+const PERF_INDEXES_SQL: &str = r#"
+CREATE INDEX IF NOT EXISTS idx_hourslog_datetime ON HoursLogModels(DataTime);
+CREATE INDEX IF NOT EXISTS idx_webbrowselog_siteid ON WebBrowseLogModels(SiteId);
+ANALYZE;
+"#;
+
 /// 初始化数据库连接并执行迁移
 /// tz_id: C# 历史数据使用的本地时区，如 "Asia/Shanghai"
 pub async fn init_db(db_path: &str, tz_id: &str) -> anyhow::Result<SqlitePool> {
@@ -164,6 +170,7 @@ pub async fn init_db(db_path: &str, tz_id: &str) -> anyhow::Result<SqlitePool> {
             let steps = [
                 "baseline", "add_columns", "rename_columns", "data_fixes", "indexes",
                 "utc_hourslog", "utc_webbrowse", "utc_appduration", "utc_daily", "utc_daily_rebuild", "defaults",
+                "perf_indexes",
             ];
             let mut has_pending = false;
             for step in steps {
@@ -194,7 +201,7 @@ pub async fn init_db(db_path: &str, tz_id: &str) -> anyhow::Result<SqlitePool> {
     pool.close().await;
 
     let opts = SqliteConnectOptions::from_str(&format!("sqlite:{}", db_path))?
-        .journal_mode(SqliteJournalMode::Wal);
+        .journal_mode(SqliteJournalMode::Wal)
     let pool = SqlitePoolOptions::new()
         .max_connections(10)
         .connect_with(opts)
@@ -272,6 +279,11 @@ async fn migrate(pool: &SqlitePool, tz_id: &str) -> anyhow::Result<()> {
     if !is_done(&mut tx, "defaults").await? {
         ensure_default_categories(&mut tx).await?;
         mark_done(&mut tx, "defaults").await?;
+    }
+
+    if !is_done(&mut tx, "perf_indexes").await? {
+        execute_batch(&mut tx, PERF_INDEXES_SQL).await.context("性能优化索引")?;
+        mark_done(&mut tx, "perf_indexes").await?;
     }
 
     tx.commit().await.context("提交迁移事务失败")?;
