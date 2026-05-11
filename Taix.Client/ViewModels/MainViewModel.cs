@@ -278,6 +278,7 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
     public void Dispose()
     {
         _connectionCts.Cancel();
+        _connectionCts.Dispose();
         _disposables.Dispose();
     }
 }

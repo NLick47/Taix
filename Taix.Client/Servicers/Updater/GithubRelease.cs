@@ -47,7 +47,7 @@ public class GithubRelease
     {
         try
         {
-            var response = await _httpClient.GetAsync(githubUrl);
+            using var response = await _httpClient.GetAsync(githubUrl);
             response.EnsureSuccessStatusCode();
             
             var body = await response.Content.ReadAsStringAsync();

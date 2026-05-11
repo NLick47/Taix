@@ -129,7 +129,7 @@ public class ApiAppConfig : IAppConfig
 
         try
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            using var response = await _httpClient.PostAsJsonAsync(
                 "api/config",
                 _config,
                 TaixApiJsonContext.Default.ConfigModel);

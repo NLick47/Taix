@@ -13,7 +13,7 @@ using Taix.Client.Logging;
 
 namespace Taix.Client.Models;
 
-public class ModelBase : UINotifyPropertyChanged
+public class ModelBase : UINotifyPropertyChanged, IDisposable
 {
     private SelectItemModel _showType;
     private bool _isLoading;

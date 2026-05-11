@@ -31,7 +31,7 @@ public class TaixApiClient : ITaixApiClient
     [UnconditionalSuppressMessage("AOT", "IL3050")]
     private async Task<TResponse> GetAsync<TResponse>(string url, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.GetAsync(url, cancellationToken);
+        using var response = await _httpClient.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         var result = JsonSerializer.Deserialize<ApiResponse<TResponse>>(json, JsonOptions);
@@ -46,7 +46,7 @@ public class TaixApiClient : ITaixApiClient
     {
         var json = JsonSerializer.Serialize(request, JsonOptions);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync(url, content);
+        using var response = await _httpClient.PostAsync(url, content);
         response.EnsureSuccessStatusCode();
         var responseJson = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<ApiResponse>(responseJson, JsonOptions);
@@ -60,7 +60,7 @@ public class TaixApiClient : ITaixApiClient
     {
         var json = JsonSerializer.Serialize(request, JsonOptions);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync(url, content);
+        using var response = await _httpClient.PostAsync(url, content);
         response.EnsureSuccessStatusCode();
         var responseJson = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<ApiResponse<TResponse>>(responseJson, JsonOptions);
@@ -73,7 +73,7 @@ public class TaixApiClient : ITaixApiClient
     [UnconditionalSuppressMessage("AOT", "IL3050")]
     private async Task<TResponse> PostEmptyAsync<TResponse>(string url)
     {
-        var response = await _httpClient.PostAsync(url, null);
+        using var response = await _httpClient.PostAsync(url, null);
         response.EnsureSuccessStatusCode();
         var responseJson = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<ApiResponse<TResponse>>(responseJson, JsonOptions);
@@ -88,7 +88,7 @@ public class TaixApiClient : ITaixApiClient
     {
         var json = JsonSerializer.Serialize(request, JsonOptions);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await _httpClient.PutAsync(url, content);
+        using var response = await _httpClient.PutAsync(url, content);
         response.EnsureSuccessStatusCode();
         var responseJson = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<ApiResponse>(responseJson, JsonOptions);
@@ -102,7 +102,7 @@ public class TaixApiClient : ITaixApiClient
     {
         var json = JsonSerializer.Serialize(request, JsonOptions);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await _httpClient.PutAsync(url, content);
+        using var response = await _httpClient.PutAsync(url, content);
         response.EnsureSuccessStatusCode();
         var responseJson = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<ApiResponse<TResponse>>(responseJson, JsonOptions);
@@ -115,7 +115,7 @@ public class TaixApiClient : ITaixApiClient
     [UnconditionalSuppressMessage("AOT", "IL3050")]
     private async Task DeleteAsync(string url)
     {
-        var response = await _httpClient.DeleteAsync(url);
+        using var response = await _httpClient.DeleteAsync(url);
         response.EnsureSuccessStatusCode();
         var responseJson = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<ApiResponse>(responseJson, JsonOptions);
@@ -128,7 +128,7 @@ public class TaixApiClient : ITaixApiClient
     {
         try
         {
-            var response = await _httpClient.GetAsync("api/health");
+            using var response = await _httpClient.GetAsync("api/health");
             return response.IsSuccessStatusCode;
         }
         catch
