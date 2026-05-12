@@ -45,11 +45,16 @@
         <ResourceInclude Source="/Themes/DatePickerBar/DatePickerBarItem.axaml" />
 
 
-        <ResourceInclude Source="/Themes/Charts/Charts.axaml" />
         <ResourceInclude Source="/Themes/Charts/ChartsItemTypeCard.axaml" />
         <ResourceInclude Source="/Themes/Charts/ChartsItemTypeList.axaml" />
         <ResourceInclude Source="/Themes/Charts/ChartsItemTypeMonth.axaml" />
         <ResourceInclude Source="/Themes/Charts/ChartsItemTypeColumn.axaml" />
+        <ResourceInclude Source="/Themes/Charts/ListChart.axaml" />
+        <ResourceInclude Source="/Themes/Charts/CardChart.axaml" />
+        <ResourceInclude Source="/Themes/Charts/MonthChart.axaml" />
+        <ResourceInclude Source="/Themes/Charts/ColumnChart.axaml" />
+        <ResourceInclude Source="/Themes/Charts/PieChart.axaml" />
+        <ResourceInclude Source="/Themes/Charts/RadarChartView.axaml" />
 
         <ResourceInclude Source="/Themes/ColorPicker/ColorPicker.axaml" />
 

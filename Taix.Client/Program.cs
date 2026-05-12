@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Avalonia;
 using ReactiveUI.Avalonia;
 
@@ -17,7 +17,6 @@ internal sealed class Program
     {
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .UseReactiveUI(_ => {});
+            .UseReactiveUI(_ => { });
     }
-
 }

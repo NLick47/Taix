@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:Taix.Client.Controls.Charts">
+    <ControlTheme x:Key="{x:Type controls:CardChart}" TargetType="controls:CardChart">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <WrapPanel x:Name="CardContainer" />
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

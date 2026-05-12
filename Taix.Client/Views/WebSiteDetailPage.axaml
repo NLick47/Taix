@@ -134,11 +134,11 @@
                             Padding="20" CornerRadius="10">
                         <StackPanel>
 
-                            <charts:Charts IsShowCategory="False"
-                                           Height="305"
-                                           NameIndexStart="{Binding NameIndexStart}"
-                                           ChartsType="Column" Data="{Binding ChartData}"
-                                           Margin="0,0,0,0" />
+                            <charts:ColumnChart IsShowCategory="False"
+                                               Height="305"
+                                               NameIndexStart="{Binding NameIndexStart}"
+                                               Data="{Binding ChartData}"
+                                               Margin="0,0,0,0" />
 
                         </StackPanel>
                     </Border>

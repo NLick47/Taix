@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:Taix.Client.Controls.Charts">
+    <ControlTheme x:Key="{x:Type controls:MonthChart}" TargetType="controls:MonthChart">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid x:Name="MonthContainer" />
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

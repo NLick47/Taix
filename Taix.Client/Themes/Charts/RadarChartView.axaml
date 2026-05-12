@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:Taix.Client.Controls.Charts">
+    <ControlTheme x:Key="{x:Type controls:RadarChartView}" TargetType="controls:RadarChartView">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border x:Name="RadarContainer" />
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

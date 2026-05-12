@@ -577,7 +577,7 @@ public class ChartPageViewModel : ChartPageModel
             }
         }
         cancellationToken.ThrowIfCancellationRequested();
-        WebBrowseStatisticsData = chartData;
+        WebBrowseStatisticsData = chartData.OrderByDescending(m => m.Values.Sum()).ToList();
     }
 
     private async Task LoadWebSitesTopDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken)

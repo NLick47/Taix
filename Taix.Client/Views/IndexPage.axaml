@@ -61,11 +61,9 @@
                                        Margin="5,0,0,0" />
                         </StackPanel>
                     </Border>
-                    <Charts:Charts IconSize="20" Margin="0,5,0,0" IsCanScroll="False" Data="{Binding AppFrequentUseData}"
-                                   ChartsType="List"
-                                   IsLoading="{Binding IsLoading,Mode=TwoWay}"
-                                   ClickCommand="{Binding ToDetailCommand}"
-                                   ItemMenu="{Binding AppContextMenu}" />
+                    <Charts:ListChart IconSize="20" Margin="0,5,0,0" IsCanScroll="False" Data="{Binding AppFrequentUseData}"
+                                     ClickCommand="{Binding ToDetailCommand}"
+                                     ItemMenu="{Binding AppContextMenu}" />
                 </StackPanel>
             </Border>
 
@@ -90,14 +88,9 @@
                         </StackPanel>
                     </Border>
 
-                    <Charts:Charts IconSize="18" Grid.Row="1" Margin="0,5,0,0" IsCanScroll="False"
-                                   ClickCommand="{Binding ToDetailCommand}" Data="{Binding WebFrequentUseData}"
-                                   ChartsType="List"
-                                   IsLoading="{Binding IsLoading,Mode=TwoWay}"
-                                   ItemMenu="{Binding WebSiteContextMenu}">
-                        <Charts:Charts.Resources>
-                        </Charts:Charts.Resources>
-                    </Charts:Charts>
+                    <Charts:ListChart IconSize="18" Grid.Row="1" Margin="0,5,0,0" IsCanScroll="False"
+                                     ClickCommand="{Binding ToDetailCommand}" Data="{Binding WebFrequentUseData}"
+                                     ItemMenu="{Binding WebSiteContextMenu}" />
                 </Grid>
             </Border>
         </Grid>
@@ -132,15 +125,14 @@
                 </ContextMenu>
             </TabControl.ContextMenu>
             <TabItem>
-                <Charts:Charts Data="{Binding AppMoreData}" ItemMenu="{Binding AppContextMenu}" ChartsType="Card"
-                               ShowLimit="{Binding MoreNum}" IsLoading="{Binding IsLoading,Mode=TwoWay}"
-                               ClickCommand="{Binding ToDetailCommand}" />
+                <Charts:CardChart Data="{Binding AppMoreData}" ItemMenu="{Binding AppContextMenu}"
+                                 ShowLimit="{Binding MoreNum}"
+                                 ClickCommand="{Binding ToDetailCommand}" />
             </TabItem>
             <TabItem>
                 <Grid>
-                    <Charts:Charts Data="{Binding WebMoreData}" ClickCommand="{Binding ToDetailCommand}"
-                                   ChartsType="Card" ShowLimit="{Binding MoreNum}"
-                                   IsLoading="{Binding IsLoading,Mode=TwoWay}" ItemMenu="{Binding WebSiteContextMenu}" />
+                    <Charts:CardChart Data="{Binding WebMoreData}" ClickCommand="{Binding ToDetailCommand}"
+                                     ShowLimit="{Binding MoreNum}"/>
                 </Grid>
             </TabItem>
         </TabControl>

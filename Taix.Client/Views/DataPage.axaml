@@ -58,10 +58,10 @@
                     </Grid.RowDefinitions>
                     <select:DateSelect Date="{Binding DayDate,Mode=TwoWay}" />
 
-                    <Charts:Charts IsShowBadge="True"
+                    <Charts:ListChart IsShowBadge="True"
                                    IsSearch="True" Grid.Row="1"
                                    ItemMenu="{Binding AppContextMenu}"
-                                   Data="{Binding Data}" ChartsType="List"
+                                   Data="{Binding Data}"
                                    Margin="0,20,0,0"
                                    ClickCommand="{Binding ToDetailCommand}" />
                 </Grid>
@@ -74,12 +74,11 @@
                     </Grid.RowDefinitions>
                     <select:DateSelect Date="{Binding MonthDate,Mode=TwoWay}"
                                        SelectType="Month" />
-                    <Charts:Charts IsShowBadge="True"
+                    <Charts:ListChart IsShowBadge="True"
                                    IsSearch="True"
                                    Grid.Row="1"
                                    ItemMenu="{Binding AppContextMenu}"
                                    Data="{Binding MonthData}"
-                                   ChartsType="List"
                                    Margin="0,20,0,0"
                                    ClickCommand="{Binding ToDetailCommand}" />
                 </Grid>
@@ -95,10 +94,9 @@
                     <select:DateSelect Date="{Binding YearDate,Mode=TwoWay}"
                                        SelectType="Year" />
 
-                    <Charts:Charts IsShowBadge="True" IsSearch="True" Grid.Row="1"
+                    <Charts:ListChart IsShowBadge="True" IsSearch="True" Grid.Row="1"
                                    ItemMenu="{Binding AppContextMenu}"
                                    Data="{Binding YearData}"
-                                   ChartsType="List"
                                    Margin="0,20,0,0"
                                    ClickCommand="{Binding ToDetailCommand}" />
                 </Grid>

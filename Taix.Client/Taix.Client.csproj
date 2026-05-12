@@ -6,9 +6,6 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <AssemblyName>Taix</AssemblyName>
-        <PublishAot>true</PublishAot>
-        <PublishSingleFile>true</PublishSingleFile>
-        <SelfContained>true</SelfContained>
         <Version>$(APP_VERSION)</Version>
         <ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
         <AvaloniaVersion>12.0.2</AvaloniaVersion>

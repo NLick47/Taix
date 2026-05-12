@@ -214,12 +214,12 @@
                             </base:View>
                         </Grid>
 
-                        <Charts:Charts IsShowCategory="False"
-                                       DataMaximum="{Binding DataMaximum}"
-                                       Height="305"
-                                       NameIndexStart="{Binding NameIndexStart}"
-                                       ChartsType="Column" Data="{Binding ChartData}"
-                                       Margin="0,20,0,0" />
+                        <Charts:ColumnChart IsShowCategory="False"
+                                           DataMaximum="{Binding DataMaximum}"
+                                           Height="305"
+                                           NameIndexStart="{Binding NameIndexStart}"
+                                           Data="{Binding ChartData}"
+                                           Margin="0,20,0,0" />
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -256,8 +256,7 @@
                                 <ColumnDefinition Width="9*" />
                             </Grid.ColumnDefinitions>
 
-                            <Charts:Charts Data="{Binding Data}" ChartsType="Month"
-                                           HorizontalAlignment="Left" />
+                            <Charts:MonthChart Data="{Binding Data}" HorizontalAlignment="Left" />
 
                             <StackPanel Grid.Column="1">
                                 <Border Padding="15" CornerRadius="10" BorderThickness="0">
