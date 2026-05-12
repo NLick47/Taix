@@ -1,5 +1,6 @@
 use crate::models::SleepStatus;
 use crate::win32::audio::AudioState;
+use crate::win32::gamepad::GamepadState;
 use crate::win32::get_system_idle_time;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -65,6 +66,7 @@ impl SleepDetector {
 
         let mut state = DetectorState::Initial;
         let mut current = SleepStatus::Wake;
+        let mut gamepad_state = GamepadState::new();
 
         info!(target: "sleep_detector", "Started");
 
@@ -78,12 +80,14 @@ impl SleepDetector {
 
             let idle = get_system_idle_time();
             let is_playing_sound = self.inner.audio_state.is_playing();
+            let is_gamepad_active = gamepad_state.is_active();
 
             let (next_state, next_status) = Self::transition(
                 state,
                 current,
                 idle,
                 is_playing_sound,
+                is_gamepad_active,
             );
 
             state = next_state;
@@ -101,11 +105,12 @@ impl SleepDetector {
         current: SleepStatus,
         idle: Duration,
         is_playing_sound: bool,
+        is_gamepad_active: bool,
     ) -> (DetectorState, SleepStatus) {
         match state {
             DetectorState::Initial => {
                 // 首次 tick 只记录 idle，不检测恢复跳变
-                let next = Self::evaluate_status(current, idle, is_playing_sound, None);
+                let next = Self::evaluate_status(current, idle, is_playing_sound, None, is_gamepad_active);
                 (
                     DetectorState::Monitoring {
                         last_idle: idle,
@@ -131,7 +136,7 @@ impl SleepDetector {
                 }
 
                 let (next_status, next_sound) =
-                    Self::evaluate_status_with_sound(current, idle, is_playing_sound, sound_start);
+                    Self::evaluate_status_with_sound(current, idle, is_playing_sound, sound_start, is_gamepad_active);
                 (
                     DetectorState::Monitoring {
                         last_idle: idle,
@@ -141,13 +146,13 @@ impl SleepDetector {
                 )
             }
             DetectorState::ResumePending { _last_idle: _ } => {
-                if idle < INACTIVE_THRESHOLD {
+                if idle < INACTIVE_THRESHOLD || is_gamepad_active {
                     info!(
                         target: "sleep_detector",
                         "User activity detected, exiting resume cooldown, broadcasting Wake"
                     );
                     let (next_status, next_sound) =
-                        Self::evaluate_status_with_sound(SleepStatus::Wake, idle, is_playing_sound, None);
+                        Self::evaluate_status_with_sound(SleepStatus::Wake, idle, is_playing_sound, None, is_gamepad_active);
                     (
                         DetectorState::Monitoring {
                             last_idle: idle,
@@ -171,8 +176,9 @@ impl SleepDetector {
         idle: Duration,
         is_playing_sound: bool,
         sound_start: Option<std::time::Instant>,
+        is_gamepad_active: bool,
     ) -> SleepStatus {
-        Self::evaluate_status_with_sound(current, idle, is_playing_sound, sound_start).0
+        Self::evaluate_status_with_sound(current, idle, is_playing_sound, sound_start, is_gamepad_active).0
     }
 
     fn evaluate_status_with_sound(
@@ -180,12 +186,15 @@ impl SleepDetector {
         idle: Duration,
         is_playing_sound: bool,
         sound_start: Option<std::time::Instant>,
+        is_gamepad_active: bool,
     ) -> (SleepStatus, Option<std::time::Instant>) {
+        let user_active = idle < INACTIVE_THRESHOLD || is_gamepad_active;
+
         match current {
-            SleepStatus::Sleep if idle < INACTIVE_THRESHOLD => {
+            SleepStatus::Sleep if user_active => {
                 (SleepStatus::Wake, None)
             }
-            SleepStatus::Wake if idle >= INACTIVE_THRESHOLD => {
+            SleepStatus::Wake if !user_active => {
                 if is_playing_sound {
                     match sound_start {
                         None => (SleepStatus::Wake, Some(std::time::Instant::now())),
@@ -198,12 +207,8 @@ impl SleepDetector {
                     (SleepStatus::Sleep, None)
                 }
             }
-            SleepStatus::Wake if idle < INACTIVE_THRESHOLD => {
-                if sound_start.is_some() {
-                    (SleepStatus::Wake, None)
-                } else {
-                    (SleepStatus::Wake, None)
-                }
+            SleepStatus::Wake if user_active => {
+                (SleepStatus::Wake, None)
             }
             _ => (current, sound_start),
         }

@@ -95,7 +95,7 @@ pub async fn run(
     mut shutdown_rx: tokio::sync::watch::Receiver<()>,
 ) {
     let log_filter = if cfg!(debug_assertions) {
-        "taix_monitor_windows=info"
+        "debug"
     } else {
         "taix_monitor_windows=warn"
     };

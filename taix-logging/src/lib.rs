@@ -43,11 +43,16 @@ pub fn init(name: &str, default_filter: &str, panic_mode: PanicMode) -> LoggingG
             let file_layer = tracing_subscriber::fmt::layer()
                 .with_writer(file_appender)
                 .with_ansi(false)
+                .with_file(true)
+                .with_line_number(true)
                 .boxed();
 
             #[cfg(debug_assertions)]
             {
-                let stdout_layer = tracing_subscriber::fmt::layer().boxed();
+                let stdout_layer = tracing_subscriber::fmt::layer()
+                    .with_file(true)
+                    .with_line_number(true)
+                    .boxed();
                 tracing_subscriber::registry()
                     .with(filter)
                     .with(stdout_layer)
@@ -68,10 +73,15 @@ pub fn init(name: &str, default_filter: &str, panic_mode: PanicMode) -> LoggingG
         PanicMode::SyncFile => {
             let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
-            let stdout_layer = tracing_subscriber::fmt::layer().boxed();
+            let stdout_layer = tracing_subscriber::fmt::layer()
+                .with_file(true)
+                .with_line_number(true)
+                .boxed();
             let file_layer = tracing_subscriber::fmt::layer()
                 .with_writer(non_blocking)
                 .with_ansi(false)
+                .with_file(true)
+                .with_line_number(true)
                 .boxed();
 
             tracing_subscriber::registry()
