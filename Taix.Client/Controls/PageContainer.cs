@@ -231,6 +231,7 @@ public class PageContainer : TemplatedControl
                 oldVm.OnNavigatedFrom();
                 if (oldVm is IDisposable disposable)
                     disposable.Dispose();
+                oldPage.DataContext = null;
             }
 
             if (Uri != string.Empty)

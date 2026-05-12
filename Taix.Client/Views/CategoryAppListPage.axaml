@@ -230,6 +230,7 @@
                             </Grid.ColumnDefinitions>
                             <Border>
                                 <base:Img Width="25" Height="25"
+                                          DecodeWidth="64"
                                           URL="{Binding IconFile}" />
                             </Border>
                             <Grid Grid.Column="1">

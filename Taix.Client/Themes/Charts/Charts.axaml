@@ -127,7 +127,7 @@
                                  ItemsSource="{TemplateBinding ListViewBindingData}">
                             <ListBox.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <StackPanel />
+                                    <VirtualizingStackPanel />
                                 </ItemsPanelTemplate>
                             </ListBox.ItemsPanel>
                             <ListBox.Styles>
@@ -138,6 +138,14 @@
                                                 <ItemsPresenter
                                                     ItemsPanel="{TemplateBinding ItemsPanel}" />
                                             </ScrollViewer>
+                                        </ControlTemplate>
+                                    </Setter>
+                                </Style>
+
+                                <Style Selector="ListBox.noScroll">
+                                    <Setter Property="Template">
+                                        <ControlTemplate>
+                                            <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
                                         </ControlTemplate>
                                     </Setter>
                                 </Style>
@@ -164,7 +172,8 @@
                                     </Style>
                                     <Setter Property="Template">
                                         <ControlTemplate>
-                                            <ContentPresenter ContentTemplate="{TemplateBinding ContentTemplate}"
+                                            <ContentPresenter Name="PART_ContentPresenter"
+                                                              ContentTemplate="{TemplateBinding ContentTemplate}"
                                                               Content="{TemplateBinding Content}" />
                                         </ControlTemplate>
                                     </Setter>
@@ -351,6 +360,7 @@
                                                     </Rectangle>
 
                                                     <base:Img Margin="5,0,0,0" Width="16" Height="16"
+                                                              DecodeWidth="64"
                                                               URL="{Binding Icon}" />
                                                     <!--名称-->
                                                     <TextBlock Margin="5,0,0,0"

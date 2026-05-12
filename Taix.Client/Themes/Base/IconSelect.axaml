@@ -24,7 +24,7 @@
 
                     <Grid>
                         <controls:Img HorizontalAlignment="Center"
-                                      VerticalAlignment="Center" URL="{TemplateBinding URL}" Width="30" Height="30" />
+                                      VerticalAlignment="Center" URL="{TemplateBinding URL}" Width="30" Height="30" DecodeWidth="64" />
 
                         <Popup
                             x:Name="Popup"
@@ -143,7 +143,7 @@
                                                 <DataTemplate>
                                                     <WrapPanel Orientation="Horizontal">
                                                         <Border>
-                                                            <controls:Img URL="{Binding}" Width="25" Height="25" />
+                                                            <controls:Img URL="{Binding}" Width="25" Height="25" DecodeWidth="64" />
                                                         </Border>
                                                     </WrapPanel>
                                                 </DataTemplate>

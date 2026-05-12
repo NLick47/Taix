@@ -45,7 +45,6 @@ public class ChartsItemTypeCard : TemplatedControl
 
     public ChartsItemTypeCard()
     {
-        Unloaded += ChartsItemTypeCard_Unloaded;
     }
 
     public ChartsDataModel Data
@@ -69,10 +68,11 @@ public class ChartsItemTypeCard : TemplatedControl
 
     protected override Type StyleKeyOverride => typeof(ChartsItemTypeCard);
 
-    private void ChartsItemTypeCard_Unloaded(object? sender, RoutedEventArgs e)
+    protected override void OnUnloaded(RoutedEventArgs e)
     {
-        Unloaded -= ChartsItemTypeCard_Unloaded;
+        base.OnUnloaded(e);
         Loaded -= ChartsItemTypeCard_Loaded;
+        isRendering = false;
         if (_nameSizeChangedHandler != null)
         {
             NameTextObj.SizeChanged -= _nameSizeChangedHandler;

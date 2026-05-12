@@ -235,7 +235,7 @@
                                 <ColumnDefinition Width="auto" />
                             </Grid.ColumnDefinitions>
                             <Border>
-                                <base:Img Width="25" Height="25" URL="{Binding IconFile}" />
+                                <base:Img Width="25" Height="25" DecodeWidth="64" URL="{Binding IconFile}" />
                             </Border>
                             <Grid Grid.Column="1">
                                 <TextBlock Margin="10,0,0,0" VerticalAlignment="Center"

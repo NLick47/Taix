@@ -330,6 +330,7 @@
                                                             Background="{DynamicResource NavHoverGlassBrush}"
                                                             HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <base:Img Radius="8" Width="32" Height="32"
+                                                                  DecodeWidth="64"
                                                                   URL="{Binding Data.IconFile}"
                                                                   HorizontalAlignment="Center"
                                                                   VerticalAlignment="Center" />
@@ -507,6 +508,7 @@
                                                             Background="{DynamicResource NavHoverGlassBrush}"
                                                             HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <base:Img Radius="8" Width="32" Height="32"
+                                                                  DecodeWidth="64"
                                                                   URL="{Binding Data.IconFile}"
                                                                   HorizontalAlignment="Center"
                                                                   VerticalAlignment="Center" />

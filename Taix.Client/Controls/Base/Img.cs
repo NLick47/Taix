@@ -18,15 +18,21 @@ public class Img : TemplatedControl
     public static readonly StyledProperty<IImage> ResourceProperty =
         AvaloniaProperty.Register<Img, IImage>(nameof(Resource));
 
+    public static readonly StyledProperty<int> DecodeWidthProperty =
+        AvaloniaProperty.Register<Img, int>(nameof(DecodeWidth));
+
+    public static readonly StyledProperty<int> DecodeHeightProperty =
+        AvaloniaProperty.Register<Img, int>(nameof(DecodeHeight));
+
     public static readonly DirectProperty<Img, string> URLProperty =
         AvaloniaProperty.RegisterDirect<Img, string>(
             nameof(URL),
             o => o.URL,
             (o, v) => o.URL = v);
 
-    private string _url;
+    private string _url = string.Empty;
     private CancellationTokenSource? _cts;
-    private Bitmap? _pendingRelease;
+    private string? _loadingUrl;
 
     public Img()
     {
@@ -45,6 +51,18 @@ public class Img : TemplatedControl
         set => SetValue(ResourceProperty, value);
     }
 
+    public int DecodeWidth
+    {
+        get => GetValue(DecodeWidthProperty);
+        set => SetValue(DecodeWidthProperty, value);
+    }
+
+    public int DecodeHeight
+    {
+        get => GetValue(DecodeHeightProperty);
+        set => SetValue(DecodeHeightProperty, value);
+    }
+
     public string URL
     {
         get => _url;
@@ -53,23 +71,37 @@ public class Img : TemplatedControl
 
     protected override Type StyleKeyOverride => typeof(Img);
 
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+
+        if (e.Property == URLProperty && !Equals(e.OldValue, e.NewValue))
+            ReloadFromUrl();
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        if (!string.IsNullOrWhiteSpace(URL) && Resource == Imager.GetDefaultBitmap())
+            ReloadFromUrl();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        CancelLoading();
+        Resource = Imager.GetDefaultBitmap();
+    }
+
     private void ReloadFromUrl()
     {
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = new CancellationTokenSource();
-        var token = _cts.Token;
-
         var path = URL;
 
-        if (_pendingRelease != null)
-        {
-            Imager.Release(_pendingRelease);
-            _pendingRelease = null;
-        }
+        if (_loadingUrl == path && _cts != null && !_cts.IsCancellationRequested)
+            return;
 
-        if (Resource is Bitmap oldBmp)
-            Imager.Release(oldBmp);
+        CancelLoading();
 
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -77,86 +109,65 @@ public class Img : TemplatedControl
             return;
         }
 
-        if (Imager.TryGetFromCache(path, out var cached))
+        var decodeWidth = DecodeWidth;
+        var decodeHeight = DecodeHeight;
+
+        if (Imager.TryGetFromCache(path, out var cached, decodeWidth, decodeHeight))
         {
-            Resource = cached;
+            Resource = cached ?? Imager.GetDefaultBitmap();
+            return;
+        }
+
+        if (Imager.IsFailed(path, decodeWidth, decodeHeight))
+        {
+            Resource = Imager.GetDefaultBitmap();
             return;
         }
 
         Resource = Imager.GetDefaultBitmap();
 
-        if (Imager.IsFailed(path))
-            return;
-
-        _ = LoadImageAsync(path, token);
+        _cts = new CancellationTokenSource();
+        _loadingUrl = path;
+        _ = LoadAsync(path, _cts.Token, decodeWidth, decodeHeight);
     }
 
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs e)
+    private void CancelLoading()
     {
-        base.OnPropertyChanged(e);
-
-        if (e.Property != URLProperty) return;
-        if (e.OldValue == e.NewValue) return;
-
-        ReloadFromUrl();
+        _loadingUrl = null;
+        if (_cts == null) return;
+        _cts.Cancel();
+        _cts.Dispose();
+        _cts = null;
     }
 
-    private async Task LoadImageAsync(string path, CancellationToken token)
+    private async Task LoadAsync(string path, CancellationToken token, int decodeWidth, int decodeHeight)
     {
-        Bitmap? bitmap = null;
         try
         {
-            bitmap = await Imager.LoadAsync(path);
+            var bitmap = await Imager.LoadAsync(
+                path,
+                decodeWidth: decodeWidth,
+                decodeHeight: decodeHeight,
+                cancellationToken: token);
+
             token.ThrowIfCancellationRequested();
 
             if (URL != path)
                 return;
 
-            if (Resource is Bitmap oldBmp && oldBmp != bitmap)
-                Imager.Release(oldBmp);
             Resource = bitmap;
-            bitmap = null;
         }
         catch (OperationCanceledException)
         {
         }
         catch (Exception ex)
         {
-            Logger.Error($"图片加载失败：{path}", ex);
+            Logger.Error($"[Img] 加载失败: {path}", ex);
         }
         finally
         {
-            if (bitmap != null)
-                Imager.Release(bitmap);
+            if (_loadingUrl == path)
+                _loadingUrl = null;
         }
-    }
-
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnDetachedFromVisualTree(e);
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = null;
-
-        if (Resource is Bitmap bmp)
-        {
-            _pendingRelease = bmp;
-            Resource = null;
-        }
-    }
-
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-
-        if (_pendingRelease != null)
-        {
-            Resource = _pendingRelease;
-            _pendingRelease = null;
-            return;
-        }
-
-        if (Resource == null)
-            ReloadFromUrl();
     }
 }

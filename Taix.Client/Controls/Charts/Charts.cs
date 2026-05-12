@@ -543,6 +543,9 @@ public class Charts : TemplatedControl
         if (change.Property == ColumnSelectedIndexProperty)
             charts.SetColBorderActiveBg((int)change.OldValue, (int)change.NewValue);
 
+        if (change.Property == IsCanScrollProperty)
+            charts.UpdateListViewScrollability();
+
         if (change.Property == ItemMenuProperty)
         {
             var (oldVal, newVal) = change.GetOldAndNewValue<ContextMenu>();
@@ -585,7 +588,17 @@ public class Charts : TemplatedControl
 
         if (ChartsType == ChartsType.Pie) _commonCanvas.SizeChanged += _commonCanvas_SizeChanged;
 
+        UpdateListViewScrollability();
         Render();
+    }
+
+    private void UpdateListViewScrollability()
+    {
+        if (_listView == null) return;
+        if (!IsCanScroll)
+            _listView.Classes.Add("noScroll");
+        else
+            _listView.Classes.Remove("noScroll");
     }
 
     private void _commonCanvas_SizeChanged(object? sender, SizeChangedEventArgs e)
@@ -856,25 +869,29 @@ public class Charts : TemplatedControl
             return;
         _clickHandledControls.Add(el, null!);
 
-        el.PointerPressed += (s, e) =>
+        el.PointerPressed += OnItemPointerPressed;
+    }
+
+    private void OnItemPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        var el = sender as Control;
+        if (el == null) return;
+
+        var clickData = el is ChartsItemTypeCard card ? card.Data
+            : el is ChartsItemTypeMonth month ? month.Data
+            : (el as ChartsItemTypeList)?.Data;
+
+        if (clickData == null) return;
+
+        if (e.GetCurrentPoint(el).Properties.IsLeftButtonPressed)
         {
-            var clickData = data;
-            if (el is ChartsItemTypeCard card)
-                clickData = card.Data;
-            else if (el is ChartsItemTypeMonth month)
-                clickData = month.Data;
-            if (clickData == null) return;
+            OnItemClick?.Invoke(clickData, null);
+            ClickCommand?.Execute(clickData);
+        }
 
-            if (e.GetCurrentPoint(el).Properties.IsLeftButtonPressed)
-            {
-                OnItemClick?.Invoke(clickData, null);
-                ClickCommand?.Execute(clickData);
-            }
-
-            if (e.GetCurrentPoint(el).Properties.IsRightButtonPressed)
-                if (ItemMenu != null)
-                    ItemMenu.Tag = clickData;
-        };
+        if (e.GetCurrentPoint(el).Properties.IsRightButtonPressed)
+            if (ItemMenu != null)
+                ItemMenu.Tag = clickData;
     }
 
     #region 渲染列表样式
@@ -901,6 +918,7 @@ public class Charts : TemplatedControl
             _searchBox.TextChanged += SearchBox_TextChanged;
         }
 
+        _listView.PointerReleased -= OnListViewPointerReleased;
         _listView.PointerReleased += OnListViewPointerReleased;
     }
 
@@ -941,6 +959,12 @@ public class Charts : TemplatedControl
         _listView.PointerReleased -= OnListViewPointerReleased;
         _searchBox.TextChanged -= SearchBox_TextChanged;
         Loaded -= Charts_Loaded;
+
+        foreach (var kvp in _clickHandledControls.ToList())
+        {
+            if (kvp.Key != null)
+                kvp.Key.PointerPressed -= OnItemPointerPressed;
+        }
     }
 
     private void _listView_MouseLeftButtonUp(object? sender, PointerReleasedEventArgs e)

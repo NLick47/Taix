@@ -96,8 +96,10 @@ public class ChartsItemTypeList : TemplatedControl
     {
         base.OnUnloaded(e);
         Loaded -= ChartsItemTypeList_Loaded;
+        isRendering = false;
         var parent = Parent as Control;
-        parent.SizeChanged -= Parent_SizeChanged;
+        if (parent != null)
+            parent.SizeChanged -= Parent_SizeChanged;
         if (_layoutUpdatedHandler != null)
         {
             ValueTextObj.LayoutUpdated -= _layoutUpdatedHandler;
@@ -121,7 +123,11 @@ public class ChartsItemTypeList : TemplatedControl
         }
 
         var parent = Parent as Control;
-        parent.SizeChanged += Parent_SizeChanged;
+        if (parent != null)
+        {
+            parent.SizeChanged -= Parent_SizeChanged;
+            parent.SizeChanged += Parent_SizeChanged;
+        }
     }
 
 

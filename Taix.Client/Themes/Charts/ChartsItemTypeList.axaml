@@ -74,6 +74,7 @@
                                 HorizontalAlignment="Left">
                             <base:Img x:Name="IconObj" Width="{TemplateBinding IconSize}"
                                              Height="{TemplateBinding IconSize}"
+                                             DecodeWidth="64"
                                              URL="{Binding Data.Icon,RelativeSource={RelativeSource TemplatedParent}}"
                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>

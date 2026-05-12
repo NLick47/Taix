@@ -182,6 +182,11 @@ public class IndexPageViewModel : IndexPageModel
     {
         (ToDetailCommand as IDisposable).Dispose();
         (RefreshCommand as IDisposable).Dispose();
+        WeekData = [];
+        AppFrequentUseData = [];
+        AppMoreData = [];
+        WebFrequentUseData = [];
+        WebMoreData = [];
         base.Dispose();
     }
 }

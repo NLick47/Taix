@@ -33,6 +33,7 @@
 
                                           URL="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:Select}}, 
 										  Path=SelectedItem.Img}"
+                                          DecodeWidth="64"
                                           Width="16" Height="16"
                                           VerticalAlignment="Center" />
                                 <TextBlock
