@@ -6,6 +6,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using ReactiveUI;
@@ -33,19 +34,18 @@ public class IconSelect : TemplatedControl
             (o, v) => o.IsOpen = v);
 
     private List<string> _icons = new();
-
     private bool _isOpen;
-
-    private string _url;
-
-    private Border SelectContainer;
+    private string _url = string.Empty;
+    private Popup? _popup;
+    private Avalonia.Controls.Window? _attachedWindow;
+    private IDisposable? _isOpenSubscription;
 
     public IconSelect()
     {
-        this.GetObservable(IsOpenProperty).Subscribe(isOpen => { HandleWindowEvents(isOpen); });
+        Focusable = true;
         URL = "avares://Taix/Resources/Emoji/(1).png";
-        ShowSelectCommand = ReactiveCommand.Create<object>(OnShowSelect);
-        FileSelectCommand = ReactiveCommand.CreateFromTask<object>(OnFileSelect);
+        ShowSelectCommand = ReactiveCommand.Create(OnToggleSelect);
+        FileSelectCommand = ReactiveCommand.CreateFromTask(OnFileSelect);
         LoadIcons();
     }
 
@@ -75,24 +75,22 @@ public class IconSelect : TemplatedControl
     private void LoadIcons()
     {
         var list = new List<string>();
-        for (var i = 1; i < 45; i++) list.Add($"avares://Taix/Resources/Emoji/({i}).png");
+        for (var i = 1; i < 45; i++)
+            list.Add($"avares://Taix/Resources/Emoji/({i}).png");
         Icons = list;
     }
 
-    private void Reset()
+    private void OnToggleSelect()
     {
-        URL = Icons[0];
+        IsOpen = !IsOpen;
     }
 
-    private void OnShowSelect(object obj)
+    private async Task OnFileSelect()
     {
-        IsOpen = true;
-    }
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel?.StorageProvider is not { } storage)
+            return;
 
-
-    private async Task OnFileSelect(object obj)
-    {
-        var storage = TopLevel.GetTopLevel(this).StorageProvider;
         var result = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             AllowMultiple = false,
@@ -104,48 +102,132 @@ public class IconSelect : TemplatedControl
                 }
             ]
         });
-        if (result?.Count > 0) URL = result[0].Path.LocalPath;
+
+        if (result is { Count: > 0 } && result[0].TryGetLocalPath() is { } path)
+        {
+            URL = path;
+            IsOpen = false;
+        }
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
-        SelectContainer = e.NameScope.Get<Border>("SelectContainer");
+
+        DetachPopupEvents();
+        _popup = e.NameScope.Find<Popup>("Popup");
+        AttachPopupEvents();
     }
 
-    private void HandleWindowEvents(bool isOpen)
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        var window = this.VisualRoot as Avalonia.Controls.Window;
-        if (window != null)
+        base.OnAttachedToVisualTree(e);
+        _isOpenSubscription?.Dispose();
+        _isOpenSubscription = this.GetObservable(IsOpenProperty).Subscribe(OnIsOpenChanged);
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _isOpenSubscription?.Dispose();
+        _isOpenSubscription = null;
+        DetachPopupEvents();
+        DetachTopLevelEvents();
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && IsOpen)
         {
-            if (isOpen)
-            {
-                window.PointerPressed += OnWindowPointerPressed;
-                window.Deactivated += OnDeactivated;
-            }
-            else
-            {
-                window.PointerPressed -= OnWindowPointerPressed;
-                window.Deactivated -= OnDeactivated;
-            }
+            IsOpen = false;
+            e.Handled = true;
         }
+
+        base.OnKeyDown(e);
     }
 
-    private void OnDeactivated(object? sender, EventArgs e)
+    private void AttachPopupEvents()
+    {
+        if (_popup == null) return;
+        _popup.Closed += OnPopupClosed;
+    }
+
+    private void DetachPopupEvents()
+    {
+        if (_popup == null) return;
+        _popup.Closed -= OnPopupClosed;
+    }
+
+    private void OnPopupClosed(object? sender, EventArgs e)
     {
         IsOpen = false;
     }
 
-    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
+    private void OnIsOpenChanged(bool isOpen)
+    {
+        if (isOpen)
+            AttachTopLevelEvents();
+        else
+            DetachTopLevelEvents();
+    }
+
+    private void AttachTopLevelEvents()
+    {
+        DetachTopLevelEvents();
+
+        _attachedWindow = TopLevel.GetTopLevel(this) as Avalonia.Controls.Window;
+        if (_attachedWindow == null) return;
+
+        _attachedWindow.AddHandler(
+            InputElement.PointerPressedEvent,
+            OnTopLevelPointerPressed,
+            RoutingStrategies.Tunnel);
+        _attachedWindow.Deactivated += OnTopLevelDeactivated;
+    }
+
+    private void DetachTopLevelEvents()
+    {
+        if (_attachedWindow == null) return;
+
+        _attachedWindow.RemoveHandler(
+            InputElement.PointerPressedEvent,
+            OnTopLevelPointerPressed);
+        _attachedWindow.Deactivated -= OnTopLevelDeactivated;
+        _attachedWindow = null;
+    }
+
+    private void OnTopLevelDeactivated(object? sender, EventArgs e)
     {
         IsOpen = false;
     }
 
-    private bool IsInControl(PointerEventArgs e)
+    private void OnTopLevelPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        var p = e.GetPosition(SelectContainer);
-        if (p.X < 0 || p.Y < 0 || p.X > SelectContainer.Bounds.Width || p.Y > SelectContainer.Bounds.Height)
-            return false;
-        return true;
+        var source = e.Source as Visual;
+        if (source == null) return;
+
+        if (IsDescendantOf(source, _popup?.Child))
+            return;
+
+        if (IsDescendantOf(source, this))
+            return;
+
+        IsOpen = false;
+    }
+
+    private static bool IsDescendantOf(Visual? node, Visual? ancestor)
+    {
+        if (node == null || ancestor == null) return false;
+        if (node == ancestor) return true;
+
+        var current = node.GetVisualParent();
+        while (current != null)
+        {
+            if (current == ancestor)
+                return true;
+            current = current.GetVisualParent();
+        }
+
+        return false;
     }
 }
