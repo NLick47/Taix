@@ -1,9 +1,8 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, State},
     routing::{get},
     Json, Router,
 };
-use serde::Deserialize;
 use sqlx::SqlitePool;
 
 use crate::models::category::CategoryModel;
@@ -11,13 +10,6 @@ use crate::models::request::{CreateCategoryRequest, UpdateCategoryRequest};
 use crate::response::ApiResponse;
 use crate::services::category::CategoryService;
 use axum::routing::post;
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CategoryQuery {
-    #[serde(default, deserialize_with = "crate::models::request::deserialize_bool_insensitive")]
-    contain_system_category: bool,
-}
 
 pub fn router() -> Router<SqlitePool> {
     Router::new()
@@ -28,9 +20,8 @@ pub fn router() -> Router<SqlitePool> {
 
 async fn get_categories(
     State(pool): State<SqlitePool>,
-    Query(query): Query<CategoryQuery>,
 ) -> Json<ApiResponse<Vec<CategoryModel>>> {
-    match CategoryService::get_categories(&pool, query.contain_system_category).await {
+    match CategoryService::get_categories(&pool).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse {
             code: 500,

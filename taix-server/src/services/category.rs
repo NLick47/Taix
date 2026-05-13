@@ -37,21 +37,14 @@ impl CategoryService {
         }
     }
 
-    pub async fn get_categories(
-        pool: &SqlitePool,
-        contain_system_category: bool,
-    ) -> Result<Vec<CategoryModel>, AppError> {
-        debug!("get_categories: contain_system={}", contain_system_category);
+    pub async fn get_categories(pool: &SqlitePool) -> Result<Vec<CategoryModel>, AppError> {
+        debug!("get_categories");
 
         {
             let cache = category_cache().read().await;
             if let Some(cached) = cache.as_ref() {
                 debug!("get_categories from cache");
-                let mut result = cached.clone();
-                if !contain_system_category {
-                    result.retain(|c| !c.is_system);
-                }
-                return Ok(result);
+                return Ok(cached.clone());
             }
         }
 
@@ -65,28 +58,16 @@ impl CategoryService {
                 .fetch_optional(pool)
                 .await?;
 
-        let cache_value = if let Some(ref sys) = system {
-            let mut all = vec![sys.clone()];
-            all.extend(categories.iter().cloned());
+        let result = if let Some(sys) = system {
+            let mut all = vec![sys];
+            all.append(&mut categories);
             all
-        } else {
-            categories.clone()
-        };
-
-        let result = if contain_system_category {
-            if let Some(sys) = system {
-                let mut result = vec![sys];
-                result.append(&mut categories);
-                result
-            } else {
-                categories
-            }
         } else {
             categories
         };
 
         let mut cache = category_cache().write().await;
-        *cache = Some(cache_value);
+        *cache = Some(result.clone());
 
         Ok(result)
     }

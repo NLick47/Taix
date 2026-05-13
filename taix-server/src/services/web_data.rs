@@ -1,5 +1,6 @@
 use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, Timelike, Utc};
 use sqlx::SqlitePool;
+use std::collections::HashMap;
 use std::path::Path;
 use tracing::{debug, info, warn};
 
@@ -73,7 +74,7 @@ impl WebDataService {
 
             let date_time = current_req.date_time.unwrap_or_else(Utc::now);
 
-          
+
             let log_time = date_time.with_minute(0).unwrap().with_second(0).unwrap().with_nanosecond(0).unwrap();
             let duration = current_req.duration;
             let now_time_max = (constants::MINS_PER_HOUR - date_time.minute() as i64) * constants::SECS_PER_MIN - date_time.second() as i64;
@@ -184,25 +185,23 @@ impl WebDataService {
         Ok(rows)
     }
 
-    pub async fn get_web_site_categories(pool: &SqlitePool, contain_system_category: bool) -> Result<Vec<WebSiteCategoryModel>, AppError> {
-        debug!("get_web_site_categories: contain_system={}", contain_system_category);
+    pub async fn get_web_site_categories(pool: &SqlitePool) -> Result<Vec<WebSiteCategoryModel>, AppError> {
+        debug!("get_web_site_categories");
         let mut cats: Vec<WebSiteCategoryModel> =
             sqlx::query_as("SELECT * FROM WebSiteCategoryModels WHERE IsSystem = 0")
                 .fetch_all(pool).await?;
 
-        if contain_system_category {
-            let system: Option<WebSiteCategoryModel> =
-                sqlx::query_as("SELECT * FROM WebSiteCategoryModels WHERE IsSystem = 1 LIMIT 1")
-                    .fetch_optional(pool).await?;
+        let system: Option<WebSiteCategoryModel> =
+            sqlx::query_as("SELECT * FROM WebSiteCategoryModels WHERE IsSystem = 1 LIMIT 1")
+                .fetch_optional(pool).await?;
 
-            if let Some(sys) = system {
-                let mut result = vec![sys];
-                result.append(&mut cats);
-                return Ok(result);
-            }
+        if let Some(sys) = system {
+            let mut result = vec![sys];
+            result.append(&mut cats);
+            Ok(result)
+        } else {
+            Ok(cats)
         }
-
-        Ok(cats)
     }
 
     pub async fn create_web_site_category(pool: &SqlitePool, data: WebSiteCategoryModel) -> Result<WebSiteCategoryModel, AppError> {
@@ -615,7 +614,7 @@ impl WebDataService {
 
         let mut query = String::from(
             r#"SELECT wbl.ID, wbl.UrlId, wbl.LogTime, wbl.Duration, wbl.SiteId,
-            ws.Domain, ws.Title AS WsTitle, ws.IconFile AS WsIconFile,
+            ws.Domain, ws.Title AS WsTitle, ws.IconFile AS WsIconFile, ws.CategoryID AS WsCategoryID,
             wu.Url, wu.Title AS WuTitle, wu.IconFile AS WuIconFile
             FROM WebBrowseLogModels wbl
             JOIN WebUrlModels wu ON wbl.UrlId = wu.ID
@@ -638,6 +637,7 @@ impl WebDataService {
             Domain: String,
             WsTitle: Option<String>,
             WsIconFile: Option<String>,
+            WsCategoryID: i64,
             Url: String,
             WuTitle: Option<String>,
             WuIconFile: Option<String>,
@@ -651,8 +651,15 @@ impl WebDataService {
         }
         let rows = sql_query.fetch_all(pool).await?;
 
+        let web_categories = Self::get_web_site_categories(pool).await?;
+        let category_map: HashMap<i64, WebSiteCategoryModel> = web_categories
+            .into_iter()
+            .map(|c| (c.id, c))
+            .collect();
+
         let mut result = Vec::new();
         for row in rows {
+            let category = category_map.get(&row.WsCategoryID).cloned();
             result.push(WebBrowseLogModel {
                 id: row.ID,
                 url_id: row.UrlId,
@@ -664,10 +671,10 @@ impl WebDataService {
                     title: row.WsTitle,
                     domain: Some(row.Domain),
                     alias: None,
-                    category_id: 0,
+                    category_id: row.WsCategoryID,
                     icon_file: row.WsIconFile,
                     duration: 0,
-                    category: None,
+                    category: category.clone(),
                 }),
                 url: Some(WebUrlModel {
                     id: row.UrlId,
@@ -690,25 +697,31 @@ impl WebDataService {
             r#"SELECT wbl.ID, wbl.SiteId, wbl.Duration, ws.Title, ws.Domain, ws.IconFile, ws.Alias, ws.CategoryID
             FROM WebBrowseLogModels wbl
             LEFT JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
-            LEFT JOIN WebSiteCategoryModels wsc ON ws.CategoryID = wsc.ID
             WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?"#
         ).bind(utc_start).bind(utc_end).fetch_all(pool).await?;
 
-        let mut groups: std::collections::HashMap<i64, Vec<(i64, i64, i64, Option<String>, Option<String>, Option<String>, Option<String>, i64)>> = std::collections::HashMap::new();
+        let web_categories = Self::get_web_site_categories(pool).await?;
+        let category_map: HashMap<i64, WebSiteCategoryModel> = web_categories
+            .into_iter()
+            .map(|c| (c.id, c))
+            .collect();
+
+        let mut groups: HashMap<i64, Vec<(i64, i64, i64, Option<String>, Option<String>, Option<String>, Option<String>, i64)>> = HashMap::new();
         for row in rows { groups.entry(row.1).or_default().push(row); }
 
         let mut result = Vec::new();
         for (site_id, items) in groups {
             let first = &items[0];
+            let category_id = first.7;
             result.push(WebSiteModel {
                 id: site_id,
                 title: first.3.clone(),
                 domain: Some(first.4.clone().unwrap_or_default()),
                 alias: first.6.clone(),
-                category_id: first.7,
+                category_id,
                 icon_file: first.5.clone(),
                 duration: items.iter().map(|(_, _, d, _, _, _, _, _)| d).sum(),
-                category: None,
+                category: category_map.get(&category_id).cloned(),
             });
         }
         Ok(result)

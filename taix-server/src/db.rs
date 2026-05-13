@@ -201,7 +201,7 @@ pub async fn init_db(db_path: &str, tz_id: &str) -> anyhow::Result<SqlitePool> {
     pool.close().await;
 
     let opts = SqliteConnectOptions::from_str(&format!("sqlite:{}", db_path))?
-        .journal_mode(SqliteJournalMode::Wal)
+        .journal_mode(SqliteJournalMode::Wal);
     let pool = SqlitePoolOptions::new()
         .max_connections(10)
         .connect_with(opts)

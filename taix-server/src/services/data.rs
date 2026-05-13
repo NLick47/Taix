@@ -6,6 +6,7 @@ use tracing::{debug, info};
 use crate::error::AppError;
 use crate::models::app::{AppModel, AppModelRow};
 use crate::models::category::CategoryModel;
+use crate::services::category::CategoryService;
 use crate::models::log::{
     ColumnDataModel, DailyLogModel, ExportDataResult, HoursLogModel,
 };
@@ -294,6 +295,12 @@ impl DataService {
             .fetch_all(pool)
             .await?;
 
+        let categories = CategoryService::get_categories(pool).await?;
+        let category_map: HashMap<i64, CategoryModel> = categories
+            .into_iter()
+            .map(|c| (c.id, c))
+            .collect();
+
         let mut result = Vec::new();
         for log in logs {
             let app = apps.iter().find(|a| a.id == log.app_model_id).cloned();
@@ -306,7 +313,7 @@ impl DataService {
                 category_id: a.category_id,
                 icon_file: a.icon_file,
                 total_time: a.total_time,
-                category: None,
+                category: category_map.get(&a.category_id).cloned(),
             });
 
             result.push(HoursLogModel {
