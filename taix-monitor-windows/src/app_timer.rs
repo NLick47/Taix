@@ -4,32 +4,31 @@ use std::time::Duration;
 use tokio::sync::broadcast;
 use tracing::info;
 
-/// 计时器 flush 的语义：周期性刷盘 vs 最终刷盘（切换/睡眠/关机）。
 enum FlushKind {
-    /// 60 秒周期刷盘，保留毫秒零头继续累积。
+    /// 60 秒周期刷盘，保留毫秒零头继续累积
     Periodic,
-    /// 应用切换、睡眠或关机时的最终刷盘，零头必须处理掉。
+    /// 应用切换、睡眠或关机时的最终刷盘，零头必须处理掉
     Final,
 }
 
-/// 计时器核心状态机。
+/// 计时器核心状态机
 enum TimerState {
-    /// 没有活跃应用在计时。
+    /// 没有活跃应用在计时
     Idle,
-    /// 正在跟踪某个应用的活跃时间。
+    /// 正在跟踪某个应用的活跃时间
     Tracking {
         app: AppInfo,
         window: WindowInfo,
         start: chrono::DateTime<chrono::Local>,
-        /// 跨周期累积的毫秒零头。
+        /// 跨周期累积的毫秒零头
         accumulated_ms: i64,
     },
-    /// 系统处于睡眠/锁定状态，计时暂停。
+    /// 系统处于睡眠/锁定状态，计时暂停
     Suspended {
-        /// 睡眠前正在跟踪的应用（如有）。
+        /// 睡眠前正在跟踪的应用
         app: Option<AppInfo>,
         window: Option<WindowInfo>,
-        /// 睡眠前累积的毫秒零头。
+        /// 睡眠前累积的毫秒零头
         accumulated_ms: i64,
     },
 }
@@ -39,7 +38,6 @@ pub struct AppTimer {
     sleep_rx: broadcast::Receiver<SleepStatus>,
     tx: broadcast::Sender<AppDurationEvent>,
     state: TimerState,
-    ignore_list: Vec<String>,
     data_dir: Option<PathBuf>,
 }
 
@@ -47,7 +45,6 @@ impl AppTimer {
     pub fn new(
         event_rx: broadcast::Receiver<crate::models::AppActiveEvent>,
         sleep_rx: broadcast::Receiver<SleepStatus>,
-        ignore_list: Vec<String>,
         data_dir: Option<PathBuf>,
     ) -> Self {
         let (tx, _rx) = broadcast::channel(512);
@@ -56,7 +53,6 @@ impl AppTimer {
             sleep_rx,
             tx,
             state: TimerState::Idle,
-            ignore_list,
             data_dir,
         }
     }
@@ -113,11 +109,10 @@ impl AppTimer {
         info!(target: "app_timer", "Stopped");
     }
 
-    /// 判断一个应用是否应该被统计。
+    /// 判断一个应用是否应该被统计
     fn is_statistical(&self, app: &AppInfo) -> bool {
         app.app_type != AppType::SystemComponent
             && !app.executable_path.is_empty()
-            && !self.ignore_list.iter().any(|p| p.eq_ignore_ascii_case(&app.process))
     }
 
     fn window_title_for_log(&self) -> &str {
@@ -195,7 +190,7 @@ impl AppTimer {
                         self.state = TimerState::Idle;
                     }
                 } else {
-                    // 同一应用，仅更新窗口信息（修复标题不更新 bug）
+                    // 同一应用，仅更新窗口信息
                     *window = event.window;
                 }
             }

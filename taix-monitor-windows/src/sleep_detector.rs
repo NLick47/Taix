@@ -11,7 +11,9 @@ use tracing::{debug, info};
 #[cfg(debug_assertions)]
 const INACTIVE_THRESHOLD: Duration = Duration::from_secs(10);
 #[cfg(not(debug_assertions))]
-const INACTIVE_THRESHOLD: Duration = Duration::from_secs(300);
+const INACTIVE_THRESHOLD: Duration = Duration::from_secs(900);
+/// 恢复后判定用户活跃的 idle 阈值
+const RESUME_IDLE_THRESHOLD: Duration = Duration::from_secs(30);
 const MAX_SOUND_DURATION: Duration = Duration::from_secs(7200);
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 /// idle 单 tick 增长超过此值视为系统从休眠/锁定恢复
@@ -145,8 +147,8 @@ impl SleepDetector {
                     next_status,
                 )
             }
-            DetectorState::ResumePending { _last_idle: _ } => {
-                if idle < INACTIVE_THRESHOLD || is_gamepad_active {
+            DetectorState::ResumePending { _last_idle } => {
+                if idle < RESUME_IDLE_THRESHOLD || is_gamepad_active || is_playing_sound {
                     info!(
                         target: "sleep_detector",
                         "User activity detected, exiting resume cooldown, broadcasting Wake"

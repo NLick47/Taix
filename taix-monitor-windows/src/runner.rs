@@ -113,9 +113,6 @@ pub async fn run(
 
     info!(target: "main", "Starting... dataDir={:?}", data_dir);
 
-    let config = crate::config::load_or_create(data_dir.as_deref());
-    let ignore_processes = config.ignore_processes;
-
     let app_manager = Arc::new(crate::app_manager::AppManager::new(data_dir.clone()));
     let app_observer = crate::app_observer::AppObserver::spawn(Arc::clone(&app_manager));
     let app_events = app_observer.subscribe();
@@ -124,7 +121,7 @@ pub async fn run(
     let sleep_detector = crate::sleep_detector::SleepDetector::new(audio_monitor.state());
     let sleep_events = sleep_detector.subscribe();
 
-    let app_timer = crate::app_timer::AppTimer::new(app_events, sleep_detector.subscribe(), ignore_processes, data_dir.clone());
+    let app_timer = crate::app_timer::AppTimer::new(app_events, sleep_detector.subscribe(), data_dir.clone());
     let duration_events = app_timer.subscribe();
 
     // 传输层

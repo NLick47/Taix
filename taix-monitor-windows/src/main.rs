@@ -3,7 +3,6 @@
 mod app_manager;
 mod app_observer;
 mod app_timer;
-mod config;
 mod models;
 mod runner;
 mod sleep_detector;
