@@ -31,69 +31,84 @@ public class Timeline : Control
         }
     }
 
-    #region Styled Properties
+    #region Direct Properties
 
-    public static readonly StyledProperty<IEnumerable<TimelineUsageItem>> UsageItemsProperty =
-        AvaloniaProperty.Register<Timeline, IEnumerable<TimelineUsageItem>>(nameof(UsageItems));
+    private IEnumerable<TimelineUsageItem> _usageItems = Array.Empty<TimelineUsageItem>();
+    private TimelineViewMode _viewMode = TimelineViewMode.App;
+    private double _zoom = 1.0;
+    private int _majorTickInterval = 1;
+    private DateTime _date = DateTime.Now;
+    private double _visibleStartHour = 0.0;
+    private double _visibleEndHour = 24.0;
 
-    public static readonly StyledProperty<TimelineViewMode> ViewModeProperty =
-        AvaloniaProperty.Register<Timeline, TimelineViewMode>(nameof(ViewMode), TimelineViewMode.App);
+    public static readonly DirectProperty<Timeline, IEnumerable<TimelineUsageItem>> UsageItemsProperty =
+        AvaloniaProperty.RegisterDirect<Timeline, IEnumerable<TimelineUsageItem>>(
+            nameof(UsageItems), o => o._usageItems, (o, v) => o._usageItems = v);
 
-    public static readonly StyledProperty<double> ZoomProperty =
-        AvaloniaProperty.Register<Timeline, double>(nameof(Zoom), 1.0);
+    public static readonly DirectProperty<Timeline, TimelineViewMode> ViewModeProperty =
+        AvaloniaProperty.RegisterDirect<Timeline, TimelineViewMode>(
+            nameof(ViewMode), o => o._viewMode, (o, v) => o._viewMode = v, TimelineViewMode.App);
 
-    public static readonly StyledProperty<int> MajorTickIntervalProperty =
-        AvaloniaProperty.Register<Timeline, int>(nameof(MajorTickInterval), 1);
+    public static readonly DirectProperty<Timeline, double> ZoomProperty =
+        AvaloniaProperty.RegisterDirect<Timeline, double>(
+            nameof(Zoom), o => o._zoom, (o, v) => o._zoom = v, 1.0);
 
-    public static readonly StyledProperty<DateTime> DateProperty =
-        AvaloniaProperty.Register<Timeline, DateTime>(nameof(Date), DateTime.Now);
+    public static readonly DirectProperty<Timeline, int> MajorTickIntervalProperty =
+        AvaloniaProperty.RegisterDirect<Timeline, int>(
+            nameof(MajorTickInterval), o => o._majorTickInterval, (o, v) => o._majorTickInterval = v, 1);
 
-    public static readonly StyledProperty<double> VisibleStartHourProperty =
-        AvaloniaProperty.Register<Timeline, double>(nameof(VisibleStartHour), 0.0);
+    public static readonly DirectProperty<Timeline, DateTime> DateProperty =
+        AvaloniaProperty.RegisterDirect<Timeline, DateTime>(
+            nameof(Date), o => o._date, (o, v) => o._date = v);
 
-    public static readonly StyledProperty<double> VisibleEndHourProperty =
-        AvaloniaProperty.Register<Timeline, double>(nameof(VisibleEndHour), 24.0);
+    public static readonly DirectProperty<Timeline, double> VisibleStartHourProperty =
+        AvaloniaProperty.RegisterDirect<Timeline, double>(
+            nameof(VisibleStartHour), o => o._visibleStartHour, (o, v) => o._visibleStartHour = v);
+
+    public static readonly DirectProperty<Timeline, double> VisibleEndHourProperty =
+        AvaloniaProperty.RegisterDirect<Timeline, double>(
+            nameof(VisibleEndHour), o => o._visibleEndHour, (o, v) => o._visibleEndHour = v, 24.0);
 
     public IEnumerable<TimelineUsageItem> UsageItems
     {
-        get => GetValue(UsageItemsProperty);
-        set => SetValue(UsageItemsProperty, value);
+        get => _usageItems;
+        set => SetAndRaise(UsageItemsProperty, ref _usageItems, value);
     }
 
     public TimelineViewMode ViewMode
     {
-        get => GetValue(ViewModeProperty);
-        set => SetValue(ViewModeProperty, value);
+        get => _viewMode;
+        set => SetAndRaise(ViewModeProperty, ref _viewMode, value);
     }
 
     public double Zoom
     {
-        get => GetValue(ZoomProperty);
-        set => SetValue(ZoomProperty, value);
+        get => _zoom;
+        set => SetAndRaise(ZoomProperty, ref _zoom, value);
     }
 
     public int MajorTickInterval
     {
-        get => GetValue(MajorTickIntervalProperty);
-        set => SetValue(MajorTickIntervalProperty, value);
+        get => _majorTickInterval;
+        set => SetAndRaise(MajorTickIntervalProperty, ref _majorTickInterval, value);
     }
 
     public DateTime Date
     {
-        get => GetValue(DateProperty);
-        set => SetValue(DateProperty, value);
+        get => _date;
+        set => SetAndRaise(DateProperty, ref _date, value);
     }
 
     public double VisibleStartHour
     {
-        get => GetValue(VisibleStartHourProperty);
-        set => SetValue(VisibleStartHourProperty, value);
+        get => _visibleStartHour;
+        set => SetAndRaise(VisibleStartHourProperty, ref _visibleStartHour, value);
     }
 
     public double VisibleEndHour
     {
-        get => GetValue(VisibleEndHourProperty);
-        set => SetValue(VisibleEndHourProperty, value);
+        get => _visibleEndHour;
+        set => SetAndRaise(VisibleEndHourProperty, ref _visibleEndHour, value);
     }
 
     #endregion
@@ -313,8 +328,8 @@ public class Timeline : Control
     private void ResetSelection()
     {
         var maxHour = (double)MaxDaySeconds / HourSeconds;
-        SetCurrentValue(VisibleStartHourProperty, 0.0);
-        SetCurrentValue(VisibleEndHourProperty, maxHour);
+        VisibleStartHour = 0.0;
+        VisibleEndHour = maxHour;
     }
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
@@ -400,14 +415,14 @@ public class Timeline : Control
             {
                 var endHour = VisibleEndHour;
                 if (hour < endHour - minSelectionHours)
-                    SetCurrentValue(VisibleStartHourProperty, Math.Max(0, hour));
+                    VisibleStartHour = Math.Max(0, hour);
             }
             else if (_activeHandle == DragHandle.Right)
             {
                 var startHour = VisibleStartHour;
                 var maxHour = (double)MaxDaySeconds / HourSeconds;
                 if (hour > startHour + minSelectionHours)
-                    SetCurrentValue(VisibleEndHourProperty, Math.Min(maxHour, hour));
+                    VisibleEndHour = Math.Min(maxHour, hour);
             }
             _suppressFitToRange = false;
             // setter 触发重绘
@@ -484,8 +499,8 @@ public class Timeline : Control
                 const double minSelectionHours = 1.0 / 60.0;
                 if (endHour <= startHour) endHour = Math.Min(maxHour, startHour + minSelectionHours);
 
-                SetCurrentValue(VisibleStartHourProperty, startHour);
-                SetCurrentValue(VisibleEndHourProperty, endHour);
+                VisibleStartHour = startHour;
+                VisibleEndHour = endHour;
             }
         }
         else if (_isPanning && !_wasDragging)

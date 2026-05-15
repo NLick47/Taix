@@ -10,31 +10,38 @@ public class MultiTrackTimeRuler : Control
 {
     private const int SecondsPerHour = 3600;
 
-    public static readonly StyledProperty<double> VisibleStartHourProperty =
-        AvaloniaProperty.Register<MultiTrackTimeRuler, double>(nameof(VisibleStartHour), 0.0);
+    private double _visibleStartHour = 0.0;
+    private double _visibleEndHour = 24.0;
+    private DateTime _date = DateTime.Today;
 
-    public static readonly StyledProperty<double> VisibleEndHourProperty =
-        AvaloniaProperty.Register<MultiTrackTimeRuler, double>(nameof(VisibleEndHour), 24.0);
+    public static readonly DirectProperty<MultiTrackTimeRuler, double> VisibleStartHourProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackTimeRuler, double>(
+            nameof(VisibleStartHour), o => o._visibleStartHour, (o, v) => o._visibleStartHour = v);
 
-    public static readonly StyledProperty<DateTime> DateProperty =
-        AvaloniaProperty.Register<MultiTrackTimeRuler, DateTime>(nameof(Date), DateTime.Today);
+    public static readonly DirectProperty<MultiTrackTimeRuler, double> VisibleEndHourProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackTimeRuler, double>(
+            nameof(VisibleEndHour), o => o._visibleEndHour, (o, v) => o._visibleEndHour = v, 24.0);
+
+    public static readonly DirectProperty<MultiTrackTimeRuler, DateTime> DateProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackTimeRuler, DateTime>(
+            nameof(Date), o => o._date, (o, v) => o._date = v);
 
     public double VisibleStartHour
     {
-        get => GetValue(VisibleStartHourProperty);
-        set => SetValue(VisibleStartHourProperty, value);
+        get => _visibleStartHour;
+        set => SetAndRaise(VisibleStartHourProperty, ref _visibleStartHour, value);
     }
 
     public double VisibleEndHour
     {
-        get => GetValue(VisibleEndHourProperty);
-        set => SetValue(VisibleEndHourProperty, value);
+        get => _visibleEndHour;
+        set => SetAndRaise(VisibleEndHourProperty, ref _visibleEndHour, value);
     }
 
     public DateTime Date
     {
-        get => GetValue(DateProperty);
-        set => SetValue(DateProperty, value);
+        get => _date;
+        set => SetAndRaise(DateProperty, ref _date, value);
     }
 
     private IPen _tickMajor = null!;

@@ -18,31 +18,38 @@ public class MultiTrackRow : Control
     private static readonly Color HighlightOverlay = Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF);
     private static readonly Color ShadowOverlay = Color.FromArgb(0x0A, 0x00, 0x00, 0x00);
 
-    public static readonly StyledProperty<IEnumerable<MultiTrackSegment>> SegmentsProperty =
-        AvaloniaProperty.Register<MultiTrackRow, IEnumerable<MultiTrackSegment>>(nameof(Segments));
+    private IEnumerable<MultiTrackSegment> _segments = Array.Empty<MultiTrackSegment>();
+    private double _visibleStartHour = 0.0;
+    private double _visibleEndHour = 24.0;
 
-    public static readonly StyledProperty<double> VisibleStartHourProperty =
-        AvaloniaProperty.Register<MultiTrackRow, double>(nameof(VisibleStartHour), 0.0);
+    public static readonly DirectProperty<MultiTrackRow, IEnumerable<MultiTrackSegment>> SegmentsProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackRow, IEnumerable<MultiTrackSegment>>(
+            nameof(Segments), o => o._segments, (o, v) => o._segments = v);
 
-    public static readonly StyledProperty<double> VisibleEndHourProperty =
-        AvaloniaProperty.Register<MultiTrackRow, double>(nameof(VisibleEndHour), 24.0);
+    public static readonly DirectProperty<MultiTrackRow, double> VisibleStartHourProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackRow, double>(
+            nameof(VisibleStartHour), o => o._visibleStartHour, (o, v) => o._visibleStartHour = v);
+
+    public static readonly DirectProperty<MultiTrackRow, double> VisibleEndHourProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackRow, double>(
+            nameof(VisibleEndHour), o => o._visibleEndHour, (o, v) => o._visibleEndHour = v, 24.0);
 
     public IEnumerable<MultiTrackSegment> Segments
     {
-        get => GetValue(SegmentsProperty);
-        set => SetValue(SegmentsProperty, value);
+        get => _segments;
+        set => SetAndRaise(SegmentsProperty, ref _segments, value);
     }
 
     public double VisibleStartHour
     {
-        get => GetValue(VisibleStartHourProperty);
-        set => SetValue(VisibleStartHourProperty, value);
+        get => _visibleStartHour;
+        set => SetAndRaise(VisibleStartHourProperty, ref _visibleStartHour, value);
     }
 
     public double VisibleEndHour
     {
-        get => GetValue(VisibleEndHourProperty);
-        set => SetValue(VisibleEndHourProperty, value);
+        get => _visibleEndHour;
+        set => SetAndRaise(VisibleEndHourProperty, ref _visibleEndHour, value);
     }
 
     // Tooltip state
