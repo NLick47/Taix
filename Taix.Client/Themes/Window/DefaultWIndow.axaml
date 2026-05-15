@@ -20,6 +20,17 @@
         <Setter Property="UseLayoutRounding" Value="True" />
 
         <Styles>
+            <Style Selector="controls|DefaultWindow[WindowState=Maximized] /template/ Border#WindowBorder">
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="BoxShadow" Value="none" />
+            </Style>
+            <Style Selector="controls|DefaultWindow[WindowState=Maximized] /template/ Border#ContentBorder">
+                <Setter Property="CornerRadius" Value="0" />
+            </Style>
+            <Style Selector="controls|DefaultWindow[WindowState=Maximized] /template/ Border#GlassHighlightBorder">
+                <Setter Property="CornerRadius" Value="0" />
+            </Style>
             <Style Selector="controls|DefaultWindow">
                 <Style Selector="^ /template/ button|IconButton#BackBtn">
                     <Setter Property="Transitions">
@@ -70,7 +81,7 @@
                         BoxShadow="0 12 40 0 #28000000"
                         ClipToBounds="False"
                         Margin="16">
-                    <Border
+                    <Border x:Name="ContentBorder"
                         CornerRadius="12"
                         BorderThickness="1"
                         ClipToBounds="True"
@@ -365,7 +376,8 @@
                             </Grid>
                             
                             <!-- 顶部玻璃高光：模拟玻璃边缘反光 -->
-                            <Border CornerRadius="12"
+                            <Border x:Name="GlassHighlightBorder"
+                                    CornerRadius="12"
                                     BorderThickness="1,1,0,0"
                                     BorderBrush="{DynamicResource WindowGlassHighlightBrush}"
                                     IsHitTestVisible="False" />
