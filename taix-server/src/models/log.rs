@@ -56,6 +56,24 @@ pub struct InfrastructureDataModel {
     pub value: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct AppSessionModel {
+    #[sqlx(rename = "ID")]
+    pub id: i64,
+    #[sqlx(rename = "AppModelID")]
+    pub app_model_id: i64,
+    #[sqlx(rename = "StartTime")]
+    pub start_time: DateTime<Utc>,
+    #[sqlx(rename = "EndTime")]
+    pub end_time: DateTime<Utc>,
+    #[sqlx(rename = "Duration")]
+    pub duration: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[sqlx(skip)]
+    pub app_model: Option<AppModel>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExportDataResult {

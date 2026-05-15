@@ -192,7 +192,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
     private async Task LoadCategoriesAsync(CancellationToken cancellationToken)
     {
         if (WebSite == null) return;
-        var data = await _webData.GetWebSiteCategoriesAsync(true, cancellationToken);
+        var data = await _webData.GetWebSiteCategoriesAsync(cancellationToken);
         var list = new List<SelectItemModel>();
         foreach (var category in data)
         {
@@ -313,7 +313,11 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         if (webSite == null) return;
         var categoryId = webSite.CategoryID;
 
-        foreach (var category in Categories)
+        var sysCategories = Categories.Where(m => m.Data is WebSiteCategoryModel wc && wc.IsSystem).ToList();
+        var userCategories = Categories.Where(m => m.Data is WebSiteCategoryModel wc && !wc.IsSystem).ToList();
+
+        // 用户分类
+        foreach (var category in userCategories)
         {
             var categoryMenu = new MenuItem
             {
@@ -326,10 +330,14 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
             _setCategoryMenuItem.Items.Add(categoryMenu);
         }
 
-        if (categoryId != 0)
+        var sysCategory = sysCategories.FirstOrDefault();
+        var sysCategoryModel = sysCategory?.Data as WebSiteCategoryModel;
+        if (categoryId != 0 && sysCategoryModel != null && categoryId != sysCategoryModel.ID)
         {
-            _setCategoryMenuItem.Items.Add(new Separator());
-            var sysCategory = Categories.FirstOrDefault(m => m.Data is WebSiteCategoryModel wc && wc.IsSystem);
+            if (userCategories.Count > 0)
+            {
+                _setCategoryMenuItem.Items.Add(new Separator());
+            }
             var un = new MenuItem
             {
                 Header = sysCategory?.Name ?? ResourceStrings.Uncategorized,

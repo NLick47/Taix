@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Extension, Path, Query, State},
     routing::{delete, get},
     Json, Router,
 };
@@ -7,9 +7,11 @@ use chrono::NaiveDateTime;
 use serde::Deserialize;
 use sqlx::SqlitePool;
 
-use crate::models::log::{ColumnDataModel, DailyLogModel, ExportDataResult, HoursLogModel};
+use crate::models::log::{AppSessionModel, ColumnDataModel, DailyLogModel, ExportDataResult, HoursLogModel};
 use crate::response::ApiResponse;
+use crate::services::config::ConfigService;
 use crate::services::data::DataService;
+use std::sync::Arc;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,6 +57,14 @@ struct TimeRangeQuery {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct HoursRangeQuery {
+    start: NaiveDateTime,
+    end: NaiveDateTime,
+    timezone: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct DateQuery {
     date: NaiveDateTime,
     timezone: String,
@@ -88,11 +98,13 @@ fn default_neg() -> i64 { -1 }
 
 pub fn router() -> Router<SqlitePool> {
     Router::new()
+        .route("/api/data/sessions", get(get_app_sessions))
         .route("/api/data/range", get(get_date_range_log_list))
         .route("/api/data/process-month", get(get_process_month_log_list))
         .route("/api/data/clear/:app_id", delete(clear_app_data))
         .route("/api/data/clear-range", delete(clear_range))
         .route("/api/data/time-range", get(get_time_range_log_list))
+        .route("/api/data/hours-range", get(get_hours_range_log_list))
         .route("/api/data/range-total", get(get_range_total_data))
         .route("/api/data/month-total", get(get_month_total_data))
         .route("/api/data/category-hours", get(get_category_hours_data))
@@ -105,8 +117,8 @@ pub fn router() -> Router<SqlitePool> {
         .route("/api/data/export", get(get_export_data))
 }
 
-async fn get_date_range_log_list(State(pool): State<SqlitePool>, Query(q): Query<RangeQuery>) -> Json<ApiResponse<Vec<DailyLogModel>>> {
-    match DataService::get_date_range_log_list(&pool, q.start.date(), q.end.date(), q.take, q.skip, &q.timezone).await {
+async fn get_date_range_log_list(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<RangeQuery>) -> Json<ApiResponse<Vec<DailyLogModel>>> {
+    match DataService::get_date_range_log_list(&pool, q.start.date(), q.end.date(), q.take, q.skip, &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
@@ -133,8 +145,15 @@ async fn clear_range(State(pool): State<SqlitePool>, Query(q): Query<ClearRangeQ
     }
 }
 
-async fn get_time_range_log_list(State(pool): State<SqlitePool>, Query(q): Query<TimeRangeQuery>) -> Json<ApiResponse<Vec<HoursLogModel>>> {
-    match DataService::get_time_range_log_list(&pool, q.time, &q.timezone).await {
+async fn get_time_range_log_list(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<TimeRangeQuery>) -> Json<ApiResponse<Vec<HoursLogModel>>> {
+    match DataService::get_time_range_log_list(&pool, q.time, &q.timezone, &config_service).await {
+        Ok(data) => Json(ApiResponse::ok(data)),
+        Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
+    }
+}
+
+async fn get_hours_range_log_list(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<HoursRangeQuery>) -> Json<ApiResponse<Vec<HoursLogModel>>> {
+    match DataService::get_hours_range_log_list(&pool, q.start, q.end, &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
@@ -203,8 +222,15 @@ async fn get_date_range_app_count(State(pool): State<SqlitePool>, Query(q): Quer
     }
 }
 
-async fn get_export_data(State(pool): State<SqlitePool>, Query(q): Query<RangeQuery>) -> Json<ApiResponse<ExportDataResult>> {
-    match DataService::get_export_data(&pool, q.start.date(), q.end.date(), &q.timezone).await {
+async fn get_app_sessions(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<HoursRangeQuery>) -> Json<ApiResponse<Vec<AppSessionModel>>> {
+    match DataService::get_app_sessions(&pool, q.start, q.end, &q.timezone, &config_service).await {
+        Ok(data) => Json(ApiResponse::ok(data)),
+        Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
+    }
+}
+
+async fn get_export_data(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<RangeQuery>) -> Json<ApiResponse<ExportDataResult>> {
+    match DataService::get_export_data(&pool, q.start.date(), q.end.date(), &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }

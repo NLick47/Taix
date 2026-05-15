@@ -35,9 +35,9 @@ public class ApiWebData : IWebData
         return result.AsReadOnly();
     }
 
-    public async Task<IReadOnlyList<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(CancellationToken cancellationToken = default)
     {
-        var result = await _apiClient.GetWebSiteCategoriesAsync(containSystemCategory, cancellationToken);
+        var result = await _apiClient.GetWebSiteCategoriesAsync(cancellationToken);
         return result.AsReadOnly();
     }
 
@@ -90,7 +90,7 @@ public class ApiWebData : IWebData
 
     public async Task<WebSiteCategoryModel> GetWebSiteCategoryAsync(int categoryId, CancellationToken cancellationToken = default)
     {
-        var result = await _apiClient.GetWebSiteCategoriesAsync(true);
+        var result = await _apiClient.GetWebSiteCategoriesAsync();
         return result.FirstOrDefault(m => m.ID == categoryId)!;
     }
 

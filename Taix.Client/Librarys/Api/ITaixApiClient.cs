@@ -22,7 +22,7 @@ public interface ITaixApiClient
     Task<List<AppModel>> GetAppsByCategoryAsync(int categoryId);
 
     // Category
-    Task<List<CategoryModel>> GetCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default);
+    Task<List<CategoryModel>> GetCategoriesAsync(CancellationToken cancellationToken = default);
     Task<CategoryModel?> GetCategoryAsync(int id, CancellationToken cancellationToken = default);
     Task<CategoryModel> CreateCategoryAsync(CategoryModel category);
     Task UpdateCategoryAsync(CategoryModel category);
@@ -35,6 +35,8 @@ public interface ITaixApiClient
     Task ClearAppDataAsync(int appId, DateTime? month = null);
     Task ClearRangeAsync(DateTime start, DateTime end);
     Task<List<HoursLogModel>> GetTimeRangeLogListAsync(DateTime time, CancellationToken cancellationToken = default);
+    Task<List<HoursLogModel>> GetHoursRangeLogListAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
+    Task<List<AppSessionModel>> GetAppSessionsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
     Task<double[]> GetRangeTotalDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
     Task<double[]> GetMonthTotalDataAsync(DateTime year, CancellationToken cancellationToken = default);
     Task<int> GetDateRangeAppCountAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
@@ -52,7 +54,7 @@ public interface ITaixApiClient
     // WebData
     Task AddUrlBrowseTimeAsync(string url, string? title, int duration, DateTime? dateTime = null);
     Task<List<WebSiteModel>> GetWebSitesAsync(int? categoryId = null, CancellationToken cancellationToken = default);
-    Task<List<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default);
+    Task<List<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(CancellationToken cancellationToken = default);
     Task<WebSiteCategoryModel> CreateWebSiteCategoryAsync(WebSiteCategoryModel data);
     Task UpdateWebSiteCategoryAsync(WebSiteCategoryModel data);
     Task DeleteWebSiteCategoryAsync(int id);

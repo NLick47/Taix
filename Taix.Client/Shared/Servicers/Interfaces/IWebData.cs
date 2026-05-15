@@ -26,13 +26,13 @@ public interface IWebData
     Task<IReadOnlyList<WebSiteModel>> GetDateRangeWebSiteListAsync(DateTime start, DateTime end, int take = 0,
         int skip = -1, bool isTime = false, CancellationToken cancellationToken = default);
 
-   
+
 
     /// <summary>
     /// 获取网站所有分类
     /// </summary>
     /// <returns></returns>
-    Task<IReadOnlyList<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 创建网站分类

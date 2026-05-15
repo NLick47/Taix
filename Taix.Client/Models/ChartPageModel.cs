@@ -40,7 +40,7 @@ public class ChartPageModel : ModelBase
 
     private List<ChartsDataModel> _radarData;
 
-    private SelectItemModel _selectedWeek;
+    private DateTime _weekDate;
 
     private ObservableCollection<string> _tabbarData;
 
@@ -78,10 +78,10 @@ public class ChartPageModel : ModelBase
     private string _webTotalTimeText;
     private string _weekDateStr;
 
-    private List<SelectItemModel> _weekOptions;
+
 
     private DateTime _yearDate;
-    
+
 
     public List<ChartsDataModel> Data
     {
@@ -119,6 +119,13 @@ public class ChartPageModel : ModelBase
         }
     }
 
+    private SelectItemModel? _selectedPeriod;
+    public SelectItemModel? SelectedPeriod
+    {
+        get => _selectedPeriod;
+        set { _selectedPeriod = value; OnPropertyChanged(); }
+    }
+
     public string WeekDateStr
     {
         get => _weekDateStr;
@@ -139,22 +146,14 @@ public class ChartPageModel : ModelBase
         }
     }
 
-    public List<SelectItemModel> WeekOptions
-    {
-        get => _weekOptions;
-        set
-        {
-            _weekOptions = value;
-            OnPropertyChanged();
-        }
-    }
 
-    public SelectItemModel SelectedWeek
+
+    public DateTime WeekDate
     {
-        get => _selectedWeek;
+        get => _weekDate;
         set
         {
-            _selectedWeek = value;
+            _weekDate = value;
             OnPropertyChanged();
         }
     }
@@ -586,4 +585,5 @@ public class ChartPageModel : ModelBase
             OnPropertyChanged();
         }
     }
+
 }

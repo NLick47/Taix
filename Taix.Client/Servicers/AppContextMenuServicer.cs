@@ -31,13 +31,12 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
     private readonly ICategorys _categorys;
     private readonly MainViewModel _mainViewModel;
     private readonly IThemeServicer _themeServicer;
-    
+
     private ContextMenu _contextMenu;
     private MenuItem _runMenuItem;
     private MenuItem _openDirMenuItem;
     private MenuItem _setCategoryMenuItem;
     private MenuItem _editAliasMenuItem;
-    private MenuItem _setLinkMenuItem;
     private MenuItem _blockMenuItem;
     private MenuItem _whiteListMenuItem;
     private IDisposable? _languageSubscription;
@@ -100,7 +99,6 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         _openDirMenuItem = CreateMenuItem(OpenDirMenuItem_Click);
         _setCategoryMenuItem = CreateMenuItem();
         _editAliasMenuItem = CreateMenuItem(EditAliasMenuItem_Click);
-        _setLinkMenuItem = CreateMenuItem();
         _blockMenuItem = CreateMenuItem(BlockMenuItem_Click);
         _whiteListMenuItem = CreateMenuItem(WhiteListMenuItem_Click);
     }
@@ -118,7 +116,6 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         _contextMenu.Items.Add(_runMenuItem);
         _contextMenu.Items.Add(new Separator());
         _contextMenu.Items.Add(_setCategoryMenuItem);
-        _contextMenu.Items.Add(_setLinkMenuItem);
         _contextMenu.Items.Add(_editAliasMenuItem);
         _contextMenu.Items.Add(new Separator());
         _contextMenu.Items.Add(_openDirMenuItem);
@@ -138,7 +135,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         _openDirMenuItem.Header = ResourceStrings.OpenApplicationDirectory;
         _setCategoryMenuItem.Header = ResourceStrings.SetCategory;
         _editAliasMenuItem.Header = ResourceStrings.EditAlias;
-        _setLinkMenuItem.Header = ResourceStrings.AddAssociation;
+
         _blockMenuItem.Header = ResourceStrings.IgnoreThisApplication;
         _whiteListMenuItem.Header = ResourceStrings.AddWhitelist;
     }
@@ -165,7 +162,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         UpdateBlockMenuItemText(app);
         UpdateWhiteListMenuItemText(app);
         await UpdateCategoryMenuItemsAsync();
-        UpdateLinkMenuItems();
+
     }
 
     private AppModel? GetAppFromContextMenu()
@@ -184,16 +181,16 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
     private void UpdateBlockMenuItemText(AppModel app)
     {
         var config = _appConfig.GetConfig();
-        _blockMenuItem.Header = config.Behavior.IgnoreProcessList.Contains(app.Name) 
-            ? ResourceStrings.Unignore 
+        _blockMenuItem.Header = config.Behavior.IgnoreProcessList.Contains(app.Name)
+            ? ResourceStrings.Unignore
             : ResourceStrings.IgnoreThisApplication;
     }
 
     private void UpdateWhiteListMenuItemText(AppModel app)
     {
         var config = _appConfig.GetConfig();
-        _whiteListMenuItem.Header = config.Behavior.ProcessWhiteList.Contains(app.Name) 
-            ? ResourceStrings.RemoveWhitelist 
+        _whiteListMenuItem.Header = config.Behavior.ProcessWhiteList.Contains(app.Name)
+            ? ResourceStrings.RemoveWhitelist
             : ResourceStrings.AddWhitelist;
     }
 
@@ -204,12 +201,13 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         var app = GetAppFromContextMenu();
         if (app == null) return;
 
-        var categories = await _categorys.GetCategoriesAsync(true);
+        var categories = await _categorys.GetCategoriesAsync();
         var appData = await _appData.GetAppAsync(app.ID);
         var appCategoryId = appData?.CategoryID ?? 0;
 
         foreach (var category in categories)
         {
+            if (category.IsSystem) continue;
             var categoryMenuItem = CreateCategoryMenuItem(category, appCategoryId, app.ID);
             _setCategoryMenuItem.Items.Add(categoryMenuItem);
         }
@@ -244,29 +242,6 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
     }
 
 
-
-    private void UpdateLinkMenuItems()
-    {
-        _setLinkMenuItem.Items.Clear();
-
-        var app = GetAppFromContextMenu();
-        if (app == null) return;
-
-        var config = _appConfig.GetConfig();
-        var links = config.Links;
-
-        foreach (var link in links)
-        {
-            var linkMenuItem = new MenuItem
-            {
-                Header = link.Name
-            };
-            linkMenuItem.Click += async (_, _) => await SetAppLinkAsync(app, link.Name);
-            _setLinkMenuItem.Items.Add(linkMenuItem);
-        }
-
-        _setLinkMenuItem.IsEnabled = links.Count > 0;
-    }
 
     private async void EditAliasMenuItem_Click(object? sender, RoutedEventArgs e)
     {
@@ -324,15 +299,15 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         _mainViewModel.Success(ResourceStrings.AliasUpdated);
     }
 
-    private void BlockMenuItem_Click(object? sender, PointerPressedEventArgs e)
+    private async void BlockMenuItem_Click(object? sender, PointerPressedEventArgs e)
     {
         var app = GetAppFromContextMenu();
         if (app == null) return;
 
-        ToggleAppIgnoreStatus(app);
+        await ToggleAppIgnoreStatusAsync(app);
     }
 
-    private void ToggleAppIgnoreStatus(AppModel app)
+    private async Task ToggleAppIgnoreStatusAsync(AppModel app)
     {
         var config = _appConfig.GetConfig();
         var data = _contextMenu.Tag as ChartsDataModel;
@@ -350,6 +325,8 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
             AddIgnoreBadge(data);
             _mainViewModel.Toast(string.Format(ResourceStrings.ApplicationNowIgnored, app.Description), ToastType.Success);
         }
+
+        await _appConfig.SaveAsync();
     }
 
     private void AddIgnoreBadge(ChartsDataModel data)
@@ -365,15 +342,15 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         data.BadgeList = newBadgeList ?? new List<ChartBadgeModel>();
     }
 
-    private void WhiteListMenuItem_Click(object? sender, PointerPressedEventArgs e)
+    private async void WhiteListMenuItem_Click(object? sender, PointerPressedEventArgs e)
     {
         var app = GetAppFromContextMenu();
         if (app == null) return;
 
-        ToggleAppWhiteListStatus(app);
+        await ToggleAppWhiteListStatusAsync(app);
     }
 
-    private void ToggleAppWhiteListStatus(AppModel app)
+    private async Task ToggleAppWhiteListStatusAsync(AppModel app)
     {
         var config = _appConfig.GetConfig();
         var whiteList = config.Behavior.ProcessWhiteList;
@@ -388,6 +365,8 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
             whiteList.Add(app.Name);
             _mainViewModel.Toast($"{ResourceStrings.AddedToWhitelist} {app.Description}", ToastType.Success);
         }
+
+        await _appConfig.SaveAsync();
     }
 
     private async Task SetAppCategoryAsync(int appId, CategoryModel category)
@@ -423,29 +402,6 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         if (app == null) return;
         app = app with { CategoryID = 0, Category = null };
         await _appData.UpdateAppAsync(app);
-    }
-
-    private async Task SetAppLinkAsync(AppModel app, string linkName)
-    {
-        var config = _appConfig.GetConfig();
-        var links = config.Links;
-
-        // 移除现有的关联
-        var existingLink = links.FirstOrDefault(m => m.ProcessList.Contains(app.Name));
-        existingLink?.ProcessList.Remove(app.Name);
-
-        // 添加新的关联
-        var targetLink = links.FirstOrDefault(m => m.Name == linkName);
-        if (targetLink != null)
-        {
-            targetLink.ProcessList.Add(app.Name);
-            await _appConfig.SaveAsync();
-            _mainViewModel.Toast(ResourceStrings.AssociationSuccessful, ToastType.Success);
-        }
-        else
-        {
-            _mainViewModel.Toast(ResourceStrings.AssociationConfigurationNotExist, ToastType.Error, IconTypes.IncidentTriangle);
-        }
     }
 
     private void OpenDirMenuItem_Click(object? sender, PointerPressedEventArgs e)

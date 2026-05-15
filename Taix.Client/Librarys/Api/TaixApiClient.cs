@@ -123,7 +123,7 @@ public class TaixApiClient : ITaixApiClient
         if (result.Code != 0) throw new InvalidOperationException(result.Message);
     }
 
-   
+
     public async Task<bool> HealthCheckAsync()
     {
         try
@@ -184,8 +184,8 @@ public class TaixApiClient : ITaixApiClient
         GetAsync<List<AppModel>>($"api/appdata/by-category/{categoryId}");
 
     // Category
-    public Task<List<CategoryModel>> GetCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default) =>
-        GetAsync<List<CategoryModel>>($"api/category?containSystemCategory={containSystemCategory}", cancellationToken);
+    public Task<List<CategoryModel>> GetCategoriesAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<List<CategoryModel>>("api/category", cancellationToken);
 
     public Task<CategoryModel?> GetCategoryAsync(int id, CancellationToken cancellationToken = default) =>
         GetAsync<CategoryModel?>($"api/category/{id}", cancellationToken);
@@ -244,6 +244,12 @@ public class TaixApiClient : ITaixApiClient
     public Task<List<HoursLogModel>> GetTimeRangeLogListAsync(DateTime time, CancellationToken cancellationToken = default) =>
         GetAsync<List<HoursLogModel>>(TzQuery($"api/data/time-range?time={Uri.EscapeDataString(time.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
+    public Task<List<HoursLogModel>> GetHoursRangeLogListAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<List<HoursLogModel>>(TzQuery($"api/data/hours-range?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
+
+    public Task<List<AppSessionModel>> GetAppSessionsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<List<AppSessionModel>>(TzQuery($"api/data/sessions?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
+
     public Task<double[]> GetRangeTotalDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
         GetAsync<double[]>(TzQuery($"api/data/range-total?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"), cancellationToken);
 
@@ -289,8 +295,8 @@ public class TaixApiClient : ITaixApiClient
     public Task<List<WebSiteModel>> GetWebSitesAsync(int? categoryId = null, CancellationToken cancellationToken = default) =>
         GetAsync<List<WebSiteModel>>(categoryId.HasValue ? $"api/webdata/sites?categoryId={categoryId}" : "api/webdata/sites", cancellationToken);
 
-    public Task<List<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default) =>
-        GetAsync<List<WebSiteCategoryModel>>($"api/webdata/categories?containSystemCategory={containSystemCategory}", cancellationToken);
+    public Task<List<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<List<WebSiteCategoryModel>>("api/webdata/categories", cancellationToken);
 
     public Task<WebSiteCategoryModel> CreateWebSiteCategoryAsync(WebSiteCategoryModel data) =>
         PostAsync<WebSiteCategoryModel, WebSiteCategoryModel>("api/webdata/categories", data);

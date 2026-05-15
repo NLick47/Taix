@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Taix Web Sentry",
+  "version": "2.0.0",
+  "description": "Taix 网页浏览时长统计插件",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "webNavigation",
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/socket-inactive.svg",
+      "48": "icons/socket-inactive.svg",
+      "128": "icons/socket-inactive.svg"
+    }
+  },
+  "icons": {
+    "16": "icons/socket-inactive.svg",
+    "48": "icons/socket-inactive.svg",
+    "128": "icons/socket-inactive.svg"
+  }
+}

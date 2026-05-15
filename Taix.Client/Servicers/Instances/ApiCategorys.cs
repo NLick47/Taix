@@ -16,9 +16,9 @@ public class ApiCategorys : ICategorys
         _apiClient = apiClient;
     }
 
-    public async Task<List<CategoryModel>> GetCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default)
+    public async Task<List<CategoryModel>> GetCategoriesAsync(CancellationToken cancellationToken = default)
     {
-        return await _apiClient.GetCategoriesAsync(containSystemCategory, cancellationToken);
+        return await _apiClient.GetCategoriesAsync(cancellationToken);
     }
 
     public async Task<CategoryModel?> GetCategoryAsync(int id, CancellationToken cancellationToken = default)

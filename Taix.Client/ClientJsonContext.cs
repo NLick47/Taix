@@ -3,7 +3,6 @@ using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 using Taix.Client.Servicers.Updater;
 using Taix.Client.Shared.Models.Config;
-using Taix.Client.Shared.Models.Config.Link;
 using Taix.Client.Shared.Models.Data;
 
 namespace Taix.Client;
@@ -12,8 +11,6 @@ namespace Taix.Client;
 [JsonSerializable(typeof(ConfigModel))]
 [JsonSerializable(typeof(GeneralModel))]
 [JsonSerializable(typeof(BehaviorModel))]
-[JsonSerializable(typeof(LinkModel))]
-[JsonSerializable(typeof(List<LinkModel>))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(ObservableCollection<string>))]
 [JsonSerializable(typeof(GithubRelease.GithubModel))]

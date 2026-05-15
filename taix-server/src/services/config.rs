@@ -89,56 +89,77 @@ impl ConfigService {
         self.load().await
     }
 
-    pub async fn should_ignore_app(&self, process_name: &str, file_path: Option<&str>) -> bool {
+    pub async fn get_excluded_app_ids(&self, apps: &[(i64, &str, Option<&str>)]) -> Vec<i64> {
         let Ok(config) = self.get_or_load().await else {
-            tracing::warn!(
-                "Config not available for app filter check, allowing: {}",
-                process_name
-            );
-            return false;
+            return Vec::new();
         };
-
-        let behavior = &config.behavior;
         let filters = self.filters.read().await;
+        let behavior = &config.behavior;
+        let mut excluded = Vec::new();
 
         if behavior.is_white_list {
-            let in_whitelist =
-                match_any(process_name, file_path, &filters.app_whitelist, &behavior.process_white_list);
-            if !in_whitelist {
-                debug!(
-                    "App not in whitelist, ignoring: process={}, path={:?}",
-                    process_name, file_path
-                );
+            for (id, name, file) in apps {
+                if name.is_empty() { continue; }
+                if !match_any(name, *file, &filters.app_whitelist, &behavior.process_white_list) {
+                    excluded.push(*id);
+                }
             }
-            !in_whitelist
         } else {
-            let ignored =
-                match_any(process_name, file_path, &filters.app_ignore, &behavior.ignore_process_list);
-            if ignored {
-                debug!(
-                    "App in ignore list, ignoring: process={}, path={:?}",
-                    process_name, file_path
-                );
+            for (id, name, file) in apps {
+                if name.is_empty() { continue; }
+                if match_any(name, *file, &filters.app_ignore, &behavior.ignore_process_list) {
+                    excluded.push(*id);
+                }
             }
-            ignored
         }
+        excluded
     }
 
-    pub async fn should_ignore_url(&self, url: &str) -> bool {
+    /// 批量匹配应排除的域名
+    pub async fn get_excluded_domains(&self, domains: &[&str]) -> Vec<String> {
         let Ok(config) = self.get_or_load().await else {
-            tracing::warn!(
-                "Config not available for URL filter check, allowing: {}",
-                url
-            );
-            return false;
+            return Vec::new();
         };
 
+        // 缓存字面量模式
+        let literal_patterns: Vec<String> = config.behavior.ignore_url_list
+            .iter()
+            .map(|p| p.trim().to_lowercase())
+            .filter(|p| !p.is_empty())
+            .collect();
+
         let filters = self.filters.read().await;
-        let ignored = match_text(url, &filters.url_ignore, &config.behavior.ignore_url_list);
-        if ignored {
-            debug!("URL in ignore list, ignoring: {}", url);
+
+        let mut excluded = Vec::new();
+
+        for domain in domains {
+            if domain.is_empty() {
+                continue;
+            }
+            let domain_lower = domain.to_lowercase();
+            let full_url = format!("https://{}", domain);
+
+            let mut ignored = false;
+            for p in &literal_patterns {
+                if p.eq_ignore_ascii_case(&domain_lower) || domain_lower.contains(p) {
+                    ignored = true;
+                    break;
+                }
+            }
+
+            if !ignored {
+                if let Some(set) = &filters.url_ignore {
+                    if set.is_match(&full_url) || set.is_match(domain) {
+                        ignored = true;
+                    }
+                }
+            }
+
+            if ignored {
+                excluded.push(domain.to_string());
+            }
         }
-        ignored
+        excluded
     }
 
     async fn recompile_filters(&self, config: &ConfigModel) {

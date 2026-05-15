@@ -8,11 +8,10 @@ use crate::constants;
 use crate::error::AppError;
 use crate::models::request::UpdateAppDurationRequest;
 use crate::services::category::CategoryService;
-use crate::services::config::ConfigService;
 
 
-const DEDUP_RETENTION_DAYS: i64 = 14;
-
+const DEDUP_RETENTION_DAYS: i64 = 7;
+const SESSION_RETENTION_DAYS: i64 = 36;
 
 const CLEANUP_INTERVAL: StdDuration = StdDuration::from_secs(constants::SECS_PER_DAY as u64);
 
@@ -22,19 +21,12 @@ impl AppTimerService {
     pub async fn update_app_duration(
         pool: &SqlitePool,
         req: UpdateAppDurationRequest,
-        config_service: &ConfigService,
     ) -> Result<(), AppError> {
         let process = req.process_name;
         let start_time = req.start_date_time;
 
         if process.is_empty() || req.duration <= 0 {
             debug!("update_app_duration: skip empty process or zero duration");
-            return Ok(());
-        }
-
-        // 应用忽略/白名单过滤
-        if config_service.should_ignore_app(&process, req.file.as_deref()).await {
-            debug!("update_app_duration: app ignored by config: {}", process);
             return Ok(());
         }
 
@@ -187,6 +179,21 @@ impl AppTimerService {
             .execute(&mut *tx)
             .await?;
 
+        // 保存时间轴
+        let end_time = start_time + chrono::Duration::seconds(duration);
+        sqlx::query(
+            r#"
+            INSERT INTO AppSessions (AppModelID, StartTime, EndTime, Duration)
+            VALUES (?, ?, ?, ?)
+            "#,
+        )
+        .bind(app_id)
+        .bind(start_time)
+        .bind(end_time)
+        .bind(duration)
+        .execute(&mut *tx)
+        .await?;
+
         // DailyLog 使用 UPSERT，利用唯一索引 (Date, AppModelID) 保证并发安全
         for (date_key, duration_val) in &duration_day_data {
             let date_str = date_key.to_string();
@@ -200,7 +207,7 @@ impl AppTimerService {
             )
             .bind(&date_str)
             .bind(app_id)
-            .bind(*duration_val)
+            .bind((*duration_val).min(3600))
             .execute(&mut *tx)
             .await?;
         }
@@ -243,6 +250,20 @@ impl AppTimerService {
         Ok(result.rows_affected())
     }
 
+    async fn cleanup_expired_sessions(pool: &SqlitePool) -> Result<u64, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            DELETE FROM AppSessions
+            WHERE StartTime < datetime('now', '-' || ? || ' days')
+            "#,
+        )
+        .bind(SESSION_RETENTION_DAYS)
+        .execute(pool)
+        .await?;
+
+        Ok(result.rows_affected())
+    }
+
     // 首次 tick 立即触发，启动时先清一轮；Skip 避免休眠后连续补偿。
     pub async fn run_cleanup_task(pool: SqlitePool) {
         let mut interval = tokio::time::interval(CLEANUP_INTERVAL);
@@ -260,6 +281,18 @@ impl AppTimerService {
                 }
                 Err(e) => {
                     tracing::error!(error = %e, "failed to clean up expired AppDurationRequests");
+                }
+            }
+
+            match Self::cleanup_expired_sessions(&pool).await {
+                Ok(0) => {
+                    tracing::debug!("no expired AppSessions records to clean up");
+                }
+                Ok(rows) => {
+                    tracing::info!(deleted_rows = rows, "cleaned up expired AppSessions");
+                }
+                Err(e) => {
+                    tracing::error!(error = %e, "failed to clean up expired AppSessions");
                 }
             }
         }

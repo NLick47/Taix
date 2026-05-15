@@ -10,7 +10,7 @@ namespace Taix.Client.Librarys;
 
 public static class ChartDataMapper
 {
-    public static List<ChartsDataModel> MapFromDailyLogs(IEnumerable<DailyLogModel> logs, bool includeBadges = false, IReadOnlyCollection<string>? ignoreList = null, bool orderByValue = true)
+    public static List<ChartsDataModel> MapFromDailyLogs(IEnumerable<DailyLogModel> logs, bool includeBadges = false, bool orderByValue = true)
     {
         var result = new List<ChartsDataModel>();
         foreach (var item in logs)
@@ -38,8 +38,6 @@ public static class ChartDataMapper
                         Color = item.AppModel.Category.Color,
                         Type = ChartBadgeType.Category
                     });
-                if (ignoreList != null && ignoreList.Contains(item.AppModel.Name))
-                    model.BadgeList.Add(ChartBadgeModel.IgnoreBadge);
             }
 
             result.Add(model);
@@ -47,7 +45,7 @@ public static class ChartDataMapper
         return orderByValue ? result.OrderByDescending(x => x.Value).ToList() : result;
     }
 
-    public static List<ChartsDataModel> MapFromWebSites(IEnumerable<WebSiteModel> sites, bool includeBadges = false, IReadOnlyCollection<string>? ignoreList = null)
+    public static List<ChartsDataModel> MapFromWebSites(IEnumerable<WebSiteModel> sites, bool includeBadges = false)
     {
         var result = new List<ChartsDataModel>();
         foreach (var item in sites)
@@ -72,8 +70,6 @@ public static class ChartDataMapper
                         Color = item.Category.Color,
                         Type = ChartBadgeType.Category
                     });
-                if (ignoreList != null && ignoreList.Contains(item.Domain))
-                    model.BadgeList.Add(ChartBadgeModel.IgnoreBadge);
             }
 
             result.Add(model);
@@ -81,7 +77,7 @@ public static class ChartDataMapper
         return result.OrderByDescending(x => x.Value).ToList();
     }
 
-    public static List<ChartsDataModel> MapFromHoursLogs(IEnumerable<HoursLogModel> logs, bool includeBadges = false, IReadOnlyCollection<string>? ignoreList = null)
+    public static List<ChartsDataModel> MapFromHoursLogs(IEnumerable<HoursLogModel> logs, bool includeBadges = false)
     {
         var result = new List<ChartsDataModel>();
         foreach (var item in logs)
@@ -109,8 +105,6 @@ public static class ChartDataMapper
                         Color = item.AppModel.Category.Color,
                         Type = ChartBadgeType.Category
                     });
-                if (ignoreList != null && ignoreList.Contains(item.AppModel.Name))
-                    model.BadgeList.Add(ChartBadgeModel.IgnoreBadge);
             }
 
             result.Add(model);

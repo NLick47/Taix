@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
 
 namespace Taix.Client.Controls.Charts;
@@ -34,6 +35,7 @@ public class MonthChart : TemplatedControl
     private ICommand _clickCommand;
     private ContextMenu _itemMenu;
     private Grid _monthContainer;
+    private EmptyData _emptyDataView;
     private double _maxValue;
     private readonly HashSet<Control> _clickHandledControls = [];
 
@@ -69,6 +71,7 @@ public class MonthChart : TemplatedControl
     {
         base.OnApplyTemplate(e);
         _monthContainer = e.NameScope.Get<Grid>("MonthContainer");
+        _emptyDataView = e.NameScope.Find<EmptyData>("EmptyDataView");
         Render();
     }
 
@@ -94,7 +97,12 @@ public class MonthChart : TemplatedControl
         _monthContainer.Children.Clear();
 
         var list = Data?.ToList();
-        if (list == null || list.Count == 0) return;
+        if (list == null || list.Count == 0)
+        {
+            if (_emptyDataView != null) _emptyDataView.IsVisible = true;
+            return;
+        }
+        if (_emptyDataView != null) _emptyDataView.IsVisible = false;
 
         var month = list[0].DateTime;
         var days = DateTime.DaysInMonth(month.Year, month.Month);

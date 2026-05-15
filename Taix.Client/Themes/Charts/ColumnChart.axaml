@@ -119,9 +119,11 @@
                             </Border>
                         </Popup>
 
-                        <Border BorderThickness="1,0,0,1" BorderBrush="{DynamicResource ChartColBorderBrush}">
+                        <Border x:Name="ChartBorder" BorderThickness="1,0,0,1" BorderBrush="{DynamicResource ChartColBorderBrush}">
                             <Canvas x:Name="TypeColumnCanvas" />
                         </Border>
+                        <base:EmptyData x:Name="EmptyDataView" IsVisible="False"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Grid>
 
                     <!-- category legend -->

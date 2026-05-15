@@ -1,10 +1,15 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:base="using:Taix.Client.Controls.Base"
                     xmlns:controls="using:Taix.Client.Controls.Charts">
     <ControlTheme x:Key="{x:Type controls:PieChart}" TargetType="controls:PieChart">
         <Setter Property="Template">
             <ControlTemplate>
-                <Canvas x:Name="PieCanvas" />
+                <Grid>
+                    <Canvas x:Name="PieCanvas" />
+                    <base:EmptyData x:Name="EmptyDataView" IsVisible="False"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Grid>
             </ControlTemplate>
         </Setter>
     </ControlTheme>

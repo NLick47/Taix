@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
 
 namespace Taix.Client.Controls.Charts;
@@ -16,6 +17,7 @@ public class PieChart : TemplatedControl
         AvaloniaProperty.RegisterDirect<PieChart, IEnumerable<ChartsDataModel>>(
             nameof(Data), o => o.Data, (o, v) => o.Data = v);
 
+    private EmptyData _emptyDataView;
     private IEnumerable<ChartsDataModel> _data = [];
 
     public IEnumerable<ChartsDataModel> Data
@@ -30,6 +32,7 @@ public class PieChart : TemplatedControl
     {
         base.OnApplyTemplate(e);
         var canvas = e.NameScope.Get<Canvas>("PieCanvas");
+        _emptyDataView = e.NameScope.Find<EmptyData>("EmptyDataView");
         canvas.SizeChanged += (_, _) => Render(canvas);
         Render(canvas);
     }
@@ -48,7 +51,12 @@ public class PieChart : TemplatedControl
     {
         canvas.Children.Clear();
         var list = Data?.ToList();
-        if (list == null || list.Count == 0) return;
+        if (list == null || list.Count == 0)
+        {
+            if (_emptyDataView != null) _emptyDataView.IsVisible = true;
+            return;
+        }
+        if (_emptyDataView != null) _emptyDataView.IsVisible = false;
 
         if (canvas.Bounds.Width <= 0 || canvas.Bounds.Height <= 0) return;
 

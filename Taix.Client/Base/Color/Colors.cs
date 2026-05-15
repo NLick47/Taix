@@ -28,6 +28,29 @@ public class Colors
         "#77E4D4", "#FD5E5E", "#B4FF9F", "#07FF01", "#FFE162", "#C70B80", "#590696", "#97DBAE", "#ff1801"
     };
 
+    public static string[] TimelinePaletteDark =
+    {
+        "#5b8ff9", "#5ad8a6", "#f6bd16", "#e8684a", "#6dc8ec",
+        "#9270ca", "#ff9d4d", "#269a99", "#ff99c3", "#a0d911",
+        "#13c2c2", "#eb2f96", "#faad14", "#fadb14", "#a8071a"
+    };
+
+    public static string[] TimelinePaletteLight =
+    {
+        "#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de",
+        "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc", "#37a2da",
+        "#32c5e9", "#9fe6b8", "#ffdb5c", "#ff9f7f", "#fb7293"
+    };
+
+    public static string GetTimelinePaletteColor(string key, bool isDark)
+    {
+        var palette = isDark ? TimelinePaletteDark : TimelinePaletteLight;
+        if (string.IsNullOrEmpty(key)) return palette[0];
+        var hash = key.GetHashCode();
+        var index = System.Math.Abs(hash) % palette.Length;
+        return palette[index];
+    }
+
     public static IColor Get(ColorTypes color)
     {
         return ColorList[color];

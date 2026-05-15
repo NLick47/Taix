@@ -89,6 +89,17 @@ CREATE TABLE IF NOT EXISTS AppDurationRequests (
     PRIMARY KEY (ProcessName, StartDateTime)
 );
 
+CREATE TABLE IF NOT EXISTS AppSessions (
+    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    AppModelID INTEGER NOT NULL,
+    StartTime TEXT NOT NULL,
+    EndTime TEXT NOT NULL,
+    Duration INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_appsessions_start ON AppSessions(StartTime);
+CREATE INDEX IF NOT EXISTS idx_appsessions_app_start ON AppSessions(AppModelID, StartTime);
+
 CREATE INDEX IF NOT EXISTS idx_appmodels_name ON AppModels(Name);
 CREATE INDEX IF NOT EXISTS idx_appmodels_categoryid ON AppModels(CategoryID);
 CREATE INDEX IF NOT EXISTS idx_websitemodels_domain ON WebSiteModels(Domain);
@@ -170,7 +181,7 @@ pub async fn init_db(db_path: &str, tz_id: &str) -> anyhow::Result<SqlitePool> {
             let steps = [
                 "baseline", "add_columns", "rename_columns", "data_fixes", "indexes",
                 "utc_hourslog", "utc_webbrowse", "utc_appduration", "utc_daily", "utc_daily_rebuild", "defaults",
-                "perf_indexes",
+                "perf_indexes", "app_sessions",
             ];
             let mut has_pending = false;
             for step in steps {
@@ -284,6 +295,26 @@ async fn migrate(pool: &SqlitePool, tz_id: &str) -> anyhow::Result<()> {
     if !is_done(&mut tx, "perf_indexes").await? {
         execute_batch(&mut tx, PERF_INDEXES_SQL).await.context("性能优化索引")?;
         mark_done(&mut tx, "perf_indexes").await?;
+    }
+
+    if !is_done(&mut tx, "app_sessions").await? {
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS AppSessions (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                AppModelID INTEGER NOT NULL,
+                StartTime TEXT NOT NULL,
+                EndTime TEXT NOT NULL,
+                Duration INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_appsessions_start ON AppSessions(StartTime);
+            CREATE INDEX IF NOT EXISTS idx_appsessions_app_start ON AppSessions(AppModelID, StartTime);
+            "#
+        )
+        .execute(&mut *tx)
+        .await
+        .context("创建 AppSessions 表")?;
+        mark_done(&mut tx, "app_sessions").await?;
     }
 
     tx.commit().await.context("提交迁移事务失败")?;

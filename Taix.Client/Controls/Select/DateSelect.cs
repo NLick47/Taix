@@ -59,10 +59,17 @@ public class DateSelect : TemplatedControl
             o => o.IsOpen,
             (o, v) => o.IsOpen = v);
 
+    public static readonly DirectProperty<DateSelect, bool> CanGoNextProperty =
+        AvaloniaProperty.RegisterDirect<DateSelect, bool>(
+            nameof(CanGoNext),
+            o => o.CanGoNext,
+            (o, v) => o.CanGoNext = v);
+
     private DateTime _date = DateTime.Now;
     private string _dateStr = string.Empty;
     private List<DayModel> _days = new();
     private bool _isOpen;
+    private bool _canGoNext;
     private int _month;
     private DateSelectType _selectType;
     private int _year;
@@ -74,8 +81,11 @@ public class DateSelect : TemplatedControl
         SetMonthCommand = ReactiveCommand.Create<object>(OnSetMonth);
         SelectDayCommand = ReactiveCommand.Create<DayModel>(OnSelectDay);
         DoneCommand = ReactiveCommand.Create<object>(OnDone);
+        GoPreviousCommand = ReactiveCommand.Create(OnGoPrevious);
+        GoNextCommand = ReactiveCommand.Create(OnGoNext, this.WhenAnyValue(x => x.CanGoNext));
         _year = _date.Year;
         _month = _date.Month;
+        UpdateCanGoNext();
         
         this.GetObservable(SelectTypeProperty).Subscribe(_ => UpdateDays());
     }
@@ -99,6 +109,7 @@ public class DateSelect : TemplatedControl
             {
                 UpdateDateStr();
                 UpdateDays();
+                UpdateCanGoNext();
             }
         }
     }
@@ -160,8 +171,16 @@ public class DateSelect : TemplatedControl
     public ICommand SetYearCommand { get; }
     public ICommand SetMonthCommand { get; }
     public ICommand SelectDayCommand { get; }
+    public ICommand GoPreviousCommand { get; }
+    public ICommand GoNextCommand { get; }
     
     public ICommand DoneCommand { get; set; }
+
+    public bool CanGoNext
+    {
+        get => _canGoNext;
+        set => SetAndRaise(CanGoNextProperty, ref _canGoNext, value);
+    }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
@@ -172,6 +191,7 @@ public class DateSelect : TemplatedControl
 
     private void OnShowSelect()
     {
+        if (SelectType == DateSelectType.Week) return; // 周视图无下拉面板
         IsOpen = !IsOpen;
         if (IsOpen)
         {
@@ -212,6 +232,49 @@ public class DateSelect : TemplatedControl
         Date = dayModel.Day;
         IsOpen = false;
     }
+
+    private void UpdateCanGoNext()
+    {
+        var now = DateTime.Now;
+        CanGoNext = SelectType switch
+        {
+            DateSelectType.Week => GetWeekStart(Date) < GetWeekStart(now),
+            DateSelectType.Month => new DateTime(Date.Year, Date.Month, 1) < new DateTime(now.Year, now.Month, 1),
+            DateSelectType.Year => Date.Year < now.Year,
+            _ => Date.Date < now.Date
+        };
+    }
+
+    private static DateTime GetWeekStart(DateTime date)
+    {
+        var dayOfWeek = (int)date.DayOfWeek;
+        dayOfWeek = dayOfWeek == 0 ? 7 : dayOfWeek;
+        return date.Date.AddDays(-(dayOfWeek - 1));
+    }
+
+    private void OnGoPrevious()
+    {
+        Date = SelectType switch
+        {
+            DateSelectType.Week => Date.AddDays(-7),
+            DateSelectType.Month => Date.AddMonths(-1),
+            DateSelectType.Year => Date.AddYears(-1),
+            _ => Date.AddDays(-1)
+        };
+    }
+
+    private void OnGoNext()
+    {
+        if (!CanGoNext) return;
+        var next = SelectType switch
+        {
+            DateSelectType.Week => Date.AddDays(7),
+            DateSelectType.Month => Date.AddMonths(1),
+            DateSelectType.Year => Date.AddYears(1),
+            _ => Date.AddDays(1)
+        };
+        Date = next;
+    }
     
     private void UpdateDays()
     {
@@ -219,6 +282,9 @@ public class DateSelect : TemplatedControl
         {
             case DateSelectType.Date:
                 UpdateDateDays();
+                break;
+            case DateSelectType.Week:
+                // 周视图无下拉面板
                 break;
             case DateSelectType.Month:
                 UpdateMonthDays();
@@ -267,32 +333,69 @@ public class DateSelect : TemplatedControl
 
     private void UpdateDateStr()
     {
-        if (SelectType == DateSelectType.Date && 
-            Date.Day == DateTime.Now.Day)
+        var now = DateTime.Now;
+        var culture = SystemLanguage.CurrentCultureInfo;
+
+        if (SelectType == DateSelectType.Date)
         {
-            DateStr = (Application.Current!.Resources["Today"] as string)!;
+            if (Date.Date == now.Date)
+            {
+                DateStr = Application.Current?.Resources["Today"] as string ?? "Today";
+                return;
+            }
+
+            var dayOfWeek = culture.DateTimeFormat.GetShortestDayName(Date.DayOfWeek);
+            try
+            {
+                var fmt = Date.Year == now.Year ? "M" : "Y";
+                var baseStr = Date.ToString(fmt, culture);
+                DateStr = $"{baseStr} {dayOfWeek}";
+            }
+            catch
+            {
+                DateStr = $"{Date.Year}/{Date.Month}/{Date.Day} {dayOfWeek}";
+            }
             return;
         }
 
-        try
+        if (SelectType == DateSelectType.Week)
         {
-            var culture = SystemLanguage.CurrentCultureInfo;
-            DateStr = SelectType switch
+            var weekStart = GetWeekStart(Date);
+            var weekEnd = weekStart.AddDays(6);
+            if (weekStart <= now.Date && now.Date <= weekEnd)
             {
-                DateSelectType.Month => Date.ToString("Y", culture),
-                DateSelectType.Year => Date.ToString("yyyy", culture),
-                _ => Date.ToString("d", culture)
-            };
+                DateStr = Application.Current?.Resources["ThisWeek"] as string ?? "This Week";
+                return;
+            }
+            try
+            {
+                if (weekStart.Year == now.Year)
+                    DateStr = $"{weekStart.Month}/{weekStart.Day}-{weekEnd.Month}/{weekEnd.Day}";
+                else
+                    DateStr = $"{weekStart.Year}/{weekStart.Month}/{weekStart.Day}-{weekEnd.Year}/{weekEnd.Month}/{weekEnd.Day}";
+            }
+            catch
+            {
+                DateStr = $"{weekStart:M}-{weekEnd:M}";
+            }
+            return;
         }
-        catch
+
+        if (SelectType == DateSelectType.Month)
         {
-            DateStr = SelectType switch
+            try
             {
-                DateSelectType.Month => Date.ToString("MMMM yyyy"),
-                DateSelectType.Year => Date.ToString("yyyy"),
-                _ => Date.ToString("d")
-            };
+                var fmt = Date.Year == now.Year ? "MMMM" : "Y";
+                DateStr = Date.ToString(fmt, culture);
+            }
+            catch
+            {
+                DateStr = $"{Date.Year}/{Date.Month}";
+            }
+            return;
         }
+
+        DateStr = Date.ToString("yyyy", culture);
     }
     
     

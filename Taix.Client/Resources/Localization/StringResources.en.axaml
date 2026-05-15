@@ -74,7 +74,6 @@
     <system:String x:Key="IgnoreThisApplication">Ignore This App</system:String>
     <system:String x:Key="IgnoreTheSite">Ignore this site</system:String>
     <system:String x:Key="Unignore">Unignore</system:String>
-    <system:String x:Key="Relevance">Relevance</system:String>
     <system:String x:Key="MonthlyOverview">Monthly Overview</system:String>
     <system:String x:Key="ClearAppTheMonthData">Clear This Application's Data for This Month</system:String>
     <system:String x:Key="ClearTheMonth">Clear This Month's Data</system:String>
@@ -208,7 +207,6 @@
     <system:String x:Key="EnterAlias">Enter Alias</system:String>
     <system:String x:Key="AliasMaxLengthTip">Alias Maximum Length is {0} Characters</system:String>
     <system:String x:Key="AliasUpdated">Alias Updated</system:String>
-    <system:String x:Key="AddAssociation">Add Association</system:String>
     <system:String x:Key="AddWhitelist">Add to Whitelist</system:String>
     <system:String x:Key="ApplicationFileExist">The Application File Does Not Seem to Exist</system:String>
     <system:String x:Key="ApplicationExist"> The application seems not to exist</system:String>
@@ -315,4 +313,9 @@
 
     <system:String x:Key="Open">Open</system:String>
     <system:String x:Key="Exit">Exit</system:String>
+
+    <system:String x:Key="IdleTime">Idle</system:String>
+    <system:String x:Key="SystemCategory">System</system:String>
+    <system:String x:Key="TimelineHint">Scroll to zoom · Shift+drag to select · Double-click to reset</system:String>
+    <system:String x:Key="TimelineTotalDuration">Total Duration</system:String>
 </ResourceDictionary>

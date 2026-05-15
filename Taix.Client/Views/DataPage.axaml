@@ -4,37 +4,69 @@
                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="650"
                xmlns:Charts="using:Taix.Client.Controls.Charts"
-               xmlns:Tabbar="using:Taix.Client.Controls.Tabbar"
                xmlns:select="using:Taix.Client.Controls.Select"
+               xmlns:base="using:Taix.Client.Controls.Base"
+               xmlns:timeline="using:Taix.Client.Controls.Timeline"
                xmlns:control="using:Taix.Client.Controls"
                xmlns:vm="using:Taix.Client.ViewModels"
                x:DataType="vm:DataPageViewModel"
                IsFillPage="True"
                x:Class="Taix.Client.Views.DataPage">
+    <control:TPage.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}" />
+        </ContextMenu>
+    </control:TPage.ContextMenu>
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" Margin="0,5,0,20">
-            <TextBlock Text="{DynamicResource SideDetails}"
-                       FontSize="18"
-                       VerticalAlignment="Center" />
-            <select:TabSwitch Margin="10,0,0,0"
-                           VerticalAlignment="Top"
-                           IsShowIcon="False"
-                           SelectedItem="{Binding ShowType,Mode=TwoWay}"
-                           Options="{Binding ShowTypeOptions}" />
-        </StackPanel>
-        <Tabbar:Tabbar
-            HorizontalAlignment="Left"
-            Grid.Row="1"
-            Data="{Binding TabbarData}"
-            SelectedIndex="{Binding TabbarSelectedIndex,Mode=TwoWay}" />
+
+        <!-- ═══ Row 0：标题 · 应用/网站切换 · 日期 · 周期 ═══ -->
+        <Grid ColumnDefinitions="Auto,*,Auto">
+            <StackPanel Grid.Column="0" Orientation="Horizontal"
+                        VerticalAlignment="Center" Margin="0,5,0,20">
+                <TextBlock Text="{DynamicResource SideDetails}"
+                           FontSize="18"
+                           VerticalAlignment="Center" />
+                <select:TabSwitch Margin="10,0,0,0"
+                               VerticalAlignment="Center"
+                               IsShowIcon="False"
+                               SelectedItem="{Binding ShowType,Mode=TwoWay}"
+                               Options="{Binding ShowTypeOptions}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10"
+                        VerticalAlignment="Center" Margin="0,5,0,20">
+                <!-- 日期选择 -->
+                <Grid VerticalAlignment="Center">
+                    <base:View Condition="0" Value="{Binding TabbarSelectedIndex}">
+                        <select:DateSelect Date="{Binding DayDate,Mode=TwoWay}" />
+                    </base:View>
+                    <base:View Condition="1" Value="{Binding TabbarSelectedIndex}">
+                        <select:DateSelect Date="{Binding WeekDate,Mode=TwoWay}"
+                                           SelectType="Week" />
+                    </base:View>
+                    <base:View Condition="2" Value="{Binding TabbarSelectedIndex}">
+                        <select:DateSelect Date="{Binding MonthDate,Mode=TwoWay}"
+                                           SelectType="Month" />
+                    </base:View>
+                    <base:View Condition="3" Value="{Binding TabbarSelectedIndex}">
+                        <select:DateSelect Date="{Binding YearDate,Mode=TwoWay}"
+                                           SelectType="Year" />
+                    </base:View>
+                </Grid>
+
+                <!-- 周期切换 -->
+                <select:TabSwitch IsShowIcon="False"
+                                  SelectedItem="{Binding SelectedPeriod,Mode=TwoWay}"
+                                  Options="{Binding PeriodOptions}" />
+            </StackPanel>
+        </Grid>
 
         <TabControl
-            Grid.Row="2"
+            Grid.Row="1"
             SelectedIndex="{Binding TabbarSelectedIndex}"
             BorderThickness="0"
             Margin="0,13,0,0"
@@ -51,55 +83,112 @@
             </TabControl.Styles>
             <TabItem>
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="auto" />
-                        <RowDefinition Height="*" />
+                    <!-- 应用模式：时间轴 -->
+                    <base:View Condition="0" Value="{Binding ShowType.Id}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto" />
+                                <RowDefinition Height="auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
 
-                    </Grid.RowDefinitions>
-                    <select:DateSelect Date="{Binding DayDate,Mode=TwoWay}" />
+                            <Border Margin="0,0,0,0"
+                                    Background="{DynamicResource SettingPanelBgBrush}"
+                                    CornerRadius="10">
+                                <timeline:Timeline Height="70"
+                                                   MajorTickInterval="3"
+                                                   Date="{Binding DayDate}"
+                                                   UsageItems="{Binding TimelineUsageItems}"
+                                                   VisibleStartHour="{Binding TimelineStartHour,Mode=TwoWay}"
+                                                   VisibleEndHour="{Binding TimelineEndHour,Mode=TwoWay}" />
+                            </Border>
 
-                    <Charts:ListChart IsShowBadge="True"
-                                   IsSearch="True" Grid.Row="1"
-                                   ItemMenu="{Binding AppContextMenu}"
-                                   Data="{Binding Data}"
-                                   Margin="0,20,0,0"
-                                   ClickCommand="{Binding ToDetailCommand}" />
+                            <Grid Grid.Row="1" Margin="0,8,0,0"
+                                  ColumnDefinitions="*,Auto">
+                                <!-- 居中：时间范围 + 操作提示 -->
+                                <StackPanel Grid.Column="0"
+                                            Orientation="Horizontal"
+                                            HorizontalAlignment="Center"
+                                            Spacing="10">
+                                    <TextBlock FontSize="12"
+                                               Text="{Binding TimelineRangeText}"
+                                               Foreground="{DynamicResource SubTextBrush}"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock FontSize="11"
+                                               Text="{DynamicResource TimelineHint}"
+                                               Foreground="{DynamicResource SubTextBrush}"
+                                               Opacity="0.5"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- 右侧：轨道总时长 -->
+                                <Border Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        CornerRadius="6"
+                                        Padding="10,4"
+                                        Background="{DynamicResource MultiTrackRowBgBrush}"
+                                        BorderBrush="{DynamicResource MultiTrackRowBorderBrush}"
+                                        BorderThickness="1"
+                                        IsVisible="{Binding MultiTrackTotalDurationText,
+                                            Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="{DynamicResource TimelineTotalDuration}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource SubTextBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding MultiTrackTotalDurationText}"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource StandardTextBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <timeline:MultiTrackTimeline
+                                Grid.Row="2"
+                                Margin="0,8,0,0"
+                                VerticalAlignment="Stretch"
+                                Date="{Binding DayDate}"
+                                DataItems="{Binding MultiTrackItems}"
+                                VisibleStartHour="{Binding TimelineStartHour}"
+                                VisibleEndHour="{Binding TimelineEndHour}" />
+                        </Grid>
+                    </base:View>
+
+                    <!-- 网站模式：列表图表 -->
+                    <base:View Condition="1" Value="{Binding ShowType.Id}">
+                        <Charts:ListChart IsShowBadge="True"
+                                          IsSearch="True"
+                                          ItemMenu="{Binding AppContextMenu}"
+                                          Data="{Binding Data}"
+                                          Margin="0,20,0,0"
+                                          ClickCommand="{Binding ToDetailCommand}" />
+                    </base:View>
                 </Grid>
             </TabItem>
             <TabItem>
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <select:DateSelect Date="{Binding MonthDate,Mode=TwoWay}"
-                                       SelectType="Month" />
-                    <Charts:ListChart IsShowBadge="True"
-                                   IsSearch="True"
-                                   Grid.Row="1"
-                                   ItemMenu="{Binding AppContextMenu}"
-                                   Data="{Binding MonthData}"
-                                   Margin="0,20,0,0"
-                                   ClickCommand="{Binding ToDetailCommand}" />
-                </Grid>
+                <Charts:ListChart IsShowBadge="True"
+                               IsSearch="True"
+                               ItemMenu="{Binding AppContextMenu}"
+                               Data="{Binding WeekData}"
+                               Margin="0,20,0,0"
+                               ClickCommand="{Binding ToDetailCommand}" />
             </TabItem>
             <TabItem>
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="auto" />
-                        <RowDefinition Height="*" />
-
-                    </Grid.RowDefinitions>
-
-                    <select:DateSelect Date="{Binding YearDate,Mode=TwoWay}"
-                                       SelectType="Year" />
-
-                    <Charts:ListChart IsShowBadge="True" IsSearch="True" Grid.Row="1"
-                                   ItemMenu="{Binding AppContextMenu}"
-                                   Data="{Binding YearData}"
-                                   Margin="0,20,0,0"
-                                   ClickCommand="{Binding ToDetailCommand}" />
-                </Grid>
+                <Charts:ListChart IsShowBadge="True"
+                               IsSearch="True"
+                               ItemMenu="{Binding AppContextMenu}"
+                               Data="{Binding MonthData}"
+                               Margin="0,20,0,0"
+                               ClickCommand="{Binding ToDetailCommand}" />
+            </TabItem>
+            <TabItem>
+                <Charts:ListChart IsShowBadge="True" IsSearch="True"
+                               ItemMenu="{Binding AppContextMenu}"
+                               Data="{Binding YearData}"
+                               Margin="0,20,0,0"
+                               ClickCommand="{Binding ToDetailCommand}" />
             </TabItem>
         </TabControl>
 

@@ -9,6 +9,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Input;
 
@@ -64,6 +65,7 @@ public class ListChart : TemplatedControl
     private ListBox _listView;
     private TextBox _searchBox;
     private Run _countText;
+    private EmptyData _emptyDataView;
     private DispatcherTimer _searchTimer;
     private bool _templateApplied;
 
@@ -126,6 +128,7 @@ public class ListChart : TemplatedControl
         _listView = e.NameScope.Get<ListBox>("ListView");
         _searchBox = e.NameScope.Get<TextBox>("SearchBox");
         _countText = e.NameScope.Get<Run>("CountText");
+        _emptyDataView = e.NameScope.Find<EmptyData>("EmptyDataView");
 
         _listView.PointerReleased += OnListViewPointerReleased;
         _listView.SelectionChanged += OnListSelectionChanged;
@@ -175,8 +178,10 @@ public class ListChart : TemplatedControl
             DataMaxValue = 0;
             if (_countText != null) _countText.Text = "0";
             _listView.ItemsSource = Array.Empty<ChartsDataModel>();
+            if (_emptyDataView != null) _emptyDataView.IsVisible = true;
             return;
         }
+        if (_emptyDataView != null) _emptyDataView.IsVisible = false;
 
         double maxValue = 0;
         for (var i = 0; i < source.Count; i++)

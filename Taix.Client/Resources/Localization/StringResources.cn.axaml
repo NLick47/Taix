@@ -75,7 +75,6 @@
     <system:String x:Key="IgnoreThisApplication">忽略此应用</system:String>
     <system:String x:Key="IgnoreTheSite">忽略此网站</system:String>
     <system:String x:Key="Unignore">取消忽略</system:String>
-    <system:String x:Key="Relevance">关联</system:String>
     <system:String x:Key="MonthlyOverview">月度总览</system:String>
     <system:String x:Key="ClearAppTheMonthData">清空此应用在该月的统计数据</system:String>
     <system:String x:Key="ClearTheMonth">清空该月统计</system:String>
@@ -126,10 +125,10 @@
     <system:String x:Key="Aggregate">总计</system:String>
     <system:String x:Key="Month">月</system:String>
 
-    <system:String x:Key="Daily">按天</system:String>
-    <system:String x:Key="Weekly">按周</system:String>
-    <system:String x:Key="Monthly">按月</system:String>
-    <system:String x:Key="Yearly">按年</system:String>
+    <system:String x:Key="Daily">天</system:String>
+    <system:String x:Key="Weekly">周</system:String>
+    <system:String x:Key="Monthly">月</system:String>
+    <system:String x:Key="Yearly">年</system:String>
     <system:String x:Key="LastWeek">上周</system:String>
     <system:String x:Key="ThisWeek">本周</system:String>
     <system:String x:Key="DefaultView">默认视图</system:String>
@@ -137,6 +136,14 @@
     <system:String x:Key="CategoryView">分类视图</system:String>
     <system:String x:Key="TrendView">趋势</system:String>
     <system:String x:Key="ColumnView">柱状</system:String>
+    <system:String x:Key="TimelineView">时间轴</system:String>
+    <system:String x:Key="TimelineStatistics">时间轴统计</system:String>
+    <system:String x:Key="ProductivityScore">效率评分</system:String>
+    <system:String x:Key="ActiveTime">活跃时间</system:String>
+    <system:String x:Key="IdleTime">空闲时间</system:String>
+    <system:String x:Key="SystemCategory">系统</system:String>
+    <system:String x:Key="SwitchCount">切换次数</system:String>
+    <system:String x:Key="MostProductiveHour">高效时段</system:String>
     <system:String x:Key="Uncategorized">未分类</system:String>
 
     <system:String x:Key="ViewCategoryAppList">查看分类应用列表</system:String>
@@ -214,13 +221,10 @@
     <system:String x:Key="EnterAlias">请输入别名</system:String>
     <system:String x:Key="AliasMaxLengthTip">别名最大长度为{0}位字符</system:String>
     <system:String x:Key="AliasUpdated">别名已更新</system:String>
-    <system:String x:Key="AddAssociation">添加关联</system:String>
     <system:String x:Key="AddWhitelist">添加到白名单</system:String>
     <system:String x:Key="ApplicationFileExist">应用文件似乎不存在</system:String>
     <system:String x:Key="ApplicationExist">应用似乎不存在</system:String>
     <system:String x:Key="RemoveWhitelist">从白名单移除</system:String>
-    <system:String x:Key="AssociationSuccessful">关联成功</system:String>
-    <system:String x:Key="AssociationConfigurationNotExist">关联配置不存在</system:String>
 
     <system:String x:Key="IgnoringApplicationCancelled">已取消忽略此应用 {0}</system:String>
     <system:String x:Key="ApplicationNowIgnored">已忽略此应用 {0}</system:String>
@@ -325,4 +329,7 @@
 
     <system:String x:Key="Open">打开</system:String>
     <system:String x:Key="Exit">退出</system:String>
+
+    <system:String x:Key="TimelineHint">滚轮缩放 · Shift+拖拽选择 · 双击重置</system:String>
+    <system:String x:Key="TimelineTotalDuration">轨道总时长</system:String>
 </ResourceDictionary>

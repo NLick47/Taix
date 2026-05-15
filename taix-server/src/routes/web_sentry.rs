@@ -12,7 +12,6 @@ use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock, Semaphore};
 
 use crate::models::request::AddUrlBrowseTimeRequest;
-use crate::services::config::ConfigService;
 use crate::services::web_data::WebDataService;
 
 pub struct SentryState {
@@ -21,7 +20,6 @@ pub struct SentryState {
     pub tx: broadcast::Sender<String>,
     pub web_favicons_dir: PathBuf,
     pub semaphore: Arc<Semaphore>,
-    pub config_service: Arc<ConfigService>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -101,11 +99,6 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<SentryState>) {
 }
 
 async fn handle_browse_data(state: Arc<SentryState>, data: WebBrowseData) {
-    if state.config_service.should_ignore_url(&data.url).await {
-        tracing::debug!("[WebSentry] URL ignored by config: {}", data.url);
-        return;
-    }
-
     let date_time = chrono::DateTime::from_timestamp(data.active_time, 0);
     let req = AddUrlBrowseTimeRequest {
         url: data.url,
@@ -120,6 +113,5 @@ async fn handle_browse_data(state: Arc<SentryState>, data: WebBrowseData) {
         &state.pool,
         req,
         Some(favicons_dir),
-        &state.config_service,
     ).await;
 }

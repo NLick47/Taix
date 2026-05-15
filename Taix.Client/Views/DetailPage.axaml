@@ -144,29 +144,7 @@
                         </StackPanel>
                     </base:View>
 
-                    <ItemsControl Margin="0,20,10,0"
-                                  VerticalAlignment="Bottom"
-                                  ItemsSource="{Binding LinkApps}"
-                                  HorizontalAlignment="Right">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel ToolTip.Tip="{DynamicResource Relevance}"
-                                            ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                                            Orientation="Horizontal"
-                                            VerticalAlignment="Center" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
 
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <base:Img Margin="2,0"
-                                          URL="{Binding IconFile}"
-                                          DecodeWidth="64"
-                                          Width="20" Height="20"
-                                          ToolTip.Tip="{Binding Description}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
                 </Grid>
             </Grid>
         </Border>

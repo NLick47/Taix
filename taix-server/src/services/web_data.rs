@@ -17,7 +17,7 @@ use crate::utils::{last_day_of_month, parse_timezone, tz_date_to_utc_range, tz_n
 pub struct WebDataService;
 
 impl WebDataService {
-    pub async fn add_url_browse_time(pool: &SqlitePool, req: AddUrlBrowseTimeRequest, favicons_dir: Option<&Path>, config_service: &ConfigService) -> Result<(i64, i64), AppError> {
+    pub async fn add_url_browse_time(pool: &SqlitePool, req: AddUrlBrowseTimeRequest, favicons_dir: Option<&Path>) -> Result<(i64, i64), AppError> {
         if req.url.is_empty() {
             debug!("add_url_browse_time: empty url");
             return Ok((0, 0));
@@ -32,11 +32,6 @@ impl WebDataService {
         }
         if !req.url.starts_with("http://") && !req.url.starts_with("https://") {
             debug!("add_url_browse_time: skip non-http url={}", req.url);
-            return Ok((0, 0));
-        }
-        // URL 忽略列表过滤
-        if config_service.should_ignore_url(&req.url).await {
-            debug!("add_url_browse_time: url ignored by config: {}", req.url);
             return Ok((0, 0));
         }
         debug!("add_url_browse_time: url={} duration={}", req.url, req.duration);
@@ -174,7 +169,7 @@ impl WebDataService {
         Ok((result_site_id, result_url_id))
     }
 
-    pub async fn get_web_sites(pool: &SqlitePool, category_id: Option<i64>) -> Result<Vec<WebSiteModel>, AppError> {
+    pub async fn get_web_sites(pool: &SqlitePool, category_id: Option<i64>, config_service: &ConfigService) -> Result<Vec<WebSiteModel>, AppError> {
         debug!("get_web_sites: category_id={:?}", category_id);
         let rows = if let Some(cat_id) = category_id {
             sqlx::query_as::<_, WebSiteModel>("SELECT * FROM WebSiteModels WHERE CategoryID = ?")
@@ -182,7 +177,10 @@ impl WebDataService {
         } else {
             sqlx::query_as::<_, WebSiteModel>("SELECT * FROM WebSiteModels").fetch_all(pool).await?
         };
-        Ok(rows)
+        let domains: Vec<&str> = rows.iter().filter_map(|r| r.domain.as_deref()).collect();
+        let excluded = config_service.get_excluded_domains(&domains).await;
+        let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();
+        Ok(rows.into_iter().filter(|r| r.domain.as_ref().map_or(true, |d| !excluded_set.contains(d))).collect())
     }
 
     pub async fn get_web_site_categories(pool: &SqlitePool) -> Result<Vec<WebSiteCategoryModel>, AppError> {
@@ -321,18 +319,30 @@ impl WebDataService {
                 }
             }
         };
-        for site_id in &req.site_ids {
-            sqlx::query("UPDATE WebSiteModels SET CategoryID = ? WHERE ID = ?")
-                .bind(category_id).bind(site_id).execute(pool).await?;
+        if !req.site_ids.is_empty() {
+            let mut builder = sqlx::QueryBuilder::new("UPDATE WebSiteModels SET CategoryID = ");
+            builder.push_bind(category_id);
+            builder.push(" WHERE ID IN (");
+            let mut first = true;
+            for site_id in &req.site_ids {
+                if !first { builder.push(","); }
+                builder.push_bind(site_id);
+                first = false;
+            }
+            builder.push(")");
+            builder.build().execute(pool).await?;
         }
         Ok(())
     }
 
-    pub async fn get_unset_category_web_sites(pool: &SqlitePool) -> Result<Vec<WebSiteModel>, AppError> {
+    pub async fn get_unset_category_web_sites(pool: &SqlitePool, config_service: &ConfigService) -> Result<Vec<WebSiteModel>, AppError> {
         debug!("get_unset_category_web_sites");
         let sites: Vec<WebSiteModel> = sqlx::query_as("SELECT * FROM WebSiteModels WHERE CategoryID = 0")
             .fetch_all(pool).await?;
-        Ok(sites)
+        let domains: Vec<&str> = sites.iter().filter_map(|r| r.domain.as_deref()).collect();
+        let excluded = config_service.get_excluded_domains(&domains).await;
+        let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();
+        Ok(sites.into_iter().filter(|r| r.domain.as_ref().map_or(true, |d| !excluded_set.contains(d))).collect())
     }
 
     pub async fn clear_web_data(pool: &SqlitePool, start: Option<NaiveDate>, end: Option<NaiveDate>, site_id: Option<i64>, tz_id: &str) -> Result<(), AppError> {
@@ -348,7 +358,7 @@ impl WebDataService {
             .await?;
         } else if let (Some(start), Some(end)) = (start, end) {
             let end_dt = NaiveDateTime::new(
-                NaiveDate::from_ymd_opt(end.year(), end.month(), last_day_of_month(end.year(), end.month())).unwrap(),
+                end,
                 chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap(),
             );
             let utc_start = tz_naive_to_utc(NaiveDateTime::new(start, chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap()), &parse_timezone(tz_id));
@@ -366,7 +376,7 @@ impl WebDataService {
         Ok(())
     }
 
-    pub async fn get_date_range_web_site_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, take: i64, skip: i64, is_time: bool, tz_id: &str) -> Result<Vec<WebSiteModel>, AppError> {
+    pub async fn get_date_range_web_site_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, take: i64, skip: i64, is_time: bool, tz_id: &str, config_service: &ConfigService) -> Result<Vec<WebSiteModel>, AppError> {
         debug!("get_date_range_web_site_list: start={} end={} take={} skip={} is_time={}", start, end, take, skip, is_time);
         let (start, end) = if is_time {
             (NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(start.hour(), 0, 0).unwrap()),
@@ -378,25 +388,48 @@ impl WebDataService {
         let utc_start = tz_naive_to_utc(start, &parse_timezone(tz_id));
         let utc_end = tz_naive_to_utc(end, &parse_timezone(tz_id));
 
-        let base_query =
-            r#"SELECT SiteId, SUM(Duration) as duration FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ? AND SiteId != 0 GROUP BY SiteId ORDER BY duration DESC"#;
-        let rows: Vec<(i64, i64)> = if skip > 0 {
-            sqlx::query_as(&format!("{} LIMIT ? OFFSET ?", base_query))
-                .bind(utc_start).bind(utc_end).bind(take).bind(skip).fetch_all(pool).await?
-        } else if take > 0 {
-            sqlx::query_as(&format!("{} LIMIT ?", base_query))
-                .bind(utc_start).bind(utc_end).bind(take).fetch_all(pool).await?
-        } else {
-            sqlx::query_as(base_query).bind(utc_start).bind(utc_end).fetch_all(pool).await?
-        };
+        // 内存过滤后分页
+        let rows: Vec<(i64, i64)> = sqlx::query_as(
+            r#"SELECT SiteId, SUM(Duration) as duration FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ? AND SiteId != 0 GROUP BY SiteId ORDER BY duration DESC"#
+        )
+        .bind(utc_start).bind(utc_end).fetch_all(pool).await?;
+
+        if rows.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut builder = sqlx::QueryBuilder::new("SELECT * FROM WebSiteModels WHERE ID IN (");
+        let mut separated = builder.separated(", ");
+        for (sid, _) in &rows {
+            separated.push_bind(*sid);
+        }
+        separated.push_unseparated(")");
+        let sites: Vec<WebSiteModel> = builder.build_query_as().fetch_all(pool).await?;
+
+        let mut site_map: std::collections::HashMap<i64, WebSiteModel> =
+            sites.into_iter().map(|s| (s.id, s)).collect();
+
         let mut result = Vec::new();
         for (sid, dur) in rows {
-            let site: Option<WebSiteModel> = sqlx::query_as("SELECT * FROM WebSiteModels WHERE ID = ?")
-                .bind(sid).fetch_optional(pool).await?;
-            if let Some(mut s) = site {
+            if let Some(mut s) = site_map.remove(&sid) {
                 s.duration = dur;
                 result.push(s);
             }
+        }
+        let domains: Vec<&str> = result.iter().filter_map(|r| r.domain.as_deref()).collect();
+        let excluded = config_service.get_excluded_domains(&domains).await;
+        let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();
+        let mut result: Vec<_> = result.into_iter()
+            .filter(|r| r.domain.as_ref().map_or(true, |d| !excluded_set.contains(d)))
+            .collect();
+
+        let offset = skip.max(0) as usize;
+        let limit = if take > 0 { take as usize } else { usize::MAX };
+        if offset > 0 {
+            result = result.into_iter().skip(offset).collect();
+        }
+        if limit < usize::MAX {
+            result.truncate(limit);
         }
         Ok(result)
     }
@@ -515,9 +548,16 @@ impl WebDataService {
         ).bind(utc_start).bind(utc_end).fetch_all(pool).await?;
 
         let mut result = Vec::new();
+        let mut result_map: HashMap<i64, &mut ColumnDataModel> = HashMap::new();
+
         if start == end {
             for (cat_id, _) in &categories {
-                result.push(crate::models::log::ColumnDataModel { app_id: None, category_id: Some(*cat_id), values: vec![0.0; 24] });
+                result.push(ColumnDataModel { app_id: None, category_id: Some(*cat_id), values: vec![0.0; 24] });
+            }
+            for item in &mut result {
+                if let Some(cid) = item.category_id {
+                    result_map.insert(cid, item);
+                }
             }
             for i in 0..24 {
                 for (cat_id, _) in &categories {
@@ -528,7 +568,7 @@ impl WebDataService {
                         })
                         .map(|(_, _, d)| d)
                         .sum();
-                    if let Some(item) = result.iter_mut().find(|x| x.category_id == Some(*cat_id)) {
+                    if let Some(item) = result_map.get_mut(cat_id) {
                         item.values[i as usize] = duration as f64;
                     }
                 }
@@ -537,21 +577,31 @@ impl WebDataService {
             let days = (end - start).num_days() + 1;
             if days <= constants::DAY_VIEW_THRESHOLD {
                 for (cat_id, _) in &categories {
-                    result.push(crate::models::log::ColumnDataModel { app_id: None, category_id: Some(*cat_id), values: vec![0.0; days as usize] });
+                    result.push(ColumnDataModel { app_id: None, category_id: Some(*cat_id), values: vec![0.0; days as usize] });
+                }
+                for item in &mut result {
+                    if let Some(cid) = item.category_id {
+                        result_map.insert(cid, item);
+                    }
                 }
                 for i in 0..days {
                     let date = start + Duration::days(i);
                     let (day_start, day_end) = tz_date_to_utc_range(date, &tz);
                     for (cat_id, _) in &categories {
                         let duration: i64 = data.iter().filter(|(cid, t, _)| *cid == *cat_id && *t >= day_start && *t <= day_end).map(|(_, _, d)| d).sum();
-                        if let Some(item) = result.iter_mut().find(|x| x.category_id == Some(*cat_id)) {
+                        if let Some(item) = result_map.get_mut(cat_id) {
                             item.values[i as usize] = duration as f64;
                         }
                     }
                 }
             } else {
                 for (cat_id, _) in &categories {
-                    result.push(crate::models::log::ColumnDataModel { app_id: None, category_id: Some(*cat_id), values: vec![0.0; 12] });
+                    result.push(ColumnDataModel { app_id: None, category_id: Some(*cat_id), values: vec![0.0; 12] });
+                }
+                for item in &mut result {
+                    if let Some(cid) = item.category_id {
+                        result_map.insert(cid, item);
+                    }
                 }
                 for i in 0..12 {
                     let month_start = NaiveDateTime::new(NaiveDate::from_ymd_opt(start.year(), (i+1) as u32, 1).unwrap(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
@@ -561,7 +611,7 @@ impl WebDataService {
                     let utc_month_end = tz_naive_to_utc(month_end, &tz);
                     for (cat_id, _) in &categories {
                         let duration: i64 = data.iter().filter(|(cid, t, _)| *cid == *cat_id && *t >= utc_month_start && *t <= utc_month_end).map(|(_, _, d)| d).sum();
-                        if let Some(item) = result.iter_mut().find(|x| x.category_id == Some(*cat_id)) {
+                        if let Some(item) = result_map.get_mut(cat_id) {
                             item.values[i as usize] = duration as f64;
                         }
                     }
@@ -605,7 +655,7 @@ impl WebDataService {
     }
 
     #[allow(non_snake_case)]
-    pub async fn get_browse_log_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, site_id: i64, tz_id: &str) -> Result<Vec<WebBrowseLogModel>, AppError> {
+    pub async fn get_browse_log_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, site_id: i64, tz_id: &str, config_service: &ConfigService) -> Result<Vec<WebBrowseLogModel>, AppError> {
         debug!("get_browse_log_list: start={} end={} site_id={}", start, end, site_id);
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
@@ -657,8 +707,15 @@ impl WebDataService {
             .map(|c| (c.id, c))
             .collect();
 
+        let domains: Vec<&str> = rows.iter().map(|r| r.Domain.as_str()).collect();
+        let excluded = config_service.get_excluded_domains(&domains).await;
+        let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();
+
         let mut result = Vec::new();
         for row in rows {
+            if excluded_set.contains(&row.Domain) {
+                continue;
+            }
             let category = category_map.get(&row.WsCategoryID).cloned();
             result.push(WebBrowseLogModel {
                 id: row.ID,
@@ -687,17 +744,18 @@ impl WebDataService {
         Ok(result)
     }
 
-    pub async fn get_web_site_log_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str) -> Result<Vec<WebSiteModel>, AppError> {
+    pub async fn get_web_site_log_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str, config_service: &ConfigService) -> Result<Vec<WebSiteModel>, AppError> {
         debug!("get_web_site_log_list: start={} end={}", start, end);
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
         let utc_start = tz_naive_to_utc(start_date, &parse_timezone(tz_id));
         let utc_end = tz_naive_to_utc(end_date, &parse_timezone(tz_id));
-        let rows: Vec<(i64, i64, i64, Option<String>, Option<String>, Option<String>, Option<String>, i64)> = sqlx::query_as(
-            r#"SELECT wbl.ID, wbl.SiteId, wbl.Duration, ws.Title, ws.Domain, ws.IconFile, ws.Alias, ws.CategoryID
+        let rows: Vec<(i64, Option<String>, Option<String>, Option<String>, Option<String>, i64, i64)> = sqlx::query_as(
+            r#"SELECT wbl.SiteId, MAX(ws.Title), MAX(ws.Domain), MAX(ws.IconFile), MAX(ws.Alias), COALESCE(MAX(ws.CategoryID), 0), SUM(wbl.Duration) as duration
             FROM WebBrowseLogModels wbl
             LEFT JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
-            WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?"#
+            WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?
+            GROUP BY wbl.SiteId"#
         ).bind(utc_start).bind(utc_end).fetch_all(pool).await?;
 
         let web_categories = Self::get_web_site_categories(pool).await?;
@@ -706,29 +764,36 @@ impl WebDataService {
             .map(|c| (c.id, c))
             .collect();
 
-        let mut groups: HashMap<i64, Vec<(i64, i64, i64, Option<String>, Option<String>, Option<String>, Option<String>, i64)>> = HashMap::new();
-        for row in rows { groups.entry(row.1).or_default().push(row); }
+        let domains: Vec<&str> = rows.iter().filter_map(|r| r.2.as_deref()).collect();
+        let excluded = config_service.get_excluded_domains(&domains).await;
+        let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();
 
         let mut result = Vec::new();
-        for (site_id, items) in groups {
-            let first = &items[0];
-            let category_id = first.7;
+        for (site_id, title, domain, icon_file, alias, category_id, duration) in rows {
+            if domain.as_ref().map_or(false, |d| excluded_set.contains(d)) {
+                continue;
+            }
             result.push(WebSiteModel {
                 id: site_id,
-                title: first.3.clone(),
-                domain: Some(first.4.clone().unwrap_or_default()),
-                alias: first.6.clone(),
+                title,
+                domain: Some(domain.unwrap_or_default()),
+                alias,
                 category_id,
-                icon_file: first.5.clone(),
-                duration: items.iter().map(|(_, _, d, _, _, _, _, _)| d).sum(),
+                icon_file,
+                duration,
                 category: category_map.get(&category_id).cloned(),
             });
         }
         Ok(result)
     }
 
-    pub async fn get_web_export_data(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str) -> Result<crate::models::web::WebExportDataResult, AppError> {
+    pub async fn get_web_export_data(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str, config_service: &ConfigService) -> Result<crate::models::web::WebExportDataResult, AppError> {
         info!("get_web_export_data: start={} end={}", start, end);
+        const MAX_EXPORT_DAYS: i64 = 366;
+        let days = (end.date() - start.date()).num_days() + 1;
+        if days > MAX_EXPORT_DAYS {
+            return Err(AppError::Business(format!("导出范围不能超过 {} 天", MAX_EXPORT_DAYS)));
+        }
         let utc_start = tz_naive_to_utc(start, &parse_timezone(tz_id));
         let utc_end = tz_naive_to_utc(end, &parse_timezone(tz_id));
 
@@ -770,7 +835,16 @@ impl WebDataService {
         .fetch_all(pool)
         .await?;
 
-        let logs = rows.into_iter().map(|row| WebBrowseLogModel {
+        let domains: Vec<&str> = rows.iter().map(|r| r.domain.as_str()).collect();
+        let excluded = config_service.get_excluded_domains(&domains).await;
+        let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();
+
+        let mut logs = Vec::new();
+        for row in rows {
+            if excluded_set.contains(&row.domain) {
+                continue;
+            }
+            logs.push(WebBrowseLogModel {
             id: row.id,
             url_id: row.url_id,
             log_time: row.log_time,
@@ -798,7 +872,8 @@ impl WebDataService {
                 url: Some(row.wu_url),
                 icon_file: row.wu_icon_file,
             }),
-        }).collect();
+        });
+        }
 
         Ok(crate::models::web::WebExportDataResult { logs })
     }

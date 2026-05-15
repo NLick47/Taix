@@ -623,32 +623,37 @@ public class CategoryPageViewModel : CategoryPageModel
 
     private async Task LoadDataCoreAsync(CancellationToken cancellationToken)
     {
-        Data.Clear();
-        var categories = await _categoryService.GetCategoriesAsync(true, cancellationToken);
-        cancellationToken.ThrowIfCancellationRequested();
-        foreach (var item in categories)
+        if (ShowType.Id == 0)
         {
-            var appCount = await _appDataService.GetAppCountByCategoryIDAsync(item.ID);
+            Data.Clear();
+            var categories = await _categoryService.GetCategoriesAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            Data.Add(new CategoryModel
+            foreach (var item in categories)
             {
-                Count = appCount,
-                Data = item
-            });
+                var appCount = await _appDataService.GetAppCountByCategoryIDAsync(item.ID);
+                cancellationToken.ThrowIfCancellationRequested();
+                Data.Add(new CategoryModel
+                {
+                    Count = appCount,
+                    Data = item
+                });
+            }
         }
-
-        WebCategoryData.Clear();
-        var webCategories = await _webDataService.GetWebSiteCategoriesAsync(true, cancellationToken);
-        cancellationToken.ThrowIfCancellationRequested();
-        foreach (var item in webCategories)
+        else
         {
-            var siteCount = await _webDataService.GetWebSitesCountAsync(item.ID);
+            WebCategoryData.Clear();
+            var webCategories = await _webDataService.GetWebSiteCategoriesAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            WebCategoryData.Add(new WebCategoryModel
+            foreach (var item in webCategories)
             {
-                Data = item,
-                Count = siteCount
-            });
+                var siteCount = await _webDataService.GetWebSitesCountAsync(item.ID);
+                cancellationToken.ThrowIfCancellationRequested();
+                WebCategoryData.Add(new WebCategoryModel
+                {
+                    Data = item,
+                    Count = siteCount
+                });
+            }
         }
     }
 

@@ -103,6 +103,9 @@ public interface IData
     /// <returns></returns>
     Task<IEnumerable<HoursLogModel>> GetTimeRangelogListAsync(DateTime time, CancellationToken cancellationToken = default);
 
+    Task<IEnumerable<HoursLogModel>> GetHoursRangeLogListAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
+    Task<IEnumerable<AppSessionModel>> GetAppSessionsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// 获取指定时间范围内的汇总数据
     /// </summary>

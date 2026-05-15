@@ -7,7 +7,7 @@ namespace Taix.Client.Shared.Servicers.Interfaces;
 
 public interface ICategorys
 {
-    Task<List<CategoryModel>> GetCategoriesAsync(bool containSystemCategory = false, CancellationToken cancellationToken = default);
+    Task<List<CategoryModel>> GetCategoriesAsync(CancellationToken cancellationToken = default);
 
     Task<CategoryModel?> GetCategoryAsync(int id, CancellationToken cancellationToken = default);
 

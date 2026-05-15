@@ -194,7 +194,7 @@ impl AppDataService {
         let result = sqlx::query(
             r#"
             UPDATE AppModels
-            SET Name = ?, Alias = ?, Description = ?, File = ?, IconFile = ?, CategoryID = ?, TotalTime = ?
+            SET Name = ?, Alias = ?, Description = ?, File = ?, IconFile = ?, CategoryID = ?
             WHERE ID = ?
             "#,
         )
@@ -204,7 +204,6 @@ impl AppDataService {
         .bind(&req.file)
         .bind(&req.icon_file)
         .bind(category_id)
-        .bind(req.total_time)
         .bind(id)
         .execute(pool)
         .await?;
@@ -227,8 +226,18 @@ impl AppDataService {
                 .fetch_all(pool)
                 .await?;
 
-        let mut apps = Vec::new();
+        let categories: Vec<CategoryModel> = CategoryService::get_categories(pool).await?;
+        let category_map: std::collections::HashMap<i64, CategoryModel> =
+            categories.into_iter().map(|c| (c.id, c)).collect();
+
+        let mut apps = Vec::with_capacity(rows.len());
         for row in rows {
+            let category = if row.category_id > 0 {
+                category_map.get(&row.category_id).cloned()
+            } else {
+                None
+            };
+
             apps.push(AppModel {
                 id: row.id,
                 name: row.name,
@@ -238,7 +247,7 @@ impl AppDataService {
                 category_id: row.category_id,
                 icon_file: row.icon_file,
                 total_time: row.total_time,
-                category: None,
+                category,
             });
         }
 

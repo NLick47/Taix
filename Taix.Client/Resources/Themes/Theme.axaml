@@ -179,6 +179,52 @@
             <SolidColorBrush x:Key="TabOptionHoverBrush" Color="#2a2a2e" />
             <SolidColorBrush x:Key="TabOptionSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.35" />
             <SolidColorBrush x:Key="TabOptionSelectedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.50" />
+
+            <!-- 时间轴 -->
+            <SolidColorBrush x:Key="TimelineBgBrush" Color="#0d1117" />
+            <SolidColorBrush x:Key="TimelineBorderBrush" Color="#21262d" />
+            <SolidColorBrush x:Key="TimelineHeaderBgBrush" Color="#161b22" Opacity="0.7" />
+            <SolidColorBrush x:Key="TimelineInactiveBrush" Color="#30363d" />
+            <SolidColorBrush x:Key="TimelineTickMajorBrush" Color="#30363d" />
+            <SolidColorBrush x:Key="TimelineTickHalfBrush" Color="#21262d" />
+            <SolidColorBrush x:Key="TimelineTickQuarterBrush" Color="#1a1f27" />
+            <SolidColorBrush x:Key="TimelineTickTextBrush" Color="#8b949e" />
+            <SolidColorBrush x:Key="TimelineTimeLabelBrush" Color="#8b949e" Opacity="0.85" />
+            <SolidColorBrush x:Key="TimelineNowBrush" Color="#58a6ff" />
+            <SolidColorBrush x:Key="TimelineSelectBgBrush" Color="#58a6ff" Opacity="0.22" />
+            <SolidColorBrush x:Key="TimelineSelectBorderBrush" Color="#58a6ff" Opacity="0.85" />
+            <SolidColorBrush x:Key="TimelineTipBgBrush" Color="#161b22" />
+            <SolidColorBrush x:Key="TimelineTipBorderBrush" Color="#30363d" />
+            <SolidColorBrush x:Key="TimelineTipTextBrush" Color="#ffffff" />
+            <SolidColorBrush x:Key="TimelineTipSubBrush" Color="#8b949e" />
+            <SolidColorBrush x:Key="TimelineTrackBgBrush" Color="#252525" />
+            <SolidColorBrush x:Key="TimelineTooltipShadowBrush" Color="#000000" Opacity="0.5" />
+            <Color x:Key="TimelineIdleColor">#484f58</Color>
+            <Color x:Key="TimelineDefaultColor">#888888</Color>
+            <SolidColorBrush x:Key="TimelineNowDotOuterBrush" Color="#ffffff" />
+
+            <!-- 时间轴时段背景 -->
+            <SolidColorBrush x:Key="TimelinePeriodNightBgBrush" Color="#14182e" />
+            <SolidColorBrush x:Key="TimelinePeriodMorningBgBrush" Color="#142014" />
+            <SolidColorBrush x:Key="TimelinePeriodNoonBgBrush" Color="#1c1c24" />
+            <SolidColorBrush x:Key="TimelinePeriodAfternoonBgBrush" Color="#241c14" />
+            <SolidColorBrush x:Key="TimelinePeriodEveningBgBrush" Color="#1c1424" />
+
+            <!-- 时间轴框选 -->
+            <SolidColorBrush x:Key="TimelineSelectionMaskBrush" Color="#000000" Opacity="0.5" />
+            <SolidColorBrush x:Key="TimelineSelectionBorderBrush" Color="#ffffff" />
+            <SolidColorBrush x:Key="TimelineSelectionGlowBrush" Color="#ffffff" Opacity="0.12" />
+            <SolidColorBrush x:Key="TimelineSelectionHandleBrush" Color="#ffffff" />
+            <SolidColorBrush x:Key="TimelineSelectionHandleBorderBrush" Color="#58a6ff" />
+            <SolidColorBrush x:Key="TimelineSelectionLabelBgBrush" Color="#161b22" />
+            <SolidColorBrush x:Key="TimelineSelectionLabelTextBrush" Color="#ffffff" />
+
+            <!-- 多轨道时间轴 -->
+            <SolidColorBrush x:Key="MultiTrackRowBgBrush" Color="#2a2a35" />
+            <SolidColorBrush x:Key="MultiTrackRowBorderBrush" Color="#3a3a48" />
+            <SolidColorBrush x:Key="MultiTrackIconBgBrush" Color="#363642" />
+            <SolidColorBrush x:Key="MultiTrackTrackBgBrush" Color="#1c1c26" />
+            <SolidColorBrush x:Key="MultiTrackTrackBorderBrush" Color="#33333f" />
         </ResourceDictionary>
 
 
@@ -358,6 +404,52 @@
             <SolidColorBrush x:Key="TabOptionHoverBrush" Color="#e2e2e6" />
             <SolidColorBrush x:Key="TabOptionSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.30" />
             <SolidColorBrush x:Key="TabOptionSelectedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.45" />
+
+            <!-- 时间轴 -->
+            <SolidColorBrush x:Key="TimelineBgBrush" Color="#ffffff" />
+            <SolidColorBrush x:Key="TimelineBorderBrush" Color="#e0e0e0" />
+            <SolidColorBrush x:Key="TimelineHeaderBgBrush" Color="#ffffff" Opacity="0.7" />
+            <SolidColorBrush x:Key="TimelineInactiveBrush" Color="#e0e0e0" />
+            <SolidColorBrush x:Key="TimelineTickMajorBrush" Color="#d0d0d0" />
+            <SolidColorBrush x:Key="TimelineTickHalfBrush" Color="#e0e0e0" />
+            <SolidColorBrush x:Key="TimelineTickQuarterBrush" Color="#f0f0f0" />
+            <SolidColorBrush x:Key="TimelineTickTextBrush" Color="#7e7e7e" />
+            <SolidColorBrush x:Key="TimelineTimeLabelBrush" Color="#7e7e7e" Opacity="0.85" />
+            <SolidColorBrush x:Key="TimelineNowBrush" Color="#2b20d9" />
+            <SolidColorBrush x:Key="TimelineSelectBgBrush" Color="#2b20d9" Opacity="0.18" />
+            <SolidColorBrush x:Key="TimelineSelectBorderBrush" Color="#2b20d9" Opacity="0.80" />
+            <SolidColorBrush x:Key="TimelineTipBgBrush" Color="#f9f9f9" />
+            <SolidColorBrush x:Key="TimelineTipBorderBrush" Color="#e0e0e0" />
+            <SolidColorBrush x:Key="TimelineTipTextBrush" Color="#000000" />
+            <SolidColorBrush x:Key="TimelineTipSubBrush" Color="#7e7e7e" />
+            <SolidColorBrush x:Key="TimelineTrackBgBrush" Color="#f0f0f0" />
+            <SolidColorBrush x:Key="TimelineTooltipShadowBrush" Color="#000000" Opacity="0.15" />
+            <Color x:Key="TimelineIdleColor">#b0b0b0</Color>
+            <Color x:Key="TimelineDefaultColor">#888888</Color>
+            <SolidColorBrush x:Key="TimelineNowDotOuterBrush" Color="#cccccc" />
+
+            <!-- 时间轴时段背景 -->
+            <SolidColorBrush x:Key="TimelinePeriodNightBgBrush" Color="#e0e6f2" />
+            <SolidColorBrush x:Key="TimelinePeriodMorningBgBrush" Color="#e0f0e0" />
+            <SolidColorBrush x:Key="TimelinePeriodNoonBgBrush" Color="#f0f0f0" />
+            <SolidColorBrush x:Key="TimelinePeriodAfternoonBgBrush" Color="#f2e8e0" />
+            <SolidColorBrush x:Key="TimelinePeriodEveningBgBrush" Color="#e8e0f2" />
+
+            <!-- 时间轴框选 -->
+            <SolidColorBrush x:Key="TimelineSelectionMaskBrush" Color="#000000" Opacity="0.35" />
+            <SolidColorBrush x:Key="TimelineSelectionBorderBrush" Color="#2a2a2a" />
+            <SolidColorBrush x:Key="TimelineSelectionGlowBrush" Color="#2b20d9" Opacity="0.1" />
+            <SolidColorBrush x:Key="TimelineSelectionHandleBrush" Color="#2b20d9" />
+            <SolidColorBrush x:Key="TimelineSelectionHandleBorderBrush" Color="#ffffff" />
+            <SolidColorBrush x:Key="TimelineSelectionLabelBgBrush" Color="#f9f9f9" />
+            <SolidColorBrush x:Key="TimelineSelectionLabelTextBrush" Color="#000000" />
+
+            <!-- 多轨道时间轴 -->
+            <SolidColorBrush x:Key="MultiTrackRowBgBrush" Color="#f7f7fa" />
+            <SolidColorBrush x:Key="MultiTrackRowBorderBrush" Color="#e4e4ec" />
+            <SolidColorBrush x:Key="MultiTrackIconBgBrush" Color="#eeeef4" />
+            <SolidColorBrush x:Key="MultiTrackTrackBgBrush" Color="#eaeaef" />
+            <SolidColorBrush x:Key="MultiTrackTrackBorderBrush" Color="#dddde5" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

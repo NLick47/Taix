@@ -23,7 +23,6 @@ public class DetailPageModel : ModelBase
     private DateTime _date;
     private bool _isIgnore;
     private bool _isRegexIgnore;
-    private List<AppModel> _linkApps = [];
     private string _longDay = string.Empty;
     private DateTime _monthDate;
     private int _nameIndexStart;
@@ -276,16 +275,6 @@ public class DetailPageModel : ModelBase
         set
         {
             _dataMaximum = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public List<AppModel> LinkApps
-    {
-        get => _linkApps;
-        set
-        {
-            _linkApps = value;
             OnPropertyChanged();
         }
     }

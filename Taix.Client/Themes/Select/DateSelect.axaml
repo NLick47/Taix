@@ -235,24 +235,37 @@
                     <Grid>
                         <Border x:Name="Main" Margin="0,0,0,0"
                                 Background="{DynamicResource NavGlassBackgroundBrush}"
-                                HorizontalAlignment="Left" Padding="18,10"
+                                HorizontalAlignment="Left" Padding="4,4"
                                 CornerRadius="10"
                                 BorderBrush="{DynamicResource NavGlassBorderBrush}"
                                 BorderThickness="1">
-                            <Interaction.Behaviors>
-                                <EventTriggerBehavior EventName="PointerPressed">
-                                    <InvokeCommandAction
-                                        Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:DateSelect}}, 
-									Path=ShowSelectCommand}" />
-
-                                </EventTriggerBehavior>
-
-                            </Interaction.Behaviors>
-                            <StackPanel Orientation="Horizontal">
-                                <base:Icon x:Name="Icon" IconType="Calendar"
-                                           Foreground="{DynamicResource StandardTextBrush}" />
-                                <TextBlock Foreground="{DynamicResource StandardTextBrush}"
-                                           Text="{TemplateBinding DateStr}" VerticalAlignment="Center" Margin="5,0,0,0" />
+                            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                <button:IconButton Icon="ChevronLeft" FontSize="11"
+                                                   Width="26" Height="26"
+                                                   VerticalAlignment="Center"
+                                                   Command="{Binding GoPreviousCommand, RelativeSource={RelativeSource TemplatedParent}}" />
+                                <Border Padding="8,6"
+                                        CornerRadius="6"
+                                        Background="Transparent"
+                                        Cursor="Hand">
+                                    <Interaction.Behaviors>
+                                        <EventTriggerBehavior EventName="PointerPressed">
+                                            <InvokeCommandAction
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:DateSelect}}, 
+										Path=ShowSelectCommand}" />
+                                        </EventTriggerBehavior>
+                                    </Interaction.Behaviors>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <base:Icon x:Name="Icon" IconType="Calendar"
+                                                   Foreground="{DynamicResource StandardTextBrush}" />
+                                        <TextBlock Foreground="{DynamicResource StandardTextBrush}"
+                                                   Text="{TemplateBinding DateStr}" VerticalAlignment="Center" Margin="5,0,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <button:IconButton Icon="ChevronRight" FontSize="11"
+                                                   Width="26" Height="26"
+                                                   VerticalAlignment="Center"
+                                                   Command="{Binding GoNextCommand, RelativeSource={RelativeSource TemplatedParent}}" />
                             </StackPanel>
                         </Border>
 

@@ -54,13 +54,10 @@ public static class ResourceStrings
     public static string AliasUpdated => GetStringValue("AliasUpdated");
     public static string IgnoreThisApplication => GetStringValue("IgnoreThisApplication");
     public static string AddWhitelist => GetStringValue("AddWhitelist");
-    public static string AddAssociation => GetStringValue("AddAssociation");
     public static string OperationCompleted => GetStringValue("OperationCompleted");
     public static string ApplicationFileExist => GetStringValue("ApplicationFileExist");
     public static string Unignore => GetStringValue("Unignore");
     public static string RemoveWhitelist => GetStringValue("RemoveWhitelist");
-    public static string AssociationSuccessful => GetStringValue("AssociationSuccessful");
-    public static string AssociationConfigurationNotExist => GetStringValue("AssociationConfigurationNotExist");
     public static string IgnoringApplicationCancelled => GetStringValue("IgnoringApplicationCancelled");
     public static string ApplicationNowIgnored => GetStringValue("ApplicationNowIgnored");
     public static string OpenWebsite => GetStringValue("OpenWebsite");
@@ -132,6 +129,8 @@ public static class ResourceStrings
     public static string CategoryHasSites => GetStringValue("CategoryHasSites");
     public static string MoveToSystemCategory => GetStringValue("MoveToSystemCategory");
     public static string MoveToOtherCategory => GetStringValue("MoveToOtherCategory");
+    public static string IdleTime => GetStringValue("IdleTime");
+    public static string SystemCategory => GetStringValue("SystemCategory");
     public static string SelectTargetCategory => GetStringValue("SelectTargetCategory");
 
     private static string GetStringValue(string key)

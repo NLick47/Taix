@@ -42,7 +42,7 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
         _webDataService = webData;
         Category = _navigationData.Data as WebSiteCategoryModel ?? new WebSiteCategoryModel();
 
-        ShowChooseCommand = ReactiveCommand.Create<object>(OnShowChoose).DisposeWith(Disposables);
+        ShowChooseCommand = ReactiveCommand.CreateFromTask<object>(OnShowChooseAsync).DisposeWith(Disposables);
         ChoosedCommand = ReactiveCommand.Create<object>(OnChoosed).DisposeWith(Disposables);
         GotoDetailCommand = ReactiveCommand.Create<object>(OnGotoDetail).DisposeWith(Disposables);
         SearchCommand = ReactiveCommand.Create<object>(OnSearch).DisposeWith(Disposables);
@@ -88,7 +88,10 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
         var list = await _webDataService.GetWebSitesAsync(Category.ID);
         cancellationToken.ThrowIfCancellationRequested();
         CategoryWebSiteList = new ObservableCollection<WebSiteModel>(list);
+    }
 
+    private async Task LoadChooserDataAsync(CancellationToken cancellationToken = default)
+    {
         var unsetList = await _webDataService.GetUnSetCategoryWebSitesAsync();
         cancellationToken.ThrowIfCancellationRequested();
         var combinedList = unsetList.Concat(CategoryWebSiteList).OrderBy(m => m.Title).ToList();
@@ -205,8 +208,12 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
             await _webDataService.UpdateWebSitesCategoryAsync(addSiteList.Select(m => m.ID).ToArray(), Category.ID);
     }
 
-    private void OnShowChoose(object obj)
+    private async Task OnShowChooseAsync(object obj)
     {
+        if (WebSiteOptionList == null || WebSiteOptionList.Count == 0)
+        {
+            await LoadChooserDataAsync();
+        }
         ChooseVisibility = true;
     }
 }

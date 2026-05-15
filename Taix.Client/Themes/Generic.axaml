@@ -62,5 +62,6 @@
         <ResourceInclude Source="/Themes/Tabbar/Tabbar.axaml" />
         <ResourceInclude Source="/Themes/PageContainer.axaml" />
         <ResourceInclude Source="/Themes/TPage.axaml" />
+        <ResourceInclude Source="/Themes/Timeline/MultiTrackTimeline.axaml" />
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

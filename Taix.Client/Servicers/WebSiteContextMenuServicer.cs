@@ -236,24 +236,30 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
 
         var data = _menu.Tag as ChartsDataModel;
         var site = data.Data as WebSiteModel;
-        var categories = await _webData.GetWebSiteCategoriesAsync(true);
+        var categories = await _webData.GetWebSiteCategoriesAsync();
         var siteFromCache = await _webData.GetWebSiteAsync(site.ID);
         var siteCategoryId = siteFromCache?.CategoryID ?? 0;
         foreach (var category in categories)
         {
+            if (category.IsSystem) continue;
             var categoryMenu = new MenuItem();
             categoryMenu.ToggleType = MenuItemToggleType.Radio;
             categoryMenu.IsChecked = siteCategoryId == category.ID;
             categoryMenu.Header = category.Name;
-            if (category.IsSystem)
-            {
-                categoryMenu.Click += async (s, e) => await ClearSiteCategoryAsync();
-            }
-            else
-            {
-                categoryMenu.Click += async (s, e) => await UpdateSiteCategoryAsync(data, category.ID);
-            }
+            categoryMenu.Click += async (s, e) => await UpdateSiteCategoryAsync(data, category.ID);
             _setCategory.Items.Add(categoryMenu);
+        }
+
+        var sysCategory = categories.FirstOrDefault(c => c.IsSystem);
+        if (siteCategoryId != 0 && sysCategory != null && siteCategoryId != sysCategory.ID)
+        {
+            _setCategory.Items.Add(new Separator());
+            var uncategorizedMenuItem = new MenuItem
+            {
+                Header = sysCategory?.Name ?? ResourceStrings.Uncategorized
+            };
+            uncategorizedMenuItem.Click += async (s, e) => await ClearSiteCategoryAsync();
+            _setCategory.Items.Add(uncategorizedMenuItem);
         }
     }
 

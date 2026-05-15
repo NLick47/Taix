@@ -143,7 +143,7 @@ async fn handle_client(
                         };
 
                         if let Err(e) = AppTimerService::update_app_duration(
-                            &pool, req, &state.config_service
+                            &pool, req
                         ).await {
                             tracing::warn!("[Pipe] Failed to update app duration: {}", e);
                         } else {

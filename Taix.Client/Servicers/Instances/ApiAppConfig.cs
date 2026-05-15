@@ -5,7 +5,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia.Threading;
-using Taix.Client;
 using Taix.Client.Librarys.Api;
 using Taix.Client.Logging;
 using Taix.Client.Shared.Event;
@@ -58,8 +57,7 @@ public class ApiAppConfig : IAppConfig
             config = new ConfigModel
             {
                 General = new GeneralModel(),
-                Behavior = new BehaviorModel(),
-                Links = new System.Collections.Generic.List<Taix.Client.Shared.Models.Config.Link.LinkModel>()
+                Behavior = new BehaviorModel()
             };
         }
 
@@ -78,8 +76,7 @@ public class ApiAppConfig : IAppConfig
             var emptyConfig = new ConfigModel
             {
                 General = new GeneralModel(),
-                Behavior = new BehaviorModel(),
-                Links = new System.Collections.Generic.List<Taix.Client.Shared.Models.Config.Link.LinkModel>()
+                Behavior = new BehaviorModel()
             };
             var changes = DetectChanges(emptyConfig, config);
             args = new ConfigChangedEventArgs(emptyConfig, config, changes);
@@ -112,8 +109,7 @@ public class ApiAppConfig : IAppConfig
             return new ConfigModel
             {
                 General = new GeneralModel(),
-                Behavior = new BehaviorModel(),
-                Links = new System.Collections.Generic.List<Taix.Client.Shared.Models.Config.Link.LinkModel>()
+                Behavior = new BehaviorModel()
             };
         }
 

@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:base="using:Taix.Client.Controls.Base"
                     xmlns:input="using:Taix.Client.Controls.Input"
                     xmlns:models="using:Taix.Client.Controls.Charts.Model"
                     xmlns:controls="using:Taix.Client.Controls.Charts">
@@ -39,6 +40,9 @@
                             Icon="Search" />
                     </Grid>
 
+
+                    <base:EmptyData x:Name="EmptyDataView" Grid.Row="1" IsVisible="False"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
 
                     <ListBox x:Name="ListView" Grid.Row="1"
                              ContextMenu="{TemplateBinding ItemMenu}">

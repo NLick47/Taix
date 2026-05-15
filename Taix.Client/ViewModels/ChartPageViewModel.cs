@@ -65,6 +65,14 @@ public class ChartPageViewModel : ChartPageModel
     public ReactiveCommand<object, Unit> ToDetailCommand { get; }
     public ReactiveCommand<object, Unit> RefreshCommand { get; }
 
+    public List<SelectItemModel> PeriodOptions { get; } =
+    [
+        new() { Id = 0, Name = ResourceStrings.Daily },
+        new() { Id = 1, Name = ResourceStrings.Weekly },
+        new() { Id = 2, Name = ResourceStrings.Monthly },
+        new() { Id = 3, Name = ResourceStrings.Yearly }
+    ];
+
     public List<SelectItemModel> ChartDataModeOptions { get; } =
     [
         new() { Id = 1, Name = ResourceStrings.CategoryView },
@@ -74,30 +82,24 @@ public class ChartPageViewModel : ChartPageModel
     private void Initialize()
     {
         TabbarData = [ResourceStrings.Daily, ResourceStrings.Weekly, ResourceStrings.Monthly, ResourceStrings.Yearly];
-        WeekOptions =
-        [
-            new() { Name = ResourceStrings.ThisWeek },
-            new() { Name = ResourceStrings.LastWeek }
-        ];
 
         ChartDataMode = ChartDataModeOptions[0];
         ShowType = ShowTypeOptions[0];
-        SelectedWeek = WeekOptions[0];
+        SelectedPeriod = PeriodOptions[0];
         Date = DateTime.Now;
+        WeekDate = DateTime.Now;
         MonthDate = DateTime.Now;
         YearDate = DateTime.Now;
         TabbarSelectedIndex = 0;
-
         AppContextMenu = _appContextMenuService.GetContextMenu();
         WebSiteContextMenu = _webSiteContextMenuService.GetContextMenu();
 
-        // 分类筛选不再持久化，仅内存缓存
-
         WhenPropertyChanged(this, x => x.Date, _ => OnDateChangedAsync());
         WhenPropertyChanged(this, x => x.TabbarSelectedIndex, _ => OnTabbarChangedAsync());
-        WhenPropertyChanged(this, x => x.SelectedWeek, _ => OnSelectedWeekChangedAsync());
+        WhenPropertyChanged(this, x => x.WeekDate, _ => OnWeekDateChangedAsync());
         WhenPropertyChanged(this, x => x.MonthDate, _ => OnMonthDateChangedAsync());
         WhenPropertyChanged(this, x => x.YearDate, _ => OnYearDateChangedAsync());
+        WhenPropertyChanged(this, x => x.ShowType, _ => OnShowTypeChangedAsync());
         this.WhenAnyValue(x => x.ColumnSelectedIndex)
             .ObserveOn(AvaloniaScheduler.Instance)
             .Select(_ => Observable.FromAsync(async ct => await LoadSelectedColDataAsync(ct)))
@@ -106,7 +108,11 @@ public class ChartPageViewModel : ChartPageModel
             .DisposeWith(Disposables);
 
         WhenPropertyChanged(this, x => x.ChartDataMode, _ => OnChartDataModeChangedAsync());
-
+        WhenPropertyChanged(this, x => x.SelectedPeriod, p =>
+        {
+            if (p != null) TabbarSelectedIndex = p.Id;
+            return Task.CompletedTask;
+        });
         this.WhenAnyValue(x => x.WebColSelectedIndex)
             .ObserveOn(AvaloniaScheduler.Instance)
             .Select(_ => Observable.FromAsync(async ct => await LoadWebSitesColSelectedDataAsync(ct)))
@@ -121,10 +127,7 @@ public class ChartPageViewModel : ChartPageModel
         return Task.CompletedTask;
     }
 
-    private Task OnDateChangedAsync() => ExecuteAsync(async ct =>
-    {
-        await LoadDayDataAsync(ct);
-    });
+    private Task OnDateChangedAsync() => ExecuteAsync(LoadDayDataAsync);
 
     private Task OnTabbarChangedAsync() => ExecuteAsync(async ct =>
     {
@@ -132,7 +135,7 @@ public class ChartPageViewModel : ChartPageModel
         await LoadDataAsync(ct);
     });
 
-    private Task OnSelectedWeekChangedAsync() => ExecuteAsync(async ct =>
+    private Task OnWeekDateChangedAsync() => ExecuteAsync(async ct =>
     {
         if (TabbarSelectedIndex != 1) return;
         await LoadWeekDataAsync(ct);
@@ -156,7 +159,11 @@ public class ChartPageViewModel : ChartPageModel
         await LoadDataAsync(ct);
     });
 
+    private Task OnShowTypeChangedAsync() => ExecuteAsync(LoadDataAsync);
+
     private Task OnRefreshAsync(object _) => ExecuteAsync(LoadDataAsync);
+
+
 
     private void OnToDetail(object obj)
     {
@@ -170,10 +177,7 @@ public class ChartPageViewModel : ChartPageModel
         {
             _navigationService.NavigateTo(nameof(DetailPage), daily.AppModel);
         }
-        else if (chartData.Data is HoursLogModel { AppModel: not null } hour)
-        {
-            _navigationService.NavigateTo(nameof(DetailPage), hour.AppModel);
-        }
+
     }
 
     private async Task LoadDataAsync(CancellationToken cancellationToken)
@@ -203,23 +207,31 @@ public class ChartPageViewModel : ChartPageModel
 
     private async Task LoadDayDataAsync(CancellationToken cancellationToken)
     {
-        DataMaximum = 3600;
-        var chartData = await BuildCategoryChartDataAsync(
-            ct => _dataService.GetCategoryHoursDataAsync(Date, ct),
-            ct => _dataService.GetRangeTotalDataAsync(Date, Date, ct),
-            null,
-            cancellationToken);
+        if (ShowType.Id == 0)
+        {
+            DataMaximum = 3600;
+            var chartData = await BuildCategoryChartDataAsync(
+                ct => _dataService.GetCategoryHoursDataAsync(Date, ct),
+                ct => _dataService.GetRangeTotalDataAsync(Date, Date, ct),
+                null,
+                cancellationToken);
 
-        var totalUse = chartData.data.Sum(m => m.Values.Sum());
-        _totalTime = totalUse;
-        Data = chartData.data;
-        RadarData = chartData.categoryData;
-        ColumnSelectedIndex = -1;
-        WebColSelectedIndex = -1;
-        TotalHours = Time.ToHoursString(totalUse);
+            var totalUse = chartData.data.Sum(m => m.Values.Sum());
+            _totalTime = totalUse;
+            Data = chartData.data;
+            RadarData = chartData.categoryData;
+            ColumnSelectedIndex = -1;
+            WebColSelectedIndex = -1;
+            TotalHours = Time.ToHoursString(totalUse);
 
-        await LoadTopDataAsync(cancellationToken);
-        await LoadWebDataAsync(Date, Date, cancellationToken);
+            await LoadTopDataAsync(cancellationToken);
+        }
+        else
+        {
+            ColumnSelectedIndex = -1;
+            WebColSelectedIndex = -1;
+            await LoadWebDataAsync(Date, Date, cancellationToken);
+        }
     }
 
     private async Task LoadWeekDataAsync(CancellationToken cancellationToken)
@@ -228,27 +240,32 @@ public class ChartPageViewModel : ChartPageModel
         WebColSelectedIndex = -1;
         DataMaximum = 0;
         var culture = SystemLanguage.CurrentCultureInfo;
-        var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek
-            ? Time.GetThisWeekDate()
-            : Time.GetLastWeekDate();
+        var weekDateArr = GetWeekRange(WeekDate);
         var toText = Application.Current?.Resources["To"] as string ?? "To";
-        WeekDateStr = $"{weekDateArr[0].ToString("d", culture)} {toText} {weekDateArr[1].ToString("d", culture)}";
-        string[] weekNames = [ResourceStrings.Monday, ResourceStrings.Tuesday, ResourceStrings.Wednesday, ResourceStrings.Thursday, ResourceStrings.Friday, ResourceStrings.Saturday, ResourceStrings.Sunday];
+        WeekDateStr = $"{weekDateArr.Start.ToString("d", culture)} {toText} {weekDateArr.End.ToString("d", culture)}";
 
-        var chartData = await BuildCategoryChartDataAsync(
-            ct => _dataService.GetCategoryRangeDataAsync(weekDateArr[0], weekDateArr[1], ct),
-            ct => _dataService.GetRangeTotalDataAsync(weekDateArr[0], weekDateArr[1], ct),
-            weekNames,
-            cancellationToken);
+        if (ShowType.Id == 0)
+        {
+            string[] weekNames = [ResourceStrings.Monday, ResourceStrings.Tuesday, ResourceStrings.Wednesday, ResourceStrings.Thursday, ResourceStrings.Friday, ResourceStrings.Saturday, ResourceStrings.Sunday];
 
-        var totalUse = chartData.data.Sum(m => m.Values.Sum());
-        _totalTime = totalUse;
-        Data = chartData.data;
-        RadarData = chartData.categoryData;
-        TotalHours = Time.ToHoursString(totalUse);
+            var chartData = await BuildCategoryChartDataAsync(
+                ct => _dataService.GetCategoryRangeDataAsync(weekDateArr.Start, weekDateArr.End, ct),
+                ct => _dataService.GetRangeTotalDataAsync(weekDateArr.Start, weekDateArr.End, ct),
+                weekNames,
+                cancellationToken);
 
-        await LoadTopDataAsync(cancellationToken);
-        await LoadWebDataAsync(weekDateArr[0], weekDateArr[1], cancellationToken);
+            var totalUse = chartData.data.Sum(m => m.Values.Sum());
+            _totalTime = totalUse;
+            Data = chartData.data;
+            RadarData = chartData.categoryData;
+            TotalHours = Time.ToHoursString(totalUse);
+
+            await LoadTopDataAsync(cancellationToken);
+        }
+        else
+        {
+            await LoadWebDataAsync(weekDateArr.Start, weekDateArr.End, cancellationToken);
+        }
     }
 
     private async Task LoadMonthlyDataAsync(CancellationToken cancellationToken)
@@ -258,20 +275,26 @@ public class ChartPageViewModel : ChartPageModel
         DataMaximum = 0;
         var dateArr = Time.GetMonthDate(MonthDate);
 
-        var chartData = await BuildCategoryChartDataAsync(
-            ct => _dataService.GetCategoryRangeDataAsync(dateArr[0], dateArr[1], ct),
-            ct => _dataService.GetRangeTotalDataAsync(dateArr[0], dateArr[1], ct),
-            null,
-            cancellationToken);
+        if (ShowType.Id == 0)
+        {
+            var chartData = await BuildCategoryChartDataAsync(
+                ct => _dataService.GetCategoryRangeDataAsync(dateArr[0], dateArr[1], ct),
+                ct => _dataService.GetRangeTotalDataAsync(dateArr[0], dateArr[1], ct),
+                null,
+                cancellationToken);
 
-        var totalUse = chartData.data.Sum(m => m.Values.Sum());
-        _totalTime = totalUse;
-        Data = chartData.data;
-        RadarData = chartData.categoryData;
-        TotalHours = Time.ToHoursString(totalUse);
+            var totalUse = chartData.data.Sum(m => m.Values.Sum());
+            _totalTime = totalUse;
+            Data = chartData.data;
+            RadarData = chartData.categoryData;
+            TotalHours = Time.ToHoursString(totalUse);
 
-        await LoadTopDataAsync(cancellationToken);
-        await LoadWebDataAsync(dateArr[0], dateArr[1], cancellationToken);
+            await LoadTopDataAsync(cancellationToken);
+        }
+        else
+        {
+            await LoadWebDataAsync(dateArr[0], dateArr[1], cancellationToken);
+        }
     }
 
     private async Task LoadYearDataAsync(CancellationToken cancellationToken)
@@ -283,21 +306,27 @@ public class ChartPageViewModel : ChartPageModel
         for (var i = 0; i < 12; i++)
             names[i] = Application.Current?.Resources[$"{i + 1}Month"] as string ?? $"{i + 1}";
 
-        var chartData = await BuildCategoryChartDataAsync(
-            ct => _dataService.GetCategoryYearDataAsync(YearDate, ct),
-            ct => _dataService.GetMonthTotalDataAsync(YearDate, ct),
-            names,
-            cancellationToken);
+        if (ShowType.Id == 0)
+        {
+            var chartData = await BuildCategoryChartDataAsync(
+                ct => _dataService.GetCategoryYearDataAsync(YearDate, ct),
+                ct => _dataService.GetMonthTotalDataAsync(YearDate, ct),
+                names,
+                cancellationToken);
 
-        var totalUse = chartData.data.Sum(m => m.Values.Sum());
-        _totalTime = totalUse;
-        Data = chartData.data;
-        RadarData = chartData.categoryData;
-        TotalHours = Time.ToHoursString(totalUse);
+            var totalUse = chartData.data.Sum(m => m.Values.Sum());
+            _totalTime = totalUse;
+            Data = chartData.data;
+            RadarData = chartData.categoryData;
+            TotalHours = Time.ToHoursString(totalUse);
 
-        await LoadTopDataAsync(cancellationToken);
-        var yearArr = Time.GetYearDate(YearDate);
-        await LoadWebDataAsync(yearArr[0], yearArr[1], cancellationToken);
+            await LoadTopDataAsync(cancellationToken);
+        }
+        else
+        {
+            var yearArr = Time.GetYearDate(YearDate);
+            await LoadWebDataAsync(yearArr[0], yearArr[1], cancellationToken);
+        }
     }
 
     private async Task<(List<ChartsDataModel> data, List<ChartsDataModel> categoryData)> BuildCategoryChartDataAsync(
@@ -357,11 +386,9 @@ public class ChartPageViewModel : ChartPageModel
         var dateEnd = Date.Date;
         if (TabbarSelectedIndex == 1)
         {
-            var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek
-                ? Time.GetThisWeekDate()
-                : Time.GetLastWeekDate();
-            dateStart = weekDateArr[0];
-            dateEnd = weekDateArr[1];
+            var weekDateArr = GetWeekRange(WeekDate);
+            dateStart = weekDateArr.Start;
+            dateEnd = weekDateArr.End;
         }
         else if (TabbarSelectedIndex == 2)
         {
@@ -394,9 +421,9 @@ public class ChartPageViewModel : ChartPageModel
         var lastEnd = dateEnd.AddDays(-1);
         if (TabbarSelectedIndex == 1)
         {
-            var weekDateArr = Time.GetLastWeekDate();
-            lastStart = weekDateArr[0];
-            lastEnd = weekDateArr[1];
+            var weekDateArr = GetWeekRange(WeekDate.AddDays(-7));
+            lastStart = weekDateArr.Start;
+            lastEnd = weekDateArr.End;
         }
         else if (TabbarSelectedIndex == 2)
         {
@@ -451,17 +478,15 @@ public class ChartPageViewModel : ChartPageModel
             DayHoursSelectedTime = time.ToString(format, culture);
             var hoursModelList = await _dataService.GetTimeRangelogListAsync(time, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            chartsDatas = ChartDataMapper.MapFromHoursLogs(hoursModelList, true, _config.Behavior.IgnoreProcessList);
+            chartsDatas = ChartDataMapper.MapFromHoursLogs(hoursModelList, true);
         }
         else
         {
             DateTime start, end;
             if (TabbarSelectedIndex == 1)
             {
-                var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek
-                    ? Time.GetThisWeekDate()
-                    : Time.GetLastWeekDate();
-                var time = weekDateArr[0].AddDays(ColumnSelectedIndex);
+                var weekDateArr = GetWeekRange(WeekDate);
+                var time = weekDateArr.Start.AddDays(ColumnSelectedIndex);
                 DayHoursSelectedTime = time.ToString("d", culture);
                 start = end = time;
             }
@@ -480,7 +505,7 @@ public class ChartPageViewModel : ChartPageModel
             }
             var daysModelList = await _dataService.GetDateRangelogListAsync(start, end, cancellationToken: cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            chartsDatas = ChartDataMapper.MapFromDailyLogs(daysModelList, true, _config.Behavior.IgnoreProcessList);
+            chartsDatas = ChartDataMapper.MapFromDailyLogs(daysModelList, true);
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -491,7 +516,7 @@ public class ChartPageViewModel : ChartPageModel
 
     private async Task LoadWebDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken)
     {
-        var categories = await _webDataService.GetWebSiteCategoriesAsync(true, cancellationToken);
+        var categories = await _webDataService.GetWebSiteCategoriesAsync(cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
         await Task.WhenAll(
@@ -610,10 +635,8 @@ public class ChartPageViewModel : ChartPageModel
         }
         else if (TabbarSelectedIndex == 1)
         {
-            var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek
-                ? Time.GetThisWeekDate()
-                : Time.GetLastWeekDate();
-            var time = weekDateArr[0].AddDays(WebColSelectedIndex);
+            var weekDateArr = GetWeekRange(WeekDate);
+            var time = weekDateArr.Start.AddDays(WebColSelectedIndex);
             WebSitesColSelectedTimeText = time.ToString("d", culture);
             startTime = endTime = time;
         }
@@ -637,6 +660,15 @@ public class ChartPageViewModel : ChartPageModel
     }
 
     #endregion
+
+    private static (DateTime Start, DateTime End) GetWeekRange(DateTime date)
+    {
+        var dayOfWeek = (int)date.DayOfWeek;
+        dayOfWeek = dayOfWeek == 0 ? 7 : dayOfWeek;
+        var start = date.Date.AddDays(-(dayOfWeek - 1));
+        var end = start.AddDays(6).Date.AddHours(23).AddMinutes(59).AddSeconds(59);
+        return (start, end);
+    }
 
     public override void Dispose()
     {

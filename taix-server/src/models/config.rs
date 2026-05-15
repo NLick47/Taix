@@ -1,15 +1,13 @@
 use crate::constants;
 use serde::{Deserialize, Serialize};
 
-pub const CURRENT_CONFIG_VERSION: u32 = 1;
+pub const CURRENT_CONFIG_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ConfigModel {
     #[serde(rename = "Version", default)]
     pub version: u32,
-    #[serde(rename = "Links")]
-    pub links: Vec<LinkModel>,
     #[serde(rename = "General")]
     pub general: GeneralModel,
     #[serde(rename = "Behavior")]
@@ -20,7 +18,6 @@ impl Default for ConfigModel {
     fn default() -> Self {
         Self {
             version: CURRENT_CONFIG_VERSION,
-            links: Vec::new(),
             general: GeneralModel::default(),
             behavior: BehaviorModel::default(),
         }
@@ -45,6 +42,12 @@ impl ConfigModel {
     pub fn migrate(&mut self) {
         if self.version >= CURRENT_CONFIG_VERSION {
             return;
+        }
+
+        for process in ["Taix", "Tai"] {
+            if !self.behavior.ignore_process_list.contains(&process.to_string()) {
+                self.behavior.ignore_process_list.push(process.to_string());
+            }
         }
 
         self.version = CURRENT_CONFIG_VERSION;
@@ -120,20 +123,4 @@ impl Default for BehaviorModel {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct LinkModel {
-    #[serde(rename = "Name")]
-    pub name: String,
-    #[serde(rename = "ProcessList")]
-    pub process_list: Vec<String>,
-}
 
-impl Default for LinkModel {
-    fn default() -> Self {
-        Self {
-            name: "新的关联".to_string(),
-            process_list: Vec::new(),
-        }
-    }
-}

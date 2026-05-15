@@ -108,6 +108,8 @@ public class ColumnChart : TemplatedControl
     private double _valuesPopupHorizontalOffset;
 
     private Canvas _typeColumnCanvas;
+    private EmptyData _emptyDataView;
+    private Border _chartBorder;
     private Dictionary<int, Rectangle> _typeColBorderRectMap = new();
     private Dictionary<int, List<Rectangle>> _typeColValueRectMap = new();
     private bool _isRendering;
@@ -138,6 +140,8 @@ public class ColumnChart : TemplatedControl
         base.OnApplyTemplate(e);
         _typeColumnCanvas = e.NameScope.Get<Canvas>("TypeColumnCanvas");
         _typeColumnCanvas.SizeChanged += OnCanvasSizeChanged;
+        _emptyDataView = e.NameScope.Find<EmptyData>("EmptyDataView");
+        _chartBorder = e.NameScope.Find<Border>("ChartBorder");
         Render();
     }
 
@@ -147,6 +151,11 @@ public class ColumnChart : TemplatedControl
         _isRendering = false;
         if (_typeColumnCanvas != null)
             _typeColumnCanvas.SizeChanged -= OnCanvasSizeChanged;
+        _typeColBorderRectMap?.Clear();
+        _typeColValueRectMap?.Clear();
+        ColumnValuesInfoList = null;
+        ValuesPopupPlacementTarget = null;
+        IsShowValuesPopup = false;
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -172,12 +181,22 @@ public class ColumnChart : TemplatedControl
         {
             _typeColumnCanvas.Children.Clear();
             ColumnInfoList = null;
+            ColumnValuesInfoList = null;
+            IsShowValuesPopup = false;
+            ValuesPopupPlacementTarget = null;
             _typeColValueRectMap = new();
             _typeColBorderRectMap = new();
             Maximum = Median = Total = string.Empty;
 
             var list = Data?.ToList();
-            if (list == null || list.Count == 0) return;
+            if (list == null || list.Count == 0)
+            {
+                if (_emptyDataView != null) _emptyDataView.IsVisible = true;
+                if (_chartBorder != null) _chartBorder.IsVisible = false;
+                return;
+            }
+            if (_emptyDataView != null) _emptyDataView.IsVisible = false;
+            if (_chartBorder != null) _chartBorder.IsVisible = true;
             var firstData = list[0];
             if (firstData?.Values == null || firstData.Values.Length == 0) return;
 
@@ -283,7 +302,7 @@ public class ColumnChart : TemplatedControl
                 var idx = i;
                 columnBorder.PointerEntered += (_, _) =>
                 {
-                    var s = valuesPopupList;
+                    var s = new List<ChartColumnInfoModel>(valuesPopupList);
                     if (s.Count > 1)
                         s.Add(new ChartColumnInfoModel { Name = "Sum", Text = CoverValue(s.Sum(x => x.Value)) + Unit, Color = "#FF8A8A8A" });
                     ColumnValuesInfoList = s;

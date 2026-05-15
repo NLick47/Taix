@@ -2,7 +2,6 @@
 using System.Text.Json.Serialization;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Models.Config;
-using Taix.Client.Shared.Models.Config.Link;
 using Taix.Client.Shared.Models.Data;
 using Taix.Client.Shared.Models.Db;
 
@@ -18,6 +17,8 @@ namespace Taix.Client.Librarys.Api;
 [JsonSerializable(typeof(ApiResponse<List<DailyLogModel>>))]
 [JsonSerializable(typeof(ApiResponse<HoursLogModel>))]
 [JsonSerializable(typeof(ApiResponse<List<HoursLogModel>>))]
+[JsonSerializable(typeof(ApiResponse<AppSessionModel>))]
+[JsonSerializable(typeof(ApiResponse<List<AppSessionModel>>))]
 [JsonSerializable(typeof(ApiResponse<double[]>))]
 [JsonSerializable(typeof(ApiResponse<int>))]
 [JsonSerializable(typeof(ApiResponse<WebSiteModel>))]
@@ -41,6 +42,8 @@ namespace Taix.Client.Librarys.Api;
 [JsonSerializable(typeof(List<DailyLogModel>))]
 [JsonSerializable(typeof(HoursLogModel))]
 [JsonSerializable(typeof(List<HoursLogModel>))]
+[JsonSerializable(typeof(AppSessionModel))]
+[JsonSerializable(typeof(List<AppSessionModel>))]
 [JsonSerializable(typeof(double[]))]
 [JsonSerializable(typeof(int))]
 [JsonSerializable(typeof(WebSiteModel))]
@@ -66,7 +69,5 @@ namespace Taix.Client.Librarys.Api;
 [JsonSerializable(typeof(GeneralModel))]
 [JsonSerializable(typeof(BehaviorModel))]
 [JsonSerializable(typeof(BehaviorModel))]
-[JsonSerializable(typeof(LinkModel))]
-[JsonSerializable(typeof(List<LinkModel>))]
 [JsonSerializable(typeof(List<string>))]
 internal partial class TaixApiJsonContext : JsonSerializerContext { }

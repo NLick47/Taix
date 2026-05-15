@@ -166,6 +166,16 @@ public class ApiData : IData
         return await _apiClient.GetTimeRangeLogListAsync(time, cancellationToken);
     }
 
+    public async Task<IEnumerable<HoursLogModel>> GetHoursRangeLogListAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
+    {
+        return await _apiClient.GetHoursRangeLogListAsync(start, end, cancellationToken);
+    }
+
+    public async Task<IEnumerable<AppSessionModel>> GetAppSessionsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
+    {
+        return await _apiClient.GetAppSessionsAsync(start, end, cancellationToken);
+    }
+
     public async Task<double[]> GetRangeTotalDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
     {
         return await _apiClient.GetRangeTotalDataAsync(start, end, cancellationToken);

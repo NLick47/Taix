@@ -169,13 +169,6 @@ public class DetailPageViewModel : DetailPageModel
         IsIgnore = IsProcessIgnore(App.Name, App.File);
         IsRegexIgnore = IsProcessRegexIgnore(App.Name, App.File);
         await LoadCategorys(App.Category?.Name);
-
-        var link = _appConfig.GetConfig().Links.FirstOrDefault(m => m.ProcessList.Contains(App.Name));
-        if (link != null)
-        {
-            var allApps = await _appDataService.GetAllAppsAsync();
-            LinkApps = allApps.Where(m => link.ProcessList.Contains(m.Name) && m.Name != App.Name).ToList();
-        }
     }
 
     private Task LoadChartDataAsync() => ExecuteAsync(async ct =>
@@ -206,7 +199,7 @@ public class DetailPageViewModel : DetailPageModel
     private async Task LoadCategorys(string? categoryName)
     {
         var list = new List<SelectItemModel>();
-        foreach (var item in await _categoryService.GetCategoriesAsync(true))
+        foreach (var item in await _categoryService.GetCategoriesAsync())
         {
             var option = new SelectItemModel
             {
@@ -411,7 +404,12 @@ public class DetailPageViewModel : DetailPageModel
 
         var app = await _appDataService.GetAppAsync(App.ID);
         var categoryId = app?.CategoryID ?? 0;
-        foreach (var category in Categorys)
+
+        var sysCategories = Categorys.Where(m => m.Data is CategoryModel c && c.IsSystem).ToList();
+        var userCategories = Categorys.Where(m => m.Data is CategoryModel c && !c.IsSystem).ToList();
+
+        // 系统分类
+        foreach (var category in sysCategories)
         {
             var categoryMenu = new MenuItem
             {
@@ -423,10 +421,28 @@ public class DetailPageViewModel : DetailPageModel
             _setCategoryMenuItem.Items.Add(categoryMenu);
         }
 
-        if (categoryId != 0)
+        // 用户分类
+        if (userCategories.Count > 0)
         {
             _setCategoryMenuItem.Items.Add(new Separator());
-            var sysCategory = Categorys.FirstOrDefault(m => m.Data is CategoryModel c && c.IsSystem);
+            foreach (var category in userCategories)
+            {
+                var categoryMenu = new MenuItem
+                {
+                    Header = category.Name,
+                    ToggleType = MenuItemToggleType.Radio,
+                    IsChecked = categoryId == category.Id,
+                    Command = ReactiveCommand.CreateFromTask(async () => await UpdateCategory(category.Data as CategoryModel))
+                };
+                _setCategoryMenuItem.Items.Add(categoryMenu);
+            }
+        }
+
+        var sysCategory = sysCategories.FirstOrDefault();
+        var sysCategoryModel = sysCategory?.Data as CategoryModel;
+        if (categoryId != 0 && sysCategoryModel != null && categoryId != sysCategoryModel.ID)
+        {
+            _setCategoryMenuItem.Items.Add(new Separator());
             var un = new MenuItem
             {
                 Header = sysCategory?.Name ?? ResourceStrings.Uncategorized,
@@ -473,7 +489,7 @@ public class DetailPageViewModel : DetailPageModel
         }
     }
 
-    private void OnWhiteListAction()
+    private async void OnWhiteListAction()
     {
         if (App == null) return;
         var config = _appConfig.GetConfig();
@@ -487,6 +503,7 @@ public class DetailPageViewModel : DetailPageModel
             config.Behavior.ProcessWhiteList.Add(App.Name);
             _toastService.Success($"{ResourceStrings.AddedToWhitelist} {App.Description}");
         }
+        await _appConfig.SaveAsync();
     }
 
     private async Task ClearCategory(int appId)

@@ -98,17 +98,16 @@ pub fn router() -> Router<SqlitePool> {
 
 async fn add_url_browse_time(
     State(pool): State<SqlitePool>,
-    Extension(config_service): Extension<Arc<ConfigService>>,
     Json(req): Json<AddUrlBrowseTimeRequest>,
 ) -> Json<ApiResponse<()>> {
-    match WebDataService::add_url_browse_time(&pool, req, None, &config_service).await {
+    match WebDataService::add_url_browse_time(&pool, req, None).await {
         Ok(_) => Json(ApiResponse::ok_empty()),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_web_sites(State(pool): State<SqlitePool>, Query(q): Query<CategoryQuery>) -> Json<ApiResponse<Vec<WebSiteModel>>> {
-    match WebDataService::get_web_sites(&pool, q.category_id).await {
+async fn get_web_sites(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<CategoryQuery>) -> Json<ApiResponse<Vec<WebSiteModel>>> {
+    match WebDataService::get_web_sites(&pool, q.category_id, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
@@ -196,8 +195,8 @@ async fn update_web_sites_category(State(pool): State<SqlitePool>, Json(req): Js
     }
 }
 
-async fn get_unset_category_web_sites(State(pool): State<SqlitePool>) -> Json<ApiResponse<Vec<WebSiteModel>>> {
-    match WebDataService::get_unset_category_web_sites(&pool).await {
+async fn get_unset_category_web_sites(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>) -> Json<ApiResponse<Vec<WebSiteModel>>> {
+    match WebDataService::get_unset_category_web_sites(&pool, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
@@ -210,8 +209,8 @@ async fn clear_web_data(State(pool): State<SqlitePool>, Query(q): Query<ClearWeb
     }
 }
 
-async fn get_date_range_web_site_list(State(pool): State<SqlitePool>, Query(q): Query<SiteDateRangeQuery>) -> Json<ApiResponse<Vec<WebSiteModel>>> {
-    match WebDataService::get_date_range_web_site_list(&pool, q.start, q.end, q.take, q.skip, q.is_time, &q.timezone).await {
+async fn get_date_range_web_site_list(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<SiteDateRangeQuery>) -> Json<ApiResponse<Vec<WebSiteModel>>> {
+    match WebDataService::get_date_range_web_site_list(&pool, q.start, q.end, q.take, q.skip, q.is_time, &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
@@ -259,22 +258,22 @@ async fn get_browse_pages_total(State(pool): State<SqlitePool>, Query(q): Query<
     }
 }
 
-async fn get_browse_log_list(State(pool): State<SqlitePool>, Query(q): Query<BrowseLogQuery>) -> Json<ApiResponse<Vec<WebBrowseLogModel>>> {
-    match WebDataService::get_browse_log_list(&pool, q.start, q.end, q.site_id, &q.timezone).await {
+async fn get_browse_log_list(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<BrowseLogQuery>) -> Json<ApiResponse<Vec<WebBrowseLogModel>>> {
+    match WebDataService::get_browse_log_list(&pool, q.start, q.end, q.site_id, &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_web_site_log_list(State(pool): State<SqlitePool>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<Vec<WebSiteModel>>> {
-    match WebDataService::get_web_site_log_list(&pool, q.start, q.end, &q.timezone).await {
+async fn get_web_site_log_list(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<Vec<WebSiteModel>>> {
+    match WebDataService::get_web_site_log_list(&pool, q.start, q.end, &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_web_export_data(State(pool): State<SqlitePool>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<crate::models::web::WebExportDataResult>> {
-    match WebDataService::get_web_export_data(&pool, q.start, q.end, &q.timezone).await {
+async fn get_web_export_data(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<crate::models::web::WebExportDataResult>> {
+    match WebDataService::get_web_export_data(&pool, q.start, q.end, &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }

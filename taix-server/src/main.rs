@@ -12,6 +12,7 @@ mod single_instance;
 mod utils;
 mod websocket_manager;
 
+use anyhow::Context;
 use axum::Router;
 use sqlx::SqlitePool;
 use std::net::SocketAddr;
@@ -105,14 +106,11 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
         tx,
         web_favicons_dir,
         semaphore: Arc::new(tokio::sync::Semaphore::new(constants::MAX_CONCURRENT_PIPE_CLIENTS)),
-        config_service: config_service.clone(),
     });
 
     let app = create_app(pool.clone(), config_service, web_enabled_tx.clone());
 
-    let addr: SocketAddr = std::env::var("TAIX_BIND")
-        .unwrap_or_else(|_| format!("127.0.0.1:{}", constants::DEFAULT_HTTP_PORT).to_string())
-        .parse()?;
+    let addr: SocketAddr = parse_server_addr()?;
 
     tracing::info!("Server listening on http://{}", addr);
 
@@ -141,6 +139,15 @@ fn parse_data_dir(args: &[String], exe_dir: &std::path::Path) -> PathBuf {
     std::env::var("TAIX_DATA_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| exe_dir.join("Data"))
+}
+
+fn parse_server_addr() -> anyhow::Result<SocketAddr> {
+    let raw = std::env::var("TAIX_SERVER")
+        .unwrap_or_else(|_| format!("http://127.0.0.1:{}", constants::DEFAULT_HTTP_PORT));
+    let stripped = raw
+        .trim_start_matches("http://")
+        .trim_start_matches("https://");
+    stripped.parse().context("Failed to parse server address")
 }
 
 fn create_app(
