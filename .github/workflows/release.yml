@@ -68,7 +68,8 @@ jobs:
 
       - name: Build and Publish .NET Client
         run: |
-          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:DebugType=None -p:DebugSymbols=false Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
+          Write-Host "Publishing with AOT enabled"
+          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
 
       - name: Copy Rust binaries and scripts
         shell: pwsh
@@ -80,9 +81,7 @@ jobs:
           Copy-Item "taix-monitor-windows/target/x86_64-pc-windows-msvc/release/taix-monitor-windows.exe" -Destination $publishDir -Force
           Copy-Item "taix-shell/target/x86_64-pc-windows-msvc/release/taix-shell.exe"         -Destination $publishDir -Force
 
-          # Copy monitor default config
-          Copy-Item "taix-monitor-windows/config.json" -Destination $publishDir -Force
-
+ 
           # Copy taix-shell resources (tray icon etc.)
           Copy-Item "taix-shell/resources" -Destination $publishDir -Recurse -Force
 
