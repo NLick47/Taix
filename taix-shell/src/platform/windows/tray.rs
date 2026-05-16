@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::config::TrayConfig;
 use crate::i18n::tray_texts;
@@ -9,6 +9,8 @@ use tray_icon::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use windows::Win32::UI::WindowsAndMessaging::{
     DispatchMessageW, PeekMessageW, TranslateMessage, MSG, PM_REMOVE, WM_QUIT,
 };
+
+const CLICK_DEBOUNCE_MS: u64 = 500;
 
 pub fn run_tray(
     cmd_tx: tokio::sync::mpsc::Sender<TrayCmd>,
@@ -24,6 +26,8 @@ pub fn run_tray(
         .build()?;
 
     tray.set_visible(initial_config.is_visible)?;
+
+    let mut last_click = Instant::now() - Duration::from_secs(10);
 
     loop {
         unsafe {
@@ -44,6 +48,11 @@ pub fn run_tray(
                     button_state: MouseButtonState::Up,
                     ..
                 } => {
+                    let now = Instant::now();
+                    if now.duration_since(last_click) < Duration::from_millis(CLICK_DEBOUNCE_MS) {
+                        continue;
+                    }
+                    last_click = now;
                     let _ = cmd_tx.blocking_send(TrayCmd::LaunchClient);
                 }
                 _ => {}

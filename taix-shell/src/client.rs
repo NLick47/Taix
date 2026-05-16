@@ -1,7 +1,12 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+
 use tokio::io::AsyncWriteExt;
 use tokio::net::windows::named_pipe::ClientOptions;
 
 use crate::constants::{CLIENT_EXE_NAME, CLIENT_PIPE_NAME};
+
+static IS_LAUNCHING: AtomicBool = AtomicBool::new(false);
 
 pub async fn launch_or_wake() -> anyhow::Result<()> {
     match try_wake_existing().await {
@@ -9,20 +14,54 @@ pub async fn launch_or_wake() -> anyhow::Result<()> {
         Ok(false) => {}
         Err(e) => tracing::warn!(target: "taix_shell::client", "wake failed: {}", e),
     }
-    spawn_new_process()
+
+    if IS_LAUNCHING.swap(true, Ordering::SeqCst) {
+        tracing::info!(target: "taix_shell::client", "client is already launching, skip duplicate request");
+        return Ok(());
+    }
+
+    let result = spawn_new_process();
+
+    tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_secs(3)).await;
+        IS_LAUNCHING.store(false, Ordering::SeqCst);
+    });
+
+    result
 }
 
 async fn try_wake_existing() -> anyhow::Result<bool> {
+    const MAX_RETRIES: usize = 3;
+    const RETRY_DELAY_MS: u64 = 300;
+
+    for attempt in 0..MAX_RETRIES {
+        match try_wake_once().await {
+            Ok(true) => return Ok(true),
+            Ok(false) if attempt + 1 < MAX_RETRIES => {
+                tracing::debug!(target: "taix_shell::client", "wake attempt {}: pipe not ready, retry in {}ms", attempt + 1, RETRY_DELAY_MS);
+                tokio::time::sleep(Duration::from_millis(RETRY_DELAY_MS)).await;
+            }
+            Ok(false) => return Ok(false),
+            Err(e) if attempt + 1 < MAX_RETRIES => {
+                tracing::debug!(target: "taix_shell::client", "wake attempt {} failed: {}, retry in {}ms", attempt + 1, e, RETRY_DELAY_MS);
+                tokio::time::sleep(Duration::from_millis(RETRY_DELAY_MS)).await;
+            }
+            Err(e) => {
+                tracing::warn!(target: "taix_shell::client", "wake failed after {} attempts: {}", MAX_RETRIES, e);
+                return Ok(false);
+            }
+        }
+    }
+    Ok(false)
+}
+
+async fn try_wake_once() -> anyhow::Result<bool> {
     let mut client = match ClientOptions::new().open(CLIENT_PIPE_NAME) {
         Ok(c) => c,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            tracing::debug!(target: "taix_shell::client", "no existing client pipe found");
             return Ok(false);
         }
-        Err(e) => {
-            tracing::warn!(target: "taix_shell::client", "failed to open client pipe: {}", e);
-            return Ok(false);
-        }
+        Err(e) => return Err(e.into()),
     };
 
     if let Err(e) = client.write_all(b"show\n").await {

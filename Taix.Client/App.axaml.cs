@@ -129,23 +129,10 @@ public class App : Application
             {
                 try
                 {
-                    await using var pipe = new NamedPipeServerStream("TaixClient", PipeDirection.In, 10);
+                    var pipe = new NamedPipeServerStream("TaixClient", PipeDirection.In, 10);
                     await pipe.WaitForConnectionAsync();
-                    using var reader = new StreamReader(pipe);
-                    var cmd = await reader.ReadLineAsync();
-                    if (cmd == "show")
-                    {
-                        await Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            var desk = Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-                            if (desk?.MainWindow is MainWindow mw)
-                            {
-                                if (!mw.IsVisible) mw.IsVisible = true;
-                                if (mw.WindowState == WindowState.Minimized) mw.WindowState = WindowState.Normal;
-                                mw.Activate();
-                            }
-                        });
-                    }
+
+                    _ = HandlePipeConnectionAsync(pipe);
                 }
                 catch (Exception ex)
                 {
@@ -154,6 +141,35 @@ public class App : Application
                 }
             }
         });
+    }
+
+    private static async Task HandlePipeConnectionAsync(NamedPipeServerStream pipe)
+    {
+        try
+        {
+            await using (pipe)
+            {
+                using var reader = new StreamReader(pipe);
+                var cmd = await reader.ReadLineAsync();
+                if (cmd == "show")
+                {
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        var desk = Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                        if (desk?.MainWindow is MainWindow mw)
+                        {
+                            if (!mw.IsVisible) mw.IsVisible = true;
+                            if (mw.WindowState == WindowState.Minimized) mw.WindowState = WindowState.Normal;
+                            mw.Activate();
+                        }
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"[WakePipeServer] Error: {ex.Message}");
+        }
     }
 
     public override void Initialize()
