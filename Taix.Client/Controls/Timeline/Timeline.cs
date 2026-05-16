@@ -43,31 +43,31 @@ public class Timeline : Control
 
     public static readonly DirectProperty<Timeline, IEnumerable<TimelineUsageItem>> UsageItemsProperty =
         AvaloniaProperty.RegisterDirect<Timeline, IEnumerable<TimelineUsageItem>>(
-            nameof(UsageItems), o => o._usageItems, (o, v) => o._usageItems = v);
+            nameof(UsageItems), o => o.UsageItems, (o, v) => o.UsageItems = v);
 
     public static readonly DirectProperty<Timeline, TimelineViewMode> ViewModeProperty =
         AvaloniaProperty.RegisterDirect<Timeline, TimelineViewMode>(
-            nameof(ViewMode), o => o._viewMode, (o, v) => o._viewMode = v, TimelineViewMode.App);
+            nameof(ViewMode), o => o.ViewMode, (o, v) => o.ViewMode = v, TimelineViewMode.App);
 
     public static readonly DirectProperty<Timeline, double> ZoomProperty =
         AvaloniaProperty.RegisterDirect<Timeline, double>(
-            nameof(Zoom), o => o._zoom, (o, v) => o._zoom = v, 1.0);
+            nameof(Zoom), o => o.Zoom, (o, v) => o.Zoom = v, 1.0);
 
     public static readonly DirectProperty<Timeline, int> MajorTickIntervalProperty =
         AvaloniaProperty.RegisterDirect<Timeline, int>(
-            nameof(MajorTickInterval), o => o._majorTickInterval, (o, v) => o._majorTickInterval = v, 1);
+            nameof(MajorTickInterval), o => o.MajorTickInterval, (o, v) => o.MajorTickInterval = v, 1);
 
     public static readonly DirectProperty<Timeline, DateTime> DateProperty =
         AvaloniaProperty.RegisterDirect<Timeline, DateTime>(
-            nameof(Date), o => o._date, (o, v) => o._date = v);
+            nameof(Date), o => o.Date, (o, v) => o.Date = v);
 
     public static readonly DirectProperty<Timeline, double> VisibleStartHourProperty =
         AvaloniaProperty.RegisterDirect<Timeline, double>(
-            nameof(VisibleStartHour), o => o._visibleStartHour, (o, v) => o._visibleStartHour = v);
+            nameof(VisibleStartHour), o => o.VisibleStartHour, (o, v) => o.VisibleStartHour = v);
 
     public static readonly DirectProperty<Timeline, double> VisibleEndHourProperty =
         AvaloniaProperty.RegisterDirect<Timeline, double>(
-            nameof(VisibleEndHour), o => o._visibleEndHour, (o, v) => o._visibleEndHour = v, 24.0);
+            nameof(VisibleEndHour), o => o.VisibleEndHour, (o, v) => o.VisibleEndHour = v, 24.0);
 
     public IEnumerable<TimelineUsageItem> UsageItems
     {
@@ -194,6 +194,7 @@ public class Timeline : Control
     {
         ClipToBounds = true;
         Height = 68;
+        Focusable = true;
         LoadThemeBrushes();
     }
 
@@ -348,6 +349,7 @@ public class Timeline : Control
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
+        Focus();
         var pos = e.GetPosition(this);
         _mousePos = pos;
 

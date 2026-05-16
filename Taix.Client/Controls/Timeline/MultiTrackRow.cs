@@ -24,15 +24,15 @@ public class MultiTrackRow : Control
 
     public static readonly DirectProperty<MultiTrackRow, IEnumerable<MultiTrackSegment>> SegmentsProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackRow, IEnumerable<MultiTrackSegment>>(
-            nameof(Segments), o => o._segments, (o, v) => o._segments = v);
+            nameof(Segments), o => o.Segments, (o, v) => o.Segments = v);
 
     public static readonly DirectProperty<MultiTrackRow, double> VisibleStartHourProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackRow, double>(
-            nameof(VisibleStartHour), o => o._visibleStartHour, (o, v) => o._visibleStartHour = v);
+            nameof(VisibleStartHour), o => o.VisibleStartHour, (o, v) => o.VisibleStartHour = v);
 
     public static readonly DirectProperty<MultiTrackRow, double> VisibleEndHourProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackRow, double>(
-            nameof(VisibleEndHour), o => o._visibleEndHour, (o, v) => o._visibleEndHour = v, 24.0);
+            nameof(VisibleEndHour), o => o.VisibleEndHour, (o, v) => o.VisibleEndHour = v, 24.0);
 
     public IEnumerable<MultiTrackSegment> Segments
     {

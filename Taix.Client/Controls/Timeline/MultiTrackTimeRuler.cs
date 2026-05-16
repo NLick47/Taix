@@ -16,15 +16,15 @@ public class MultiTrackTimeRuler : Control
 
     public static readonly DirectProperty<MultiTrackTimeRuler, double> VisibleStartHourProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackTimeRuler, double>(
-            nameof(VisibleStartHour), o => o._visibleStartHour, (o, v) => o._visibleStartHour = v);
+            nameof(VisibleStartHour), o => o.VisibleStartHour, (o, v) => o.VisibleStartHour = v);
 
     public static readonly DirectProperty<MultiTrackTimeRuler, double> VisibleEndHourProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackTimeRuler, double>(
-            nameof(VisibleEndHour), o => o._visibleEndHour, (o, v) => o._visibleEndHour = v, 24.0);
+            nameof(VisibleEndHour), o => o.VisibleEndHour, (o, v) => o.VisibleEndHour = v, 24.0);
 
     public static readonly DirectProperty<MultiTrackTimeRuler, DateTime> DateProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackTimeRuler, DateTime>(
-            nameof(Date), o => o._date, (o, v) => o._date = v);
+            nameof(Date), o => o.Date, (o, v) => o.Date = v);
 
     public double VisibleStartHour
     {

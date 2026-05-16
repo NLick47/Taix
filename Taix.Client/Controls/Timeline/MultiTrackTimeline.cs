@@ -15,19 +15,19 @@ public class MultiTrackTimeline : TemplatedControl
 
     public static readonly DirectProperty<MultiTrackTimeline, IEnumerable<MultiTrackTimelineItem>> DataItemsProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackTimeline, IEnumerable<MultiTrackTimelineItem>>(
-            nameof(DataItems), o => o._dataItems, (o, v) => o._dataItems = v);
+            nameof(DataItems), o => o.DataItems, (o, v) => o.DataItems = v);
 
     public static readonly DirectProperty<MultiTrackTimeline, DateTime> DateProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackTimeline, DateTime>(
-            nameof(Date), o => o._date, (o, v) => o._date = v);
+            nameof(Date), o => o.Date, (o, v) => o.Date = v);
 
     public static readonly DirectProperty<MultiTrackTimeline, double> VisibleStartHourProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackTimeline, double>(
-            nameof(VisibleStartHour), o => o._visibleStartHour, (o, v) => o._visibleStartHour = v);
+            nameof(VisibleStartHour), o => o.VisibleStartHour, (o, v) => o.VisibleStartHour = v);
 
     public static readonly DirectProperty<MultiTrackTimeline, double> VisibleEndHourProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackTimeline, double>(
-            nameof(VisibleEndHour), o => o._visibleEndHour, (o, v) => o._visibleEndHour = v, 24.0);
+            nameof(VisibleEndHour), o => o.VisibleEndHour, (o, v) => o.VisibleEndHour = v, 24.0);
 
     public IEnumerable<MultiTrackTimelineItem> DataItems
     {
