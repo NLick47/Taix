@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Disposables.Fluent;
@@ -9,10 +7,7 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Threading;
-using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Navigation.Models;
@@ -24,7 +19,6 @@ using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.Librarys.Api;
 using Taix.Client.Views;
 using Taix.Client.Logging;
-using Taix.Client.Shared.Event;
 
 namespace Taix.Client.ViewModels;
 
@@ -144,11 +138,6 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
     {
         IndexUriList = new List<string>(_pages);
 
-        var overviewObservable = Application.Current.Resources.GetResourceObservable("SideOverview").DistinctUntilChanged();
-        var statisticsObservable = Application.Current.Resources.GetResourceObservable("SideStatistics").DistinctUntilChanged();
-        var detailsObservable = Application.Current.Resources.GetResourceObservable("SideDetails").DistinctUntilChanged();
-        var sortObservable = Application.Current.Resources.GetResourceObservable("SideSort").DistinctUntilChanged();
-
         Items =
         [
             new NavigationItemModel
@@ -156,36 +145,32 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
                 UnSelectedIcon = IconTypes.Home,
                 SelectedIcon = IconTypes.HomeSolid,
                 Uri = nameof(IndexPage),
-                ID = -1
+                ID = -1,
             },
             new NavigationItemModel
             {
                 UnSelectedIcon = IconTypes.ZeroBars,
                 SelectedIcon = IconTypes.ZeroBars,
                 Uri = nameof(ChartPage),
-                ID = 1
+                ID = 1,
             },
             new NavigationItemModel
             {
                 UnSelectedIcon = IconTypes.BulletedList,
                 SelectedIcon = IconTypes.BulletedList,
                 Uri = nameof(DataPage),
-                ID = 2
+                ID = 2,
             },
             new NavigationItemModel
             {
                 UnSelectedIcon = IconTypes.Folder,
                 SelectedIcon = IconTypes.FolderFill,
                 Uri = nameof(CategoryPage),
-                ID = 3
+                ID = 3,
             }
         ];
-
-        SubscribeToResourceObservable(overviewObservable, -1);
-        SubscribeToResourceObservable(statisticsObservable, 1);
-        SubscribeToResourceObservable(detailsObservable, 2);
-        SubscribeToResourceObservable(sortObservable, 3);
     }
+
 
     public void Toast(string content, ToastType type = ToastType.Info, IconTypes icon = IconTypes.Accept)
     {
@@ -223,7 +208,7 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
 
     private bool _isStartupInitCompleted;
 
-    public async Task LoadDefaultPageAsync()
+    public void LoadDefaultPage()
     {
         LoadDefaultPageInternal();
 
@@ -233,7 +218,7 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
         var config = _appConfig.GetConfig();
         if (config.General.IsAutoUpdate)
         {
-            var updateService = _serviceProvider.GetService<UpdateCheckerService>();
+            var updateService = ServiceLocator.GetService<UpdateCheckerService>();
             if (updateService != null)
             {
                 _ = Task.Run(async () =>
@@ -256,17 +241,6 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
             NavSelectedItem = Items[startPageIndex];
             Uri = Items[startPageIndex].Uri;
         }
-    }
-
-    private void SubscribeToResourceObservable(IObservable<object> observable, int id)
-    {
-        observable.Subscribe(newTitle =>
-        {
-            var nv = Items.First(x => x.ID == id);
-            nv.Title = newTitle as string;
-            var index = Items.IndexOf(nv);
-            Items[index] = nv;
-        }).DisposeWith(_disposables);
     }
 
     private void OnSelectedCommandHandle(object obj)

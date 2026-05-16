@@ -94,9 +94,10 @@ public class IndexPageViewModel : IndexPageModel
     /// <summary>
     /// 页面导航到达时执行数据加载。
     /// </summary>
-    public override async Task OnNavigatedToAsync()
+    public override Task OnNavigatedToAsync()
     {
-        await LoadDataAsync();
+        _ = LoadDataAsync();
+        return Task.CompletedTask;
     }
 
     private Task OnRefreshAsync(object _) => LoadDataAsync();

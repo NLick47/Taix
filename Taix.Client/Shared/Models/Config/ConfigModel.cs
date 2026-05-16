@@ -2,7 +2,7 @@ namespace Taix.Client.Shared.Models.Config;
 
 public class ConfigModel
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     public int Version { get; set; }
 

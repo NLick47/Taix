@@ -4,7 +4,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
-using Microsoft.Extensions.DependencyInjection;
 using Taix.Client.Platform.Abstractions.Primitives;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.ViewModels;
@@ -39,16 +38,23 @@ public class MainServicer : IMainServicer
 
     public async Task Start()
     {
-        SystemLanguage.InitializeLanguage(CultureCode.Auto);
-        SystemLanguage.AttachConfig(_config);
-        _themeServicer.Init();
-        _appContextMenuServicer.Init();
-        _webSiteContextMenuServicer.Init();
-
         _shutdownService.AddHandler(OnShuttingDown);
 
+        await Task.WhenAll(
+            _windowStateService.LoadAsync(),
+            _config.LoadAsync()
+        );
+
+        var language = (CultureCode)_config.GetConfig().General.Language;
+        SystemLanguage.InitializeLanguage(language);
+        SystemLanguage.AttachConfig(_config);
+
+        _themeServicer.Init();
+
         ShowMainWindow();
-        await _windowStateService.LoadAsync();
+
+        _appContextMenuServicer.Init();
+        _webSiteContextMenuServicer.Init();
     }
 
     private void ShowMainWindow()
@@ -56,7 +62,8 @@ public class MainServicer : IMainServicer
         var desk = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
         if (desk == null) return;
 
-        var mainWindow = ServiceLocator.GetService<MainWindow>();
+
+        var mainWindow = new MainWindow();
         var mainVM = ServiceLocator.GetService<MainViewModel>();
 
         var config = _config.GetConfig();
@@ -73,20 +80,17 @@ public class MainServicer : IMainServicer
         mainWindow.WindowState = WindowState.Normal;
         mainWindow.DataContext = mainVM;
 
-        mainWindow.Opened += (_, _) =>
+        mainWindow.Opened += async (_, _) =>
         {
-            _ = Task.Run(async () =>
+            try
             {
-                try
-                {
-                    await _config.LoadAsync();
-                    await mainVM.LoadDefaultPageAsync();
-                }
-                catch (Exception ex)
-                {
-                    Logging.Logger.Error($"加载配置失败: {ex.Message}", ex);
-                }
-            });
+                mainVM.LoadDefaultPage();
+                await Task.Delay(100);
+            }
+            catch (Exception ex)
+            {
+                Logging.Logger.Error($"加载默认页面失败: {ex.Message}", ex);
+            }
         };
 
         mainWindow.IsVisible = true;

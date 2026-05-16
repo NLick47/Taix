@@ -20,12 +20,10 @@ namespace Taix.Client.Servicers;
 public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposable
 {
     private readonly IAppConfig _appConfig;
-
-
-    private readonly MainViewModel _main;
     private readonly IThemeServicer _theme;
     private readonly IUIServicer _uIServicer;
     private readonly IWebData _webData;
+    private MainViewModel? _mainViewModel;
     private MenuItem _block;
     private MenuItem _editAlias;
 
@@ -36,13 +34,11 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
     private IDisposable? _languageSubscription;
 
     public WebSiteContextMenuServicer(
-        MainViewModel main,
         IAppConfig appConfig,
         IThemeServicer theme,
         IWebData webData,
         IUIServicer uiServicer)
     {
-        _main = main;
         _appConfig = appConfig;
         _theme = theme;
         _webData = webData;
@@ -51,8 +47,8 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
 
     public void Init()
     {
-        InitializeMenuItems();
         _languageSubscription = _appConfig.WhenLanguageChanged(UpdateMenuTexts);
+        _mainViewModel = ServiceLocator.GetService<MainViewModel>();
     }
 
     public void Dispose()
@@ -62,6 +58,10 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
 
     public ContextMenu GetContextMenu()
     {
+        if (_menu == null)
+        {
+            InitializeMenuItems();
+        }
         return _menu;
     }
 
@@ -132,7 +132,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
             {
                 if (val?.Length > 15)
                 {
-                    _main.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
+                    _mainViewModel?.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
                     return false;
                 }
 
@@ -144,7 +144,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
 
         await _webData.UpdateAsync(site);
 
-        _main.Success(ResourceStrings.AliasUpdated);
+        _mainViewModel?.Success(ResourceStrings.AliasUpdated);
     }
 
     private async void _menu_ContextMenuOpening(object? sender, CancelEventArgs e)
@@ -181,7 +181,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         var site = data.Data as WebSiteModel;
         if (!string.IsNullOrEmpty(site.Domain))
         {
-            _main.Info(ResourceStrings.OperationCompleted);
+            _mainViewModel?.Info(ResourceStrings.OperationCompleted);
             try
             {
                 var psi = new ProcessStartInfo
@@ -216,12 +216,12 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         if (config.Behavior.IgnoreUrlList.Contains(site.Domain))
         {
             config.Behavior.IgnoreUrlList.Remove(site.Domain);
-            _main.Toast(string.Format(ResourceStrings.UnignoredDomain, site.Domain), ToastType.Success);
+            _mainViewModel?.Toast(string.Format(ResourceStrings.UnignoredDomain, site.Domain), ToastType.Success);
         }
         else
         {
             config.Behavior.IgnoreUrlList.Add(site.Domain);
-            _main.Toast(string.Format(ResourceStrings.IgnoredDomain, site.Domain), ToastType.Success);
+            _mainViewModel?.Toast(string.Format(ResourceStrings.IgnoredDomain, site.Domain), ToastType.Success);
 
             newBadgeList.Add(ChartBadgeModel.IgnoreBadge);
         }

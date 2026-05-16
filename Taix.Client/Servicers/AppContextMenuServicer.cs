@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
@@ -24,13 +25,12 @@ namespace Taix.Client.Servicers;
 
 public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
 {
-    private readonly MainWindow _mainWindow;
     private readonly IUIServicer _uiServicer;
     private readonly IAppConfig _appConfig;
     private readonly IAppData _appData;
     private readonly ICategorys _categorys;
-    private readonly MainViewModel _mainViewModel;
     private readonly IThemeServicer _themeServicer;
+    private MainViewModel? _mainViewModel;
 
     private ContextMenu _contextMenu;
     private MenuItem _runMenuItem;
@@ -42,43 +42,60 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
     private IDisposable? _languageSubscription;
 
     public AppContextMenuServicer(
-        MainViewModel mainViewModel,
         ICategorys categorys,
         IAppData appData,
         IAppConfig appConfig,
         IThemeServicer themeServicer,
-        MainWindow mainWindow,
         IUIServicer uiServicer)
     {
-        _mainViewModel = mainViewModel;
         _categorys = categorys;
         _appData = appData;
         _appConfig = appConfig;
         _themeServicer = themeServicer;
         _uiServicer = uiServicer;
-        _mainWindow = mainWindow;
+    }
+
+    private static MainWindow? GetMainWindow()
+    {
+        var desk = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+        return desk?.MainWindow as MainWindow;
     }
 
     public void Init()
     {
-        InitializeContextMenu();
-        _mainWindow.PointerPressed += OnGlobalPointerPressed;
+        var mainWindow = GetMainWindow();
+        if (mainWindow != null)
+        {
+            mainWindow.PointerPressed += OnGlobalPointerPressed;
+        }
         _languageSubscription = _appConfig.WhenLanguageChanged(OnLanguageChanged);
+        _mainViewModel = ServiceLocator.GetService<MainViewModel>();
     }
 
     public void Dispose()
     {
-        _mainWindow.PointerPressed -= OnGlobalPointerPressed;
+        var mainWindow = GetMainWindow();
+        if (mainWindow != null)
+        {
+            mainWindow.PointerPressed -= OnGlobalPointerPressed;
+        }
         _languageSubscription?.Dispose();
     }
 
-    public ContextMenu GetContextMenu() => _contextMenu;
+    public ContextMenu GetContextMenu()
+    {
+        if (_contextMenu == null)
+        {
+            InitializeContextMenu();
+        }
+        return _contextMenu;
+    }
 
     private void OnGlobalPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (e.GetCurrentPoint(null).Properties.IsLeftButtonPressed)
+        if (e.GetCurrentPoint(null).Properties.IsLeftButtonPressed && sender is Visual visual)
         {
-            CloseAllContextMenus(_mainWindow);
+            CloseAllContextMenus(visual);
         }
     }
 
@@ -276,7 +293,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
     {
         if (alias?.Length > 15)
         {
-            _mainViewModel.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
+            _mainViewModel?.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
             return false;
         }
         return true;
@@ -296,7 +313,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
             data.Name = string.IsNullOrEmpty(newAlias) ? appToUpdate.Description : newAlias;
         }
 
-        _mainViewModel.Success(ResourceStrings.AliasUpdated);
+        _mainViewModel?.Success(ResourceStrings.AliasUpdated);
     }
 
     private async void BlockMenuItem_Click(object? sender, PointerPressedEventArgs e)
@@ -317,13 +334,13 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         {
             ignoreList.Remove(app.Name);
             RemoveIgnoreBadge(data);
-            _mainViewModel.Toast(string.Format(ResourceStrings.IgnoringApplicationCancelled, app.Description), ToastType.Success);
+            _mainViewModel?.Toast(string.Format(ResourceStrings.IgnoringApplicationCancelled, app.Description), ToastType.Success);
         }
         else
         {
             ignoreList.Add(app.Name);
             AddIgnoreBadge(data);
-            _mainViewModel.Toast(string.Format(ResourceStrings.ApplicationNowIgnored, app.Description), ToastType.Success);
+            _mainViewModel?.Toast(string.Format(ResourceStrings.ApplicationNowIgnored, app.Description), ToastType.Success);
         }
 
         await _appConfig.SaveAsync();
@@ -358,12 +375,12 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         if (whiteList.Contains(app.Name))
         {
             whiteList.Remove(app.Name);
-            _mainViewModel.Toast($"{ResourceStrings.RemovedApplicationFromWhitelist} {app.Description}", ToastType.Success);
+            _mainViewModel?.Toast($"{ResourceStrings.RemovedApplicationFromWhitelist} {app.Description}", ToastType.Success);
         }
         else
         {
             whiteList.Add(app.Name);
-            _mainViewModel.Toast($"{ResourceStrings.AddedToWhitelist} {app.Description}", ToastType.Success);
+            _mainViewModel?.Toast($"{ResourceStrings.AddedToWhitelist} {app.Description}", ToastType.Success);
         }
 
         await _appConfig.SaveAsync();
@@ -420,7 +437,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         }
         else
         {
-            _mainViewModel.Toast(ResourceStrings.ApplicationFileExist, ToastType.Error, IconTypes.IncidentTriangle);
+            _mainViewModel?.Toast(ResourceStrings.ApplicationFileExist, ToastType.Error, IconTypes.IncidentTriangle);
         }
     }
 
@@ -436,11 +453,11 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         if (File.Exists(app.File))
         {
             Process.Start(app.File);
-            _mainViewModel.Toast(ResourceStrings.OperationCompleted);
+            _mainViewModel?.Toast(ResourceStrings.OperationCompleted);
         }
         else
         {
-            _mainViewModel.Toast(ResourceStrings.ApplicationFileExist, ToastType.Error, IconTypes.IncidentTriangle);
+            _mainViewModel?.Toast(ResourceStrings.ApplicationFileExist, ToastType.Error, IconTypes.IncidentTriangle);
         }
     }
 

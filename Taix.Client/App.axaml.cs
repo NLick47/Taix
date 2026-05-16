@@ -8,15 +8,10 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
-using Microsoft.Extensions.DependencyInjection;
-using Taix.Client.Librarys.Api;
 using Taix.Client.Logging;
 using Taix.Client.Servicers;
-using Taix.Client.Servicers.Instances;
 using Taix.Client.Servicers.Interfaces;
-using Taix.Client.Servicers.Updater;
 using Taix.Client.Shared.Servicers.Interfaces;
-using Taix.Client.ViewModels;
 using Taix.Client.Views;
 
 namespace Taix.Client;
@@ -28,72 +23,6 @@ public class App : Application
 #endif
 
 
-
-    private void ConfigureServices(IServiceCollection services)
-    {
-        services.AddHttpClient("TaixApi", client =>
-        {
-            var serverUrl = Environment.GetEnvironmentVariable("TAIX_SERVER") ?? "http://127.0.0.1:37091";
-            client.BaseAddress = new Uri(serverUrl);
-            client.Timeout = TimeSpan.FromSeconds(6);
-        });
-
-        services.AddSingleton<ITaixApiClient, TaixApiClient>();
-
-        services.AddSingleton<IData, ApiData>();
-        services.AddSingleton<IWebData, ApiWebData>();
-        services.AddSingleton<IAppData, ApiAppData>();
-        services.AddSingleton<IWebSiteData, ApiWebSiteData>();
-        services.AddSingleton<ICategorys, ApiCategorys>();
-        services.AddSingleton<IAppConfig, ApiAppConfig>();
-        services.AddSingleton<IWindowStateService, WindowStateService>();
-
-        services.AddSingleton<IUIServicer, UIServicer>();
-        services.AddSingleton<IDialogService>(provider => provider.GetRequiredService<IUIServicer>() as IDialogService);
-        services.AddSingleton<IClipboardService, ClipboardService>();
-        services.AddSingleton<IProcessService, ProcessService>();
-        services.AddSingleton<IAppContextMenuServicer, AppContextMenuServicer>();
-        services.AddSingleton<IThemeServicer, ThemeServicer>();
-        services.AddSingleton<IMainServicer, MainServicer>();
-
-        services.AddSingleton<IWebSiteContextMenuServicer, WebSiteContextMenuServicer>();
-        services.AddSingleton<IShutdownService, ShutdownService>();
-
-        services.AddSingleton<MainViewModel>();
-        services.AddSingleton<INavigationService>(provider => provider.GetRequiredService<MainViewModel>());
-        services.AddSingleton<INavigationDataService>(provider => provider.GetRequiredService<MainViewModel>());
-        services.AddSingleton<IToastService>(provider => provider.GetRequiredService<MainViewModel>());
-        services.AddSingleton<MainWindow>();
-
-        services.AddTransient<IndexPage>();
-        services.AddTransient<IndexPageViewModel>();
-
-        services.AddTransient<DataPage>();
-        services.AddTransient<DataPageViewModel>();
-
-        services.AddTransient<SettingPage>();
-        services.AddTransient<SettingPageViewModel>();
-
-        services.AddTransient<DetailPage>();
-        services.AddTransient<DetailPageViewModel>();
-
-        services.AddTransient<CategoryPage>();
-        services.AddTransient<CategoryPageViewModel>();
-
-        services.AddTransient<CategoryAppListPage>();
-        services.AddTransient<CategoryAppListPageViewModel>();
-
-        services.AddTransient<CategoryWebSiteListPage>();
-        services.AddTransient<CategoryWebSiteListPageViewModel>();
-
-        services.AddTransient<ChartPage>();
-        services.AddTransient<ChartPageViewModel>();
-
-        services.AddTransient<WebSiteDetailPage>();
-        services.AddTransient<WebSiteDetailPageViewModel>();
-
-        services.AddTransient<UpdateCheckerService>();
-    }
 
     private bool IsRunned()
     {
@@ -184,7 +113,9 @@ public class App : Application
             options.MaxLogFileAgeDays = 30;
             options.SaveThreshold = 100;
             options.AutoSaveInterval = 1000 * 60 * 10;
+#if DEBUG
             options.WriteToConsole = true;
+#endif
         }));
 
         Dispatcher.UIThread.UnhandledException += (sender, e) =>
@@ -202,10 +133,7 @@ public class App : Application
             Logger.Error("[Program crash]" + exception.Message, exception);
             Logger.Flush();
         };
-        var serviceCollection = new ServiceCollection();
-        ConfigureServices(serviceCollection);
-        ServiceLocator.Initialize(serviceCollection.BuildServiceProvider());
-
+        ServiceLocator.Initialize(new AppServiceProvider());
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

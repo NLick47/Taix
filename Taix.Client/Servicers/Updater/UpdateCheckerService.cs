@@ -3,18 +3,20 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading.Tasks;
 using Avalonia;
-using Microsoft.Extensions.DependencyInjection;
+using Taix.Client.Servicers.Interfaces;
 using Taix.Client.ViewModels;
 
 namespace Taix.Client.Servicers.Updater;
 
 public class UpdateCheckerService
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IUIServicer _uiServicer;
+    private readonly MainViewModel _mainViewModel;
 
-    public UpdateCheckerService(IServiceProvider serviceProvider)
+    public UpdateCheckerService(IUIServicer uiServicer, MainViewModel mainViewModel)
     {
-        _serviceProvider = serviceProvider;
+        _uiServicer = uiServicer;
+        _mainViewModel = mainViewModel;
     }
 
     public async Task AutoCheckForUpdatesAsync()
@@ -26,18 +28,16 @@ public class UpdateCheckerService
     public async Task ManualCheckForUpdatesAsync()
     {
         var (release, info) = await GetReleaseInfoAsync();
-        var uiService = GetUIServicer();
-        var mainView = _serviceProvider.GetService<MainViewModel>();
         if (info != null)
         {
             if (release.IsCanUpdate())
                 await ShowUpdateDialogAsync();
             else
-                mainView.Info(Application.Current.Resources["NoUpdateAvailable"] as string);
+                _mainViewModel.Info(Application.Current.Resources["NoUpdateAvailable"] as string);
         }
         else
         {
-            mainView.Error(Application.Current.Resources["UpdateCheckFailed"] as string);
+            _mainViewModel.Error(Application.Current.Resources["UpdateCheckFailed"] as string);
         }
     }
 
@@ -49,15 +49,9 @@ public class UpdateCheckerService
         return (release, info);
     }
 
-    private IUIServicer GetUIServicer()
-    {
-        return _serviceProvider.GetService(typeof(IUIServicer)) as IUIServicer;
-    }
-
     private async Task ShowUpdateDialogAsync()
     {
-        var uiService = GetUIServicer();
-        var result = await uiService.ShowConfirmDialogAsync(
+        var result = await _uiServicer.ShowConfirmDialogAsync(
             Application.Current.Resources["NewVersionAvailable"] as string,
             Application.Current.Resources["WantGoDownloadPage"] as string);
 

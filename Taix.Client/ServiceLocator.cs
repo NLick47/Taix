@@ -1,11 +1,10 @@
 ﻿using System;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Taix.Client;
 
 public static class ServiceLocator
 {
-    private static IServiceProvider _serviceProvider;
+    private static IServiceProvider? _serviceProvider;
 
     public static void Initialize(IServiceProvider serviceProvider)
     {
@@ -16,7 +15,7 @@ public static class ServiceLocator
     {
         if (_serviceProvider == null) throw new InvalidOperationException("Service provider has not been initialized.");
 
-        return _serviceProvider.GetService<T>();
+        return _serviceProvider.GetService(typeof(T)) as T ?? throw new InvalidOperationException();
     }
 
     public static T GetRequiredService<T>() where T : class
@@ -28,6 +27,7 @@ public static class ServiceLocator
 
     public static object GetRequiredService(Type type)
     {
+        if (_serviceProvider == null) throw new InvalidOperationException("Service provider has not been initialized.");
         var service = _serviceProvider.GetService(type);
         if (service == null) throw new InvalidOperationException($"Service of type {type} not found.");
         return service;

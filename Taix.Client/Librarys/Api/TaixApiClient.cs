@@ -22,9 +22,9 @@ public class TaixApiClient : ITaixApiClient
         TypeInfoResolver = TaixApiJsonContext.Default
     };
 
-    public TaixApiClient(IHttpClientFactory httpClientFactory)
+    public TaixApiClient(HttpClient httpClient)
     {
-        _httpClient = httpClientFactory.CreateClient("TaixApi");
+        _httpClient = httpClient;
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026")]

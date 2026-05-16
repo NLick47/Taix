@@ -20,10 +20,10 @@ public class SystemLanguage
     };
 
 
-    private static readonly Dictionary<CultureCode, ResourceDictionary> PageLocaleUri = new()
+    private static readonly Dictionary<CultureCode, Func<ResourceDictionary>> PageLocaleUri = new()
     {
-        { CultureCode.ZhCn, new StringResourcesCn() },
-        { CultureCode.EnUs, new StringResourcesEn() }
+        { CultureCode.ZhCn, () => new StringResourcesCn() },
+        { CultureCode.EnUs, () => new StringResourcesEn() }
     };
 
     private static readonly Dictionary<CultureCode, CultureInfo> CultureCodeToCultureInfo = new()
@@ -104,8 +104,9 @@ public class SystemLanguage
         if (culture == CultureCode.Auto) culture = Cultures[GetCurrentSystemLanguage()];
         if (culture == _currentLanguage) return;
 
-        if (PageLocaleUri.TryGetValue(culture, out var pageLocale))
+        if (PageLocaleUri.TryGetValue(culture, out var factory))
         {
+            var pageLocale = factory();
             foreach (var pageLocaleItem in pageLocale)
                 Application.Current.Resources[pageLocaleItem.Key] = pageLocaleItem.Value;
             _currentLanguage = culture;
