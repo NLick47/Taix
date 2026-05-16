@@ -237,8 +237,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         var data = _menu.Tag as ChartsDataModel;
         var site = data.Data as WebSiteModel;
         var categories = await _webData.GetWebSiteCategoriesAsync();
-        var siteFromCache = await _webData.GetWebSiteAsync(site.ID);
-        var siteCategoryId = siteFromCache?.CategoryID ?? 0;
+        var siteCategoryId = site?.CategoryID ?? 0;
         foreach (var category in categories)
         {
             if (category.IsSystem) continue;
@@ -250,10 +249,11 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
             _setCategory.Items.Add(categoryMenu);
         }
 
-        var sysCategory = categories.FirstOrDefault(c => c.IsSystem);
-        if (siteCategoryId != 0 && sysCategory != null && siteCategoryId != sysCategory.ID)
+        var currentCategory = categories.FirstOrDefault(c => c.ID == siteCategoryId);
+        if (currentCategory != null && !currentCategory.IsSystem)
         {
             _setCategory.Items.Add(new Separator());
+            var sysCategory = categories.FirstOrDefault(c => c.IsSystem);
             var uncategorizedMenuItem = new MenuItem
             {
                 Header = sysCategory?.Name ?? ResourceStrings.Uncategorized
@@ -268,7 +268,9 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         var data = _menu.Tag as ChartsDataModel;
         if (data != null)
         {
-            await _webData.UpdateWebSitesCategoryAsync(new[] { (data.Data as WebSiteModel).ID }, 0);
+            var site = data.Data as WebSiteModel;
+            await _webData.UpdateWebSitesCategoryAsync(new[] { site.ID }, 0);
+            data.Data = site with { CategoryID = 0, Category = null };
             data.BadgeList = new List<ChartBadgeModel>();
         }
     }
@@ -281,7 +283,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         {
             var site = data.Data as WebSiteModel;
             await _webData.UpdateWebSitesCategoryAsync(new[] { site.ID }, categoryId);
-            site = site with { CategoryID = categoryId, Category = category };
+            data.Data = site with { CategoryID = categoryId, Category = category };
 
             var newBadgeList = new List<ChartBadgeModel>();
             if (data.BadgeList != null)

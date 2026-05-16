@@ -2,6 +2,7 @@ use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, Timelike, U
 use sqlx::SqlitePool;
 use std::collections::HashMap;
 use std::path::Path;
+use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use crate::constants;
@@ -12,7 +13,16 @@ use crate::models::web::{WebBrowseLogModel, WebSiteCategoryModel, WebSiteModel, 
 use crate::services::config::ConfigService;
 use crate::utils::{last_day_of_month, parse_timezone, tz_date_to_utc_range, tz_naive_to_utc};
 
+static WEB_CATEGORY_CACHE: std::sync::OnceLock<RwLock<Option<Vec<WebSiteCategoryModel>>>> = std::sync::OnceLock::new();
 
+fn web_category_cache() -> &'static RwLock<Option<Vec<WebSiteCategoryModel>>> {
+    WEB_CATEGORY_CACHE.get_or_init(|| RwLock::new(None))
+}
+
+async fn invalidate_web_category_cache() {
+    let mut cache = web_category_cache().write().await;
+    *cache = None;
+}
 
 pub struct WebDataService;
 
@@ -185,6 +195,15 @@ impl WebDataService {
 
     pub async fn get_web_site_categories(pool: &SqlitePool) -> Result<Vec<WebSiteCategoryModel>, AppError> {
         debug!("get_web_site_categories");
+
+        {
+            let cache = web_category_cache().read().await;
+            if let Some(cached) = cache.as_ref() {
+                debug!("get_web_site_categories from cache");
+                return Ok(cached.clone());
+            }
+        }
+
         let mut cats: Vec<WebSiteCategoryModel> =
             sqlx::query_as("SELECT * FROM WebSiteCategoryModels WHERE IsSystem = 0")
                 .fetch_all(pool).await?;
@@ -193,13 +212,18 @@ impl WebDataService {
             sqlx::query_as("SELECT * FROM WebSiteCategoryModels WHERE IsSystem = 1 LIMIT 1")
                 .fetch_optional(pool).await?;
 
-        if let Some(sys) = system {
-            let mut result = vec![sys];
-            result.append(&mut cats);
-            Ok(result)
+        let result = if let Some(sys) = system {
+            let mut all = vec![sys];
+            all.append(&mut cats);
+            all
         } else {
-            Ok(cats)
-        }
+            cats
+        };
+
+        let mut cache = web_category_cache().write().await;
+        *cache = Some(result.clone());
+
+        Ok(result)
     }
 
     pub async fn create_web_site_category(pool: &SqlitePool, data: WebSiteCategoryModel) -> Result<WebSiteCategoryModel, AppError> {
@@ -207,6 +231,7 @@ impl WebDataService {
         let id = sqlx::query("INSERT INTO WebSiteCategoryModels (Name, IconFile, Color) VALUES (?, ?, ?)")
             .bind(&data.name).bind(&data.icon_file).bind(&data.color)
             .execute(pool).await?.last_insert_rowid();
+        invalidate_web_category_cache().await;
         Ok(WebSiteCategoryModel { id, name: data.name, icon_file: data.icon_file, color: data.color, is_system: false })
     }
 
@@ -220,6 +245,7 @@ impl WebDataService {
         sqlx::query("UPDATE WebSiteCategoryModels SET Name = ?, IconFile = ?, Color = ? WHERE ID = ?")
             .bind(&data.name).bind(&data.icon_file).bind(&data.color).bind(id)
             .execute(pool).await?;
+        invalidate_web_category_cache().await;
         Ok(())
     }
 
@@ -264,6 +290,7 @@ impl WebDataService {
             .await?;
 
         tx.commit().await?;
+        invalidate_web_category_cache().await;
         Ok(())
     }
 

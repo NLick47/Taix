@@ -219,8 +219,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         if (app == null) return;
 
         var categories = await _categorys.GetCategoriesAsync();
-        var appData = await _appData.GetAppAsync(app.ID);
-        var appCategoryId = appData?.CategoryID ?? 0;
+        var appCategoryId = app?.CategoryID ?? 0;
 
         foreach (var category in categories)
         {
@@ -229,7 +228,8 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
             _setCategoryMenuItem.Items.Add(categoryMenuItem);
         }
 
-        if (appCategoryId != 0)
+        var currentCategory = categories.FirstOrDefault(c => c.ID == appCategoryId);
+        if (currentCategory != null && !currentCategory.IsSystem)
         {
             _setCategoryMenuItem.Items.Add(new Separator());
             var sysCategory = categories.FirstOrDefault(c => c.IsSystem);
@@ -393,8 +393,13 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
 
         var app = await _appData.GetAppAsync(appId);
         if (app == null) return;
-        app = app with { CategoryID = category.ID, Category = category };
-        await _appData.UpdateAppAsync(app);
+        var updatedApp = app with { CategoryID = category.ID, Category = category };
+        await _appData.UpdateAppAsync(updatedApp);
+
+        if (data?.Data is DailyLogModel dailyLog)
+            dailyLog.AppModel = updatedApp;
+        else if (data?.Data is HoursLogModel hoursLog)
+            hoursLog.AppModel = updatedApp;
     }
 
     private void UpdateCategoryBadge(ChartsDataModel? data, CategoryModel category)
@@ -417,8 +422,13 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         data.BadgeList = new List<ChartBadgeModel>();
         var app = await _appData.GetAppAsync(appId);
         if (app == null) return;
-        app = app with { CategoryID = 0, Category = null };
-        await _appData.UpdateAppAsync(app);
+        var updatedApp = app with { CategoryID = 0, Category = null };
+        await _appData.UpdateAppAsync(updatedApp);
+
+        if (data.Data is DailyLogModel dailyLog)
+            dailyLog.AppModel = updatedApp;
+        else if (data.Data is HoursLogModel hoursLog)
+            hoursLog.AppModel = updatedApp;
     }
 
     private void OpenDirMenuItem_Click(object? sender, PointerPressedEventArgs e)
