@@ -32,25 +32,49 @@ impl DataService {
         let tz = parse_timezone(tz_id);
         let days = (end - start).num_days() + 1;
 
-        // 小范围（≤31天）：从 HoursLogModels 精确查询，避免 UTC 日期边界问题
-        // 大范围（>31天）：从 DailyLogModels 查询，不后过滤，接受首尾边界轻微混叠
+        // 小范围（≤31天）：从 HoursLogModels 精确查询，SQL 层过滤排除应用
+        // 大范围（>31天）：从 DailyLogModels 查询，SQL 层过滤排除应用
+        let excluded = config_service.get_excluded_app_id_set(pool).await;
+        let excluded_vec: Vec<i64> = excluded.into_iter().collect();
+        let has_excluded = !excluded_vec.is_empty();
+
         let mut groups: HashMap<i64, (i64, NaiveDate)> = HashMap::new();
         if days <= 31 {
             let utc_start = tz_date_to_utc_range(start, &tz).0;
             let utc_end = tz_date_to_utc_range(end, &tz).1;
 
-            let rows: Vec<(i64, i64, DateTime<Utc>)> = sqlx::query_as(
-                r#"
-                SELECT AppModelID, SUM(Time) as total, MAX(DataTime) as last_time
-                FROM HoursLogModels
-                WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0
-                GROUP BY AppModelID
-                "#,
-            )
-            .bind(utc_start)
-            .bind(utc_end)
-            .fetch_all(pool)
-            .await?;
+            let rows: Vec<(i64, i64, DateTime<Utc>)> = if !has_excluded {
+                sqlx::query_as(
+                    r#"
+                    SELECT AppModelID, SUM(Time) as total, MAX(DataTime) as last_time
+                    FROM HoursLogModels
+                    WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0
+                    GROUP BY AppModelID
+                    "#,
+                )
+                .bind(utc_start)
+                .bind(utc_end)
+                .fetch_all(pool)
+                .await?
+            } else {
+                let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+                let sql = format!(
+                    r#"
+                    SELECT AppModelID, SUM(Time) as total, MAX(DataTime) as last_time
+                    FROM HoursLogModels
+                    WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0 AND AppModelID NOT IN ({})
+                    GROUP BY AppModelID
+                    "#,
+                    placeholders
+                );
+                let mut query = sqlx::query_as::<_, (i64, i64, DateTime<Utc>)>(&sql)
+                    .bind(utc_start)
+                    .bind(utc_end);
+                for id in &excluded_vec {
+                    query = query.bind(*id);
+                }
+                query.fetch_all(pool).await?
+            };
 
             for (app_id, time, last_time) in rows {
                 let local_date = last_time.with_timezone(&tz).date_naive();
@@ -60,13 +84,28 @@ impl DataService {
         } else {
             let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
 
-            let logs: Vec<DailyLogModel> = sqlx::query_as(
-                "SELECT * FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0"
-            )
-            .bind(utc_start)
-            .bind(utc_end)
-            .fetch_all(pool)
-            .await?;
+            let logs: Vec<DailyLogModel> = if !has_excluded {
+                sqlx::query_as(
+                    "SELECT * FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0"
+                )
+                .bind(utc_start)
+                .bind(utc_end)
+                .fetch_all(pool)
+                .await?
+            } else {
+                let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+                let sql = format!(
+                    "SELECT * FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0 AND AppModelID NOT IN ({})",
+                    placeholders
+                );
+                let mut query = sqlx::query_as::<_, DailyLogModel>(&sql)
+                    .bind(utc_start)
+                    .bind(utc_end);
+                for id in &excluded_vec {
+                    query = query.bind(*id);
+                }
+                query.fetch_all(pool).await?
+            };
 
             for log in logs {
                 let entry = groups.entry(log.app_model_id).or_insert((0, log.date));
@@ -79,18 +118,11 @@ impl DataService {
             .fetch_all(pool)
             .await?;
 
-        let app_refs: Vec<(i64, &str, Option<&str>)> = apps.iter()
-            .map(|a| (a.id, a.name.as_deref().unwrap_or(""), a.file.as_deref()))
-            .collect();
-        let excluded_ids = config_service.get_excluded_app_ids(&app_refs).await;
-        let excluded_set: std::collections::HashSet<i64> = excluded_ids.into_iter().collect();
         let app_map: std::collections::HashMap<i64, AppModelRow> =
             apps.into_iter().map(|a| (a.id, a)).collect();
 
-        // 过滤后排序分页
-        let mut sorted_groups: Vec<_> = groups.into_iter()
-            .filter(|(app_id, _)| !excluded_set.contains(app_id))
-            .collect();
+        // 已在 SQL 层过滤排除应用，直接排序分页
+        let mut sorted_groups: Vec<_> = groups.into_iter().collect();
         sorted_groups.sort_by(|a, b| b.1.0.cmp(&a.1.0));
         let offset_usize = offset as usize;
         let limit_usize = if limit > 0 { limit as usize } else { usize::MAX };
@@ -424,31 +456,46 @@ impl DataService {
         start: NaiveDate,
         end: NaiveDate,
         tz_id: &str,
+        config_service: &ConfigService,
     ) -> Result<Vec<f64>, AppError> {
         debug!("get_range_total_data: start={} end={}", start, end);
+        let excluded = config_service.get_excluded_app_id_set(pool).await;
+        let excluded_vec: Vec<i64> = excluded.into_iter().collect();
+        let has_excluded = !excluded_vec.is_empty();
+
         if start == end {
             let tz = parse_timezone(tz_id);
             let (utc_start, utc_end) = tz_date_to_utc_range(start, &tz);
 
-            let rows: Vec<(DateTime<Utc>, i64)> = sqlx::query_as(
-                r#"
-                SELECT DataTime as data_time, SUM(Time) as total
-                FROM HoursLogModels
-                WHERE DataTime >= ? AND DataTime < ?
-                GROUP BY DataTime
-                "#,
-            )
-            .bind(utc_start)
-            .bind(utc_end)
-            .fetch_all(pool)
-            .await?;
-
-            let mut result = vec![0.0; 24];
-            for (utc_dt, total) in rows {
-                let local_hour = utc_dt.with_timezone(&tz).hour() as usize;
-                if local_hour < 24 {
-                    result[local_hour] += total as f64;
+            let rows: Vec<(DateTime<Utc>, i64)> = if !has_excluded {
+                sqlx::query_as(
+                    "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? GROUP BY DataTime"
+                )
+                .bind(utc_start).bind(utc_end)
+                .fetch_all(pool).await?
+            } else {
+                let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+                let sql = format!(
+                    "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID NOT IN ({}) GROUP BY DataTime",
+                    placeholders
+                );
+                let mut query = sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
+                    .bind(utc_start).bind(utc_end);
+                for id in &excluded_vec {
+                    query = query.bind(*id);
                 }
+                query.fetch_all(pool).await?
+            };
+
+            let data_map: HashMap<DateTime<Utc>, i64> = rows.into_iter().collect();
+            let mut result = vec![0.0; 24];
+            for i in 0..24 {
+                let local_hour = NaiveDateTime::new(
+                    start,
+                    chrono::NaiveTime::from_hms_opt(i as u32, 0, 0).unwrap(),
+                );
+                let utc_hour = tz_naive_to_utc(local_hour, &tz);
+                result[i] = data_map.get(&utc_hour).copied().unwrap_or(0) as f64;
             }
             Ok(result)
         } else {
@@ -456,18 +503,25 @@ impl DataService {
             let utc_start = tz_date_to_utc_range(start, &tz).0;
             let utc_end = tz_date_to_utc_range(end, &tz).1;
 
-            let rows: Vec<(DateTime<Utc>, i64)> = sqlx::query_as(
-                r#"
-                SELECT DataTime, SUM(Time) as total
-                FROM HoursLogModels
-                WHERE DataTime >= ? AND DataTime < ?
-                GROUP BY DataTime
-                "#,
-            )
-            .bind(utc_start)
-            .bind(utc_end)
-            .fetch_all(pool)
-            .await?;
+            let rows: Vec<(DateTime<Utc>, i64)> = if !has_excluded {
+                sqlx::query_as(
+                    "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? GROUP BY DataTime"
+                )
+                .bind(utc_start).bind(utc_end)
+                .fetch_all(pool).await?
+            } else {
+                let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+                let sql = format!(
+                    "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID NOT IN ({}) GROUP BY DataTime",
+                    placeholders
+                );
+                let mut query = sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
+                    .bind(utc_start).bind(utc_end);
+                for id in &excluded_vec {
+                    query = query.bind(*id);
+                }
+                query.fetch_all(pool).await?
+            };
 
             let days = (end - start).num_days() + 1;
             let mut result = vec![0.0; days as usize];
@@ -486,26 +540,38 @@ impl DataService {
         pool: &SqlitePool,
         year: NaiveDate,
         tz_id: &str,
+        config_service: &ConfigService,
     ) -> Result<Vec<f64>, AppError> {
         debug!("get_month_total_data: year={}", year);
+        let excluded = config_service.get_excluded_app_id_set(pool).await;
+        let excluded_vec: Vec<i64> = excluded.into_iter().collect();
+        let has_excluded = !excluded_vec.is_empty();
+
         let tz = parse_timezone(tz_id);
         let year_start = NaiveDate::from_ymd_opt(year.year(), 1, 1).unwrap();
         let year_end = NaiveDate::from_ymd_opt(year.year(), 12, 31).unwrap();
         let utc_start = tz_date_to_utc_range(year_start, &tz).0;
         let utc_end = tz_date_to_utc_range(year_end, &tz).1;
 
-        let rows: Vec<(DateTime<Utc>, i64)> = sqlx::query_as(
-            r#"
-            SELECT DataTime, SUM(Time) as total
-            FROM HoursLogModels
-            WHERE DataTime >= ? AND DataTime < ?
-            GROUP BY DataTime
-            "#,
-        )
-        .bind(utc_start)
-        .bind(utc_end)
-        .fetch_all(pool)
-        .await?;
+        let rows: Vec<(DateTime<Utc>, i64)> = if !has_excluded {
+            sqlx::query_as(
+                "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? GROUP BY DataTime"
+            )
+            .bind(utc_start).bind(utc_end)
+            .fetch_all(pool).await?
+        } else {
+            let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID NOT IN ({}) GROUP BY DataTime",
+                placeholders
+            );
+            let mut query = sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_vec {
+                query = query.bind(*id);
+            }
+            query.fetch_all(pool).await?
+        };
 
         let mut result = vec![0.0; 12];
         for (utc_dt, total) in rows {
@@ -524,92 +590,100 @@ impl DataService {
         start: NaiveDate,
         end: NaiveDate,
         tz_id: &str,
+        config_service: &ConfigService,
     ) -> Result<i64, AppError> {
         debug!("get_date_range_app_count: start={} end={}", start, end);
+        let excluded = config_service.get_excluded_app_id_set(pool).await;
+        let excluded_vec: Vec<i64> = excluded.into_iter().collect();
+        let has_excluded = !excluded_vec.is_empty();
+
         let tz = parse_timezone(tz_id);
         let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
-        let count: (i64,) = sqlx::query_as(
-            r#"
-            SELECT COUNT(DISTINCT AppModelID) FROM DailyLogModels
-            WHERE Date >= ? AND Date <= ? AND AppModelID != 0
-            "#,
-        )
-        .bind(utc_start)
-        .bind(utc_end)
-        .fetch_one(pool)
-        .await?;
-        Ok(count.0)
+
+        let count: i64 = if !has_excluded {
+            sqlx::query_scalar(
+                "SELECT COUNT(DISTINCT AppModelID) FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0"
+            )
+            .bind(utc_start).bind(utc_end)
+            .fetch_one(pool).await?
+        } else {
+            let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                "SELECT COUNT(DISTINCT AppModelID) FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0 AND AppModelID NOT IN ({})",
+                placeholders
+            );
+            let mut query = sqlx::query_scalar::<_, i64>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_vec {
+                query = query.bind(*id);
+            }
+            query.fetch_one(pool).await?
+        };
+        Ok(count)
     }
 
     pub async fn get_category_hours_data(
         pool: &SqlitePool,
         date: NaiveDate,
         tz_id: &str,
+        config_service: &ConfigService,
     ) -> Result<Vec<ColumnDataModel>, AppError> {
         debug!("get_category_hours_data: date={}", date);
+        let excluded = config_service.get_excluded_app_id_set(pool).await;
+        let excluded_vec: Vec<i64> = excluded.into_iter().collect();
+        let has_excluded = !excluded_vec.is_empty();
+
         let tz = parse_timezone(tz_id);
         let (utc_start, utc_end) = tz_date_to_utc_range(date, &tz);
 
-        let categories: Vec<(i64, i64)> = sqlx::query_as(
-            r#"
-            SELECT a.CategoryID as category_id, SUM(h.Time) as total
-            FROM HoursLogModels h
-            JOIN AppModels a ON h.AppModelID = a.ID
-            WHERE h.DataTime >= ? AND h.DataTime < ?
-            GROUP BY a.CategoryID
-            ORDER BY category_id DESC
-            "#,
-        )
-        .bind(utc_start)
-        .bind(utc_end)
-        .fetch_all(pool)
-        .await?;
+        let rows: Vec<(i64, DateTime<Utc>, i64)> = if !has_excluded {
+            sqlx::query_as(
+                r#"
+                SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
+                FROM HoursLogModels h
+                JOIN AppModels a ON h.AppModelID = a.ID
+                WHERE h.DataTime >= ? AND h.DataTime < ?
+                GROUP BY a.CategoryID, h.DataTime
+                "#,
+            )
+            .bind(utc_start).bind(utc_end)
+            .fetch_all(pool).await?
+        } else {
+            let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                r#"
+                SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
+                FROM HoursLogModels h
+                JOIN AppModels a ON h.AppModelID = a.ID
+                WHERE h.DataTime >= ? AND h.DataTime < ? AND h.AppModelID NOT IN ({})
+                GROUP BY a.CategoryID, h.DataTime
+                "#,
+                placeholders
+            );
+            let mut query = sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_vec {
+                query = query.bind(*id);
+            }
+            query.fetch_all(pool).await?
+        };
 
-        let data: Vec<(i64, DateTime<Utc>, i64)> = sqlx::query_as(
-            r#"
-            SELECT a.CategoryID as category_id, h.DataTime as data_time, SUM(h.Time) as total
-            FROM HoursLogModels h
-            JOIN AppModels a ON h.AppModelID = a.ID
-            WHERE h.DataTime >= ? AND h.DataTime < ?
-            GROUP BY a.CategoryID, h.DataTime
-            "#,
-        )
-        .bind(utc_start)
-        .bind(utc_end)
-        .fetch_all(pool)
-        .await?;
+        let mut map: HashMap<i64, Vec<f64>> = HashMap::new();
+        for (cat_id, utc_dt, total) in rows {
+            let local_hour = utc_dt.with_timezone(&tz).hour() as usize;
+            if local_hour < 24 {
+                let entry = map.entry(cat_id).or_insert_with(|| vec![0.0; 24]);
+                entry[local_hour] += total as f64;
+            }
+        }
 
         let mut list = Vec::new();
-        for (cat_id, _) in &categories {
+        for (cat_id, values) in map {
             list.push(ColumnDataModel {
                 app_id: None,
-                category_id: Some(*cat_id),
-                values: vec![0.0; 24],
+                category_id: Some(cat_id),
+                values,
             });
-        }
-
-        let data_map: HashMap<(i64, DateTime<Utc>), i64> =
-            data.into_iter().map(|(cid, dt, t)| ((cid, dt), t)).collect();
-        let mut list_map: HashMap<i64, &mut ColumnDataModel> =
-            HashMap::with_capacity(list.len());
-        for item in &mut list {
-            if let Some(cid) = item.category_id {
-                list_map.insert(cid, item);
-            }
-        }
-
-        for i in 0..24 {
-            let local_hour = NaiveDateTime::new(
-                date,
-                chrono::NaiveTime::from_hms_opt(i as u32, 0, 0).unwrap(),
-            );
-            let utc_hour = tz_naive_to_utc(local_hour, &tz);
-            for (cat_id, _) in &categories {
-                let total = data_map.get(&(*cat_id, utc_hour)).copied().unwrap_or(0);
-                if let Some(item) = list_map.get_mut(cat_id) {
-                    item.values[i] = total as f64;
-                }
-            }
         }
 
         Ok(list)
@@ -620,34 +694,58 @@ impl DataService {
         start: NaiveDate,
         end: NaiveDate,
         tz_id: &str,
+        config_service: &ConfigService,
     ) -> Result<Vec<ColumnDataModel>, AppError> {
         debug!("get_category_range_data: start={} end={}", start, end);
+        let excluded = config_service.get_excluded_app_id_set(pool).await;
+        let excluded_vec: Vec<i64> = excluded.into_iter().collect();
+        let has_excluded = !excluded_vec.is_empty();
+
         let tz = parse_timezone(tz_id);
         let utc_start = tz_date_to_utc_range(start, &tz).0;
         let utc_end = tz_date_to_utc_range(end, &tz).1;
 
-        let rows: Vec<(i64, DateTime<Utc>, i64)> = sqlx::query_as(
-            r#"
-            SELECT a.CategoryID as category_id, h.DataTime as data_time, h.Time as time
-            FROM HoursLogModels h
-            JOIN AppModels a ON h.AppModelID = a.ID
-            WHERE h.DataTime >= ? AND h.DataTime < ?
-            "#,
-        )
-        .bind(utc_start)
-        .bind(utc_end)
-        .fetch_all(pool)
-        .await?;
+        let rows: Vec<(i64, DateTime<Utc>, i64)> = if !has_excluded {
+            sqlx::query_as(
+                r#"
+                SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
+                FROM HoursLogModels h
+                JOIN AppModels a ON h.AppModelID = a.ID
+                WHERE h.DataTime >= ? AND h.DataTime < ?
+                GROUP BY a.CategoryID, h.DataTime
+                "#,
+            )
+            .bind(utc_start).bind(utc_end)
+            .fetch_all(pool).await?
+        } else {
+            let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                r#"
+                SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
+                FROM HoursLogModels h
+                JOIN AppModels a ON h.AppModelID = a.ID
+                WHERE h.DataTime >= ? AND h.DataTime < ? AND h.AppModelID NOT IN ({})
+                GROUP BY a.CategoryID, h.DataTime
+                "#,
+                placeholders
+            );
+            let mut query = sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_vec {
+                query = query.bind(*id);
+            }
+            query.fetch_all(pool).await?
+        };
 
         let days = (end - start).num_days() + 1;
         let mut map: HashMap<i64, Vec<f64>> = HashMap::new();
 
-        for (cat_id, utc_dt, time) in rows {
+        for (cat_id, utc_dt, total) in rows {
             let local_date = utc_dt.with_timezone(&tz).date_naive();
             if local_date >= start && local_date <= end {
                 let entry = map.entry(cat_id).or_insert_with(|| vec![0.0; days as usize]);
                 let index = (local_date - start).num_days() as usize;
-                entry[index] += time as f64;
+                entry[index] += total as f64;
             }
         }
 
@@ -667,35 +765,58 @@ impl DataService {
         pool: &SqlitePool,
         date: NaiveDate,
         tz_id: &str,
+        config_service: &ConfigService,
     ) -> Result<Vec<ColumnDataModel>, AppError> {
         debug!("get_category_year_data: date={}", date);
+        let excluded = config_service.get_excluded_app_id_set(pool).await;
+        let excluded_vec: Vec<i64> = excluded.into_iter().collect();
+        let has_excluded = !excluded_vec.is_empty();
+
         let tz = parse_timezone(tz_id);
         let year_start = NaiveDate::from_ymd_opt(date.year(), 1, 1).unwrap();
         let year_end = NaiveDate::from_ymd_opt(date.year(), 12, 31).unwrap();
         let utc_start = tz_date_to_utc_range(year_start, &tz).0;
         let utc_end = tz_date_to_utc_range(year_end, &tz).1;
 
-        let rows: Vec<(i64, DateTime<Utc>, i64)> = sqlx::query_as(
-            r#"
-            SELECT a.CategoryID as category_id, h.DataTime as data_time, SUM(h.Time) as total
-            FROM HoursLogModels h
-            JOIN AppModels a ON h.AppModelID = a.ID
-            WHERE h.DataTime >= ? AND h.DataTime < ?
-            GROUP BY a.CategoryID, h.DataTime
-            "#,
-        )
-        .bind(utc_start)
-        .bind(utc_end)
-        .fetch_all(pool)
-        .await?;
+        let rows: Vec<(i64, DateTime<Utc>, i64)> = if !has_excluded {
+            sqlx::query_as(
+                r#"
+                SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
+                FROM HoursLogModels h
+                JOIN AppModels a ON h.AppModelID = a.ID
+                WHERE h.DataTime >= ? AND h.DataTime < ?
+                GROUP BY a.CategoryID, h.DataTime
+                "#,
+            )
+            .bind(utc_start).bind(utc_end)
+            .fetch_all(pool).await?
+        } else {
+            let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                r#"
+                SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
+                FROM HoursLogModels h
+                JOIN AppModels a ON h.AppModelID = a.ID
+                WHERE h.DataTime >= ? AND h.DataTime < ? AND h.AppModelID NOT IN ({})
+                GROUP BY a.CategoryID, h.DataTime
+                "#,
+                placeholders
+            );
+            let mut query = sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_vec {
+                query = query.bind(*id);
+            }
+            query.fetch_all(pool).await?
+        };
 
         let mut map: HashMap<i64, Vec<f64>> = HashMap::new();
-        for (cat_id, utc_dt, time) in rows {
+        for (cat_id, utc_dt, total) in rows {
             let local_date = utc_dt.with_timezone(&tz).date_naive();
             if local_date.year() == date.year() {
                 let month = local_date.month() as usize;
                 let entry = map.entry(cat_id).or_insert_with(|| vec![0.0; 12]);
-                entry[month - 1] += time as f64;
+                entry[month - 1] += total as f64;
             }
         }
 

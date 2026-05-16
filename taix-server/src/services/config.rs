@@ -1,10 +1,13 @@
+use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tokio::fs;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use regex::RegexSet;
+use sqlx::SqlitePool;
 
 use crate::error::AppError;
 use crate::models::config::{ConfigModel, CURRENT_CONFIG_VERSION};
@@ -13,6 +16,7 @@ pub struct ConfigService {
     path: std::path::PathBuf,
     cache: RwLock<Option<Arc<ConfigModel>>>,
     filters: RwLock<CompiledFilters>,
+    excluded_apps_cache: RwLock<Option<(HashSet<i64>, Instant)>>,
 }
 
 struct CompiledFilters {
@@ -32,6 +36,7 @@ impl ConfigService {
                 app_whitelist: None,
                 url_ignore: None,
             }),
+            excluded_apps_cache: RwLock::new(None),
         }
     }
 
@@ -69,6 +74,9 @@ impl ConfigService {
         drop(cache);
 
         self.recompile_filters(config).await;
+
+        let mut excluded_cache = self.excluded_apps_cache.write().await;
+        *excluded_cache = None;
 
         info!("config saved and cache updated");
         Ok(())
@@ -113,6 +121,38 @@ impl ConfigService {
             }
         }
         excluded
+    }
+
+    /// 从数据库查询 AppModels 并计算应排除的应用 ID 集合（带 5 秒缓存）
+    pub async fn get_excluded_app_id_set(&self, pool: &SqlitePool) -> HashSet<i64> {
+        {
+            let cache = self.excluded_apps_cache.read().await;
+            if let Some((set, timestamp)) = cache.as_ref() {
+                if timestamp.elapsed() < Duration::from_secs(5) {
+                    return set.clone();
+                }
+            }
+        }
+
+        let apps: Vec<(i64, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT ID, Name, File FROM AppModels"
+        )
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
+
+        let app_refs: Vec<(i64, &str, Option<&str>)> = apps
+            .iter()
+            .map(|(id, name, file)| (*id, name.as_deref().unwrap_or(""), file.as_deref()))
+            .collect();
+
+        let excluded_ids = self.get_excluded_app_ids(&app_refs).await;
+        let set: HashSet<i64> = excluded_ids.into_iter().collect();
+
+        let mut cache = self.excluded_apps_cache.write().await;
+        *cache = Some((set.clone(), Instant::now()));
+
+        set
     }
 
     /// 批量匹配应排除的域名

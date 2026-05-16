@@ -24,6 +24,27 @@ async fn invalidate_web_category_cache() {
     *cache = None;
 }
 
+/// 查询 WebSiteModels 并计算应排除的 SiteId 列表
+async fn get_excluded_site_ids(
+    pool: &SqlitePool,
+    config_service: &ConfigService,
+) -> Vec<i64> {
+    let sites: Vec<(i64, String)> = sqlx::query_as("SELECT ID, Domain FROM WebSiteModels")
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
+    if sites.is_empty() {
+        return Vec::new();
+    }
+    let domains: Vec<&str> = sites.iter().map(|(_, d)| d.as_str()).collect();
+    let excluded_domains = config_service.get_excluded_domains(&domains).await;
+    let excluded_set: std::collections::HashSet<String> = excluded_domains.into_iter().collect();
+    sites.into_iter()
+        .filter(|(_, d)| excluded_set.contains(d))
+        .map(|(id, _)| id)
+        .collect()
+}
+
 pub struct WebDataService;
 
 impl WebDataService {
@@ -468,27 +489,65 @@ impl WebDataService {
         Ok(count.0)
     }
 
-    pub async fn get_categories_statistics(pool: &SqlitePool, start: NaiveDate, end: NaiveDate, tz_id: &str) -> Result<Vec<InfrastructureDataModel>, AppError> {
+    pub async fn get_categories_statistics(pool: &SqlitePool, start: NaiveDate, end: NaiveDate, tz_id: &str, config_service: &ConfigService) -> Result<Vec<InfrastructureDataModel>, AppError> {
         debug!("get_categories_statistics: start={} end={}", start, end);
+        let excluded_site_ids = get_excluded_site_ids(pool, config_service).await;
+        let has_excluded = !excluded_site_ids.is_empty();
+
         let start_dt = NaiveDateTime::new(start, chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_dt = NaiveDateTime::new(end, chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
         let utc_start = tz_naive_to_utc(start_dt, &parse_timezone(tz_id));
         let utc_end = tz_naive_to_utc(end_dt, &parse_timezone(tz_id));
 
-        let data: Vec<(i64, String, i64)> = sqlx::query_as(
-            r#"SELECT wsc.ID, wsc.Name, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
-            JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
-            JOIN WebSiteCategoryModels wsc ON ws.CategoryID = wsc.ID
-            WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?
-            GROUP BY wsc.ID, wsc.Name"#
-        ).bind(utc_start).bind(utc_end).fetch_all(pool).await?;
+        let data: Vec<(i64, String, i64)> = if !has_excluded {
+            sqlx::query_as(
+                r#"SELECT wsc.ID, wsc.Name, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
+                JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
+                JOIN WebSiteCategoryModels wsc ON ws.CategoryID = wsc.ID
+                WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?
+                GROUP BY wsc.ID, wsc.Name"#
+            ).bind(utc_start).bind(utc_end).fetch_all(pool).await?
+        } else {
+            let placeholders = excluded_site_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                r#"SELECT wsc.ID, wsc.Name, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
+                JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
+                JOIN WebSiteCategoryModels wsc ON ws.CategoryID = wsc.ID
+                WHERE wbl.LogTime >= ? AND wbl.LogTime <= ? AND wbl.SiteId NOT IN ({})
+                GROUP BY wsc.ID, wsc.Name"#,
+                placeholders
+            );
+            let mut query = sqlx::query_as::<_, (i64, String, i64)>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_site_ids {
+                query = query.bind(*id);
+            }
+            query.fetch_all(pool).await?
+        };
 
-        let no_category: Vec<(i64, i64)> = sqlx::query_as(
-            r#"SELECT ws.CategoryID, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
-            JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
-            WHERE ws.CategoryID = 0 AND wbl.LogTime >= ? AND wbl.LogTime <= ?
-            GROUP BY ws.CategoryID"#
-        ).bind(utc_start).bind(utc_end).fetch_all(pool).await?;
+        let no_category: Vec<(i64, i64)> = if !has_excluded {
+            sqlx::query_as(
+                r#"SELECT ws.CategoryID, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
+                JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
+                WHERE ws.CategoryID = 0 AND wbl.LogTime >= ? AND wbl.LogTime <= ?
+                GROUP BY ws.CategoryID"#
+            ).bind(utc_start).bind(utc_end).fetch_all(pool).await?
+        } else {
+            let placeholders = excluded_site_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                r#"SELECT ws.CategoryID, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
+                JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
+                WHERE ws.CategoryID = 0 AND wbl.LogTime >= ? AND wbl.LogTime <= ? AND wbl.SiteId NOT IN ({})
+                GROUP BY ws.CategoryID"#,
+                placeholders
+            );
+            let mut query = sqlx::query_as::<_, (i64, i64)>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_site_ids {
+                query = query.bind(*id);
+            }
+            query.fetch_all(pool).await?
+        };
 
         let mut result: Vec<InfrastructureDataModel> = data.into_iter()
             .map(|(id, name, value)| InfrastructureDataModel { id, name, value })
@@ -499,8 +558,11 @@ impl WebDataService {
         Ok(result)
     }
 
-    pub async fn get_browse_data_statistics(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, site_id: i64, tz_id: &str) -> Result<Vec<InfrastructureDataModel>, AppError> {
+    pub async fn get_browse_data_statistics(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, site_id: i64, tz_id: &str, config_service: &ConfigService) -> Result<Vec<InfrastructureDataModel>, AppError> {
         debug!("get_browse_data_statistics: start={} end={} site_id={}", start, end, site_id);
+        let excluded_site_ids = get_excluded_site_ids(pool, config_service).await;
+        let has_excluded = !excluded_site_ids.is_empty();
+
         let tz = parse_timezone(tz_id);
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
@@ -509,11 +571,20 @@ impl WebDataService {
 
         let mut q = String::from("SELECT LogTime, SUM(Duration) as total FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?");
         if site_id > 0 { q.push_str(" AND SiteId = ?"); }
+        if has_excluded {
+            let placeholders = excluded_site_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            q.push_str(&format!(" AND SiteId NOT IN ({})", placeholders));
+        }
         q.push_str(" GROUP BY LogTime");
 
         let mut query = sqlx::query_as::<_, (DateTime<Utc>, i64)>(&q)
             .bind(utc_start).bind(utc_end);
         if site_id > 0 { query = query.bind(site_id); }
+        if has_excluded {
+            for id in &excluded_site_ids {
+                query = query.bind(*id);
+            }
+        }
         let data = query.fetch_all(pool).await?;
 
         let mut result = Vec::new();
@@ -552,27 +623,64 @@ impl WebDataService {
         Ok(result)
     }
 
-    pub async fn get_browse_data_by_category_statistics(pool: &SqlitePool, start: NaiveDate, end: NaiveDate, tz_id: &str) -> Result<Vec<ColumnDataModel>, AppError> {
+    pub async fn get_browse_data_by_category_statistics(pool: &SqlitePool, start: NaiveDate, end: NaiveDate, tz_id: &str, config_service: &ConfigService) -> Result<Vec<ColumnDataModel>, AppError> {
         debug!("get_browse_data_by_category_statistics: start={} end={}", start, end);
+        let excluded_site_ids = get_excluded_site_ids(pool, config_service).await;
+        let has_excluded = !excluded_site_ids.is_empty();
+
         let tz = parse_timezone(tz_id);
         let start_dt = NaiveDateTime::new(start, chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_dt = NaiveDateTime::new(end, chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
         let utc_start = tz_naive_to_utc(start_dt, &tz);
         let utc_end = tz_naive_to_utc(end_dt, &tz);
 
-        let categories: Vec<(i64, i64)> = sqlx::query_as(
-            r#"SELECT COALESCE(ws.CategoryID, 0) as cat_id, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
-            LEFT JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
-            WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?
-            GROUP BY cat_id"#
-        ).bind(utc_start).bind(utc_end).fetch_all(pool).await?;
+        let categories: Vec<(i64, i64)> = if !has_excluded {
+            sqlx::query_as(
+                r#"SELECT COALESCE(ws.CategoryID, 0) as cat_id, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
+                LEFT JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
+                WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?
+                GROUP BY cat_id"#
+            ).bind(utc_start).bind(utc_end).fetch_all(pool).await?
+        } else {
+            let placeholders = excluded_site_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                r#"SELECT COALESCE(ws.CategoryID, 0) as cat_id, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
+                LEFT JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
+                WHERE wbl.LogTime >= ? AND wbl.LogTime <= ? AND wbl.SiteId NOT IN ({})
+                GROUP BY cat_id"#,
+                placeholders
+            );
+            let mut query = sqlx::query_as::<_, (i64, i64)>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_site_ids {
+                query = query.bind(*id);
+            }
+            query.fetch_all(pool).await?
+        };
 
-        let data: Vec<(i64, DateTime<Utc>, i64)> = sqlx::query_as(
-            r#"SELECT COALESCE(ws.CategoryID, 0) as cat_id, wbl.LogTime, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
-            LEFT JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
-            WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?
-            GROUP BY cat_id, wbl.LogTime"#
-        ).bind(utc_start).bind(utc_end).fetch_all(pool).await?;
+        let data: Vec<(i64, DateTime<Utc>, i64)> = if !has_excluded {
+            sqlx::query_as(
+                r#"SELECT COALESCE(ws.CategoryID, 0) as cat_id, wbl.LogTime, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
+                LEFT JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
+                WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?
+                GROUP BY cat_id, wbl.LogTime"#
+            ).bind(utc_start).bind(utc_end).fetch_all(pool).await?
+        } else {
+            let placeholders = excluded_site_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                r#"SELECT COALESCE(ws.CategoryID, 0) as cat_id, wbl.LogTime, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
+                LEFT JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
+                WHERE wbl.LogTime >= ? AND wbl.LogTime <= ? AND wbl.SiteId NOT IN ({})
+                GROUP BY cat_id, wbl.LogTime"#,
+                placeholders
+            );
+            let mut query = sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_site_ids {
+                query = query.bind(*id);
+            }
+            query.fetch_all(pool).await?
+        };
 
         let mut result = Vec::new();
         let mut result_map: HashMap<i64, &mut ColumnDataModel> = HashMap::new();
@@ -648,36 +756,90 @@ impl WebDataService {
         Ok(result)
     }
 
-    pub async fn get_browse_duration_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str) -> Result<i64, AppError> {
+    pub async fn get_browse_duration_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str, config_service: &ConfigService) -> Result<i64, AppError> {
         debug!("get_browse_duration_total: start={} end={}", start, end);
+        let excluded_site_ids = get_excluded_site_ids(pool, config_service).await;
+        let has_excluded = !excluded_site_ids.is_empty();
+
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
         let utc_start = tz_naive_to_utc(start_date, &parse_timezone(tz_id));
         let utc_end = tz_naive_to_utc(end_date, &parse_timezone(tz_id));
-        let total: Option<i64> = sqlx::query_scalar("SELECT SUM(Duration) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
-            .bind(utc_start).bind(utc_end).fetch_optional(pool).await?;
+
+        let total: Option<i64> = if !has_excluded {
+            sqlx::query_scalar("SELECT SUM(Duration) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
+                .bind(utc_start).bind(utc_end).fetch_optional(pool).await?
+        } else {
+            let placeholders = excluded_site_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                "SELECT SUM(Duration) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ? AND SiteId NOT IN ({})",
+                placeholders
+            );
+            let mut query = sqlx::query_scalar::<_, i64>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_site_ids {
+                query = query.bind(*id);
+            }
+            query.fetch_optional(pool).await?
+        };
         Ok(total.unwrap_or(0))
     }
 
-    pub async fn get_browse_sites_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str) -> Result<i64, AppError> {
+    pub async fn get_browse_sites_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str, config_service: &ConfigService) -> Result<i64, AppError> {
         debug!("get_browse_sites_total: start={} end={}", start, end);
+        let excluded_site_ids = get_excluded_site_ids(pool, config_service).await;
+        let has_excluded = !excluded_site_ids.is_empty();
+
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
         let utc_start = tz_naive_to_utc(start_date, &parse_timezone(tz_id));
         let utc_end = tz_naive_to_utc(end_date, &parse_timezone(tz_id));
-        let count: (i64,) = sqlx::query_as("SELECT COUNT(DISTINCT SiteId) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
-            .bind(utc_start).bind(utc_end).fetch_one(pool).await?;
+
+        let count: (i64,) = if !has_excluded {
+            sqlx::query_as("SELECT COUNT(DISTINCT SiteId) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
+                .bind(utc_start).bind(utc_end).fetch_one(pool).await?
+        } else {
+            let placeholders = excluded_site_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                "SELECT COUNT(DISTINCT SiteId) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ? AND SiteId NOT IN ({})",
+                placeholders
+            );
+            let mut query = sqlx::query_as::<_, (i64,)>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_site_ids {
+                query = query.bind(*id);
+            }
+            query.fetch_one(pool).await?
+        };
         Ok(count.0)
     }
 
-    pub async fn get_browse_pages_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str) -> Result<i64, AppError> {
+    pub async fn get_browse_pages_total(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str, config_service: &ConfigService) -> Result<i64, AppError> {
         debug!("get_browse_pages_total: start={} end={}", start, end);
+        let excluded_site_ids = get_excluded_site_ids(pool, config_service).await;
+        let has_excluded = !excluded_site_ids.is_empty();
+
         let start_date = NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
         let utc_start = tz_naive_to_utc(start_date, &parse_timezone(tz_id));
         let utc_end = tz_naive_to_utc(end_date, &parse_timezone(tz_id));
-        let count: (i64,) = sqlx::query_as("SELECT COUNT(DISTINCT UrlId) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
-            .bind(utc_start).bind(utc_end).fetch_one(pool).await?;
+
+        let count: (i64,) = if !has_excluded {
+            sqlx::query_as("SELECT COUNT(DISTINCT UrlId) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?")
+                .bind(utc_start).bind(utc_end).fetch_one(pool).await?
+        } else {
+            let placeholders = excluded_site_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                "SELECT COUNT(DISTINCT UrlId) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ? AND SiteId NOT IN ({})",
+                placeholders
+            );
+            let mut query = sqlx::query_as::<_, (i64,)>(&sql)
+                .bind(utc_start).bind(utc_end);
+            for id in &excluded_site_ids {
+                query = query.bind(*id);
+            }
+            query.fetch_one(pool).await?
+        };
         Ok(count.0)
     }
 

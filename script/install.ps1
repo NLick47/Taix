@@ -60,6 +60,24 @@ if ($DesktopShortcut) {
     Write-Host "[+] Created Desktop shortcut: $desktopSc"
 }
 
+
+try {
+    $defenderPref = Get-MpPreference -ErrorAction SilentlyContinue
+    if ($defenderPref) {
+        $existingExclusions = $defenderPref.ExclusionPath
+        if ($existingExclusions -notcontains $InstallDir) {
+            Add-MpPreference -ExclusionPath $InstallDir
+            Write-Host "[+] Added Windows Defender exclusion: $InstallDir"
+        } else {
+            Write-Host "[*] Windows Defender exclusion already exists: $InstallDir"
+        }
+    } else {
+        Write-Host "[*] Windows Defender not available, skipping exclusion" -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host "[*] Failed to add Windows Defender exclusion (requires admin privileges): $_" -ForegroundColor Yellow
+}
+
 foreach ($c in $Components) {
     $exePath = Join-Path $InstallDir $c.ExeName
 

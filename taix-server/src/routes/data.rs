@@ -159,36 +159,36 @@ async fn get_hours_range_log_list(State(pool): State<SqlitePool>, Extension(conf
     }
 }
 
-async fn get_range_total_data(State(pool): State<SqlitePool>, Query(q): Query<RangeQuery>) -> Json<ApiResponse<Vec<f64>>> {
-    match DataService::get_range_total_data(&pool, q.start.date(), q.end.date(), &q.timezone).await {
+async fn get_range_total_data(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<RangeQuery>) -> Json<ApiResponse<Vec<f64>>> {
+    match DataService::get_range_total_data(&pool, q.start.date(), q.end.date(), &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_month_total_data(State(pool): State<SqlitePool>, Query(q): Query<YearQuery>) -> Json<ApiResponse<Vec<f64>>> {
-    match DataService::get_month_total_data(&pool, q.year.date(), &q.timezone).await {
+async fn get_month_total_data(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<YearQuery>) -> Json<ApiResponse<Vec<f64>>> {
+    match DataService::get_month_total_data(&pool, q.year.date(), &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_category_hours_data(State(pool): State<SqlitePool>, Query(q): Query<DateQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {
-    match DataService::get_category_hours_data(&pool, q.date.date(), &q.timezone).await {
+async fn get_category_hours_data(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<DateQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {
+    match DataService::get_category_hours_data(&pool, q.date.date(), &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_category_range_data(State(pool): State<SqlitePool>, Query(q): Query<RangeQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {
-    match DataService::get_category_range_data(&pool, q.start.date(), q.end.date(), &q.timezone).await {
+async fn get_category_range_data(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<RangeQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {
+    match DataService::get_category_range_data(&pool, q.start.date(), q.end.date(), &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_category_year_data(State(pool): State<SqlitePool>, Query(q): Query<DateQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {
-    match DataService::get_category_year_data(&pool, q.date.date(), &q.timezone).await {
+async fn get_category_year_data(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<DateQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {
+    match DataService::get_category_year_data(&pool, q.date.date(), &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
@@ -215,8 +215,8 @@ async fn get_app_year_data(State(pool): State<SqlitePool>, Query(q): Query<AppDa
     }
 }
 
-async fn get_date_range_app_count(State(pool): State<SqlitePool>, Query(q): Query<RangeQuery>) -> Json<ApiResponse<i64>> {
-    match DataService::get_date_range_app_count(&pool, q.start.date(), q.end.date(), &q.timezone).await {
+async fn get_date_range_app_count(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<RangeQuery>) -> Json<ApiResponse<i64>> {
+    match DataService::get_date_range_app_count(&pool, q.start.date(), q.end.date(), &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
@@ -235,4 +235,3 @@ async fn get_export_data(State(pool): State<SqlitePool>, Extension(config_servic
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
-

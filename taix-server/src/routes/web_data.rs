@@ -216,43 +216,43 @@ async fn get_date_range_web_site_list(State(pool): State<SqlitePool>, Extension(
     }
 }
 
-async fn get_categories_statistics(State(pool): State<SqlitePool>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<Vec<InfrastructureDataModel>>> {
-    match WebDataService::get_categories_statistics(&pool, q.start.date(), q.end.date(), &q.timezone).await {
+async fn get_categories_statistics(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<Vec<InfrastructureDataModel>>> {
+    match WebDataService::get_categories_statistics(&pool, q.start.date(), q.end.date(), &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_browse_data_statistics(State(pool): State<SqlitePool>, Query(q): Query<BrowseLogQuery>) -> Json<ApiResponse<Vec<InfrastructureDataModel>>> {
-    match WebDataService::get_browse_data_statistics(&pool, q.start, q.end, q.site_id, &q.timezone).await {
+async fn get_browse_data_statistics(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<BrowseLogQuery>) -> Json<ApiResponse<Vec<InfrastructureDataModel>>> {
+    match WebDataService::get_browse_data_statistics(&pool, q.start, q.end, q.site_id, &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_browse_data_by_category_statistics(State(pool): State<SqlitePool>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {
-    match WebDataService::get_browse_data_by_category_statistics(&pool, q.start.date(), q.end.date(), &q.timezone).await {
+async fn get_browse_data_by_category_statistics(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {
+    match WebDataService::get_browse_data_by_category_statistics(&pool, q.start.date(), q.end.date(), &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_browse_duration_total(State(pool): State<SqlitePool>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<i64>> {
-    match WebDataService::get_browse_duration_total(&pool, q.start, q.end, &q.timezone).await {
+async fn get_browse_duration_total(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<i64>> {
+    match WebDataService::get_browse_duration_total(&pool, q.start, q.end, &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_browse_sites_total(State(pool): State<SqlitePool>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<i64>> {
-    match WebDataService::get_browse_sites_total(&pool, q.start, q.end, &q.timezone).await {
+async fn get_browse_sites_total(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<i64>> {
+    match WebDataService::get_browse_sites_total(&pool, q.start, q.end, &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
-async fn get_browse_pages_total(State(pool): State<SqlitePool>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<i64>> {
-    match WebDataService::get_browse_pages_total(&pool, q.start, q.end, &q.timezone).await {
+async fn get_browse_pages_total(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<i64>> {
+    match WebDataService::get_browse_pages_total(&pool, q.start, q.end, &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
