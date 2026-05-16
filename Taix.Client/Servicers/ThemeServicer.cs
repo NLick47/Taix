@@ -27,13 +27,22 @@ public class ThemeServicer : IThemeServicer
 
     public void LoadTheme(ThemeVariant theme, bool isRefresh = false)
     {
-        Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        void Apply()
         {
             if (Application.Current != null)
                 Application.Current.RequestedThemeVariant = theme;
             UpdateThemeColor();
             UpdateWindowBackground();
-        });
+        }
+
+        if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            Apply();
+        }
+        else
+        {
+            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(Apply);
+        }
     }
 
     public void SetMainWindow(MainWindow mainWindow)
