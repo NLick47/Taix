@@ -203,11 +203,13 @@
                             <Grid ZIndex="999" x:Name="ToastGrid" IsVisible="False">
                                 <!--内容-->
                                 <Border
-                                    Padding="15,15"
-                                    CornerRadius="12"
-                                    MaxWidth="320"
+                                    Padding="16,14"
+                                    CornerRadius="14"
+                                    MaxWidth="340"
                                     x:Name="ToastBorder"
                                     Background="{DynamicResource WindowContentBackground}"
+                                    BorderBrush="{DynamicResource WindowBorderBrush}"
+                                    BorderThickness="1"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Top" ZIndex="99999">
                                     <Border.RenderTransform>
@@ -217,7 +219,7 @@
                                     </Border.RenderTransform>
 
                                     <Border.Effect>
-                                        <DropShadowEffect BlurRadius="10" Color="Black" Opacity=".1" />
+                                        <DropShadowEffect BlurRadius="20" Color="Black" Opacity="0.12" OffsetX="0" OffsetY="6" />
                                     </Border.Effect>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -235,10 +237,13 @@
 
                                 <!--Dialog-->
                                 <Border
-                                    Padding="15,15"
-                                    CornerRadius="10"
-                                    Width="300"
-                                    x:Name="DialogBorder" Background="{DynamicResource WindowContentBackground}"
+                                    Padding="24,20"
+                                    CornerRadius="16"
+                                    Width="340"
+                                    x:Name="DialogBorder" 
+                                    Background="{DynamicResource WindowContentBackground}"
+                                    BorderBrush="{DynamicResource WindowBorderBrush}"
+                                    BorderThickness="1"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Top" ZIndex="1000">
                                     <Border.RenderTransform>
@@ -247,24 +252,34 @@
                                         </TransformGroup>
                                     </Border.RenderTransform>
                                     <Border.Effect>
-                                        <DropShadowEffect BlurRadius="10" Color="Black" Opacity=".1" />
+                                        <DropShadowEffect BlurRadius="24" Color="Black" Opacity="0.15" OffsetX="0" OffsetY="8" />
                                     </Border.Effect>
                                     <Grid>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="40" />
+                                            <RowDefinition Height="auto" />
                                             <RowDefinition Height="auto" />
                                             <RowDefinition Height="auto" />
                                         </Grid.RowDefinitions>
-                                        <TextBlock Text="{TemplateBinding DialogTitle}" FontSize="16" FontWeight="Bold" />
-                                        <TextBlock Grid.Row="1" Text="{TemplateBinding DialogMessage}"
-                                                   VerticalAlignment="Top" TextWrapping="WrapWithOverflow" />
+                                        <TextBlock Text="{TemplateBinding DialogTitle}" 
+                                                   FontSize="18" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource StandardTextBrush}"
+                                                   Margin="0,0,0,4" />
+                                        <TextBlock Grid.Row="1" 
+                                                   Text="{TemplateBinding DialogMessage}"
+                                                   FontSize="14"
+                                                   LineHeight="22"
+                                                   Foreground="{DynamicResource SubTextBrush}"
+                                                   TextWrapping="Wrap" />
                                         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right"
                                                     Margin="0,20,0,0">
                                             <button:Button x:Name="CancelBtn" Width="100"
+                                                           Background="{DynamicResource StandardBackgroundBrush2}"
+                                                           Foreground="{DynamicResource StandardTextBrush}"
                                                            Content="{DynamicResource Cancel}" />
                                             <button:Button x:Name="ConfirmBtn"
                                                            Background="{DynamicResource ThemeBrush}" Foreground="White"
-                                                           Width="100" Margin="10,0,0,0"
+                                                           Width="100" Margin="12,0,0,0"
                                                            Content="{DynamicResource Confirm}" />
                                         </StackPanel>
                                     </Grid>
@@ -272,11 +287,13 @@
 
                                 <!--Action Dialog-->
                                 <Border
-                                    Padding="15,15"
-                                    CornerRadius="10"
-                                    Width="320"
+                                    Padding="24,20"
+                                    CornerRadius="16"
+                                    Width="360"
                                     x:Name="ActionDialogBorder"
                                     Background="{DynamicResource WindowContentBackground}"
+                                    BorderBrush="{DynamicResource WindowBorderBrush}"
+                                    BorderThickness="1"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Top" ZIndex="1000">
                                     <Border.RenderTransform>
@@ -285,17 +302,25 @@
                                         </TransformGroup>
                                     </Border.RenderTransform>
                                     <Border.Effect>
-                                        <DropShadowEffect BlurRadius="10" Color="Black" Opacity=".1" />
+                                        <DropShadowEffect BlurRadius="24" Color="Black" Opacity="0.15" OffsetX="0" OffsetY="8" />
                                     </Border.Effect>
                                     <Grid>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="40" />
+                                            <RowDefinition Height="auto" />
                                             <RowDefinition Height="auto" />
                                             <RowDefinition Height="auto" />
                                         </Grid.RowDefinitions>
-                                        <TextBlock Text="{TemplateBinding DialogTitle}" FontSize="16" FontWeight="Bold" />
-                                        <TextBlock Grid.Row="1" Text="{TemplateBinding DialogMessage}"
-                                                   VerticalAlignment="Top" TextWrapping="WrapWithOverflow" />
+                                        <TextBlock Text="{TemplateBinding DialogTitle}" 
+                                                   FontSize="18" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource StandardTextBrush}"
+                                                   Margin="0,0,0,4" />
+                                        <TextBlock Grid.Row="1" 
+                                                   Text="{TemplateBinding DialogMessage}"
+                                                   FontSize="14"
+                                                   LineHeight="22"
+                                                   Foreground="{DynamicResource SubTextBrush}"
+                                                   TextWrapping="Wrap" />
                                         <StackPanel Grid.Row="2" x:Name="ActionDialogButtonsPanel"
                                                     Orientation="Horizontal" HorizontalAlignment="Right"
                                                     Margin="0,20,0,0" />
@@ -304,11 +329,14 @@
 
                                 <!--Dialog-->
                                 <Border
-                                    Padding="15,15"
-                                    CornerRadius="10"
-                                    Width="350"
+                                    Padding="24,20"
+                                    CornerRadius="16"
+                                    Width="380"
                                     x:Name="InputModalBorder"
-                                    Background="{DynamicResource WindowContentBackground}" HorizontalAlignment="Center"
+                                    Background="{DynamicResource WindowContentBackground}"
+                                    BorderBrush="{DynamicResource WindowBorderBrush}"
+                                    BorderThickness="1"
+                                    HorizontalAlignment="Center"
                                     VerticalAlignment="Top" ZIndex="1000">
                                     <Border.RenderTransform>
                                         <TransformGroup>
@@ -316,25 +344,33 @@
                                         </TransformGroup>
                                     </Border.RenderTransform>
                                     <Border.Effect>
-                                        <DropShadowEffect BlurRadius="10" Color="Black" Opacity=".1" />
+                                        <DropShadowEffect BlurRadius="24" Color="Black" Opacity="0.15" OffsetX="0" OffsetY="8" />
                                     </Border.Effect>
                                     <Grid>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="40" />
+                                            <RowDefinition Height="auto" />
                                             <RowDefinition Height="auto" />
                                             <RowDefinition Height="auto" />
                                         </Grid.RowDefinitions>
-                                        <TextBlock Text="{TemplateBinding DialogTitle}" FontSize="16" FontWeight="Bold" />
-                                        <Border Grid.Row="1">
+                                        <TextBlock Text="{TemplateBinding DialogTitle}" 
+                                                   FontSize="18" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource StandardTextBrush}"
+                                                   Margin="0,0,0,4" />
+                                        <Border Grid.Row="1" Margin="0,4,0,0">
                                             <input:InputBox x:Name="InputModalInputBox"
                                                             Placeholder="{TemplateBinding DialogMessage}" />
                                         </Border>
                                         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right"
-                                                    Margin="0,10,0,0">
-                                            <button:Button x:Name="InputModalCancelBtn" Width="100">取消</button:Button>
+                                                    Margin="0,20,0,0">
+                                            <button:Button x:Name="InputModalCancelBtn" Width="100"
+                                                           Background="{DynamicResource StandardBackgroundBrush2}"
+                                                           Foreground="{DynamicResource StandardTextBrush}">
+                                                取消
+                                            </button:Button>
                                             <button:Button x:Name="InputModalConfirmBtn"
                                                            Background="{DynamicResource ThemeBrush}" Foreground="White"
-                                                           Width="100" Margin="10,0,0,0">
+                                                           Width="100" Margin="12,0,0,0">
                                                 确定
                                             </button:Button>
                                         </StackPanel>
