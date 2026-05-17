@@ -256,10 +256,10 @@
             <!--窗口背景颜色-->
             <!--<SolidColorBrush x:Key="WindowBackground" Color="#f3f3f3" />-->
             <LinearGradientBrush x:Key="WindowBackground" StartPoint="0%,0%" EndPoint="100%,100%">
-                <GradientStop Color="#ededf0" Offset="0" />
+                <GradientStop Color="#e0e0eb" Offset="0" />
                 <GradientStop Color="#ffffff" Offset="0.4" />
-                <GradientStop Color="#f5f5f7" Offset="0.8" />
-                <GradientStop Color="{DynamicResource ThemeColor}" Offset="1.6" />
+                <GradientStop Color="#eaeaf2" Offset="0.75" />
+                <GradientStop Color="{DynamicResource ThemeColor}" Offset="1.0" />
             </LinearGradientBrush>
 
             <SolidColorBrush x:Key="WindowContentBackground" Color="#f9f9f9" />
