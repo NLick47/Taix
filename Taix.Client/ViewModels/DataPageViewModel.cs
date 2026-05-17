@@ -102,15 +102,33 @@ public class DataPageViewModel : DataPageModel
 
         WhenPropertyChanged(this, x => x.TabbarSelectedIndex, async index =>
         {
-            if (index == 0 && DayDate == DateTime.MinValue)
-                DayDate = DateTime.Now.Date;
-            else if (index == 1 && WeekDate == DateTime.MinValue)
-                WeekDate = DateTime.Now.Date;
-            else if (index == 2 && MonthDate == DateTime.MinValue)
-                MonthDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-            else if (index == 3 && YearDate == DateTime.MinValue)
-                YearDate = new DateTime(DateTime.Now.Year, 1, 1);
-            await Task.CompletedTask;
+            DateTime date;
+            int dataType;
+            if (index == 0)
+            {
+                if (DayDate == DateTime.MinValue) DayDate = DateTime.Now.Date;
+                (date, dataType) = (DayDate, 0);
+            }
+            else if (index == 1)
+            {
+                if (WeekDate == DateTime.MinValue) WeekDate = DateTime.Now.Date;
+                (date, dataType) = (WeekDate, 1);
+            }
+            else if (index == 2)
+            {
+                if (MonthDate == DateTime.MinValue) MonthDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                (date, dataType) = (MonthDate, 2);
+            }
+            else if (index == 3)
+            {
+                if (YearDate == DateTime.MinValue) YearDate = new DateTime(DateTime.Now.Year, 1, 1);
+                (date, dataType) = (YearDate, 3);
+            }
+            else
+            {
+                return;
+            }
+            await LoadDataAsync(date, dataType);
         }, skipInitial: false);
 
         WhenPropertyChanged(this, x => x.ShowType, async _ =>
