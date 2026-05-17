@@ -27,12 +27,12 @@ public class GithubRelease
             AllowAutoRedirect = true,
             AutomaticDecompression = System.Net.DecompressionMethods.All
         };
-        
+
         _httpClient = new HttpClient(handler)
         {
             Timeout = TimeSpan.FromSeconds(60)
         };
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", 
+        _httpClient.DefaultRequestHeaders.Add("User-Agent",
             "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36");
     }
 
@@ -49,18 +49,18 @@ public class GithubRelease
         {
             using var response = await _httpClient.GetAsync(githubUrl);
             response.EnsureSuccessStatusCode();
-            
+
             var body = await response.Content.ReadAsStringAsync();
-            
+
             var data = JsonSerializer.Deserialize<GithubModel>(body, ClientJsonContext.Default.GithubModel);
-            
+
             Info.IsPre = data.prerelease;
             Info.Title = data.name;
             Info.Version = data.tag_name.Replace("v", string.Empty);
             Info.DownloadUrl = data.assets.FirstOrDefault()?.browser_download_url;
             Info.HtmlUrl = data.html_url;
             Info.Content = data.body;
-            
+
             return Info;
         }
         catch (Exception)
