@@ -7,7 +7,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
-using Taix.Client.Servicers;
 using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Servicers.Interfaces;
 
@@ -138,7 +137,6 @@ public class Timeline : Control
     private double _dragStartOffset;
     private Point? _mousePos;
     private TimelineUsageItem? _hoveredItem;
-    private IDisposable? _themeSubscription;
 
     #endregion
 
@@ -195,79 +193,68 @@ public class Timeline : Control
         ClipToBounds = true;
         Height = 68;
         Focusable = true;
-        LoadThemeBrushes();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
         LoadThemeBrushes();
-        var appConfig = ServiceLocator.GetService<IAppConfig>();
-        if (appConfig != null)
-        {
-            _themeSubscription = appConfig.WhenAnyThemeRelatedChanged(() =>
-            {
-                LoadThemeBrushes();
-                InvalidateVisual();
-            });
-        }
-    }
-
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnDetachedFromVisualTree(e);
-        _themeSubscription?.Dispose();
     }
 
     private void LoadThemeBrushes()
     {
-        _bgBrush = FindBrush("TimelineBgBrush", Color.Parse("#0d1117"));
-        _borderPen = new Pen(FindBrush("TimelineBorderBrush", Color.Parse("#21262d")), 1);
-        _headerBg = FindBrush("TimelineHeaderBgBrush", Color.Parse("#161b22"), 0.7);
-        _inactiveBrush = FindBrush("TimelineInactiveBrush", Color.Parse("#30363d"));
-        _tickMajor = new Pen(FindBrush("TimelineTickMajorBrush", Color.Parse("#30363d")), 1);
-        _tickHalf = new Pen(FindBrush("TimelineTickHalfBrush", Color.Parse("#21262d")), 0.5);
-        _tickQuarter = new Pen(FindBrush("TimelineTickQuarterBrush", Color.Parse("#1a1f27")), 0.5);
-        _tickText = FindBrush("TimelineTickTextBrush", Color.Parse("#8b949e"));
-        _timeLabelText = FindBrush("TimelineTimeLabelBrush", Color.Parse("#8b949e"), 0.85);
-        _nowPen = new Pen(FindBrush("TimelineNowBrush", Color.Parse("#58a6ff")), 1.5);
-        _selectBg = FindBrush("TimelineSelectBgBrush", Color.Parse("#58a6ff"), 0.12);
-        _selectPen = new Pen(FindBrush("TimelineSelectBorderBrush", Color.Parse("#58a6ff")), 1.5);
-        _tipBg = FindBrush("TimelineTipBgBrush", Color.Parse("#161b22"));
-        _tipPen = new Pen(FindBrush("TimelineTipBorderBrush", Color.Parse("#30363d")), 1);
-        _tipText = FindBrush("TimelineTipTextBrush", Colors.White);
-        _tipSub = FindBrush("TimelineTipSubBrush", Color.Parse("#8b949e"));
-        _trackBgBrush = FindBrush("TimelineTrackBgBrush", Color.Parse("#252525"));
-        _tooltipShadow = FindBrush("TimelineTooltipShadowBrush", Color.Parse("#000000"), 0.5);
-        _idleColor = FindColor("TimelineIdleColor", Color.Parse("#484f58"));
-        _defaultColor = FindColor("TimelineDefaultColor", Color.Parse("#888888"));
-        _nowDotOuterBrush = FindBrush("TimelineNowDotOuterBrush", Colors.White);
-        _periodNightBrush = FindBrush("TimelinePeriodNightBgBrush", Color.Parse("#14182e"));
-        _periodMorningBrush = FindBrush("TimelinePeriodMorningBgBrush", Color.Parse("#142014"));
-        _periodNoonBrush = FindBrush("TimelinePeriodNoonBgBrush", Color.Parse("#1c1c24"));
-        _periodAfternoonBrush = FindBrush("TimelinePeriodAfternoonBgBrush", Color.Parse("#241c14"));
-        _periodEveningBrush = FindBrush("TimelinePeriodEveningBgBrush", Color.Parse("#1c1424"));
-        _selectionMaskBrush = FindBrush("TimelineSelectionMaskBrush", Color.Parse("#000000"), 0.5);
-        _selectionBorderPen = new Pen(FindBrush("TimelineSelectionBorderBrush", Colors.White), 1.5);
-        _selectionGlowBrush = FindBrush("TimelineSelectionGlowBrush", Colors.White, 0.12);
-        _selectionHandleBrush = FindBrush("TimelineSelectionHandleBrush", Colors.White);
-        _selectionHandleBorderPen = new Pen(FindBrush("TimelineSelectionHandleBorderBrush", Color.Parse("#58a6ff")), 2);
-        _selectionLabelBgBrush = FindBrush("TimelineSelectionLabelBgBrush", Color.Parse("#161b22"));
-        _selectionLabelTextBrush = FindBrush("TimelineSelectionLabelTextBrush", Colors.White);
+        _bgBrush = FindBrush("TimelineBgBrush");
+        _borderPen = new Pen(FindBrush("TimelineBorderBrush"), 1);
+        _headerBg = FindBrush("TimelineHeaderBgBrush", 0.7);
+        _inactiveBrush = FindBrush("TimelineInactiveBrush");
+        _tickMajor = new Pen(FindBrush("TimelineTickMajorBrush"), 1);
+        _tickHalf = new Pen(FindBrush("TimelineTickHalfBrush"), 0.5);
+        _tickQuarter = new Pen(FindBrush("TimelineTickQuarterBrush"), 0.5);
+        _tickText = FindBrush("TimelineTickTextBrush");
+        _timeLabelText = FindBrush("TimelineTimeLabelBrush", 0.85);
+        _nowPen = new Pen(FindBrush("TimelineNowBrush"), 1.5);
+        _selectBg = FindBrush("TimelineSelectBgBrush", 0.12);
+        _selectPen = new Pen(FindBrush("TimelineSelectBorderBrush"), 1.5);
+        _tipBg = FindBrush("TimelineTipBgBrush");
+        _tipPen = new Pen(FindBrush("TimelineTipBorderBrush"), 1);
+        _tipText = FindBrush("TimelineTipTextBrush");
+        _tipSub = FindBrush("TimelineTipSubBrush");
+        _trackBgBrush = FindBrush("TimelineTrackBgBrush");
+        _tooltipShadow = FindBrush("TimelineTooltipShadowBrush", 0.5);
+        _idleColor = FindColor("TimelineIdleColor");
+        _defaultColor = FindColor("TimelineDefaultColor");
+        _nowDotOuterBrush = FindBrush("TimelineNowDotOuterBrush");
+        _periodNightBrush = FindBrush("TimelinePeriodNightBgBrush");
+        _periodMorningBrush = FindBrush("TimelinePeriodMorningBgBrush");
+        _periodNoonBrush = FindBrush("TimelinePeriodNoonBgBrush");
+        _periodAfternoonBrush = FindBrush("TimelinePeriodAfternoonBgBrush");
+        _periodEveningBrush = FindBrush("TimelinePeriodEveningBgBrush");
+        _selectionMaskBrush = FindBrush("TimelineSelectionMaskBrush", 0.5);
+        _selectionBorderPen = new Pen(FindBrush("TimelineSelectionBorderBrush"), 1.5);
+        _selectionGlowBrush = FindBrush("TimelineSelectionGlowBrush", 0.12);
+        _selectionHandleBrush = FindBrush("TimelineSelectionHandleBrush");
+        _selectionHandleBorderPen = new Pen(FindBrush("TimelineSelectionHandleBorderBrush"), 2);
+        _selectionLabelBgBrush = FindBrush("TimelineSelectionLabelBgBrush");
+        _selectionLabelTextBrush = FindBrush("TimelineSelectionLabelTextBrush");
     }
 
-    private static IBrush FindBrush(string key, Color fallback, double opacity = 1.0)
+    private IBrush FindBrush(string key, double opacity = 1.0)
     {
-        var brush = Application.Current?.FindResource(key) as IBrush;
-        if (brush != null) return brush;
-        return new SolidColorBrush(fallback, opacity);
+        var value = this.FindResource(this.ActualThemeVariant, key);
+        if (value is not IBrush brush)
+            throw new KeyNotFoundException($"Resource '{key}' not found or not an IBrush.");
+        if (opacity == 1.0) return brush;
+        if (brush is ISolidColorBrush solid)
+            return new SolidColorBrush(solid.Color, opacity);
+        return brush;
     }
 
-    private static Color FindColor(string key, Color fallback)
+    private Color FindColor(string key)
     {
-        if (Application.Current?.FindResource(key) is Color c) return c;
-        if (Application.Current?.FindResource(key) is SolidColorBrush b) return b.Color;
-        return fallback;
+        var value = this.FindResource(this.ActualThemeVariant, key);
+        if (value is Color c) return c;
+        if (value is SolidColorBrush b) return b.Color;
+        throw new KeyNotFoundException($"Resource '{key}' not found or not a color.");
     }
 
     private double Pps => (DefaultPixelsPerHour / HourSeconds) * Zoom;

@@ -3,6 +3,8 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Taix.Client.Logging;
+using Taix.Client.Shared.Helpers;
 
 namespace Taix.Client.Controls.Timeline;
 
@@ -59,34 +61,26 @@ public class MultiTrackTimeRuler : Control
     {
         ClipToBounds = true;
         Height = 24;
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
         LoadBrushes();
     }
 
     private void LoadBrushes()
     {
-        _tickMajor = new Pen(
-            Application.Current?.FindResource("TimelineTickMajorBrush") as IBrush
-            ?? new SolidColorBrush(Color.Parse("#555566")), 1);
-        _tickMinor = new Pen(
-            Application.Current?.FindResource("TimelineTickHalfBrush") as IBrush
-            ?? new SolidColorBrush(Color.Parse("#3a3a48")), 0.5);
-        _tickText = Application.Current?.FindResource("TimelineTickTextBrush") as IBrush
-                    ?? new SolidColorBrush(Color.Parse("#8b949e"));
-        _nowPen = new Pen(
-            Application.Current?.FindResource("TimelineNowBrush") as IBrush
-            ?? new SolidColorBrush(Color.Parse("#58a6ff")), 1.5);
-        _nowDotBrush = Application.Current?.FindResource("TimelineNowDotOuterBrush") as IBrush
-                       ?? new SolidColorBrush(Colors.White);
-        _periodNightBrush = Application.Current?.FindResource("TimelinePeriodNightBgBrush") as IBrush
-                            ?? new SolidColorBrush(Color.Parse("#14182e"));
-        _periodMorningBrush = Application.Current?.FindResource("TimelinePeriodMorningBgBrush") as IBrush
-                              ?? new SolidColorBrush(Color.Parse("#142014"));
-        _periodNoonBrush = Application.Current?.FindResource("TimelinePeriodNoonBgBrush") as IBrush
-                           ?? new SolidColorBrush(Color.Parse("#1c1c24"));
-        _periodAfternoonBrush = Application.Current?.FindResource("TimelinePeriodAfternoonBgBrush") as IBrush
-                                ?? new SolidColorBrush(Color.Parse("#241c14"));
-        _periodEveningBrush = Application.Current?.FindResource("TimelinePeriodEveningBgBrush") as IBrush
-                              ?? new SolidColorBrush(Color.Parse("#1c1424"));
+        _tickMajor = new Pen((IBrush)this.FindResource(this.ActualThemeVariant, "TimelineTickMajorBrush")!, 1);
+        _tickMinor = new Pen((IBrush)this.FindResource(this.ActualThemeVariant, "TimelineTickHalfBrush")!, 0.5);
+        _tickText = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelineTickTextBrush")!;
+        _nowPen = new Pen((IBrush)this.FindResource(this.ActualThemeVariant, "TimelineNowBrush")!, 1.5);
+        _nowDotBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelineNowDotOuterBrush")!;
+        _periodNightBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodNightBgBrush")!;
+        _periodMorningBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodMorningBgBrush")!;
+        _periodNoonBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodNoonBgBrush")!;
+        _periodAfternoonBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodAfternoonBgBrush")!;
+        _periodEveningBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodEveningBgBrush")!;
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

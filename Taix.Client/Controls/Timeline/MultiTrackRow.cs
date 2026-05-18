@@ -7,6 +7,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
+using Avalonia.Styling;
+using Taix.Client.Shared.Helpers;
 
 namespace Taix.Client.Controls.Timeline;
 
@@ -15,8 +17,8 @@ public class MultiTrackRow : Control
     private const int SecondsPerHour = 3600;
     private const double MinSegmentWidth = 3;
     private static readonly Color DefaultColor = Color.Parse("#888888");
-    private static readonly Color HighlightOverlay = Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF);
-    private static readonly Color ShadowOverlay = Color.FromArgb(0x0A, 0x00, 0x00, 0x00);
+    private Color _highlightOverlay;
+    private Color _shadowOverlay;
 
     private IEnumerable<MultiTrackSegment> _segments = Array.Empty<MultiTrackSegment>();
     private double _visibleStartHour = 0.0;
@@ -73,30 +75,33 @@ public class MultiTrackRow : Control
     public MultiTrackRow()
     {
         ClipToBounds = true;
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
         LoadBrushes();
     }
 
     private void LoadBrushes()
     {
-        _tipBg = Application.Current?.FindResource("TimelineTipBgBrush") as IBrush
-                 ?? new SolidColorBrush(Color.Parse("#161b22"));
-        _tipPen = new Pen(
-            Application.Current?.FindResource("TimelineTipBorderBrush") as IBrush
-            ?? new SolidColorBrush(Color.Parse("#30363d")), 1);
-        _tipText = Application.Current?.FindResource("TimelineTipTextBrush") as IBrush
-                   ?? new SolidColorBrush(Colors.White);
-        _tipShadow = Application.Current?.FindResource("TimelineTooltipShadowBrush") as IBrush
-                     ?? new SolidColorBrush(Color.FromArgb(0x80, 0, 0, 0));
-        _periodNightBrush = Application.Current?.FindResource("TimelinePeriodNightBgBrush") as IBrush
-                            ?? new SolidColorBrush(Color.Parse("#14182e"));
-        _periodMorningBrush = Application.Current?.FindResource("TimelinePeriodMorningBgBrush") as IBrush
-                              ?? new SolidColorBrush(Color.Parse("#142014"));
-        _periodNoonBrush = Application.Current?.FindResource("TimelinePeriodNoonBgBrush") as IBrush
-                           ?? new SolidColorBrush(Color.Parse("#1c1c24"));
-        _periodAfternoonBrush = Application.Current?.FindResource("TimelinePeriodAfternoonBgBrush") as IBrush
-                                ?? new SolidColorBrush(Color.Parse("#241c14"));
-        _periodEveningBrush = Application.Current?.FindResource("TimelinePeriodEveningBgBrush") as IBrush
-                              ?? new SolidColorBrush(Color.Parse("#1c1424"));
+        _tipBg = this.FindResource("TimelineTipBgBrush") as IBrush;
+        _tipPen = new Pen((IBrush)this.FindResource(this.ActualThemeVariant, "TimelineTipBorderBrush")!, 1);
+        _tipText = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelineTipTextBrush")!;
+        _tipShadow = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelineTooltipShadowBrush")!;
+        _periodNightBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodNightBgBrush")!;
+        _periodMorningBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodMorningBgBrush")!;
+        _periodNoonBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodNoonBgBrush")!;
+        _periodAfternoonBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodAfternoonBgBrush")!;
+        _periodEveningBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodEveningBgBrush")!;
+
+        var isLight = this.ActualThemeVariant == ThemeVariant.Light;
+        _highlightOverlay = isLight
+            ? Color.FromArgb(0x28, 0xFF, 0xFF, 0xFF)
+            : Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF);
+        _shadowOverlay = isLight
+            ? Color.FromArgb(0x08, 0x00, 0x00, 0x00)
+            : Color.FromArgb(0x0A, 0x00, 0x00, 0x00);
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -182,14 +187,14 @@ public class MultiTrackRow : Control
             // 顶部高光（模拟 3D 凸起效果）
             var highlightRect = new Rect(x, 1, width, (bounds.Height - 2) * 0.4);
             ctx.DrawRectangle(
-                new ImmutableSolidColorBrush(HighlightOverlay),
+                new ImmutableSolidColorBrush(_highlightOverlay),
                 null,
                 highlightRect, radius, radius);
 
             // 底部阴影
             var shadowRect = new Rect(x, bounds.Height * 0.6, width, bounds.Height * 0.4);
             ctx.DrawRectangle(
-                new ImmutableSolidColorBrush(ShadowOverlay),
+                new ImmutableSolidColorBrush(_shadowOverlay),
                 null,
                 shadowRect, 0, 0);
         }
