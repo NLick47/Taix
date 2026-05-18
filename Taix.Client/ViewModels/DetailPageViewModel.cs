@@ -168,7 +168,7 @@ public class DetailPageViewModel : DetailPageModel
 
         IsIgnore = IsProcessIgnore(App.Name, App.File);
         IsRegexIgnore = IsProcessRegexIgnore(App.Name, App.File);
-        await LoadCategorys(App.Category?.Name);
+        await LoadCategorys(App.CategoryID);
     }
 
     private Task LoadChartDataAsync() => ExecuteAsync(async ct =>
@@ -196,7 +196,7 @@ public class DetailPageViewModel : DetailPageModel
 
     private Task OnRefreshAsync(object _) => LoadChartDataAsync();
 
-    private async Task LoadCategorys(string? categoryName)
+    private async Task LoadCategorys(int categoryId)
     {
         var list = new List<SelectItemModel>();
         foreach (var item in await _categoryService.GetCategoriesAsync())
@@ -209,7 +209,8 @@ public class DetailPageViewModel : DetailPageModel
                 Name = item.Name
             };
             list.Add(option);
-            if (categoryName == option.Name) Category = option;
+            if (categoryId > 0 && categoryId == option.Id)
+                Category = option;
         }
         Categorys = list;
     }

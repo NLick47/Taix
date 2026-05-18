@@ -117,13 +117,11 @@
                                TextWrapping="WrapWithOverflow" />
 
                     <!--分类-->
-                    <base:View Condition="not null" Value="{Binding Category}" HorizontalAlignment="Left">
-                        <s:Select Margin="0,10,0,0" ToolTip.Tip="{DynamicResource Classification}"
-                                  SelectedItem="{Binding Category,Mode=TwoWay}"
-                                  Options="{Binding Categorys}"
-                                  Padding="10,0"
-                                  Height="30" />
-                    </base:View>
+                    <s:Select Margin="0,10,0,0" ToolTip.Tip="{DynamicResource Classification}"
+                              SelectedItem="{Binding Category,Mode=TwoWay}"
+                              Options="{Binding Categorys}"
+                              Padding="10,0"
+                              Height="30" />
                 </StackPanel>
 
                 <Grid Grid.Column="2">

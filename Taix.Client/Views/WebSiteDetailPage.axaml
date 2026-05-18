@@ -80,13 +80,10 @@
                             </StackPanel>
                         </base:View>
 
-                        <base:View Condition="not null" Value="{Binding Category}" HorizontalAlignment="Left">
-                            <select:Select Margin="0,10,0,0" ToolTip.Tip="{DynamicResource WebSiteClassification}"
-                                           SelectedItem="{Binding Category,Mode=TwoWay}"
-                                           Options="{Binding Categories}"
-                                           Padding="10,0" Height="30" />
-
-                        </base:View>
+                        <select:Select Margin="0,10,0,0" ToolTip.Tip="{DynamicResource WebSiteClassification}"
+                                       SelectedItem="{Binding Category,Mode=TwoWay}"
+                                       Options="{Binding Categories}"
+                                       Padding="10,0" Height="30" />
                     </StackPanel>
                 </Grid>
             </Border>

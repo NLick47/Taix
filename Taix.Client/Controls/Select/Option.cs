@@ -49,7 +49,7 @@ public class Option : TemplatedControl
         PointerPressed -= OnPointerPressed;
     }
 
-    private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    protected virtual void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         IsChecked = !IsChecked;
     }
