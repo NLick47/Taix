@@ -10,7 +10,6 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Taix.Client.Logging;
 using Taix.Client.Servicers;
-using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.Views;
 
@@ -21,6 +20,8 @@ public class App : Application
 #if !DEBUG
  private Mutex _mutex;
 #endif
+    private CancellationTokenSource _wakePipeCts = new();
+    private FileLogger? _fileLogger;
 
 
 
@@ -56,30 +57,35 @@ public class App : Application
         {
             while (!IsShuttingDown)
             {
+                var pipe = new NamedPipeServerStream("TaixClient", PipeDirection.In, 10);
                 try
                 {
-                    var pipe = new NamedPipeServerStream("TaixClient", PipeDirection.In, 10);
-                    await pipe.WaitForConnectionAsync();
-
-                    _ = HandlePipeConnectionAsync(pipe);
+                    await pipe.WaitForConnectionAsync(_wakePipeCts.Token);
+                    _ = HandlePipeConnectionAsync(pipe, _wakePipeCts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    pipe.Dispose();
+                    break;
                 }
                 catch (Exception ex)
                 {
+                    pipe.Dispose();
                     Logger.Warn($"[WakePipeServer] Error: {ex.Message}");
-                    await Task.Delay(100);
+                    try { await Task.Delay(100, _wakePipeCts.Token); } catch (OperationCanceledException) { break; }
                 }
             }
-        });
+        }, _wakePipeCts.Token);
     }
 
-    private static async Task HandlePipeConnectionAsync(NamedPipeServerStream pipe)
+    private static async Task HandlePipeConnectionAsync(NamedPipeServerStream pipe, CancellationToken ct)
     {
         try
         {
             await using (pipe)
             {
                 using var reader = new StreamReader(pipe);
-                var cmd = await reader.ReadLineAsync();
+                var cmd = await reader.ReadLineAsync(ct);
                 if (cmd == "show")
                 {
                     await Dispatcher.UIThread.InvokeAsync(() =>
@@ -95,6 +101,10 @@ public class App : Application
                 }
             }
         }
+        catch (OperationCanceledException)
+        {
+            // ignored
+        }
         catch (Exception ex)
         {
             Logger.Warn($"[WakePipeServer] Error: {ex.Message}");
@@ -108,7 +118,7 @@ public class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        Logger.SetLogger(new FileLogger(options =>
+        _fileLogger = new FileLogger(options =>
         {
             options.MaxLogFileAgeDays = 30;
             options.SaveThreshold = 100;
@@ -116,7 +126,8 @@ public class App : Application
 #if DEBUG
             options.WriteToConsole = true;
 #endif
-        }));
+        });
+        Logger.SetLogger(_fileLogger);
 
         Dispatcher.UIThread.UnhandledException += (sender, e) =>
         {
@@ -140,7 +151,9 @@ public class App : Application
             OnStartup(this, Environment.GetCommandLineArgs());
             desktop.Exit += (e, r) =>
             {
+                _wakePipeCts.Cancel();
                 Logger.Flush();
+                _fileLogger?.Dispose();
             };
         }
 
@@ -163,7 +176,9 @@ public class App : Application
     private async Task OnStartupAsync(object sender, string[] args)
     {
         if (IsRunned()) Environment.Exit(0);
+#if !DEBUG
         StartWakePipeServer();
+#endif
         var main = ServiceLocator.GetService<IMainServicer>();
         await main.Start();
     }
