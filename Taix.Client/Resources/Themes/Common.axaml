@@ -55,7 +55,7 @@
                   TargetType="MenuItem">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Padding" Value="6 0" />
+        <Setter Property="Padding" Value="10,6" />
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Name="root"
@@ -116,7 +116,8 @@
                                Placement="RightEdgeAlignedTop">
                             <Border Background="{DynamicResource ThemeBackgroundBrush}"
                                     BorderBrush="{DynamicResource ThemeBorderMidBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8">
                                 <ScrollViewer Theme="{StaticResource SimpleMenuScrollViewer}">
                                     <ItemsPresenter Name="PART_ItemsPresenter"
                                                     Margin="2"
@@ -172,7 +173,7 @@
             <Setter Property="Content">
                 <Template>
                     <Ellipse Fill="{Binding $parent[MenuItem].Foreground}"
-                             Margin="4" Width="8" Height="8" />
+                             Margin="5,0,0,0" Width="10" Height="10" />
                 </Template>
             </Setter>
         </Style>
