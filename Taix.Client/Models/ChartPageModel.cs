@@ -13,7 +13,6 @@ public class ChartPageModel : ModelBase
     private ContextMenu _appContextMenu;
     private string _appCount;
 
-    private SelectItemModel _chartDataMode;
 
     private int _columnSelectedIndex = -1;
     private List<ChartsDataModel> _data;
@@ -28,7 +27,6 @@ public class ChartPageModel : ModelBase
     private string _diffTotalTimeType;
     private string _diffTotalTimeValue;
     private bool _isCanColumnSelect = true;
-    private bool _isChartStack = true;
     private double _lastWebPageCount;
     private double _lastWebSiteCount;
 
@@ -301,19 +299,6 @@ public class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    /// 图表数据模式（1=分类/2=汇总）
-    /// </summary>
-    public SelectItemModel ChartDataMode
-    {
-        get => _chartDataMode;
-        set
-        {
-            _chartDataMode = value;
-            OnPropertyChanged();
-        }
-    }
-
-    /// <summary>
     /// 雷达图数据
     /// </summary>
     public List<ChartsDataModel> RadarData
@@ -322,19 +307,6 @@ public class ChartPageModel : ModelBase
         set
         {
             _radarData = value;
-            OnPropertyChanged();
-        }
-    }
-
-    /// <summary>
-    /// 是否以堆叠形式展示
-    /// </summary>
-    public bool IsChartStack
-    {
-        get => _isChartStack;
-        set
-        {
-            _isChartStack = value;
             OnPropertyChanged();
         }
     }

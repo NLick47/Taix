@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Shapes;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Media;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
@@ -107,12 +106,9 @@ public class ColumnChart : TemplatedControl
     private Control _valuesPopupPlacementTarget;
     private double _valuesPopupHorizontalOffset;
 
-    private Canvas _typeColumnCanvas;
-    private EmptyData _emptyDataView;
-    private Border _chartBorder;
-    private Dictionary<int, Rectangle> _typeColBorderRectMap = new();
-    private Dictionary<int, List<Rectangle>> _typeColValueRectMap = new();
-    private bool _isRendering;
+    private ColumnChartCanvas? _chartCanvas;
+    private EmptyData? _emptyDataView;
+    private Border? _chartBorder;
 
     public IEnumerable<ChartsDataModel> Data { get => _data; set => SetAndRaise(DataProperty, ref _data, value); }
     public double DataMaximum { get => _dataMaximum; set => SetAndRaise(DataMaximumProperty, ref _dataMaximum, value); }
@@ -138,24 +134,12 @@ public class ColumnChart : TemplatedControl
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
-        _typeColumnCanvas = e.NameScope.Get<Canvas>("TypeColumnCanvas");
-        _typeColumnCanvas.SizeChanged += OnCanvasSizeChanged;
+        _chartCanvas = e.NameScope.Find<ColumnChartCanvas>("TypeColumnCanvas");
+        if (_chartCanvas != null)
+            _chartCanvas.SetOwner(this);
         _emptyDataView = e.NameScope.Find<EmptyData>("EmptyDataView");
         _chartBorder = e.NameScope.Find<Border>("ChartBorder");
-        Render();
-    }
-
-    protected override void OnUnloaded(RoutedEventArgs e)
-    {
-        base.OnUnloaded(e);
-        _isRendering = false;
-        if (_typeColumnCanvas != null)
-            _typeColumnCanvas.SizeChanged -= OnCanvasSizeChanged;
-        _typeColBorderRectMap?.Clear();
-        _typeColValueRectMap?.Clear();
-        ColumnValuesInfoList = null;
-        ValuesPopupPlacementTarget = null;
-        IsShowValuesPopup = false;
+        UpdateVisibility();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -163,232 +147,377 @@ public class ColumnChart : TemplatedControl
         base.OnPropertyChanged(change);
         if (change.Property == DataProperty || change.Property == DataMaximumProperty ||
             change.Property == IsStackProperty || change.Property == NameIndexStartProperty)
-            Render();
+        {
+            UpdateVisibility();
+            UpdateComputedValues();
+            _chartCanvas?.InvalidateVisual();
+        }
 
         if (change.Property == ColumnSelectedIndexProperty)
-            SetColBorderActiveBg((int)change.OldValue, (int)change.NewValue);
+            _chartCanvas?.InvalidateVisual();
     }
 
-    private void OnCanvasSizeChanged(object? sender, SizeChangedEventArgs e) => Render();
-
-    private void Render()
+    internal void UpdateComputedValues()
     {
-        if (_typeColumnCanvas == null || _isRendering) return;
-        if (_typeColumnCanvas.Bounds.Height == 0 || _typeColumnCanvas.Bounds.Width == 0) return;
-
-        _isRendering = true;
-        try
+        var list = Data?.ToList();
+        if (list == null || list.Count == 0 || list[0]?.Values == null || list[0].Values.Length == 0)
         {
-            _typeColumnCanvas.Children.Clear();
-            ColumnInfoList = null;
-            ColumnValuesInfoList = null;
-            IsShowValuesPopup = false;
-            ValuesPopupPlacementTarget = null;
-            _typeColValueRectMap = new();
-            _typeColBorderRectMap = new();
             Maximum = Median = Total = string.Empty;
-
-            var list = Data?.ToList();
-            if (list == null || list.Count == 0)
-            {
-                if (_emptyDataView != null) _emptyDataView.IsVisible = true;
-                if (_chartBorder != null) _chartBorder.IsVisible = false;
-                return;
-            }
-            if (_emptyDataView != null) _emptyDataView.IsVisible = false;
-            if (_chartBorder != null) _chartBorder.IsVisible = true;
-            var firstData = list[0];
-            if (firstData?.Values == null || firstData.Values.Length == 0) return;
-
-            var colValueCount = firstData.Values.Length;
-            var tempValueArr = new double[colValueCount];
-            double maxValue = 0, total = 0;
-
-            foreach (var item in list)
-            {
-                for (var i = 0; i < colValueCount; i++) tempValueArr[i] += item.Values[i];
-                var max = item.Values.Max();
-                if (max > maxValue) maxValue = max;
-                total += item.Values.Sum();
-            }
-
-            if (DataMaximum > 0) maxValue = DataMaximum;
-            else if (IsStack) maxValue = tempValueArr.Max();
-            if (maxValue == 0) maxValue = 10;
-
-            Maximum = CoverValue(maxValue);
-            Median = CoverValue(maxValue / 2);
-            Total = CoverValue(total);
-
-            var columns = firstData.Values.Length;
-            var margin = 5;
-            if (columns <= 7) margin = 25;
-            else if (columns <= 12) margin = 15;
-            else if (columns >= 20) margin = 2;
-
-            const double colNameHeight = 30;
-            const double colNameBottomMargin = 5;
-            var canvasHeight = _typeColumnCanvas.Bounds.Height - colNameHeight - colNameBottomMargin;
-            var canvasWidth = _typeColumnCanvas.Bounds.Width;
-            var columnBorderWidth = canvasWidth / columns;
-            var colValueRectWidth = canvasWidth / columns - margin * 2;
-            if (colValueRectWidth <= 0) colValueRectWidth = 1;
-            if (canvasHeight <= 0) canvasHeight = 1;
-
-            var columnNames = list[0].ColumnNames;
-            var themeColor = Application.Current?.FindResource("ThemeColor");
-
-            for (var i = 0; i < columns; i++)
-            {
-                var columnBorder = new Rectangle
-                {
-                    Width = columnBorderWidth,
-                    Height = canvasHeight,
-                    Fill = new SolidColorBrush(Colors.Transparent)
-                };
-                Canvas.SetLeft(columnBorder, i * columnBorderWidth);
-                Canvas.SetTop(columnBorder, colNameBottomMargin);
-                columnBorder.ZIndex = 999;
-                _typeColumnCanvas.Children.Add(columnBorder);
-                _typeColBorderRectMap[i] = columnBorder;
-
-                var colName = columnNames != null && columnNames.Length > 0
-                    ? columnNames[i]
-                    : (i + NameIndexStart).ToString();
-                var colNameText = new TextBlock
-                {
-                    TextAlignment = TextAlignment.Center,
-                    Width = columnBorderWidth,
-                    FontSize = 12,
-                    Text = colName,
-                    Foreground = Client.Base.Color.Colors.GetFromString("#FF8A8A8A")
-                };
-                Canvas.SetLeft(colNameText, i * columnBorderWidth);
-                Canvas.SetBottom(colNameText, colNameBottomMargin);
-                _typeColumnCanvas.Children.Add(colNameText);
-
-                var valuesPopupList = new List<ChartColumnInfoModel>();
-                _typeColValueRectMap[i] = new List<Rectangle>();
-
-                foreach (var item in list)
-                {
-                    var colColor = item.Color ?? themeColor?.ToString() ?? StateData.ThemeColor;
-                    var value = item.Values[i];
-                    if (value > 0)
-                    {
-                        var colValueRect = new Rectangle
-                        {
-                            Width = colValueRectWidth,
-                            Height = value / maxValue * canvasHeight,
-                            Fill = Client.Base.Color.Colors.GetFromString(colColor)
-                        };
-                        if (!IsStack) { colValueRect.RadiusX = 4; colValueRect.RadiusY = 4; }
-                        Canvas.SetLeft(colValueRect, i * columnBorderWidth + margin);
-                        Canvas.SetBottom(colValueRect, colNameHeight);
-                        _typeColumnCanvas.Children.Add(colValueRect);
-                        _typeColValueRectMap[i].Add(colValueRect);
-
-                        valuesPopupList.Add(new ChartColumnInfoModel
-                        {
-                            Color = item.Color,
-                            Name = item.Name,
-                            Icon = item.Icon,
-                            Text = CoverValue(value) + Unit,
-                            Value = value
-                        });
-                    }
-                }
-
-                var idx = i;
-                columnBorder.PointerEntered += (_, _) =>
-                {
-                    var s = new List<ChartColumnInfoModel>(valuesPopupList);
-                    if (s.Count > 1)
-                        s.Add(new ChartColumnInfoModel { Name = "Sum", Text = CoverValue(s.Sum(x => x.Value)) + Unit, Color = "#FF8A8A8A" });
-                    ColumnValuesInfoList = s;
-                    ValuesPopupPlacementTarget = columnBorder;
-                    IsShowValuesPopup = valuesPopupList.Count > 0;
-                    ValuesPopupHorizontalOffset = 0;
-                    if (ColumnSelectedIndex != idx)
-                    {
-                        var themeBrush = Application.Current?.Resources["ThemeBrush"] as SolidColorBrush;
-                        columnBorder.Fill = new SolidColorBrush(themeBrush.Color) { Opacity = .05 };
-                    }
-                };
-                columnBorder.PointerExited += (_, _) =>
-                {
-                    IsShowValuesPopup = false;
-                    if (ColumnSelectedIndex != idx) columnBorder.Fill = new SolidColorBrush(Colors.Transparent);
-                };
-                if (IsCanColumnSelect)
-                    columnBorder.PointerPressed += (_, _) => ColumnSelectedIndex = idx;
-            }
-
-            // z-index ordering
-            foreach (var kvp in _typeColValueRectMap)
-            {
-                var rectList = IsStack ? kvp.Value : kvp.Value.OrderByDescending(m => m.Height).ToList();
-                for (var i = 0; i < rectList.Count; i++)
-                {
-                    if (IsStack && i > 0)
-                    {
-                        var lastRect = rectList[i - 1];
-                        Canvas.SetBottom(rectList[i], Canvas.GetBottom(lastRect) + lastRect.Height);
-                    }
-                    else if (!IsStack) { rectList[i].ZIndex = i; }
-                }
-            }
-
-            // max/median/avg lines (all Y from top)
-            DrawRefLine(_typeColumnCanvas, Maximum, "最大值", canvasWidth, colNameBottomMargin, Client.Base.Color.Colors.GetFromString("#ccc"));
-            var midY = maxValue / 2 / maxValue * canvasHeight + colNameBottomMargin;
-            DrawRefLine(_typeColumnCanvas, Median, "中间值", canvasWidth, midY, Client.Base.Color.Colors.GetFromString("#ccc"));
-            var avg = tempValueArr.Average();
-            var avgYFromTop = canvasHeight - (avg / maxValue * canvasHeight) + colNameBottomMargin;
-            DrawRefLine(_typeColumnCanvas, CoverValue(avg), "平均值", canvasWidth, avgYFromTop, Client.Base.Color.Colors.GetFromString(StateData.ThemeColor));
-
-            // legend
-            var infoList = new List<ChartColumnInfoModel>();
-            foreach (var item in list)
-                infoList.Add(new ChartColumnInfoModel { Color = item.Color, Name = item.Name, Icon = item.Icon, Text = CoverValue(item.Values.Sum()) + Unit });
-            ColumnInfoList = infoList;
+            ColumnInfoList = null;
+            return;
         }
-        finally { _isRendering = false; }
-    }
 
-    private void SetColBorderActiveBg(int oldIndex, int newIndex)
-    {
-        if (!IsCanColumnSelect || _typeColBorderRectMap == null) return;
-        if (_typeColBorderRectMap.TryGetValue(oldIndex, out var oldItem))
-            oldItem.Fill = new SolidColorBrush(Colors.Transparent);
-        if (_typeColBorderRectMap.TryGetValue(newIndex, out var newItem))
+        var colValueCount = list[0].Values.Length;
+        var tempValueArr = new double[colValueCount];
+        double maxValue = 0;
+
+        foreach (var item in list)
         {
-            var background = Application.Current?.Resources["ThemeBrush"] as SolidColorBrush;
-            newItem.Fill = new SolidColorBrush(background.Color) { Opacity = .1 };
+            for (var i = 0; i < colValueCount; i++) tempValueArr[i] += item.Values[i];
+            var max = item.Values.Max();
+            if (max > maxValue) maxValue = max;
         }
+
+        if (DataMaximum > 0) maxValue = DataMaximum;
+        else if (IsStack) maxValue = tempValueArr.Max();
+        if (maxValue == 0) maxValue = 10;
+
+        Maximum = CoverValue(maxValue);
+        Median = CoverValue(maxValue / 2);
+        Total = CoverValue(list.Sum(item => item.Values.Sum()));
+        ColumnInfoList = BuildLegend(list, -1);
     }
 
-    private string CoverValue(double value) =>
+    internal List<ChartColumnInfoModel> BuildLegend(List<ChartsDataModel> list, int colIndex)
+    {
+        var result = new List<ChartColumnInfoModel>();
+        double total = 0;
+
+        foreach (var item in list)
+        {
+            var value = colIndex < 0 ? item.Values.Sum() : item.Values[colIndex];
+            if (value > 0)
+            {
+                result.Add(new ChartColumnInfoModel
+                {
+                    Color = item.Color,
+                    Name = item.Name,
+                    Icon = item.Icon,
+                    Text = CoverValue(value) + Unit,
+                    Value = value
+                });
+                total += value;
+            }
+        }
+
+        result = result.OrderByDescending(x => x.Value).ToList();
+
+        if (total > 0)
+        {
+            var totalName = Application.Current?.FindResource("Total") as string ?? "Total";
+            result.Add(new ChartColumnInfoModel
+            {
+                Name = totalName,
+                Text = CoverValue(total) + Unit,
+                Color = "#FF8A8A8A"
+            });
+        }
+
+        return result;
+    }
+
+    private void UpdateVisibility()
+    {
+        var list = Data?.ToList();
+        var hasData = list != null && list.Count > 0 && list[0]?.Values != null && list[0].Values.Length > 0;
+        if (_emptyDataView != null) _emptyDataView.IsVisible = !hasData;
+        if (_chartBorder != null) _chartBorder.IsVisible = hasData;
+    }
+
+    internal string CoverValue(double value) =>
         DataValueType == ChartDataValueType.Seconds ? Time.ToString((int)value) : value.ToString();
+}
 
-    private static void DrawRefLine(Canvas canvas, string text, string tooltip, double canvasWidth, double yFromTop, SolidColorBrush color)
+public class ColumnChartCanvas : Control
+{
+    private ColumnChart? _owner;
+    private int _hoverColumnIndex = -1;
+    private double _columnWidth;
+    private int _columnCount;
+    private readonly Dictionary<int, List<ChartColumnInfoModel>> _columnPopupData = new();
+
+    internal void SetOwner(ColumnChart owner) => _owner = owner;
+
+    protected override Size MeasureOverride(Size availableSize) => availableSize;
+
+    public override void Render(DrawingContext context)
     {
-        var tb = new TextBlock { Text = text, FontSize = 12, Foreground = color };
-        ToolTip.SetTip(tb, tooltip);
-        var size = UIHelper.MeasureString(tb);
-        tb.ZIndex = 1000;
-        Canvas.SetRight(tb, 0);
-        Canvas.SetTop(tb, yFromTop - size.Height / 2);
-        canvas.Children.Add(tb);
+        base.Render(context);
 
-        var line = new Line
+        if (_owner?.Data == null) return;
+
+        var list = _owner.Data.ToList();
+        if (list.Count == 0) return;
+
+        var firstData = list[0];
+        if (firstData?.Values == null || firstData.Values.Length == 0) return;
+
+        var width = Bounds.Width;
+        var height = Bounds.Height;
+        if (width <= 0 || height <= 0) return;
+
+        var colValueCount = firstData.Values.Length;
+        var tempValueArr = new double[colValueCount];
+        double maxValue = 0;
+
+        foreach (var item in list)
         {
-            Stroke = color,
-            StrokeDashArray = [2, 5],
-            StartPoint = new Point(5, yFromTop),
-            EndPoint = new Point(canvasWidth - 5 - size.Width, yFromTop),
-            StrokeThickness = 1
-        };
-        canvas.Children.Add(line);
+            for (var i = 0; i < colValueCount; i++) tempValueArr[i] += item.Values[i];
+            var max = item.Values.Max();
+            if (max > maxValue) maxValue = max;
+        }
+
+        var dataMaximum = _owner.DataMaximum;
+        if (dataMaximum > 0) maxValue = dataMaximum;
+        else if (_owner.IsStack) maxValue = tempValueArr.Max();
+        if (maxValue == 0) maxValue = 10;
+
+        var columns = firstData.Values.Length;
+        _columnCount = columns;
+        var margin = 5;
+        if (columns <= 7) margin = 25;
+        else if (columns <= 12) margin = 15;
+        else if (columns >= 20) margin = 2;
+
+        const double colNameHeight = 30;
+        const double colNameBottomMargin = 5;
+        var chartHeight = height - colNameHeight - colNameBottomMargin;
+        _columnWidth = width / columns;
+        var colValueRectWidth = width / columns - margin * 2;
+        if (colValueRectWidth <= 0) colValueRectWidth = 1;
+        if (chartHeight <= 0) chartHeight = 1;
+
+        var columnNames = firstData.ColumnNames;
+        var themeColorStr = Application.Current?.FindResource("ThemeColor")?.ToString() ?? StateData.ThemeColor;
+        var subTextBrush = new SolidColorBrush(Color.Parse("#FF8A8A8A"));
+
+        _columnPopupData.Clear();
+
+        // 绘制列名
+        for (var i = 0; i < columns; i++)
+        {
+            var colName = columnNames != null && columnNames.Length > 0
+                ? columnNames[i]
+                : (i + _owner.NameIndexStart).ToString();
+
+            var formattedText = CreateFormattedText(colName, 12, subTextBrush);
+            var textX = i * _columnWidth + (_columnWidth - formattedText.Width) / 2;
+            var textY = height - colNameBottomMargin - formattedText.Height;
+            context.DrawText(formattedText, new Point(textX, textY));
+        }
+
+        // 绘制柱子
+        for (var i = 0; i < columns; i++)
+        {
+            var valuesPopupList = new List<ChartColumnInfoModel>();
+            double currentBottom = colNameHeight;
+
+            foreach (var item in list)
+            {
+                var colColorStr = item.Color ?? themeColorStr;
+                var value = item.Values[i];
+                if (value > 0)
+                {
+                    var rectHeight = value / maxValue * chartHeight;
+                    var rectX = i * _columnWidth + margin;
+                    var rectY = height - currentBottom - rectHeight;
+
+                    var color = Color.Parse(colColorStr);
+                    var brush = new SolidColorBrush(color);
+                    var radius = !_owner.IsStack ? 4 : 0;
+
+                    context.DrawRectangle(brush, null, new Rect(rectX, rectY, colValueRectWidth, rectHeight), radius, radius);
+
+                    valuesPopupList.Add(new ChartColumnInfoModel
+                    {
+                        Color = item.Color,
+                        Name = item.Name,
+                        Icon = item.Icon,
+                        Text = _owner.CoverValue(value) + _owner.Unit,
+                        Value = value
+                    });
+
+                    if (_owner.IsStack)
+                        currentBottom += rectHeight;
+                }
+            }
+
+            _columnPopupData[i] = valuesPopupList;
+        }
+
+        // 绘制参考线
+        var grayBrush = new SolidColorBrush(Color.Parse("#FF8A8A8A"));
+        var themeColor = Color.Parse(themeColorStr);
+
+        DrawRefLine(context, _owner.Maximum, chartHeight, colNameBottomMargin, width, grayBrush);
+        var midY = chartHeight / 2 + colNameBottomMargin;
+        DrawRefLine(context, _owner.Median, chartHeight, midY, width, grayBrush);
+        var avg = tempValueArr.Average();
+        var avgText = _owner.CoverValue(avg);
+        var avgY = chartHeight - (avg / maxValue * chartHeight) + colNameBottomMargin;
+        DrawRefLine(context, avgText, chartHeight, avgY, width, new SolidColorBrush(themeColor));
+
+        // 绘制 hover 高亮
+        DrawHighlight(context, _hoverColumnIndex, chartHeight, colNameBottomMargin, themeColor, 0.05);
+        // 绘制选中高亮
+        if (_owner.IsCanColumnSelect)
+            DrawHighlight(context, _owner.ColumnSelectedIndex, chartHeight, colNameBottomMargin, themeColor, 0.1);
+    }
+
+    private void DrawHighlight(DrawingContext context, int colIndex, double chartHeight, double topMargin, Color themeColor, double opacity)
+    {
+        if (colIndex < 0 || colIndex >= _columnCount) return;
+        var rect = new Rect(colIndex * _columnWidth, topMargin, _columnWidth, chartHeight);
+        context.FillRectangle(new SolidColorBrush(themeColor) { Opacity = opacity }, rect);
+    }
+
+    private void DrawRefLine(DrawingContext context, string text, double chartHeight, double yFromTop, double canvasWidth, IBrush color)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+
+        var formattedText = CreateFormattedText(text, 12, color);
+        var textX = canvasWidth - formattedText.Width;
+        var textY = yFromTop - formattedText.Height / 2;
+
+        if (textY < 0) textY = 0;
+        if (textY + formattedText.Height > chartHeight + 5) textY = chartHeight + 5 - formattedText.Height;
+
+        context.DrawText(formattedText, new Point(textX, textY));
+
+        var dashPen = new Pen(color, 1.0, new DashStyle(new[] { 2.0, 5.0 }, 0));
+        context.DrawLine(dashPen, new Point(5, yFromTop), new Point(canvasWidth - 5 - formattedText.Width, yFromTop));
+    }
+
+    private static FormattedText CreateFormattedText(string text, double size, IBrush foreground)
+    {
+        return new FormattedText(
+            text,
+            SystemLanguage.CurrentCultureInfo ?? CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            new Typeface(FontFamily.Default),
+            size,
+            foreground);
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+        if (_owner == null) return;
+
+        var pos = e.GetPosition(this);
+        var colIndex = (int)(pos.X / _columnWidth);
+
+        if (colIndex < 0 || colIndex >= _columnCount)
+        {
+            if (_hoverColumnIndex >= 0)
+            {
+                ClearHover();
+                if (_owner.ColumnSelectedIndex < 0)
+                    RestoreDefaultLegend();
+            }
+            return;
+        }
+
+        if (colIndex != _hoverColumnIndex)
+        {
+            ClearHover();
+            _hoverColumnIndex = colIndex;
+            InvalidateVisual();
+
+            if (_owner.ColumnSelectedIndex < 0)
+                UpdateLegendForColumn(colIndex);
+
+            if (_columnPopupData.TryGetValue(colIndex, out var valuesPopupList) && valuesPopupList.Count > 0)
+            {
+                var popupList = new List<ChartColumnInfoModel>(valuesPopupList);
+                var total = popupList.Sum(x => x.Value);
+                if (total > 0)
+                {
+                    var totalName = Application.Current?.FindResource("Total") as string ?? "Total";
+                    popupList.Add(new ChartColumnInfoModel
+                    {
+                        Name = totalName,
+                        Text = _owner.CoverValue(total) + _owner.Unit,
+                        Color = "#FF8A8A8A"
+                    });
+                }
+                _owner.ColumnValuesInfoList = popupList;
+                _owner.ValuesPopupPlacementTarget = this;
+                _owner.IsShowValuesPopup = true;
+
+                var colCenterX = colIndex * _columnWidth + _columnWidth / 2;
+                var canvasCenterX = Bounds.Width / 2;
+                _owner.ValuesPopupHorizontalOffset = colCenterX - canvasCenterX;
+            }
+        }
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        ClearHover();
+        _owner.IsShowValuesPopup = false;
+        if (_owner?.ColumnSelectedIndex < 0)
+            RestoreDefaultLegend();
+    }
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        if (_owner == null) return;
+
+        var pos = e.GetPosition(this);
+        var colIndex = (int)(pos.X / _columnWidth);
+
+        if (colIndex >= 0 && colIndex < _columnCount && _owner.IsCanColumnSelect)
+        {
+            if (_owner.ColumnSelectedIndex == colIndex)
+            {
+                _owner.ColumnSelectedIndex = -1;
+                RestoreDefaultLegend();
+            }
+            else
+            {
+                _owner.ColumnSelectedIndex = colIndex;
+                UpdateLegendForColumn(colIndex);
+            }
+        }
+        else if ((colIndex < 0 || colIndex >= _columnCount) && _owner.IsCanColumnSelect)
+        {
+            _owner.ColumnSelectedIndex = -1;
+            RestoreDefaultLegend();
+        }
+    }
+
+    private void UpdateLegendForColumn(int colIndex)
+    {
+        if (_owner == null) return;
+        var list = _owner.Data?.ToList();
+        if (list == null || list.Count == 0) return;
+        _owner.ColumnInfoList = _owner.BuildLegend(list, colIndex);
+    }
+
+    private void RestoreDefaultLegend()
+    {
+        _owner?.UpdateComputedValues();
+    }
+
+    private void ClearHover()
+    {
+        if (_hoverColumnIndex >= 0)
+        {
+            _hoverColumnIndex = -1;
+            InvalidateVisual();
+        }
     }
 }

@@ -73,17 +73,10 @@ public class ChartPageViewModel : ChartPageModel
         new() { Id = 3, Name = ResourceStrings.Yearly }
     ];
 
-    public List<SelectItemModel> ChartDataModeOptions { get; } =
-    [
-        new() { Id = 1, Name = ResourceStrings.CategoryView },
-        new() { Id = 2, Name = ResourceStrings.SummaryView }
-    ];
-
     private void Initialize()
     {
         TabbarData = [ResourceStrings.Daily, ResourceStrings.Weekly, ResourceStrings.Monthly, ResourceStrings.Yearly];
 
-        ChartDataMode = ChartDataModeOptions[0];
         ShowType = ShowTypeOptions[0];
         SelectedPeriod = PeriodOptions[0];
         Date = DateTime.Now;
@@ -107,7 +100,7 @@ public class ChartPageViewModel : ChartPageModel
             .Subscribe()
             .DisposeWith(Disposables);
 
-        WhenPropertyChanged(this, x => x.ChartDataMode, _ => OnChartDataModeChangedAsync());
+
         WhenPropertyChanged(this, x => x.SelectedPeriod, p =>
         {
             if (p != null) TabbarSelectedIndex = p.Id;
@@ -151,12 +144,6 @@ public class ChartPageViewModel : ChartPageModel
     {
         if (TabbarSelectedIndex != 3) return;
         await LoadYearDataAsync(ct);
-    });
-
-    private Task OnChartDataModeChangedAsync() => ExecuteAsync(async ct =>
-    {
-        IsChartStack = ChartDataMode.Id == 1;
-        await LoadDataAsync(ct);
     });
 
     private Task OnShowTypeChangedAsync() => ExecuteAsync(LoadDataAsync);
@@ -209,7 +196,6 @@ public class ChartPageViewModel : ChartPageModel
     {
         if (ShowType.Id == 0)
         {
-            DataMaximum = 3600;
             var chartData = await BuildCategoryChartDataAsync(
                 ct => _dataService.GetCategoryHoursDataAsync(Date, ct),
                 ct => _dataService.GetRangeTotalDataAsync(Date, Date, ct),
@@ -356,28 +342,7 @@ public class ChartPageViewModel : ChartPageModel
         // 按分类总时长降序排序
         categoryData = categoryData.OrderByDescending(c => c.Values.Sum()).ToList();
 
-        List<ChartsDataModel> data;
-        if (ChartDataMode.Id == 1)
-        {
-            data = categoryData;
-        }
-        else
-        {
-            var values = await getTotalDataAsync(cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
-#pragma warning disable CS8601
-            data =
-            [
-                new ChartsDataModel
-                {
-                    Values = values,
-                    ColumnNames = columnNames
-                }
-            ];
-#pragma warning restore CS8601
-        }
-
-        return (data, categoryData);
+        return (categoryData, categoryData);
     }
 
     private async Task LoadTopDataAsync(CancellationToken cancellationToken)

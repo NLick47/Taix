@@ -120,7 +120,7 @@
                         </Popup>
 
                         <Border x:Name="ChartBorder" BorderThickness="1,0,0,1" BorderBrush="{DynamicResource ChartColBorderBrush}">
-                            <Canvas x:Name="TypeColumnCanvas" />
+                            <controls:ColumnChartCanvas x:Name="TypeColumnCanvas" />
                         </Border>
                         <base:EmptyData x:Name="EmptyDataView" IsVisible="False"
                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -128,9 +128,11 @@
 
                     <!-- category legend -->
                     <Grid Grid.Row="2" IsHitTestVisible="False" Focusable="False"
-                          Margin="0,5,0,0" x:Name="CategoryLegend" IsVisible="False">
+                          Margin="0,5,0,0" x:Name="CategoryLegend" IsVisible="False"
+                          Height="70">
                         <ListBox ItemsSource="{TemplateBinding ColumnInfoList}"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 ScrollViewer.VerticalScrollBarVisibility="Hidden">
                             <ListBox.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel />
@@ -141,7 +143,10 @@
                                     <Setter Property="Template">
                                         <ControlTemplate>
                                             <Border>
-                                                <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                                              VerticalScrollBarVisibility="Hidden">
+                                                    <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                                </ScrollViewer>
                                             </Border>
                                         </ControlTemplate>
                                     </Setter>
@@ -166,11 +171,15 @@
                                         <StackPanel Orientation="Horizontal" Margin="0,0,10,5">
                                             <Rectangle Width="12" RadiusX="4" RadiusY="4" Height="12"
                                                        Fill="{Binding Color,Converter={StaticResource HextoColorConverter}}" />
-                                            <base:Img Margin="5,0,0,0" Width="16" Height="16"
-                                                      DecodeWidth="64" URL="{Binding Icon}" />
+                                            <base:View Condition="not empty" Value="{Binding Icon}">
+                                                <base:Img Margin="5,0,0,0" Width="16" Height="16"
+                                                          DecodeWidth="64" URL="{Binding Icon}" />
+                                            </base:View>
                                             <TextBlock Margin="5,0,0,0"
                                                        Foreground="{DynamicResource DefaultTextBrush}"
-                                                       VerticalAlignment="Center" Text="{Binding Name}" />
+                                                       VerticalAlignment="Center" Text="{Binding Name}"
+                                                       MaxWidth="100"
+                                                       TextTrimming="CharacterEllipsis" />
                                             <TextBlock FontSize="12" Margin="5,0,0,0"
                                                        Foreground="{DynamicResource SubTextBrush}"
                                                        VerticalAlignment="Center" Text="{Binding Text}" />
