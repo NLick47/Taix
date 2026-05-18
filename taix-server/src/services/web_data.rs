@@ -385,8 +385,14 @@ impl WebDataService {
 
     pub async fn get_unset_category_web_sites(pool: &SqlitePool, config_service: &ConfigService) -> Result<Vec<WebSiteModel>, AppError> {
         debug!("get_unset_category_web_sites");
-        let sites: Vec<WebSiteModel> = sqlx::query_as("SELECT * FROM WebSiteModels WHERE CategoryID = 0")
-            .fetch_all(pool).await?;
+        let system_category_id: Option<(i64,)> = sqlx::query_as("SELECT ID FROM WebSiteCategoryModels WHERE IsSystem = 1 LIMIT 1")
+            .fetch_optional(pool).await?;
+        let category_id = match system_category_id {
+            Some((id,)) => id,
+            None => return Ok(Vec::new()),
+        };
+        let sites: Vec<WebSiteModel> = sqlx::query_as("SELECT * FROM WebSiteModels WHERE CategoryID = ?")
+            .bind(category_id).fetch_all(pool).await?;
         let domains: Vec<&str> = sites.iter().filter_map(|r| r.domain.as_deref()).collect();
         let excluded = config_service.get_excluded_domains(&domains).await;
         let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();

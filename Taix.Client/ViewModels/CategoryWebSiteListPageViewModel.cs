@@ -94,7 +94,10 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
     {
         var unsetList = await _webDataService.GetUnSetCategoryWebSitesAsync();
         cancellationToken.ThrowIfCancellationRequested();
-        var combinedList = unsetList.Concat(CategoryWebSiteList).OrderBy(m => m.Title).ToList();
+        var combinedList = (unsetList ?? []).Concat(CategoryWebSiteList ?? [])
+            .OrderByDescending(m => m.CategoryID == Category.ID)
+            .ThenBy(m => m.Title)
+            .ToList();
 
         var optionList = new List<OptionModel>();
         foreach (var site in combinedList)
@@ -130,6 +133,7 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
     {
         ChooseVisibility = false;
         SearchInput = "";
+        WebSiteOptionList = new List<OptionModel>(_webSiteOptionsTemp);
     }
 
     private void OnSearch(object obj)
@@ -138,27 +142,33 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
         if (string.IsNullOrEmpty(keyword))
         {
             WebSiteOptionList = new List<OptionModel>(_webSiteOptionsTemp);
+            return;
+        }
+
+        if (IsRegexSearch)
+        {
+            try
+            {
+                var regex = new Regex(keyword, RegexOptions.IgnoreCase);
+                WebSiteOptionList = _webSiteOptionsTemp
+                    .Where(m =>
+                        (!string.IsNullOrEmpty(m.WebSite.Title) && regex.IsMatch(m.WebSite.Title)) ||
+                        (!string.IsNullOrEmpty(m.WebSite.Domain) && regex.IsMatch(m.WebSite.Domain)))
+                    .ToList();
+            }
+            catch (ArgumentException)
+            {
+                WebSiteOptionList = new List<OptionModel>(_webSiteOptionsTemp);
+            }
         }
         else
         {
-            if (IsRegexSearch)
-            {
-                try
-                {
-                    var regex = new Regex(keyword, RegexOptions.IgnoreCase);
-                    WebSiteOptionList = _webSiteOptionsTemp
-                        .Where(m => regex.IsMatch(m.WebSite.Title) || regex.IsMatch(m.WebSite.Domain)).ToList();
-                }
-                catch (ArgumentException)
-                {
-                    WebSiteOptionList = new List<OptionModel>(_webSiteOptionsTemp);
-                }
-            }
-            else
-            {
-                WebSiteOptionList = _webSiteOptionsTemp
-                    .Where(m => m.WebSite.Title.Contains(keyword) || m.WebSite.Domain.Contains(keyword)).ToList();
-            }
+            var lowerKeyword = keyword.ToLower();
+            WebSiteOptionList = _webSiteOptionsTemp
+                .Where(m =>
+                    (!string.IsNullOrEmpty(m.WebSite.Title) && m.WebSite.Title.ToLower().Contains(lowerKeyword)) ||
+                    (!string.IsNullOrEmpty(m.WebSite.Domain) && m.WebSite.Domain.ToLower().Contains(lowerKeyword)))
+                .ToList();
         }
     }
 
@@ -174,17 +184,16 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
     {
         ChooseVisibility = false;
         SearchInput = "";
-        _webSiteOptionsTemp = new List<OptionModel>(WebSiteOptionList);
         _ = UpdateCategoryAsync();
     }
 
     private async Task UpdateCategoryAsync()
     {
-        var removeSiteList = WebSiteOptionList
+        var removeSiteList = _webSiteOptionsTemp
             .Where(m => !m.IsChecked && CategoryWebSiteList.Any(s => s.ID == m.WebSite.ID))
             .Select(m => m.WebSite.ID)
             .ToList();
-        var addSiteList = WebSiteOptionList
+        var addSiteList = _webSiteOptionsTemp
             .Where(m => m.IsChecked && !CategoryWebSiteList.Any(s => s.ID == m.WebSite.ID))
             .Select(m => m.WebSite)
             .ToList();
@@ -210,10 +219,8 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
 
     private async Task OnShowChooseAsync(object obj)
     {
-        if (WebSiteOptionList == null || WebSiteOptionList.Count == 0)
-        {
-            await LoadChooserDataAsync();
-        }
         ChooseVisibility = true;
+        SearchInput = "";
+        await ExecuteAsync(LoadChooserDataAsync);
     }
 }

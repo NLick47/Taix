@@ -13,6 +13,8 @@ public class CategoryAppListPageModel : ModelBase
     private List<AppModel> _data = [];
     private string _searchInput = string.Empty;
     private AppModel? _selectedItem;
+    private string _mainSearchInput = string.Empty;
+    private List<AppModel> _mainPageOriginalData = [];
 
     public bool IsSystemCategory => _category?.Data.IsSystem ?? false;
 
@@ -73,6 +75,26 @@ public class CategoryAppListPageModel : ModelBase
         set
         {
             _searchInput = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string MainSearchInput
+    {
+        get => _mainSearchInput;
+        set
+        {
+            _mainSearchInput = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public List<AppModel> MainPageOriginalData
+    {
+        get => _mainPageOriginalData;
+        set
+        {
+            _mainPageOriginalData = value;
             OnPropertyChanged();
         }
     }

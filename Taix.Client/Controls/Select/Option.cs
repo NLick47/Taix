@@ -51,7 +51,6 @@ public class Option : TemplatedControl
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (!IsChecked)
-            IsChecked = true;
+        IsChecked = !IsChecked;
     }
 }

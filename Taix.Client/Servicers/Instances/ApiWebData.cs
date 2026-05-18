@@ -74,7 +74,7 @@ public class ApiWebData : IWebData
 
     public async Task<IReadOnlyCollection<WebSiteModel>> GetUnSetCategoryWebSitesAsync(CancellationToken cancellationToken = default)
     {
-        return await _webSiteData.GetWebSitesByCategoryIDAsync(0);
+        return await _apiClient.GetUnSetCategoryWebSitesAsync(cancellationToken);
     }
 
     public async Task UpdateWebSitesCategoryAsync(int[] siteIds, int categoryId)

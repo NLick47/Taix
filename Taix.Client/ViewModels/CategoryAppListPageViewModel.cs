@@ -36,6 +36,12 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         SearchCommand = ReactiveCommand.CreateFromTask<object>(OnSearchAsync).DisposeWith(Disposables);
         ChooseCloseCommand = ReactiveCommand.Create<object>(OnChooseClose).DisposeWith(Disposables);
         DelCommand = ReactiveCommand.CreateFromTask<object>(OnDel).DisposeWith(Disposables);
+
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MainSearchInput))
+                FilterMainData();
+        };
     }
 
     public ReactiveCommand<object, Unit> ShowChooseCommand { get; }
@@ -67,6 +73,7 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
             }
 
             Data = list;
+            MainPageOriginalData = list;
         }
     }
 
@@ -74,11 +81,11 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
     {
         ChooseVisibility = false;
         SearchInput = "";
+        AppList = _appList;
     }
 
     private Task OnSearchAsync(object? obj)
     {
-        if (string.IsNullOrEmpty(SearchInput)) return Task.CompletedTask;
         var keyword = obj?.ToString() ?? SearchInput;
 
         if (keyword == "vscode")
@@ -103,7 +110,7 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         SearchInput = "";
         var data = new List<AppModel>();
 
-        foreach (var item in AppList)
+        foreach (var item in _appList)
         {
             var app = await _appDataService.GetAppAsync(item.App.ID);
             if (app == null) continue;
@@ -129,6 +136,8 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         }
 
         Data = data;
+        MainPageOriginalData = data;
+        MainSearchInput = string.Empty;
     }
 
     private async Task OnShowChooseAsync(object obj)
@@ -140,9 +149,11 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
     public override async Task OnNavigatedToAsync()
     {
         Category = _navigationData.Data as CategoryModel ?? new CategoryModel();
-        Data = Category.Data != null
+        MainPageOriginalData = Category.Data != null
             ? (await _appDataService.GetAppsByCategoryIDAsync(Category.Data.ID)).ToList()
             : [];
+        Data = MainPageOriginalData;
+        MainSearchInput = string.Empty;
     }
 
     private async Task LoadAppsAsync()
@@ -167,29 +178,45 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
             if (app.IsChoosed || item.Category?.IsSystem == true) _appList.Add(app);
         }
 
-        _appList = _appList.OrderBy(m => m.App.Description).ToList();
+        _appList = _appList
+            .OrderByDescending(m => m.IsChoosed)
+            .ThenBy(m => m.App.Description)
+            .ToList();
         AppList = _appList;
     }
 
     private Task SearchAsync(string keyword)
     {
-        return Task.Run(() =>
+        if (string.IsNullOrEmpty(keyword))
         {
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                keyword = keyword.ToLower();
-                var list = AppList.ToList();
-                foreach (var item in list)
-                {
-                    item.Visibility = (item.App.Description != null &&
-                                       item.App.Description.ToLower().Contains(keyword)) ||
-                                      (item.App.Name != null && item.App.Name.ToLower().Contains(keyword));
-                }
-            }
-            else
-            {
-                foreach (var item in AppList) item.Visibility = true;
-            }
-        });
+            AppList = _appList;
+            return Task.CompletedTask;
+        }
+
+        keyword = keyword.ToLower();
+        var filtered = _appList.Where(item =>
+            (item.App.Description != null && item.App.Description.ToLower().Contains(keyword)) ||
+            (item.App.Name != null && item.App.Name.ToLower().Contains(keyword))
+        ).ToList();
+
+        AppList = filtered;
+        return Task.CompletedTask;
+    }
+
+    private void FilterMainData()
+    {
+        if (string.IsNullOrEmpty(MainSearchInput))
+        {
+            Data = MainPageOriginalData;
+            return;
+        }
+
+        var keyword = MainSearchInput.ToLower();
+        var filtered = MainPageOriginalData.Where(m =>
+            (m.Description != null && m.Description.ToLower().Contains(keyword)) ||
+            (m.Name != null && m.Name.ToLower().Contains(keyword))
+        ).ToList();
+
+        Data = filtered;
     }
 }

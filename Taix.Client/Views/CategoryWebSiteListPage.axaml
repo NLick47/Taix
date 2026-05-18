@@ -37,7 +37,7 @@
                                            Command="{Binding ChooseCloseCommand}" />
                     </Grid>
                     <Border Grid.Row="1">
-                        <Grid RowDefinitions="Auto,Auto">
+                        <Grid ColumnDefinitions="*,Auto">
                             <input:InputBox Placeholder="{DynamicResource Search}" Margin="10" x:Name="SearchBox"
                                             Text="{Binding SearchInput,Mode=TwoWay}">
                                 <Interaction.Behaviors>
@@ -47,17 +47,16 @@
                                     </EventTriggerBehavior>
                                 </Interaction.Behaviors>
                             </input:InputBox>
-                            <CheckBox HorizontalAlignment="Right"
+                            <CheckBox Grid.Column="1"
+                                      VerticalAlignment="Center"
                                       Margin="0,0,10,0"
-                                      Grid.Row="1"
                                       Foreground="Gray"
                                       Content="{DynamicResource UseRegularExpressions}"
                                       IsChecked="{Binding IsRegexSearch, Mode=TwoWay}" />
                         </Grid>
-
                     </Border>
                     <ListBox ItemsSource="{Binding WebSiteOptionList}"
-                             Margin="20,5" Grid.Row="2">
+                             Margin="20,0" Grid.Row="2">
                         <ListBox.Styles>
                             <Style Selector="ListBox">
                                 <Setter Property="Template">
@@ -70,6 +69,7 @@
                             </Style>
 
                             <Style Selector="ListBoxItem">
+                                <Setter Property="Width" Value="280" />
                                 <Setter Property="Template">
                                     <ControlTemplate>
                                         <Border>
@@ -95,23 +95,26 @@
                                     <Setter Property="Background" Value="Transparent" />
                                 </Style>
                             </Style>
-
                         </ListBox.Styles>
 
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <VirtualizingStackPanel />
+                                <WrapPanel />
                             </ItemsPanelTemplate>
                         </ListBox.ItemsPanel>
 
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <select:Option HorizontalAlignment="Stretch"
+                                               IsShowIcon="True"
                                                IsChecked="{Binding IsChecked,Mode=TwoWay}"
                                                Value="{Binding OptionValue}" />
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
+                    <base:View Grid.Row="2" Condition="empty" Value="{Binding WebSiteOptionList}">
+                        <base:EmptyData />
+                    </base:View>
                     <Button:Button Grid.Row="3" HorizontalAlignment="Right"
                                    Content="{DynamicResource Complete}"
                                    Width="120" Margin="0,0,10,0" VerticalAlignment="Center"
