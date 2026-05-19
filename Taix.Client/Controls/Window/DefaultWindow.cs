@@ -20,6 +20,8 @@ namespace Taix.Client.Controls.Window;
 
 public class DefaultWindow : Avalonia.Controls.Window
 {
+    private const double CustomWindowChromeTitleBarHeight = 40;
+
     public static readonly StyledProperty<IImage?> IconSourceProperty =
         AvaloniaProperty.Register<DefaultWindow, IImage?>(nameof(IconSource));
 
@@ -59,6 +61,11 @@ public class DefaultWindow : Avalonia.Controls.Window
     public static readonly StyledProperty<bool> IsCanBackProperty =
         AvaloniaProperty.Register<DefaultWindow, bool>(nameof(IsCanBack));
 
+    public static readonly StyledProperty<bool> UseCustomWindowChromeProperty =
+        AvaloniaProperty.Register<DefaultWindow, bool>(
+            nameof(UseCustomWindowChrome),
+            !OperatingSystem.IsMacOS());
+
     public static readonly StyledProperty<ConnectionStatus> ConnectionStatusProperty =
         AvaloniaProperty.Register<DefaultWindow, ConnectionStatus>(nameof(ConnectionStatus), ConnectionStatus.Checking);
 
@@ -81,6 +88,8 @@ public class DefaultWindow : Avalonia.Controls.Window
     private Grid ToastGrid;
     public DefaultWindow()
     {
+        ApplyWindowChromeMode();
+
         this.WhenAnyValue(x => x.MaximizeVisible, x => x.WindowState)
             .Subscribe(values =>
             {
@@ -201,6 +210,12 @@ public class DefaultWindow : Avalonia.Controls.Window
         set => SetValue(IsCanBackProperty, value);
     }
 
+    public bool UseCustomWindowChrome
+    {
+        get => GetValue(UseCustomWindowChromeProperty);
+        set => SetValue(UseCustomWindowChromeProperty, value);
+    }
+
     public ConnectionStatus ConnectionStatus
     {
         get => GetValue(ConnectionStatusProperty);
@@ -228,6 +243,22 @@ public class DefaultWindow : Avalonia.Controls.Window
         if (change.Property == IsCanBackProperty) OnIsCanBackChanged(change);
         if (change.Property == IsShowToastProperty) OnIsShowToastChanged(change);
         if (change.Property == ConnectionStatusProperty) UpdateConnectionStatus();
+        if (change.Property == UseCustomWindowChromeProperty) ApplyWindowChromeMode();
+    }
+
+    private void ApplyWindowChromeMode()
+    {
+        if (UseCustomWindowChrome)
+        {
+            ExtendClientAreaToDecorationsHint = true;
+            ExtendClientAreaTitleBarHeightHint = CustomWindowChromeTitleBarHeight;
+            WindowDecorations = Avalonia.Controls.WindowDecorations.None;
+            return;
+        }
+
+        ExtendClientAreaToDecorationsHint = false;
+        ExtendClientAreaTitleBarHeightHint = 0;
+        WindowDecorations = Avalonia.Controls.WindowDecorations.Full;
     }
 
     private static void OnIsShowToastChanged(AvaloniaPropertyChangedEventArgs e)

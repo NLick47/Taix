@@ -31,6 +31,15 @@
             <Style Selector="controls|DefaultWindow[WindowState=Maximized] /template/ Border#GlassHighlightBorder">
                 <Setter Property="CornerRadius" Value="0" />
             </Style>
+            <Style Selector="controls|DefaultWindow[UseCustomWindowChrome=False] /template/ Border#WindowBorder">
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="BoxShadow" Value="none" />
+            </Style>
+            <Style Selector="controls|DefaultWindow[UseCustomWindowChrome=False] /template/ Border#ContentBorder">
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="BorderThickness" Value="0" />
+            </Style>
             <Style Selector="controls|DefaultWindow">
                 <Style Selector="^ /template/ button|IconButton#BackBtn">
                     <Setter Property="Transitions">
@@ -96,6 +105,7 @@
                                 Panel.ZIndex="999"
                                 Height="{DynamicResource WindowTitleBarHeight}"
                                 VerticalAlignment="Top"
+                                IsVisible="{TemplateBinding UseCustomWindowChrome}"
                                 Background="Transparent">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />

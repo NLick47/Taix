@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Taix.Client.Controls.Window;
 
@@ -9,6 +10,12 @@ public partial class MainWindow : DefaultWindow
     {
         InitializeComponent();
         RequestClose += (_, _) => Close();
+
+        if (!UseCustomWindowChrome)
+        {
+            NavigationHost.Margin = new Thickness(0, 0, 0, 15);
+            PageHost.Margin = new Thickness(0, 0, 10, 10);
+        }
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)

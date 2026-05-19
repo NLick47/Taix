@@ -3,14 +3,11 @@ use sqlx::SqlitePool;
 use std::io;
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::net::windows::named_pipe::{NamedPipeServer, ServerOptions};
 
 use crate::constants;
 use crate::models::request::UpdateAppDurationRequest;
 use crate::routes::web_sentry::SentryState;
 use crate::services::app_timer::AppTimerService;
-
-const PIPE_NAME: &str = r"\\.\pipe\TaixDaemon";
 
 #[derive(Debug, Deserialize)]
 struct PipeAppMsg {
@@ -29,63 +26,138 @@ struct PipeMsg {
     extra: Option<PipeAppMsg>,
 }
 
-pub async fn start(state: Arc<SentryState>, pool: SqlitePool) {
-    let mut server = match create_server(true) {
-        Ok(s) => s,
-        Err(e) => {
-            tracing::error!("[Pipe] Failed to create server: {}", e);
-            return;
-        }
-    };
+#[cfg(target_os = "windows")]
+mod imp {
+    use super::*;
+    use tokio::net::windows::named_pipe::{NamedPipeServer, ServerOptions};
 
-    loop {
-        if let Err(e) = server.connect().await {
-            tracing::error!("[Pipe] Connect error: {}", e);
-            tokio::time::sleep(tokio::time::Duration::from_secs(constants::PIPE_CONNECT_RETRY_INTERVAL_SECS)).await;
-            continue;
-        }
+    const PIPE_NAME: &str = r"\\.\pipe\TaixDaemon";
 
-        let next = match create_server(false) {
+    pub async fn start(state: Arc<SentryState>, pool: SqlitePool) {
+        let mut server = match create_server(true) {
             Ok(s) => s,
             Err(e) => {
-                tracing::error!("[Pipe] Failed to create next server: {}", e);
-                tokio::time::sleep(tokio::time::Duration::from_secs(constants::PIPE_CONNECT_RETRY_INTERVAL_SECS)).await;
-                loop {
-                    if let Ok(s) = create_server(false) {
-                        break s;
-                    }
-                    tokio::time::sleep(tokio::time::Duration::from_secs(constants::PIPE_CREATE_RETRY_INTERVAL_SECS)).await;
-                }
+                tracing::error!("[Pipe] Failed to create server: {}", e);
+                return;
             }
         };
 
-        let semaphore = state.semaphore.clone();
-        let state = state.clone();
-        let pool = pool.clone();
-        tokio::spawn(async move {
-            let Ok(_permit) = semaphore.acquire().await else { return; };
-            if let Err(e) = handle_client(server, state, pool).await {
-                tracing::warn!("[Pipe] Client handler error: {}", e);
+        loop {
+            if let Err(e) = server.connect().await {
+                tracing::error!("[Pipe] Connect error: {}", e);
+                tokio::time::sleep(tokio::time::Duration::from_secs(
+                    constants::PIPE_CONNECT_RETRY_INTERVAL_SECS,
+                ))
+                .await;
+                continue;
             }
-        });
 
-        server = next;
+            let next = match create_server(false) {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::error!("[Pipe] Failed to create next server: {}", e);
+                    tokio::time::sleep(tokio::time::Duration::from_secs(
+                        constants::PIPE_CONNECT_RETRY_INTERVAL_SECS,
+                    ))
+                    .await;
+                    loop {
+                        if let Ok(s) = create_server(false) {
+                            break s;
+                        }
+                        tokio::time::sleep(tokio::time::Duration::from_secs(
+                            constants::PIPE_CREATE_RETRY_INTERVAL_SECS,
+                        ))
+                        .await;
+                    }
+                }
+            };
+
+            let semaphore = state.semaphore.clone();
+            let state = state.clone();
+            let pool = pool.clone();
+            tokio::spawn(async move {
+                let Ok(_permit) = semaphore.acquire().await else { return };
+                if let Err(e) = handle_client(server, state, pool).await {
+                    tracing::warn!("[Pipe] Client handler error: {}", e);
+                }
+            });
+
+            server = next;
+        }
+    }
+
+    fn create_server(first: bool) -> io::Result<NamedPipeServer> {
+        let mut opts = ServerOptions::new();
+        if first {
+            opts.first_pipe_instance(true);
+        }
+        opts.create(PIPE_NAME)
     }
 }
 
-fn create_server(first: bool) -> io::Result<NamedPipeServer> {
-    let mut opts = ServerOptions::new();
-    if first {
-        opts.first_pipe_instance(true);
+#[cfg(target_family = "unix")]
+mod imp {
+    use super::*;
+    use std::path::Path;
+    use tokio::net::UnixListener;
+
+    const SOCKET_PATH: &str = "/tmp/taix_daemon.sock";
+
+    pub async fn start(state: Arc<SentryState>, pool: SqlitePool) {
+        let path = Path::new(SOCKET_PATH);
+
+        if path.exists() {
+            if let Err(e) = std::fs::remove_file(path) {
+                tracing::warn!("[Pipe] Failed to remove old socket: {}", e);
+            }
+        }
+
+        let listener = match UnixListener::bind(path) {
+            Ok(l) => l,
+            Err(e) => {
+                tracing::error!("[Pipe] Failed to bind Unix socket: {}", e);
+                return;
+            }
+        };
+
+        tracing::info!("[Pipe] Unix socket listening at {}", SOCKET_PATH);
+
+        loop {
+            let (stream, _) = match listener.accept().await {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::error!("[Pipe] Accept error: {}", e);
+                    tokio::time::sleep(tokio::time::Duration::from_secs(
+                        constants::PIPE_CONNECT_RETRY_INTERVAL_SECS,
+                    ))
+                    .await;
+                    continue;
+                }
+            };
+
+            let semaphore = state.semaphore.clone();
+            let state = state.clone();
+            let pool = pool.clone();
+            tokio::spawn(async move {
+                let Ok(_permit) = semaphore.acquire().await else { return };
+                if let Err(e) = handle_client(stream, state, pool).await {
+                    tracing::warn!("[Pipe] Client handler error: {}", e);
+                }
+            });
+        }
     }
-    opts.create(PIPE_NAME)
 }
 
-async fn handle_client(
-    client: NamedPipeServer,
+pub use imp::start;
+
+async fn handle_client<T>(
+    client: T,
     state: Arc<SentryState>,
     pool: SqlitePool,
-) -> io::Result<()> {
+) -> io::Result<()>
+where
+    T: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
+{
     let mut reader = BufReader::new(client);
     let mut line = String::new();
 
@@ -122,10 +194,13 @@ async fn handle_client(
                 "app" => {
                     if let Some(extra) = msg.extra {
                         let now_ts = chrono::Utc::now().timestamp();
-                        if extra.a < constants::MIN_VALID_TIMESTAMP || extra.a > now_ts + constants::TIMESTAMP_FUTURE_TOLERANCE_SECS {
+                        if extra.a < constants::MIN_VALID_TIMESTAMP
+                            || extra.a > now_ts + constants::TIMESTAMP_FUTURE_TOLERANCE_SECS
+                        {
                             tracing::warn!(
                                 "[Pipe] Invalid timestamp {} for app {}, dropping",
-                                extra.a, extra.p
+                                extra.a,
+                                extra.p
                             );
                             continue;
                         }
@@ -142,9 +217,9 @@ async fn handle_client(
                             description: extra.desc,
                         };
 
-                        if let Err(e) = AppTimerService::update_app_duration(
-                            &pool, req
-                        ).await {
+                        if let Err(e) =
+                            AppTimerService::update_app_duration(&pool, req).await
+                        {
                             tracing::warn!("[Pipe] Failed to update app duration: {}", e);
                         } else {
                             tracing::debug!("[Pipe] App duration updated");
