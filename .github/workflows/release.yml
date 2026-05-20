@@ -43,7 +43,7 @@ jobs:
           if ("${{ github.ref }}" -match '^refs/tags/v') {
             $appVersion = "${{ github.ref_name }}" -replace '^v', ''
           } else {
-            $appVersion = '0.0.0'
+            $appVersion = '0.0.${{ github.run_number }}'
           }
           Add-Content -Path $env:GITHUB_ENV -Value "APP_VERSION=$appVersion"
 
