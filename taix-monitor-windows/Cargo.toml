@@ -13,6 +13,7 @@ serde_json = "1"
 parking_lot = "0.12"
 dashmap = "6"
 crossbeam = "0.8"
+dirs = "5"
 windows = { version = "0.62", features = [
     "Win32_Foundation",
     "Win32_Security",

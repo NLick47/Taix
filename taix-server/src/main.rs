@@ -31,7 +31,9 @@ async fn main() {
         .and_then(|p| p.parent().map(|p| p.to_path_buf()))
         .unwrap_or_else(|| std::env::current_dir().unwrap());
 
-    let log_dir = exe_dir.join("Logs");
+    let log_dir = dirs::data_dir()
+        .map(|d| d.join("Taix").join("Logs"))
+        .unwrap_or_else(|| exe_dir.join("Logs"));
 
     let log_filter = if cfg!(debug_assertions) {
         "taix_server=debug,tower_http=debug"
@@ -138,7 +140,41 @@ fn parse_data_dir(args: &[String], exe_dir: &std::path::Path) -> PathBuf {
     }
     std::env::var("TAIX_DATA_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| exe_dir.join("Data"))
+        .unwrap_or_else(|_| {
+            let app_data = dirs::data_dir()
+                .map(|d| d.join("Taix").join("Data"))
+                .unwrap_or_else(|| exe_dir.join("Data"));
+
+            let legacy = exe_dir.join("Data");
+            if legacy.exists() && !app_data.exists() {
+                if let Ok(meta) = std::fs::metadata(&legacy) {
+                    if meta.is_dir() {
+                        tracing::info!("Migrating legacy data dir: {} -> {}", legacy.display(), app_data.display());
+                        if std::fs::create_dir_all(&app_data).is_ok() {
+                            if copy_dir_all(&legacy, &app_data).is_ok() {
+                                let _ = std::fs::rename(&legacy, exe_dir.join("Data.backup"));
+                            }
+                        }
+                    }
+                }
+            }
+
+            app_data
+        })
+}
+
+fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
+        } else {
+            std::fs::copy(&entry.path(), &dst.join(entry.file_name()))?;
+        }
+    }
+    Ok(())
 }
 
 fn parse_server_addr() -> anyhow::Result<SocketAddr> {

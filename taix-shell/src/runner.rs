@@ -13,6 +13,12 @@ pub fn run(data_dir: Option<PathBuf>) -> anyhow::Result<()> {
     let _single_instance = try_acquire_single_instance(SHELL_MUTEX_NAME)
         .ok_or_else(|| anyhow::anyhow!("another instance of taix-shell is already running"))?;
 
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Err(e) = crate::platform::ensure_autostart(&exe_path) {
+            tracing::warn!(target: "taix_shell::runner", "failed to register autostart: {}", e);
+        }
+    }
+
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
@@ -26,9 +32,7 @@ pub fn run(data_dir: Option<PathBuf>) -> anyhow::Result<()> {
     let (cmd_tx, mut cmd_rx) = tokio::sync::mpsc::channel::<TrayCmd>(8);
 
     let data_dir_for_watch = data_dir.or_else(|| {
-        std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.to_path_buf().join("Data")))
+        dirs::data_dir().map(|p| p.join("Taix"))
     });
 
     let initial_tray_config = data_dir_for_watch

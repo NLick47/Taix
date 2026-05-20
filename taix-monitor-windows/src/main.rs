@@ -20,10 +20,7 @@ fn parse_data_dir(args: &[String]) -> Option<PathBuf> {
     if let Ok(dir) = std::env::var("TAIX_DATA_DIR") {
         return Some(PathBuf::from(dir));
     }
-    // 默认：exe 同级目录，与客户端 Taix.Client 路径对齐
-    std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+    dirs::data_dir().map(|d| d.join("Taix"))
 }
 
 fn print_usage(program: &str) {

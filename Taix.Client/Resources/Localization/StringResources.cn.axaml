@@ -310,6 +310,10 @@
     <system:String x:Key="WantGoDownloadPage">是否立即前往下载最新版本？</system:String>
     <system:String x:Key="NoUpdateAvailable">当前已是最新版</system:String>
     <system:String x:Key="UpdateCheckFailed">更新检查失败，请检查网络</system:String>
+    <system:String x:Key="UpdatePromptFormat">发现新版本 {0}，是否立即下载并安装？</system:String>
+    <system:String x:Key="DownloadingUpdate">正在下载更新...</system:String>
+    <system:String x:Key="UpdateReady">更新就绪</system:String>
+    <system:String x:Key="UpdateReadyPrompt">更新已下载完成，是否立即重启应用？</system:String>
     <system:String x:Key="ServerDisconnected">无法连接到服务端</system:String>
     <system:String x:Key="ConnectionStatusConnected">已连接</system:String>
     <system:String x:Key="ConnectionStatusDisconnected">未连接</system:String>

@@ -16,7 +16,10 @@ fn parse_data_dir(args: &[String]) -> Option<PathBuf> {
             return Some(PathBuf::from(&args[i + 1]));
         }
     }
-    std::env::var("TAIX_DATA_DIR").ok().map(PathBuf::from)
+    if let Ok(dir) = std::env::var("TAIX_DATA_DIR") {
+        return Some(PathBuf::from(dir));
+    }
+    dirs::data_dir().map(|d| d.join("Taix"))
 }
 
 fn print_usage(program: &str) {
@@ -46,12 +49,26 @@ fn main() {
             }
         }
         "uninstall" if !is_flag => {
+            let mut had_error = false;
+
             match platform::uninstall(constants::TASK_NAME) {
                 Ok(()) => println!("'{}' task uninstalled successfully.", constants::TASK_NAME),
                 Err(e) => {
                     eprintln!("Failed to uninstall task: {}", e);
-                    std::process::exit(1);
+                    had_error = true;
                 }
+            }
+
+            match platform::remove_autostart() {
+                Ok(()) => println!("Autostart registry entry removed successfully."),
+                Err(e) => {
+                    eprintln!("Failed to remove autostart: {}", e);
+                    had_error = true;
+                }
+            }
+
+            if had_error {
+                std::process::exit(1);
             }
         }
         "run" | _ => {
