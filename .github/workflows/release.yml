@@ -104,6 +104,12 @@ jobs:
             --icon Taix.Client/Resources/Icons/tai.ico `
             --packTitle "Taix"
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Taix-${{ env.APP_VERSION }}
+          path: ./releases/**
+
       - name: Upload to GitHub Release
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         shell: pwsh
