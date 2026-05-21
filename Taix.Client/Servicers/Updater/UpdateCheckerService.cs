@@ -6,8 +6,6 @@ using Avalonia;
 using Avalonia.Threading;
 using Taix.Client.Logging;
 using Taix.Client.ViewModels;
-using Velopack;
-using Velopack.Sources;
 
 namespace Taix.Client.Servicers.Updater;
 
@@ -26,18 +24,14 @@ public class UpdateCheckerService
     {
         try
         {
-            var newVersion = await CheckForUpdatesAsync();
-            if (newVersion == null)
+            var (release, info) = await GetReleaseInfoAsync();
+            if (info is null || !release.IsCanUpdate())
                 return;
 
             await Dispatcher.UIThread.InvokeAsync(async () =>
             {
-                await PromptUpdateAsync(newVersion);
+                await ShowUpdateDialogAsync();
             });
-        }
-        catch (Velopack.Exceptions.NotInstalledException)
-        {
-            // 开发模式下未安装，忽略
         }
         catch (Exception ex)
         {
@@ -49,18 +43,17 @@ public class UpdateCheckerService
     {
         try
         {
-            var newVersion = await CheckForUpdatesAsync();
-            if (newVersion == null)
+            var (release, info) = await GetReleaseInfoAsync();
+            if (info is null)
             {
-                _mainViewModel.Info(GetResourceString("NoUpdateAvailable"));
+                _mainViewModel.Error(GetResourceString("UpdateCheckFailed"));
                 return;
             }
 
-            await PromptUpdateAsync(newVersion);
-        }
-        catch (Velopack.Exceptions.NotInstalledException)
-        {
-            _mainViewModel.Info("Velopack update is only available in installed mode.");
+            if (release.IsCanUpdate())
+                await ShowUpdateDialogAsync();
+            else
+                _mainViewModel.Info(GetResourceString("NoUpdateAvailable"));
         }
         catch (Exception ex)
         {
@@ -69,43 +62,37 @@ public class UpdateCheckerService
         }
     }
 
-    private async Task<UpdateInfo?> CheckForUpdatesAsync()
+    private async Task<(GithubRelease release, GithubRelease.VersionInfo? info)> GetReleaseInfoAsync()
     {
-        var mgr = CreateUpdateManager();
-        return await mgr.CheckForUpdatesAsync();
+        var currentVersion = GetCurrentVersion();
+        var release = new GithubRelease("https://api.github.com/repos/nlick47/taix/releases/latest", currentVersion);
+        var info = await release.GetRequestAsync();
+        return (release, info);
     }
 
-    private UpdateManager CreateUpdateManager()
+    private static string GetCurrentVersion()
     {
-        // 使用 GitHub Releases 作为更新源
-        // 后续可将仓库地址提取到配置中
-        var source = new GithubSource("https://github.com/nlick47/taix", null, false);
-        return new UpdateManager(source);
+#if DEBUG
+        var envVersion = Environment.GetEnvironmentVariable("TAIX_DEBUG_VERSION");
+        if (!string.IsNullOrWhiteSpace(envVersion))
+            return envVersion.Trim();
+#endif
+        return Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? string.Empty;
     }
 
-    private async Task PromptUpdateAsync(UpdateInfo newVersion)
+    private async Task ShowUpdateDialogAsync()
     {
         var title = GetResourceString("NewVersionAvailable");
-        var message = string.Format(
-            GetResourceString("UpdatePromptFormat") ?? "New version {0} is available. Do you want to download and install it now?",
-            newVersion.TargetFullRelease.Version);
+        var message = GetResourceString("WantGoDownloadPage");
 
         var result = await _uiServicer.ShowConfirmDialogAsync(title, message);
-        if (!result)
-            return;
 
-        _mainViewModel.Info(GetResourceString("DownloadingUpdate") ?? "Downloading update...");
-
-        var mgr = CreateUpdateManager();
-        await mgr.DownloadUpdatesAsync(newVersion);
-
-        var restartTitle = GetResourceString("UpdateReady") ?? "Update Ready";
-        var restartMessage = GetResourceString("UpdateReadyPrompt") ?? "Update downloaded. Restart now to apply?";
-
-        var restartResult = await _uiServicer.ShowConfirmDialogAsync(restartTitle, restartMessage);
-        if (restartResult)
+        if (result)
         {
-            mgr.ApplyUpdatesAndRestart(newVersion);
+            Process.Start(new ProcessStartInfo("https://github.com/NLick47/Taix/releases/latest")
+            {
+                UseShellExecute = true
+            });
         }
     }
 

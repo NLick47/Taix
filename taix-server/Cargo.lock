@@ -2095,7 +2095,6 @@ name = "taix-logging"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "dirs",
  "tracing",
  "tracing-appender",
  "tracing-subscriber",

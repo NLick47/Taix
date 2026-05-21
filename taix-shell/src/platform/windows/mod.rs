@@ -1,10 +1,8 @@
-pub mod autostart;
 pub mod job_object;
 pub mod scheduler;
 pub mod single_instance;
 pub mod tray;
 
-pub use autostart::{ensure_autostart, remove_autostart};
 pub use scheduler::{install, uninstall};
 pub use single_instance::try_acquire as try_acquire_single_instance;
 pub use tray::run_tray;

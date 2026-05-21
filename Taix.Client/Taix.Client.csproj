@@ -36,7 +36,6 @@
         <PackageReference Include="Jab" Version="0.10.2" />
         <PackageReference Include="MiniExcel" Version="1.41.0" />
         <PackageReference Include="ReactiveUI.Avalonia" Version="12.0.1" />
-        <PackageReference Include="Velopack" Version="0.0.1298" />
         <PackageReference Include="Xaml.Behaviors.Avalonia" Version="12.0.0" />
     </ItemGroup>
 

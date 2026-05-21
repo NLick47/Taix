@@ -19,14 +19,12 @@ impl Drop for LoggingGuard {
 }
 
 pub fn init(name: &str, default_filter: &str, panic_mode: PanicMode) -> LoggingGuard {
-    let log_dir = dirs::data_dir()
-        .map(|d| d.join("Taix").join("Logs"))
-        .unwrap_or_else(|| {
-            std::env::current_exe()
-                .ok()
-                .and_then(|p| p.parent().map(|p| p.to_path_buf().join("Logs")))
-                .unwrap_or_else(|| std::path::PathBuf::from(".").join("Logs"))
-        });
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        .unwrap_or_else(|| std::path::PathBuf::from("."));
+
+    let log_dir = exe_dir.join("Logs");
     let _ = std::fs::create_dir_all(&log_dir);
 
     let file_appender = tracing_appender::rolling::RollingFileAppender::builder()

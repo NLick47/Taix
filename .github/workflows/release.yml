@@ -12,6 +12,10 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        cpu: [ x64 ]
+        kind: [ zip ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,7 +47,7 @@ jobs:
           if ("${{ github.ref }}" -match '^refs/tags/v') {
             $appVersion = "${{ github.ref_name }}" -replace '^v', ''
           } else {
-            $appVersion = '0.0.${{ github.run_number }}'
+            $appVersion = '0.0.0'
           }
           Add-Content -Path $env:GITHUB_ENV -Value "APP_VERSION=$appVersion"
 
@@ -64,63 +68,58 @@ jobs:
 
       - name: Build and Publish .NET Client
         run: |
-          dotnet publish -c Release -r win-x64 --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false Taix.Client/Taix.Client.csproj -o ./publish
+          Write-Host "Publishing with AOT enabled"
+          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
 
-      - name: Copy Rust binaries and resources
+      - name: Copy Rust binaries and scripts
         shell: pwsh
         run: |
-          $publishDir = "./publish"
+          $publishDir = "./output/${{ matrix.cpu }}"
+
+          # Copy Rust binaries
           Copy-Item "taix-server/target/x86_64-pc-windows-msvc/release/taix-server.exe"       -Destination $publishDir -Force
           Copy-Item "taix-monitor-windows/target/x86_64-pc-windows-msvc/release/taix-monitor-windows.exe" -Destination $publishDir -Force
           Copy-Item "taix-shell/target/x86_64-pc-windows-msvc/release/taix-shell.exe"         -Destination $publishDir -Force
-          if (Test-Path "taix-shell/resources") {
-            Copy-Item "taix-shell/resources" -Destination $publishDir -Recurse -Force
-          }
+
+ 
+          # Copy taix-shell resources (tray icon etc.)
+          Copy-Item "taix-shell/resources" -Destination $publishDir -Recurse -Force
+
+          # Copy install scripts
+          Copy-Item "script/install.ps1"   -Destination $publishDir -Force
+          Copy-Item "script/uninstall.ps1" -Destination $publishDir -Force
 
       - name: Remove debug symbol files
         shell: pwsh
         run: |
-          Get-ChildItem -Path ./publish -Recurse -Include "*.pdb" -File | Remove-Item -Force
+          $publishDir = "./output/${{ matrix.cpu }}"
+          Get-ChildItem -Path $publishDir -Recurse -Include "*.pdb" -File | ForEach-Object {
+            Remove-Item $_.FullName -Force
+            Write-Host "Removed PDB: $($_.FullName)"
+          }
 
-      - name: Install vpk CLI
-        run: dotnet tool install -g vpk
-
-      - name: Download previous releases for delta packaging
+      - name: Compress build artifacts
         shell: pwsh
         run: |
-          vpk download github --repoUrl https://github.com/${{ github.repository }} --outputDir ./releases --token ${{ secrets.GITHUB_TOKEN }} 2>$null
-          $exitCode = $LASTEXITCODE
-          if ($exitCode -ne 0) { Write-Host "No previous release found, will create full package only." }
-
-      - name: Pack with Velopack
-        shell: pwsh
-        run: |
-          vpk pack `
-            --packId nlick47.taix `
-            --packVersion ${{ env.APP_VERSION }} `
-            --packDir ./publish `
-            --mainExe Taix.exe `
-            --outputDir ./releases `
-            --icon Taix.Client/Resources/Icons/tai.ico `
-            --packTitle "Taix"
+          $items = Get-ChildItem -Path ./output/${{ matrix.cpu }} | Select-Object -ExpandProperty FullName
+          Compress-Archive -Path $items -DestinationPath ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip -Force
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Taix-${{ env.APP_VERSION }}
-          path: ./releases/**
+          name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}
+          path: ./output/${{ matrix.cpu }}/**
 
-      - name: Upload to GitHub Release
+      - name: Read release notes from file
+        id: release-notes
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: release_notes.txt
+
+      - name: Release
+        uses: ncipollo/release-action@v1
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        shell: pwsh
-        run: |
-          $notes = Get-Content -Raw release_notes.txt -ErrorAction SilentlyContinue
-          if (-not $notes) { $notes = "Release ${{ github.ref_name }}" }
-          vpk upload github `
-            --repoUrl https://github.com/${{ github.repository }} `
-            --outputDir ./releases `
-            --token ${{ secrets.GITHUB_TOKEN }} `
-            --publish `
-            --tag ${{ github.ref_name }} `
-            --releaseName "Taix ${{ github.ref_name }}" `
-            --releaseNotes $notes
+        with:
+          allowUpdates: true
+          artifacts: ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
+          body: ${{ steps.release-notes.outputs.content }}

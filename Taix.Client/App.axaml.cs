@@ -183,6 +183,7 @@ public class App : Application
         await main.Start();
     }
 
+
     private static bool _isShuttingDown;
     public static bool IsShuttingDown => _isShuttingDown;
 
