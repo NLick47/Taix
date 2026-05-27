@@ -266,6 +266,8 @@ public class ColumnChartCanvas : Control
         var height = Bounds.Height;
         if (width <= 0 || height <= 0) return;
 
+        context.FillRectangle(new SolidColorBrush(Colors.Transparent), new Rect(0, 0, width, height));
+
         var colValueCount = firstData.Values.Length;
         var tempValueArr = new double[colValueCount];
         double maxValue = 0;
