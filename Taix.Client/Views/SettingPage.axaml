@@ -18,7 +18,7 @@
                                          ScrollViewerName="ContentScrollViewer" />
     </i:Interaction.Behaviors>
 
-    <Grid Margin="25" RowDefinitions="Auto,*">
+    <Grid Margin="20" RowDefinitions="Auto,*">
         <StackPanel Grid.Row="0">
             <TextBlock Text="{DynamicResource Settings}" FontSize="18" Margin="0,5,0,20" />
             <Tabbar:Tabbar x:Name="Tabbar"

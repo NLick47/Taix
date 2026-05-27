@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using Avalonia.Controls;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
@@ -17,7 +16,6 @@ public class IndexPageModel : ModelBase
 
     private int _moreNum;
     private SelectItemModel _moreType;
-    private ObservableCollection<string> _tabbarData;
 
     private int _tabbarSelectedIndex;
 
@@ -28,21 +26,39 @@ public class IndexPageModel : ModelBase
 
     private List<ChartsDataModel> _weekData;
 
+    private SelectItemModel _selectedPeriod;
+    private List<SelectItemModel> _periodOptions;
+
     /// <summary>
-    /// tabbar data
+    /// 周期选项（今日/本周）
     /// </summary>
-    public ObservableCollection<string> TabbarData
+    public List<SelectItemModel> PeriodOptions
     {
-        get => _tabbarData;
+        get => _periodOptions;
         set
         {
-            _tabbarData = value;
+            _periodOptions = value;
             OnPropertyChanged();
         }
     }
 
     /// <summary>
-    /// tabbar selected item index
+    /// 选中的周期
+    /// </summary>
+    public SelectItemModel SelectedPeriod
+    {
+        get => _selectedPeriod;
+        set
+        {
+            _selectedPeriod = value;
+            OnPropertyChanged();
+            if (value != null)
+                TabbarSelectedIndex = value.Id;
+        }
+    }
+
+    /// <summary>
+    /// tabbar selected item index (内部使用)
     /// </summary>
     public int TabbarSelectedIndex
     {

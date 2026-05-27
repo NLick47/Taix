@@ -19,13 +19,12 @@
 
     <Grid RowDefinitions="Auto,*" Margin="20">
         <!-- ═══ Row 0：标题 · 应用/网站 · 日期 · 周期 ═══ -->
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,20">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,5,0,20">
                 <StackPanel Grid.Column="0" Orientation="Horizontal"
                             VerticalAlignment="Center" Spacing="10">
                     <TextBlock Text="{DynamicResource SideStatistics}"
                                FontSize="18"
-                               VerticalAlignment="Center"
-                               Foreground="{DynamicResource DefaultTextBrush}" />
+                               VerticalAlignment="Center" />
                     <select:TabSwitch IsShowIcon="False"
                                       SelectedItem="{Binding ShowType,Mode=TwoWay}"
                                       Options="{Binding ShowTypeOptions}" />

@@ -63,14 +63,22 @@ public class IndexPageViewModel : IndexPageModel
         FrequentUseNum = config.General.IndexPageFrequentUseNum + 1;
         MoreNum = config.General.IndexPageMoreNum + 1;
 
-        TabbarData =
+        PeriodOptions =
         [
-            Application.Current?.FindResource("Today") as string ?? "Today",
-            Application.Current?.FindResource("ThisWeek") as string ?? "This Week"
+            new SelectItemModel
+            {
+                Id = 0,
+                Name = Application.Current?.FindResource("Today") as string ?? "Today"
+            },
+            new SelectItemModel
+            {
+                Id = 1,
+                Name = Application.Current?.FindResource("ThisWeek") as string ?? "This Week"
+            }
         ];
+        SelectedPeriod = PeriodOptions[0];
 
-        WhenPropertyChanged(this, x => x.TabbarSelectedIndex, _ => LoadDataAsync());
-        TabbarSelectedIndex = 0;
+        WhenPropertyChanged(this, x => x.SelectedPeriod, _ => LoadDataAsync());
 
         AppContextMenu = _appContextMenuService.GetContextMenu();
         WebSiteContextMenu = _webSiteContextMenuService.GetContextMenu();
