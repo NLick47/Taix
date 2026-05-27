@@ -289,8 +289,8 @@ public class ColumnChartCanvas : Control
         else if (columns <= 12) margin = 15;
         else if (columns >= 20) margin = 2;
 
-        const double colNameHeight = 30;
-        const double colNameBottomMargin = 5;
+        const double colNameHeight = 25;
+        const double colNameBottomMargin = 3;
         var chartHeight = height - colNameHeight - colNameBottomMargin;
         _columnWidth = width / columns;
         var colValueRectWidth = width / columns - margin * 2;

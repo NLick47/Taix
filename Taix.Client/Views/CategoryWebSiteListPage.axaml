@@ -18,7 +18,7 @@
               Margin="0" HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch">
             <Border Background="Black" Opacity=".7" />
-            <Border Background="{DynamicResource PopupBackgroundBrush}" CornerRadius="10"
+            <Border Background="{DynamicResource PopupBackgroundBrush}" CornerRadius="{StaticResource RadiusMedium}"
                     BorderBrush="{DynamicResource PopupBorderBrush}" BorderThickness="1"
                     Margin="50" VerticalAlignment="Top">
                 <Grid>
@@ -27,7 +27,7 @@
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="80" />
-                        
+
                     </Grid.RowDefinitions>
 
                     <Grid>
@@ -191,7 +191,7 @@
 
                                     <Border BorderBrush="Transparent" BorderThickness="2" x:Name="Border"
                                             Background="{DynamicResource StandardBackgroundBrush2}" Margin="0,0,0,10"
-                                            Padding="15" CornerRadius="10">
+                                            Padding="15" CornerRadius="{StaticResource RadiusMedium}">
 
                                         <ContentPresenter ContentTemplate="{TemplateBinding ContentTemplate}"
                                                           Content="{TemplateBinding Content}" />

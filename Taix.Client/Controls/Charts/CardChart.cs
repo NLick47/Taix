@@ -122,7 +122,7 @@ public class CardChart : TemplatedControl
                 Data = item,
                 MaxValue = _maxValue
             };
-            ToolTip.SetTip(card, item.PopupText);
+            ToolTip.SetTip(card, item.Name);
             HandleItemClick(card, item);
             _cardContainer.Children.Add(card);
         }

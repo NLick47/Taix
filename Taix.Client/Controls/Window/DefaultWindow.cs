@@ -252,13 +252,13 @@ public class DefaultWindow : Avalonia.Controls.Window
         {
             ExtendClientAreaToDecorationsHint = true;
             ExtendClientAreaTitleBarHeightHint = CustomWindowChromeTitleBarHeight;
-            WindowDecorations = Avalonia.Controls.WindowDecorations.None;
+            WindowDecorations = WindowDecorations.None;
             return;
         }
 
         ExtendClientAreaToDecorationsHint = false;
         ExtendClientAreaTitleBarHeightHint = 0;
-        WindowDecorations = Avalonia.Controls.WindowDecorations.Full;
+        WindowDecorations = WindowDecorations.Full;
     }
 
     private static void OnIsShowToastChanged(AvaloniaPropertyChangedEventArgs e)

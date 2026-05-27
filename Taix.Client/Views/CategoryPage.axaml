@@ -14,7 +14,7 @@
          x:DataType="vm:CategoryPageViewModel"
          IsFillPage="True"
          x:Class="Taix.Client.Views.CategoryPage">
-  
+
     <Grid>
         <Grid
             ZIndex="2"
@@ -22,7 +22,7 @@
             IsVisible="{Binding EditVisibility}"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
-            <Border Background="Black" Opacity=".7" CornerRadius="2" />
+            <Border Background="Black" Opacity=".7" CornerRadius="{StaticResource RadiusSmall}" />
             <Border Width="{Binding ElementName=EditBorder,Path=Bounds.Width}"
                     Height="{Binding ElementName=EditBorder,Path=Bounds.Height}"
                     Background="{Binding ElementName=EditBorder,Path=Background}"
@@ -37,7 +37,7 @@
 
             <Border x:Name="EditBorder" MaxWidth="400" MaxHeight="350"
                     Background="{DynamicResource StandardBackgroundBrush2}"
-                    CornerRadius="10"
+                    CornerRadius="{StaticResource RadiusMedium}"
                     BorderBrush="{DynamicResource WindowContentBorder}" BorderThickness="1">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -187,8 +187,8 @@
                                                          CommandParameter="{Binding SelectedAppCategoryItem}" />
 
                                 </EventTriggerBehavior>
-                                
-                         
+
+
                             </Interaction.Behaviors>
 
                             <ListBox.ContextMenu>
@@ -258,9 +258,9 @@
                                                 <Border BorderBrush="Transparent"
                                                         BorderThickness="1.5" x:Name="Border"
                                                         Background="{DynamicResource CategoryCardGlassBgBrush}"
-                                                        Margin="8" CornerRadius="20">
+                                                        Margin="8" CornerRadius="{StaticResource RadiusLarge}">
                                                     <Grid>
-                                                        <Border CornerRadius="20,20,0,0"
+                                                        <Border CornerRadius="{StaticResource RadiusLarge},{StaticResource RadiusLarge},0,0"
                                                                 IsHitTestVisible="False"
                                                                 Height="55"
                                                                 VerticalAlignment="Top"
@@ -316,7 +316,7 @@
                                                 <base:View Value="{Binding Data.IsDirectoryMatch}">
                                                     <Border Background="{DynamicResource ThemeBrush}"
                                                             VerticalAlignment="Top" HorizontalAlignment="Right"
-                                                            Margin="10" Padding="8,0" CornerRadius="10" Height="20">
+                                                            Margin="10" Padding="8,0" CornerRadius="{StaticResource RadiusMedium}" Height="20">
                                                         <TextBlock VerticalAlignment="Center"
                                                                    HorizontalAlignment="Center" FontSize="10"
                                                                    Foreground="White"
@@ -326,7 +326,7 @@
 
                                                 <Grid Grid.Row="1">
                                                     <Border Width="42" Height="42"
-                                                            CornerRadius="12"
+                                                            CornerRadius="{StaticResource RadiusMedium}"
                                                             Background="{DynamicResource NavHoverGlassBrush}"
                                                             HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <base:Img Radius="8" Width="32" Height="32"
@@ -345,7 +345,7 @@
 
                                                 <Border Grid.Row="3">
                                                     <Border Margin="10,0,10,0"
-                                                            CornerRadius="10"
+                                                            CornerRadius="{StaticResource RadiusMedium}"
                                                             Background="{DynamicResource CategoryCardGlassBgBrush}"
                                                             BorderBrush="{DynamicResource CategoryCardGlassBorderBrush}"
                                                             BorderThickness="1"
@@ -447,9 +447,9 @@
                                                 <Border BorderBrush="Transparent"
                                                         BorderThickness="1.5" x:Name="Border"
                                                         Background="{DynamicResource CategoryCardGlassBgBrush}"
-                                                        Margin="8" CornerRadius="20">
+                                                        Margin="8" CornerRadius="{StaticResource RadiusLarge}">
                                                     <Grid>
-                                                        <Border CornerRadius="20,20,0,0"
+                                                        <Border CornerRadius="{StaticResource RadiusLarge},{StaticResource RadiusLarge},0,0"
                                                                 IsHitTestVisible="False"
                                                                 Height="55"
                                                                 VerticalAlignment="Top"
@@ -504,7 +504,7 @@
 
                                                 <Grid Grid.Row="1">
                                                     <Border Width="42" Height="42"
-                                                            CornerRadius="12"
+                                                            CornerRadius="{StaticResource RadiusMedium}"
                                                             Background="{DynamicResource NavHoverGlassBrush}"
                                                             HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <base:Img Radius="8" Width="32" Height="32"
@@ -523,7 +523,7 @@
 
                                                 <Border Grid.Row="3">
                                                     <Border Margin="10,0,10,0"
-                                                            CornerRadius="10"
+                                                            CornerRadius="{StaticResource RadiusMedium}"
                                                             Background="{DynamicResource CategoryCardGlassBgBrush}"
                                                             BorderBrush="{DynamicResource CategoryCardGlassBorderBrush}"
                                                             BorderThickness="1"

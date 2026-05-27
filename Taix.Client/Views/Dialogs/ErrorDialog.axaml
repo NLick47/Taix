@@ -20,7 +20,7 @@
                     <TranslateTransform Y="0" />
                 </Image.RenderTransform>
             </Image>
-            <Border Background="#f3f3f3" CornerRadius="6" Padding="10" Margin="0,-50,0,20">
+            <Border Background="#f3f3f3" CornerRadius="{StaticResource RadiusSmall}" Padding="10" Margin="0,-50,0,20">
                 <Border.Effect>
                     <DropShadowDirectionEffect BlurRadius="0" Direction="40" ShadowDepth="4" Color="#FFF7F7F7"
                                                Opacity="1" />

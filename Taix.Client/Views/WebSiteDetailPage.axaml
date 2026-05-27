@@ -24,7 +24,7 @@
             <!--基本信息-->
             <Border
                 Background="{DynamicResource SettingPanelBgBrush}"
-                CornerRadius="12"
+                CornerRadius="{StaticResource RadiusMedium}"
                 Padding="20"
                 ContextMenu="{Binding WebSiteContextMenu}">
 
@@ -41,7 +41,7 @@
 
                     <StackPanel Grid.Column="1">
                         <base:View Value="{Binding IsIgnore}">
-                            <Border Background="#f51837" Padding="10,5" CornerRadius="4" Margin="0,0,0,5"
+                            <Border Background="#f51837" Padding="10,5" CornerRadius="{StaticResource RadiusSmall}" Margin="0,0,0,5"
                                     VerticalAlignment="Center" HorizontalAlignment="Left"
                                     ToolTip.Tip="{DynamicResource LongerWebSiteTip}">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -128,7 +128,7 @@
 
                     <Border Margin="0,10,0,0" Width="680" HorizontalAlignment="Left"
                             Background="{DynamicResource SettingPanelBgBrush}"
-                            Padding="20" CornerRadius="10">
+                            Padding="20" CornerRadius="{StaticResource RadiusMedium}">
                         <StackPanel>
 
                             <charts:ColumnChart IsShowCategory="False"
@@ -147,7 +147,7 @@
 
                     <Border Margin="0,10,0,0" Width="680"
                             HorizontalAlignment="Left" Background="{DynamicResource SettingPanelBgBrush}"
-                            Padding="20" CornerRadius="10">
+                            Padding="20" CornerRadius="{StaticResource RadiusMedium}">
                         <StackPanel>
                             <TextBlock FontSize="14">
                                 <Run Text="{Binding WebPageData,Converter={StaticResource GetCountConverter}}" />
@@ -187,7 +187,7 @@
                                             <ControlTemplate>
                                                 <Grid>
                                                     <Border BorderBrush="Transparent" BorderThickness="2"
-                                                            x:Name="Border" Margin="0" Padding="0" CornerRadius="20">
+                                                            x:Name="Border" Margin="0" Padding="0" CornerRadius="{StaticResource RadiusLarge}">
                                                         <Border
                                                             BorderBrush="{DynamicResource SettingPanelSpliteLineBrush}"
                                                             BorderThickness="0,0,0,.5"
@@ -246,7 +246,7 @@
                                                     <StackPanel Orientation="Horizontal"
                                                                 Margin="0,10,0,0">
                                                         <Border HorizontalAlignment="Left"
-                                                                Padding="10,5" CornerRadius="6"
+                                                                Padding="10,5" CornerRadius="{StaticResource RadiusSmall}"
                                                                 ToolTip.Tip="{DynamicResource LogTime}">
                                                             <Border.Background>
                                                                 <SolidColorBrush
@@ -261,7 +261,7 @@
 
                                                         <Border HorizontalAlignment="Left"
                                                                 Padding="10,5"
-                                                                CornerRadius="6"
+                                                                CornerRadius="{StaticResource RadiusSmall}"
                                                                 Margin="5,0,0,0"
                                                                 ToolTip.Tip="{DynamicResource Duration}">
                                                             <Border.Background>

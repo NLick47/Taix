@@ -94,7 +94,7 @@
 
                             <Border Margin="0,0,0,0"
                                     Background="{DynamicResource SettingPanelBgBrush}"
-                                    CornerRadius="10">
+                                    CornerRadius="{StaticResource RadiusMedium}">
                                 <timeline:Timeline Height="70"
                                                    MajorTickInterval="3"
                                                    Date="{Binding DayDate}"
@@ -124,7 +124,7 @@
                                 <!-- 右侧：轨道总时长 -->
                                 <Border Grid.Column="1"
                                         VerticalAlignment="Center"
-                                        CornerRadius="6"
+                                        CornerRadius="{StaticResource RadiusSmall}"
                                         Padding="10,4"
                                         Background="{DynamicResource MultiTrackRowBgBrush}"
                                         BorderBrush="{DynamicResource MultiTrackRowBorderBrush}"

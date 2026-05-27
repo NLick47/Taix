@@ -48,12 +48,16 @@
             <Grid Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,10">
                 <base:Icon IconType="WebSearch" FontSize="80" Opacity=".05" Foreground="{DynamicResource ThemeBrush}" />
             </Grid>
-            <Border CornerRadius="10" Padding="10">
+            <Border Grid.Column="0" CornerRadius="{StaticResource RadiusMedium}" Padding="10">
                 <Border.Background>
                     <SolidColorBrush Color="{DynamicResource SettingPanelBgColor}" Opacity=".7" />
                 </Border.Background>
+
+              <Border.Effect>
+                <DropShadowEffect BlurRadius="12" Color="#000000" Opacity="0.08" OffsetX="0" OffsetY="3" />
+              </Border.Effect>
                 <StackPanel>
-                    <Border HorizontalAlignment="Left" Padding="10,5" CornerRadius="6">
+                    <Border HorizontalAlignment="Left" Padding="10,5" CornerRadius="{StaticResource RadiusPill}">
                         <Border.Background>
                             <SolidColorBrush Color="{DynamicResource HoverBackgroundColor}" Opacity=".5" />
                         </Border.Background>
@@ -72,7 +76,7 @@
             </Border>
 
             <!--网页-->
-            <Border Grid.Column="2" Padding="10" CornerRadius="10">
+            <Border Grid.Column="2" Padding="10" CornerRadius="{StaticResource RadiusMedium}">
                 <Border.Background>
                     <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".1" />
                 </Border.Background>
@@ -81,7 +85,7 @@
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <Border HorizontalAlignment="Left" Padding="10,5" CornerRadius="6">
+                    <Border HorizontalAlignment="Left" Padding="10,5" CornerRadius="{StaticResource RadiusPill}">
                         <Border.Background>
                             <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".2" />
                         </Border.Background>

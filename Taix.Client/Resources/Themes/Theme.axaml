@@ -1,5 +1,13 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 圆角 -->
+    <CornerRadius x:Key="RadiusSmall">8</CornerRadius>
+    <CornerRadius x:Key="RadiusMedium">16</CornerRadius>
+    <CornerRadius x:Key="RadiusLarge">16</CornerRadius>
+    <CornerRadius x:Key="RadiusXLarge">20</CornerRadius>
+    <CornerRadius x:Key="RadiusPill">999</CornerRadius>
+
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Default">
             <!--【主题颜色】-->
@@ -171,9 +179,9 @@
             <!--提示颜色-->
             <Color x:Key="WarningColor">#FFC408</Color>
             <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
-            
+
             <SolidColorBrush x:Key="GrayDark" Color="#1e1e20" Opacity="0.55" />
-            
+
             <Color x:Key="TabOptionTextColor">#9CA3AF</Color>
             <Color x:Key="TabOptionTextCheckedColor">White</Color>
             <SolidColorBrush x:Key="TabOptionHoverBrush" Color="#2a2a2e" />
@@ -396,9 +404,9 @@
             <!--提示颜色-->
             <Color x:Key="WarningColor">#FFC408</Color>
             <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
-            
+
             <SolidColorBrush x:Key="GrayDark" Color="#e8e8ea" Opacity="0.65" />
-            
+
             <Color x:Key="TabOptionTextColor">#4b5563</Color>
             <Color x:Key="TabOptionTextCheckedColor">#111827</Color>
             <SolidColorBrush x:Key="TabOptionHoverBrush" Color="#e2e2e6" />
