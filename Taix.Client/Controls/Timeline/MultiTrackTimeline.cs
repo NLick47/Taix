@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 
 namespace Taix.Client.Controls.Timeline;
 
@@ -12,6 +15,7 @@ public class MultiTrackTimeline : TemplatedControl
     private DateTime _date = DateTime.Now;
     private double _visibleStartHour = 0.0;
     private double _visibleEndHour = 24.0;
+    private ListBox? _listBox;
 
     public static readonly DirectProperty<MultiTrackTimeline, IEnumerable<MultiTrackTimelineItem>> DataItemsProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackTimeline, IEnumerable<MultiTrackTimelineItem>>(
@@ -28,6 +32,9 @@ public class MultiTrackTimeline : TemplatedControl
     public static readonly DirectProperty<MultiTrackTimeline, double> VisibleEndHourProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackTimeline, double>(
             nameof(VisibleEndHour), o => o.VisibleEndHour, (o, v) => o.VisibleEndHour = v, 24.0);
+
+    public static readonly StyledProperty<ICommand?> ClickCommandProperty =
+        AvaloniaProperty.Register<MultiTrackTimeline, ICommand?>(nameof(ClickCommand));
 
     public IEnumerable<MultiTrackTimelineItem> DataItems
     {
@@ -53,7 +60,44 @@ public class MultiTrackTimeline : TemplatedControl
         set => SetAndRaise(VisibleEndHourProperty, ref _visibleEndHour, value);
     }
 
+    public ICommand? ClickCommand
+    {
+        get => GetValue(ClickCommandProperty);
+        set => SetValue(ClickCommandProperty, value);
+    }
+
     public MultiTrackTimeline()
     {
+    }
+
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+
+        if (_listBox != null)
+            _listBox.PointerReleased -= OnListBoxPointerReleased;
+
+        _listBox = e.NameScope.Find<ListBox>("PART_ItemsControl");
+
+        if (_listBox != null)
+            _listBox.PointerReleased += OnListBoxPointerReleased;
+    }
+
+    private void OnListBoxPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton != MouseButton.Left || ClickCommand is not { } cmd)
+            return;
+
+        var visual = e.Source as Visual;
+        while (visual != null)
+        {
+            if (visual is ListBoxItem { DataContext: MultiTrackTimelineItem item })
+            {
+                if (cmd.CanExecute(item))
+                    cmd.Execute(item);
+                return;
+            }
+            visual = visual.GetVisualParent();
+        }
     }
 }

@@ -152,7 +152,8 @@
                                 Date="{Binding DayDate}"
                                 DataItems="{Binding MultiTrackItems}"
                                 VisibleStartHour="{Binding TimelineStartHour}"
-                                VisibleEndHour="{Binding TimelineEndHour}" />
+                                VisibleEndHour="{Binding TimelineEndHour}"
+                                ClickCommand="{Binding ToDetailCommand}" />
                         </Grid>
                     </base:View>
 

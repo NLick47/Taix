@@ -176,6 +176,12 @@ public class DataPageViewModel : DataPageModel
 
     private void OnToDetail(object obj)
     {
+        if (obj is MultiTrackTimelineItem { AppModel: not null } mtItem)
+        {
+            _navigationService.NavigateTo(nameof(DetailPage), mtItem.AppModel);
+            return;
+        }
+
         if (obj is not ChartsDataModel chartData) return;
 
         if (chartData.Data is DailyLogModel { AppModel: not null } model)
@@ -459,7 +465,8 @@ public class DataPageViewModel : DataPageModel
                     CategoryColor = first.CategoryColor,
                     TotalDuration = TimeSpan.FromSeconds(appDurationSec),
                     Percentage = percentage,
-                    Segments = segments
+                    Segments = segments,
+                    AppModel = appModel
                 };
             })
             .OrderByDescending(i => i.TotalDuration)

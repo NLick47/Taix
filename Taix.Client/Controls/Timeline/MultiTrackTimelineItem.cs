@@ -13,6 +13,7 @@ public class MultiTrackTimelineItem
     public TimeSpan TotalDuration { get; set; }
     public double Percentage { get; set; }
     public List<MultiTrackSegment> Segments { get; set; } = new();
+    public object? AppModel { get; set; }
 
     public string DurationText
     {

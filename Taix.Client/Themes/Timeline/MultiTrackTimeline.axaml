@@ -57,12 +57,34 @@
                                 <Setter Property="Margin" Value="0" />
                                 <Setter Property="Background" Value="Transparent" />
                                 <Setter Property="Focusable" Value="False" />
+                                <Setter Property="Cursor" Value="Hand" />
                             </Style>
                             <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
                                 <Setter Property="Background" Value="Transparent" />
                             </Style>
                             <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
                                 <Setter Property="Background" Value="Transparent" />
+                            </Style>
+                            <Style Selector="ListBoxItem Border.row">
+                                <Setter Property="Transitions">
+                                    <Transitions>
+                                        <BrushTransition Property="BorderBrush" Duration="0:0:0.2" />
+                                    </Transitions>
+                                </Setter>
+                            </Style>
+                            <Style Selector="ListBoxItem:pointerover Border.row">
+                                <Setter Property="BorderBrush" Value="{DynamicResource ChartCardHoverBorderBrush}" />
+                            </Style>
+                            <Style Selector="ListBoxItem Border.hover-overlay">
+                                <Setter Property="Opacity" Value="0" />
+                                <Setter Property="Transitions">
+                                    <Transitions>
+                                        <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
+                                    </Transitions>
+                                </Setter>
+                            </Style>
+                            <Style Selector="ListBoxItem:pointerover Border.hover-overlay">
+                                <Setter Property="Opacity" Value="0.06" />
                             </Style>
                         </ListBox.Styles>
                         <ListBox.ItemTemplate>
@@ -71,7 +93,10 @@
                                         CornerRadius="8"
                                         Background="{DynamicResource MultiTrackRowBgBrush}"
                                         BorderBrush="{DynamicResource MultiTrackRowBorderBrush}"
-                                        BorderThickness="1">
+                                        BorderThickness="1"
+                                        Cursor="Hand"
+                                        ClipToBounds="True"
+                                        Classes="row">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="auto" SharedSizeGroup="NameColumn" />
@@ -165,6 +190,9 @@
                                                        Margin="0,2,0,0"
                                                        HorizontalAlignment="Right" />
                                         </StackPanel>
+                                        <!-- Hover overlay -->
+                                        <Border Grid.ColumnSpan="3" CornerRadius="8" IsHitTestVisible="False"
+                                                Classes="hover-overlay" Background="#FFFFFF" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>
