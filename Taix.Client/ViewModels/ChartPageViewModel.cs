@@ -470,7 +470,7 @@ public class ChartPageViewModel : ChartPageModel
             }
             var daysModelList = await _dataService.GetDateRangelogListAsync(start, end, cancellationToken: cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            chartsDatas = ChartDataMapper.MapFromDailyLogs(daysModelList, true);
+            chartsDatas = ChartDataMapper.MapFromDailyLogs(daysModelList, includeBadges: true);
         }
 
         cancellationToken.ThrowIfCancellationRequested();

@@ -156,7 +156,7 @@ public class DetailPageViewModel : DetailPageModel
         var monthAllTotal = monthAllData.Sum(m => m.Time);
         Ratio = monthAllTotal > 0 ? (monthTotal / (double)monthAllTotal).ToString("P") : ResourceStrings.NoData;
 
-        var chartData = ChartDataMapper.MapFromDailyLogs(monthData, orderByValue: false);
+        var chartData = ChartDataMapper.MapFromDailyLogs(monthData, App, orderByValue: false);
         if (chartData.Count == 0)
             chartData.Add(new ChartsDataModel { DateTime = Date });
         Data = chartData;

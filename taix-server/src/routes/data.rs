@@ -79,16 +79,18 @@ struct YearQuery {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[expect(non_snake_case)]
 struct AppDateQuery {
-    app_id: i64,
+    appId: i64,
     date: NaiveDateTime,
     timezone: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[expect(non_snake_case)]
 struct AppRangeQuery {
-    app_id: i64,
+    appId: i64,
     start: NaiveDateTime,
     end: NaiveDateTime,
     timezone: String,
@@ -195,21 +197,21 @@ async fn get_category_year_data(State(pool): State<SqlitePool>, Extension(config
 }
 
 async fn get_app_day_data(State(pool): State<SqlitePool>, Query(q): Query<AppDateQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {
-    match DataService::get_app_day_data(&pool, q.app_id, q.date.date(), &q.timezone).await {
+    match DataService::get_app_day_data(&pool, q.appId, q.date.date(), &q.timezone).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
 async fn get_app_range_data(State(pool): State<SqlitePool>, Query(q): Query<AppRangeQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {
-    match DataService::get_app_range_data(&pool, q.app_id, q.start.date(), q.end.date(), &q.timezone).await {
+    match DataService::get_app_range_data(&pool, q.appId, q.start.date(), q.end.date(), &q.timezone).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }
 
 async fn get_app_year_data(State(pool): State<SqlitePool>, Query(q): Query<AppDateQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {
-    match DataService::get_app_year_data(&pool, q.app_id, q.date.date(), &q.timezone).await {
+    match DataService::get_app_year_data(&pool, q.appId, q.date.date(), &q.timezone).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }

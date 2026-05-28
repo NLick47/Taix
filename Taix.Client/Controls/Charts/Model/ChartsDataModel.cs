@@ -60,7 +60,7 @@ public class ChartsDataModel : UINotifyPropertyChanged
     /// <summary>
     /// 值
     /// </summary>
-    public double[] Values { get; set; }
+    public double[] Values { get; set; } = [];
 
     /// <summary>
     /// 列名

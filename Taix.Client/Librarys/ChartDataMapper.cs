@@ -10,32 +10,33 @@ namespace Taix.Client.Librarys;
 
 public static class ChartDataMapper
 {
-    public static List<ChartsDataModel> MapFromDailyLogs(IEnumerable<DailyLogModel> logs, bool includeBadges = false, bool orderByValue = true)
+    public static List<ChartsDataModel> MapFromDailyLogs(IEnumerable<DailyLogModel> logs, AppModel? app = null, bool includeBadges = false, bool orderByValue = true)
     {
         var result = new List<ChartsDataModel>();
         foreach (var item in logs)
         {
-            if (item.AppModel == null) continue;
+            var appModel = item.AppModel ?? app;
+            if (appModel == null) continue;
             var model = new ChartsDataModel
             {
                 Data = item,
-                Name = !string.IsNullOrEmpty(item.AppModel.Alias) ? item.AppModel.Alias
-                    : string.IsNullOrEmpty(item.AppModel.Description) ? item.AppModel.Name : item.AppModel.Description,
+                Name = !string.IsNullOrEmpty(appModel.Alias) ? appModel.Alias
+                    : string.IsNullOrEmpty(appModel.Description) ? appModel.Name : appModel.Description,
                 Value = item.Time,
                 Tag = Time.ToString(item.Time),
-                PopupText = item.AppModel.File,
-                Icon = item.AppModel.IconFile,
+                PopupText = appModel.File,
+                Icon = appModel.IconFile,
                 DateTime = DateTime.SpecifyKind(item.Date, DateTimeKind.Utc).ToLocalTime()
             };
 
             if (includeBadges)
             {
                 model.BadgeList = new List<ChartBadgeModel>();
-                if (item.AppModel.Category != null)
+                if (appModel.Category != null)
                     model.BadgeList.Add(new ChartBadgeModel
                     {
-                        Name = item.AppModel.Category.Name,
-                        Color = item.AppModel.Category.Color,
+                        Name = appModel.Category.Name,
+                        Color = appModel.Category.Color,
                         Type = ChartBadgeType.Category
                     });
             }
