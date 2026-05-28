@@ -1,7 +1,8 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:button="using:Taix.Client.Controls.Button"
-                    xmlns:controls="using:Taix.Client.Controls.Base">
+                    xmlns:controls="using:Taix.Client.Controls.Base"
+                    xmlns:behaviors="using:Taix.Client.Behaviors">
 
 
     <ControlTheme x:Key="{x:Type controls:IconSelect}" TargetType="controls:IconSelect">
@@ -29,7 +30,10 @@
                         <Popup
                             x:Name="Popup"
                             Placement="Bottom"
-                            IsOpen="{TemplateBinding IsOpen}">
+                            IsOpen="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=IsOpen, Mode=TwoWay}">
+                            <Interaction.Behaviors>
+                                <behaviors:PopupScrollDismissBehavior />
+                            </Interaction.Behaviors>
 
                             <Border
                                 x:Name="SelectContainer"

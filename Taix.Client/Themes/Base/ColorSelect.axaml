@@ -3,7 +3,8 @@
                     xmlns:button="using:Taix.Client.Controls.Button"
                     xmlns:converter="using:Taix.Client.Controls.Converters"
                     xmlns:sys="using:System"
-                    xmlns:controls="using:Taix.Client.Controls.Base">
+                    xmlns:controls="using:Taix.Client.Controls.Base"
+                    xmlns:behaviors="using:Taix.Client.Behaviors">
     <converter:HextoColorConverter x:Key="HextoColorConverter" />
     <ControlTheme x:Key="{x:Type controls:ColorSelect}" TargetType="controls:ColorSelect">
         <Styles>
@@ -31,7 +32,10 @@
                         <Popup
                             x:Name="Popup"
                             Placement="Bottom"
-                            IsOpen="{TemplateBinding IsOpen}">
+                            IsOpen="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=IsOpen, Mode=TwoWay}">
+                            <Interaction.Behaviors>
+                                <behaviors:PopupScrollDismissBehavior />
+                            </Interaction.Behaviors>
                             <Border
                                 x:Name="SelectContainer"
                                 CornerRadius="10"

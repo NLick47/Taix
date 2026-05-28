@@ -4,6 +4,7 @@
                     xmlns:base="using:Taix.Client.Controls.Base"
                     xmlns:converter="using:Taix.Client.Controls.Converters"
                     xmlns:controls="using:Taix.Client.Controls.Select"
+                    xmlns:behaviors="using:Taix.Client.Behaviors"
                     xmlns:select="clr-namespace:Taix.Client.Themes.Select">
     <SolidColorBrush x:Key="ThemeLightBrush" Color="{DynamicResource ThemeColor}" Opacity=".15" />
     <select:DateFormatConverter x:Key="DateFormatConverter" />
@@ -276,6 +277,9 @@
                                PlacementTarget="{Binding ElementName=Main}"
                                IsOpen="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:DateSelect}}, 
 							Path=IsOpen,Mode=TwoWay}">
+                            <Interaction.Behaviors>
+                                <behaviors:PopupScrollDismissBehavior />
+                            </Interaction.Behaviors>
                             <Border
                                 x:Name="SelectContainer"
                                 CornerRadius="12"

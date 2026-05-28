@@ -1,7 +1,8 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:base="using:Taix.Client.Controls.Base"
-                    xmlns:controls="using:Taix.Client.Controls.Select">
+                    xmlns:controls="using:Taix.Client.Controls.Select"
+                    xmlns:behaviors="using:Taix.Client.Behaviors">
 
 
     <ControlTheme x:Key="{x:Type controls:Select}" TargetType="controls:Select">
@@ -55,6 +56,9 @@
                             Placement="Bottom"
                             PlacementTarget="{Binding ElementName=Main}"
                             IsOpen="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:Select}}, Path=IsOpen,Mode=TwoWay}">
+                            <Interaction.Behaviors>
+                                <behaviors:PopupScrollDismissBehavior />
+                            </Interaction.Behaviors>
                             <Border
                                 CornerRadius="12"
                                 BorderBrush="{DynamicResource PopupBorderBrush}"
