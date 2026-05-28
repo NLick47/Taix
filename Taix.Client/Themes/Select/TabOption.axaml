@@ -2,40 +2,38 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:select="clr-namespace:Taix.Client.Controls.Select"
                     xmlns:base="clr-namespace:Taix.Client.Controls.Base">
-    
-   
 
     <ControlTheme x:Key="{x:Type select:TabOption}" TargetType="select:TabOption">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource TabOptionTextColor}" />
-        <Setter Property="Padding" Value="16,8" />
-        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="CornerRadius" Value="10" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
-        
+
         <Setter Property="Template">
             <ControlTemplate>
-                <Border CornerRadius="{TemplateBinding CornerRadius}" 
-                        Background="{TemplateBinding Background}" 
+                <Border CornerRadius="{TemplateBinding CornerRadius}"
+                        Background="{TemplateBinding Background}"
                         Padding="{TemplateBinding Padding}"
-                        Cursor="Hand">
+                        Cursor="Hand"
+                        x:Name="RootBorder">
                     <Border.Transitions>
                         <Transitions>
-                            <BrushTransition Property="Background" Duration="0:0:0.15" />
-                            <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                            <BrushTransition Property="Background" Duration="0:0:0.12" />
                         </Transitions>
                     </Border.Transitions>
-                    <Grid ColumnDefinitions="Auto,*" HorizontalAlignment="Center">
-                        <!-- 图标 - 使用绑定控制显示 -->
-                        <Border Grid.Column="0" 
-                                Margin="0,0,8,0" 
+                    <Grid ColumnDefinitions="Auto,Auto" HorizontalAlignment="Center">
+                        <!-- 图标 -->
+                        <Border Grid.Column="0"
+                                Margin="0,0,6,0"
                                 x:Name="Img"
                                 IsVisible="{Binding $parent[select:TabOption].IsShowIcon}">
                             <base:Img
                                 URL="{Binding $parent[select:TabOption].Value.Img}"
                                 DecodeWidth="64"
-                                Width="16" 
-                                Height="16"
+                                Width="14"
+                                Height="14"
                                 VerticalAlignment="Center" />
                         </Border>
 
@@ -45,33 +43,35 @@
                                 VerticalAlignment="Center"
                                 HorizontalAlignment="Center"
                                 Foreground="{TemplateBinding Foreground}"
-                                FontWeight="Normal" />
+                                FontWeight="Medium"
+                                FontSize="13" />
                     </Grid>
                 </Border>
             </ControlTemplate>
         </Setter>
-        
+
         <Styles>
+            <!-- 默认状态 -->
             <Style Selector="select|TabOption">
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="Foreground" Value="{DynamicResource TabOptionTextColor}" />
             </Style>
-            
+
+            <!-- 选中状态：主题色背景 + 轻微浮起阴影 -->
             <Style Selector="select|TabOption[IsChecked=True]">
                 <Setter Property="Background" Value="{DynamicResource TabOptionSelectedBrush}" />
                 <Setter Property="Foreground" Value="{DynamicResource TabOptionTextCheckedColor}" />
             </Style>
-            
-            <Style Selector="select|TabOption[IsChecked=True] /template/ Border">
+
+            <Style Selector="select|TabOption[IsChecked=True] /template/ Border#RootBorder">
                 <Setter Property="BorderBrush" Value="{DynamicResource TabOptionSelectedBorderBrush}" />
-                <Setter Property="BorderThickness" Value="0.5" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BoxShadow" Value="0 1 4 0 #408780F7" />
             </Style>
-            
-            <Style Selector="select|TabOption:pointerover">
+
+            <Style Selector="select|TabOption:pointerover /template/ Border#RootBorder">
                 <Setter Property="Background" Value="{DynamicResource TabOptionHoverBrush}" />
             </Style>
-        
-          
         </Styles>
     </ControlTheme>
 </ResourceDictionary>
