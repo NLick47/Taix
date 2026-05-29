@@ -40,7 +40,6 @@ public class CardChart : TemplatedControl
     private ContextMenu _itemMenu;
     private WrapPanel _cardContainer;
     private double _maxValue;
-    private readonly HashSet<Control> _clickHandledControls = [];
 
     public event EventHandler? OnItemClick;
 
@@ -95,11 +94,6 @@ public class CardChart : TemplatedControl
     protected override void OnUnloaded(Avalonia.Interactivity.RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        foreach (var kvp in _clickHandledControls.ToList())
-        {
-            if (kvp != null) kvp.PointerPressed -= OnItemPointerPressed;
-        }
-        _clickHandledControls.Clear();
     }
 
     private void Render()
@@ -128,15 +122,9 @@ public class CardChart : TemplatedControl
                 MaxValue = _maxValue
             };
             ToolTip.SetTip(card, item.Name);
-            HandleItemClick(card, item);
+            card.PointerPressed += OnItemPointerPressed;
             _cardContainer.Children.Add(card);
         }
-    }
-
-    private void HandleItemClick(Control el, ChartsDataModel data)
-    {
-        if (!_clickHandledControls.Add(el)) return;
-        el.PointerPressed += OnItemPointerPressed;
     }
 
     private void OnItemPointerPressed(object? sender, PointerPressedEventArgs e)
