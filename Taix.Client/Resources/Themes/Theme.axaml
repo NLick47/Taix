@@ -192,17 +192,18 @@
             <SolidColorBrush x:Key="GrayDark" Color="#1C1C20" Opacity="0.60" />
 
             <!-- TabSwitch 容器 -->
-            <SolidColorBrush x:Key="TabSwitchBgBrush" Color="#1C1C20" />
+            <SolidColorBrush x:Key="TabSwitchBgBrush" Color="#FFFFFF" Opacity="0.04" />
+            <SolidColorBrush x:Key="TabSwitchBorderBrush" Color="#FFFFFF" Opacity="0.08" />
 
             <!-- 选项文字 -->
-            <Color x:Key="TabOptionTextColor">#9E9E9E</Color>
+            <Color x:Key="TabOptionTextColor">#B8B8C0</Color>
             <Color x:Key="TabOptionTextCheckedColor">#FFFFFF</Color>
-            <SolidColorBrush x:Key="TabOptionHoverBrush" Color="#FFFFFF" Opacity="0.05" />
+            <SolidColorBrush x:Key="TabOptionHoverBrush" Color="#FFFFFF" Opacity="0.06" />
 
             <!-- 选中滑块 -->
-            <SolidColorBrush x:Key="TabOptionSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.22" />
-            <SolidColorBrush x:Key="TabSliderBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.35" />
-            <SolidColorBrush x:Key="TabOptionSelectedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.70" />
+            <SolidColorBrush x:Key="TabOptionSelectedBrush" Color="#FFFFFF" Opacity="0.10" />
+            <SolidColorBrush x:Key="TabSliderBorderBrush" Color="#FFFFFF" Opacity="0.12" />
+            <SolidColorBrush x:Key="TabOptionSelectedBorderBrush" Color="#FFFFFF" Opacity="0.15" />
 
             <!-- 时间轴 -->
             <SolidColorBrush x:Key="TimelineBgBrush" Color="#0E0E12" />
@@ -432,7 +433,8 @@
             <SolidColorBrush x:Key="GrayDark" Color="#e8e8ea" Opacity="0.65" />
 
             <!-- TabSwitch 容器 -->
-            <SolidColorBrush x:Key="TabSwitchBgBrush" Color="#EEEEF3" />
+            <SolidColorBrush x:Key="TabSwitchBgBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="TabSwitchBorderBrush" Color="#E5E7EB" />
 
             <!-- 选项文字 -->
             <Color x:Key="TabOptionTextColor">#949494</Color>
@@ -440,8 +442,8 @@
             <SolidColorBrush x:Key="TabOptionHoverBrush" Color="#000000" Opacity="0.03" />
 
             <!-- 选中滑块 -->
-            <SolidColorBrush x:Key="TabOptionSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.13" />
-            <SolidColorBrush x:Key="TabSliderBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.22" />
+            <SolidColorBrush x:Key="TabOptionSelectedBrush" Color="#F3F4F6" />
+            <SolidColorBrush x:Key="TabSliderBorderBrush" Color="#E5E7EB" />
             <SolidColorBrush x:Key="TabOptionSelectedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.25" />
 
             <!-- 时间轴 -->

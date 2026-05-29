@@ -8,6 +8,8 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{DynamicResource TabSwitchBorderBrush}"
+                        BorderThickness="1"
                         CornerRadius="11"
                         Padding="{TemplateBinding Padding}">
                     <Grid>
