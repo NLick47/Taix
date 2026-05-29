@@ -286,7 +286,7 @@ impl DataService {
         let s = tz_date_to_utc_range(start, &tz);
         let e = tz_date_to_utc_range(end, &tz);
         let (utc_start, utc_end) = (s.0, e.1);
-        sqlx::query("DELETE FROM HoursLogModels WHERE DataTime >= ? AND DataTime <= ?")
+        sqlx::query("DELETE FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ?")
             .bind(utc_start)
             .bind(utc_end)
             .execute(pool)
@@ -592,24 +592,25 @@ impl DataService {
         tz_id: &str,
         config_service: &ConfigService,
     ) -> Result<i64, AppError> {
-        debug!("get_date_range_app_count: start={} end={}", start, end);
+        debug!("get_date_range_app_count: start={} end={} tz={}", start, end, tz_id);
         let excluded = config_service.get_excluded_app_id_set(pool).await;
         let excluded_vec: Vec<i64> = excluded.into_iter().collect();
         let has_excluded = !excluded_vec.is_empty();
 
         let tz = parse_timezone(tz_id);
-        let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
+        let utc_start = tz_date_to_utc_range(start, &tz).0;
+        let utc_end = tz_date_to_utc_range(end, &tz).1;
 
-        let count: i64 = if !has_excluded {
+        let rows: Vec<i64> = if !has_excluded {
             sqlx::query_scalar(
-                "SELECT COUNT(DISTINCT AppModelID) FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0"
+                "SELECT DISTINCT AppModelID FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0"
             )
             .bind(utc_start).bind(utc_end)
-            .fetch_one(pool).await?
+            .fetch_all(pool).await?
         } else {
             let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
             let sql = format!(
-                "SELECT COUNT(DISTINCT AppModelID) FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0 AND AppModelID NOT IN ({})",
+                "SELECT DISTINCT AppModelID FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0 AND AppModelID NOT IN ({})",
                 placeholders
             );
             let mut query = sqlx::query_scalar::<_, i64>(&sql)
@@ -617,9 +618,10 @@ impl DataService {
             for id in &excluded_vec {
                 query = query.bind(*id);
             }
-            query.fetch_one(pool).await?
+            query.fetch_all(pool).await?
         };
-        Ok(count)
+
+        Ok(rows.len() as i64)
     }
 
     pub async fn get_category_hours_data(
