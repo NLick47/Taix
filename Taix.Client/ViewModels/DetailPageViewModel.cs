@@ -121,13 +121,11 @@ public class DetailPageViewModel : DetailPageModel
         WhenPropertyChanged(this, x => x.YearDate, _ => LoadYearDataAsync());
     }
 
-    public override Task OnNavigatedToAsync()
+    public override async Task OnNavigatedToAsync()
     {
-        return Task.WhenAll(
-            ExecuteAsync(LoadDataCoreAsync),
-            LoadChartDataAsync(),
-            ExecuteAsync(LoadInfoAsync)
-        );
+        await ExecuteAsync(LoadDataCoreAsync);
+        await LoadChartDataAsync();
+        await ExecuteAsync(LoadInfoAsync);
     }
 
     private Task LoadDataAsync() => ExecuteAsync(LoadDataCoreAsync);

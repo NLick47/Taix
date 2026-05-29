@@ -140,6 +140,8 @@ public class ColumnChart : TemplatedControl
         _emptyDataView = e.NameScope.Find<EmptyData>("EmptyDataView");
         _chartBorder = e.NameScope.Find<Border>("ChartBorder");
         UpdateVisibility();
+        UpdateComputedValues();
+        _chartCanvas?.InvalidateVisual();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -249,7 +251,19 @@ public class ColumnChartCanvas : Control
 
     internal void SetOwner(ColumnChart owner) => _owner = owner;
 
-    protected override Size MeasureOverride(Size availableSize) => availableSize;
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        var width = double.IsInfinity(availableSize.Width) ? 0 : availableSize.Width;
+        var height = double.IsInfinity(availableSize.Height) ? 0 : availableSize.Height;
+        return new Size(width, height);
+    }
+
+    protected override Size ArrangeOverride(Size finalSize)
+    {
+        var result = base.ArrangeOverride(finalSize);
+        InvalidateVisual();
+        return result;
+    }
 
     public override void Render(DrawingContext context)
     {
@@ -481,9 +495,12 @@ public class ColumnChartCanvas : Control
     {
         base.OnPointerExited(e);
         ClearHover();
-        _owner.IsShowValuesPopup = false;
-        if (_owner?.ColumnSelectedIndex < 0 && !_isLegendDefault)
-            RestoreDefaultLegend();
+        if (_owner != null)
+        {
+            _owner.IsShowValuesPopup = false;
+            if (_owner.ColumnSelectedIndex < 0 && !_isLegendDefault)
+                RestoreDefaultLegend();
+        }
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
