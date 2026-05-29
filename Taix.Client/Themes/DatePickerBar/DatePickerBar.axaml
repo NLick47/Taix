@@ -29,13 +29,13 @@
                         <Grid x:Name="header">
                             <Border
                                 x:Name="Date"
-                                Background="{DynamicResource NavGlassBackgroundBrush}"
+                                Background="{DynamicResource DatePickerGlassBackgroundBrush}"
                                 Padding="15,8"
                                 CornerRadius="12"
                                 Margin="0,0,0,10"
                                 HorizontalAlignment="Left"
                                 ToolTip.Tip="{DynamicResource Select}"
-                                BorderBrush="{DynamicResource NavGlassBorderBrush}"
+                                BorderBrush="{DynamicResource DatePickerGlassBorderBrush}"
                                 BorderThickness="1">
                                 <StackPanel Orientation="Horizontal">
                                     <base:Icon x:Name="DateIcon" Margin="0,0,5,0" IconType="Calendar"

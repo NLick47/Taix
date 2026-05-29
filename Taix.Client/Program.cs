@@ -17,6 +17,7 @@ internal sealed class Program
     {
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .WithDeveloperTools()
             .UseReactiveUI(_ => { });
     }
 }

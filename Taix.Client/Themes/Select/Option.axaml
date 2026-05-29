@@ -66,7 +66,7 @@
                                         Width="20"
                                         Height="20"
                                         Background="{DynamicResource TabOptionSelectedBrush}"
-                                        BorderBrush="{DynamicResource TabOptionSelectedBorderBrush}"
+                                        BorderBrush="{DynamicResource OptionCheckedBorderBrush}"
                                         BorderThickness="2"
                                         CornerRadius="20"
                                         x:Name="CheckStyle" IsVisible="False" />
@@ -75,7 +75,7 @@
                                     <Border
                                         Width="20"
                                         Height="20"
-                                        BorderBrush="{DynamicResource WindowGlassHighlightBrush}"
+                                        BorderBrush="{DynamicResource OptionUncheckedBorderBrush}"
                                         BorderThickness="2"
                                         CornerRadius="20"
                                         x:Name="UnCheckStyle" IsVisible="False" />

@@ -54,7 +54,7 @@
                         <ListBox.Styles>
                             <Style Selector="ListBoxItem">
                                 <Setter Property="Padding" Value="0" />
-                                <Setter Property="Margin" Value="0" />
+                                <Setter Property="Margin" Value="0,0,0,8" />
                                 <Setter Property="Background" Value="Transparent" />
                                 <Setter Property="Focusable" Value="False" />
                                 <Setter Property="Cursor" Value="Hand" />

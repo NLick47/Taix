@@ -28,7 +28,7 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid>
-                    <Border BorderBrush="#f3f3f3" BorderThickness="0" Width="{TemplateBinding Width}"
+                    <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" Width="{TemplateBinding Width}"
                             Height="{TemplateBinding Height}"
                             x:Name="BoxBorder"
                             CornerRadius="4"

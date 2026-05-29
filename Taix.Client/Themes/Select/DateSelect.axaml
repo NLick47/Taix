@@ -221,7 +221,7 @@
 
             <Style Selector="controls|DateSelect:pointerover">
                 <Style Selector="^ /template/ Border#Main">
-                    <Setter Property="Background" Value="{DynamicResource NavHoverGlassBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource DatePickerHoverGlassBrush}" />
                 </Style>
 
                 <Style Selector="^ /template/ base|Icon#Icon">
@@ -235,10 +235,10 @@
                         HorizontalAlignment="Left">
                     <Grid>
                         <Border x:Name="Main" Margin="0,0,0,0"
-                                Background="{DynamicResource NavGlassBackgroundBrush}"
+                                Background="{DynamicResource DatePickerGlassBackgroundBrush}"
                                 HorizontalAlignment="Left" Padding="4,4"
                                 CornerRadius="10"
-                                BorderBrush="{DynamicResource NavGlassBorderBrush}"
+                                BorderBrush="{DynamicResource DatePickerGlassBorderBrush}"
                                 BorderThickness="1">
                             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                 <button:IconButton Icon="ChevronLeft" FontSize="11"

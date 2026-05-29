@@ -40,6 +40,7 @@
             <!--标准背景颜色-->
             <SolidColorBrush x:Key="StandardBackgroundBrush" Color="{StaticResource Surface4}" />
             <SolidColorBrush x:Key="StandardBackgroundBrush2" Color="{StaticResource Surface4}" />
+            <SolidColorBrush x:Key="ButtonBorderBrush" Color="{StaticResource BorderDefault}" />
 
             <!--【窗口】-->
             <!--窗口边框颜色-->
@@ -72,9 +73,15 @@
             <!--导航栏毛玻璃效果-->
             <SolidColorBrush x:Key="NavGlassBackgroundBrush" Color="{StaticResource Surface1}" Opacity="0.45" />
             <SolidColorBrush x:Key="NavGlassBorderBrush" Color="#ffffff" Opacity="0.10" />
+            <SolidColorBrush x:Key="NavBorderBrush" Color="{StaticResource BorderDefault}" />
             <SolidColorBrush x:Key="NavSelectedGlassBrush" Color="{DynamicResource ThemeColor}" Opacity="0.20" />
             <SolidColorBrush x:Key="NavSelectedGlassBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.35" />
             <SolidColorBrush x:Key="NavHoverGlassBrush" Color="#ffffff" Opacity="0.08" />
+
+            <!--日期选择器专用背景（深色主题）-->
+            <SolidColorBrush x:Key="DatePickerGlassBackgroundBrush" Color="{StaticResource Surface1}" Opacity="0.45" />
+            <SolidColorBrush x:Key="DatePickerGlassBorderBrush" Color="{StaticResource BorderDefault}" />
+            <SolidColorBrush x:Key="DatePickerHoverGlassBrush" Color="#ffffff" Opacity="0.08" />
 
             <!--设置面板-->
             <Color x:Key="SettingPanelBgColor">#2A2A30</Color>
@@ -198,12 +205,15 @@
             <!-- 选项文字 -->
             <Color x:Key="TabOptionTextColor">#B8B8C0</Color>
             <Color x:Key="TabOptionTextCheckedColor">#FFFFFF</Color>
-            <SolidColorBrush x:Key="TabOptionHoverBrush" Color="#FFFFFF" Opacity="0.06" />
 
             <!-- 选中滑块 -->
             <SolidColorBrush x:Key="TabOptionSelectedBrush" Color="#FFFFFF" Opacity="0.10" />
             <SolidColorBrush x:Key="TabSliderBorderBrush" Color="#FFFFFF" Opacity="0.12" />
             <SolidColorBrush x:Key="TabOptionSelectedBorderBrush" Color="#FFFFFF" Opacity="0.15" />
+
+            <!-- Option 选项边框 -->
+            <SolidColorBrush x:Key="OptionUncheckedBorderBrush" Color="#FFFFFF" Opacity="0.15" />
+            <SolidColorBrush x:Key="OptionCheckedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.50" />
 
             <!-- 时间轴 -->
             <SolidColorBrush x:Key="TimelineBgBrush" Color="#0E0E12" />
@@ -276,6 +286,7 @@
             <!--标准背景颜色-->
             <SolidColorBrush x:Key="StandardBackgroundBrush" Color="#ffffff" />
             <SolidColorBrush x:Key="StandardBackgroundBrush2" Color="#ffffff" />
+            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#d0d0d0" />
 
             <!--【窗口】-->
 
@@ -311,9 +322,15 @@
             <!--导航栏毛玻璃效果-->
             <SolidColorBrush x:Key="NavGlassBackgroundBrush" Color="#ffffff" Opacity="0.38" />
             <SolidColorBrush x:Key="NavGlassBorderBrush" Color="#ffffff" Opacity="0.45" />
+            <SolidColorBrush x:Key="NavBorderBrush" Color="#c0c0c0" />
             <SolidColorBrush x:Key="NavSelectedGlassBrush" Color="{DynamicResource ThemeColor}" Opacity="0.14" />
             <SolidColorBrush x:Key="NavSelectedGlassBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.18" />
             <SolidColorBrush x:Key="NavHoverGlassBrush" Color="#000000" Opacity="0.03" />
+
+            <!--日期选择器专用背景（浅色主题优化）-->
+            <SolidColorBrush x:Key="DatePickerGlassBackgroundBrush" Color="#EEF2F6" />
+            <SolidColorBrush x:Key="DatePickerGlassBorderBrush" Color="#D0D4DA" />
+            <SolidColorBrush x:Key="DatePickerHoverGlassBrush" Color="#000000" Opacity="0.04" />
 
             <!--设置面板-->
             <Color x:Key="SettingPanelBgColor">#ffffff</Color>
@@ -433,18 +450,21 @@
             <SolidColorBrush x:Key="GrayDark" Color="#e8e8ea" Opacity="0.65" />
 
             <!-- TabSwitch 容器 -->
-            <SolidColorBrush x:Key="TabSwitchBgBrush" Color="#FFFFFF" />
-            <SolidColorBrush x:Key="TabSwitchBorderBrush" Color="#E5E7EB" />
+            <SolidColorBrush x:Key="TabSwitchBgBrush" Color="#eef2f6" />
+            <SolidColorBrush x:Key="TabSwitchBorderBrush" Color="#ffffff" Opacity="0.60" />
 
             <!-- 选项文字 -->
-            <Color x:Key="TabOptionTextColor">#949494</Color>
-            <Color x:Key="TabOptionTextCheckedColor">#1B1B1B</Color>
-            <SolidColorBrush x:Key="TabOptionHoverBrush" Color="#000000" Opacity="0.03" />
+            <Color x:Key="TabOptionTextColor">#5b6877</Color>
+            <Color x:Key="TabOptionTextCheckedColor">#1a2b3c</Color>
 
             <!-- 选中滑块 -->
-            <SolidColorBrush x:Key="TabOptionSelectedBrush" Color="#F3F4F6" />
-            <SolidColorBrush x:Key="TabSliderBorderBrush" Color="#E5E7EB" />
-            <SolidColorBrush x:Key="TabOptionSelectedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.25" />
+            <SolidColorBrush x:Key="TabOptionSelectedBrush" Color="#ffffff" />
+            <SolidColorBrush x:Key="TabSliderBorderBrush" Color="#ffffff" Opacity="0.80" />
+            <SolidColorBrush x:Key="TabOptionSelectedBorderBrush" Color="#d0d0d0" />
+
+            <!-- Option 选项边框 -->
+            <SolidColorBrush x:Key="OptionUncheckedBorderBrush" Color="#c8c8d0" />
+            <SolidColorBrush x:Key="OptionCheckedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.80" />
 
             <!-- 时间轴 -->
             <SolidColorBrush x:Key="TimelineBgBrush" Color="#ffffff" />

@@ -26,7 +26,7 @@
                     <Grid>
                         <Border x:Name="Main" Background="{TemplateBinding Background}"
                                 Padding="{TemplateBinding Padding}" CornerRadius="10"
-                                BorderBrush="{DynamicResource NavGlassBorderBrush}"
+                                BorderBrush="{DynamicResource NavBorderBrush}"
                                 BorderThickness="1">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
 
