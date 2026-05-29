@@ -68,6 +68,17 @@ public class Timeline : Control
         AvaloniaProperty.RegisterDirect<Timeline, double>(
             nameof(VisibleEndHour), o => o.VisibleEndHour, (o, v) => o.VisibleEndHour = v, 24.0);
 
+    private bool _useCategoryColor;
+    public static readonly DirectProperty<Timeline, bool> UseCategoryColorProperty =
+        AvaloniaProperty.RegisterDirect<Timeline, bool>(
+            nameof(UseCategoryColor), o => o.UseCategoryColor, (o, v) => o.UseCategoryColor = v);
+
+    public bool UseCategoryColor
+    {
+        get => _useCategoryColor;
+        set => SetAndRaise(UseCategoryColorProperty, ref _useCategoryColor, value);
+    }
+
     public IEnumerable<TimelineUsageItem> UsageItems
     {
         get => _usageItems;
@@ -268,7 +279,8 @@ public class Timeline : Control
             || change.Property == DateProperty
             || change.Property == MajorTickIntervalProperty
             || change.Property == VisibleStartHourProperty
-            || change.Property == VisibleEndHourProperty)
+            || change.Property == VisibleEndHourProperty
+            || change.Property == UseCategoryColorProperty)
         {
             if (change.Property == UsageItemsProperty) FitToData();
             if ((change.Property == VisibleStartHourProperty
@@ -315,9 +327,21 @@ public class Timeline : Control
 
     private void ResetSelection()
     {
+        var items = UsageItems?.Where(i => !IsIdle(i)).ToList();
         var maxHour = (double)MaxDaySeconds / HourSeconds;
-        VisibleStartHour = 0.0;
-        VisibleEndHour = maxHour;
+
+        if (items == null || items.Count == 0)
+        {
+            VisibleStartHour = 0.0;
+            VisibleEndHour = maxHour;
+            return;
+        }
+
+        var dataStart = items.Min(i => i.Start.TimeOfDay.TotalHours);
+        var dataEnd = items.Max(i => i.End.TimeOfDay.TotalHours);
+        var pad = 0.5;
+        VisibleStartHour = Math.Max(0, Math.Floor((dataStart - pad) * 12) / 12);
+        VisibleEndHour = Math.Min(maxHour, Math.Ceiling((dataEnd + pad) * 12) / 12);
     }
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
@@ -888,7 +912,7 @@ public class Timeline : Control
     private Color GetItemDisplayColor(TimelineUsageItem item)
     {
         if (IsIdle(item)) return _idleColor;
-        return ParseColor(item.Color);
+        return ParseColor(_useCategoryColor ? item.CategoryColor : item.Color);
     }
 
     #endregion

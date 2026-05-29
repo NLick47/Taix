@@ -57,7 +57,7 @@
                 <DropShadowEffect BlurRadius="12" Color="#000000" Opacity="0.08" OffsetX="0" OffsetY="3" />
               </Border.Effect>
                 <StackPanel>
-                    <Border HorizontalAlignment="Left" Padding="10,5" CornerRadius="{StaticResource RadiusPill}">
+                    <Border HorizontalAlignment="Left" Padding="10,5" CornerRadius="{StaticResource RadiusSmall}">
                         <Border.Background>
                             <SolidColorBrush Color="{DynamicResource HoverBackgroundColor}" Opacity=".5" />
                         </Border.Background>
@@ -85,7 +85,7 @@
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <Border HorizontalAlignment="Left" Padding="10,5" CornerRadius="{StaticResource RadiusPill}">
+                    <Border HorizontalAlignment="Left" Padding="10,5" CornerRadius="{StaticResource RadiusSmall}">
                         <Border.Background>
                             <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".2" />
                         </Border.Background>
@@ -140,7 +140,8 @@
             <TabItem>
                 <Grid>
                     <Charts:CardChart Data="{Binding WebMoreData}" ClickCommand="{Binding ToDetailCommand}"
-                                     ShowLimit="{Binding MoreNum}"/>
+                                     ShowLimit="{Binding MoreNum}"
+                                     ItemMenu="{Binding WebSiteContextMenu}" />
                 </Grid>
             </TabItem>
         </TabControl>

@@ -66,6 +66,15 @@ public class MultiTrackTimeline : TemplatedControl
         set => SetValue(ClickCommandProperty, value);
     }
 
+    public static readonly StyledProperty<bool> UseCategoryColorProperty =
+        AvaloniaProperty.Register<MultiTrackTimeline, bool>(nameof(UseCategoryColor));
+
+    public bool UseCategoryColor
+    {
+        get => GetValue(UseCategoryColorProperty);
+        set => SetValue(UseCategoryColorProperty, value);
+    }
+
     public MultiTrackTimeline()
     {
     }

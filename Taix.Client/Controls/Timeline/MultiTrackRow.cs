@@ -36,6 +36,17 @@ public class MultiTrackRow : Control
         AvaloniaProperty.RegisterDirect<MultiTrackRow, double>(
             nameof(VisibleEndHour), o => o.VisibleEndHour, (o, v) => o.VisibleEndHour = v, 24.0);
 
+    private bool _useCategoryColor;
+    public static readonly DirectProperty<MultiTrackRow, bool> UseCategoryColorProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackRow, bool>(
+            nameof(UseCategoryColor), o => o.UseCategoryColor, (o, v) => o.UseCategoryColor = v);
+
+    public bool UseCategoryColor
+    {
+        get => _useCategoryColor;
+        set => SetAndRaise(UseCategoryColorProperty, ref _useCategoryColor, value);
+    }
+
     public IEnumerable<MultiTrackSegment> Segments
     {
         get => _segments;
@@ -109,7 +120,8 @@ public class MultiTrackRow : Control
         base.OnPropertyChanged(change);
         if (change.Property == SegmentsProperty
             || change.Property == VisibleStartHourProperty
-            || change.Property == VisibleEndHourProperty)
+            || change.Property == VisibleEndHourProperty
+            || change.Property == UseCategoryColorProperty)
         {
             InvalidateVisual();
         }
@@ -171,7 +183,10 @@ public class MultiTrackRow : Control
             var width = (visibleEnd - visibleStart) * pixelsPerSec;
             if (width < MinSegmentWidth) width = MinSegmentWidth;
 
-            var color = TimelineHelpers.ParseColor(seg.Color, DefaultColor);
+            var displayColor = _useCategoryColor && seg.CategoryColor != null
+                ? seg.CategoryColor
+                : seg.Color;
+            var color = TimelineHelpers.ParseColor(displayColor, DefaultColor);
             var radius = Math.Min(3.0, width / 2.0);
             var rect = new Rect(x, 1, width, bounds.Height - 2);
 

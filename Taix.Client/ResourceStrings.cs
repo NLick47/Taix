@@ -117,6 +117,8 @@ public static class ResourceStrings
     public static string ColoreExists => GetStringValue("ColoreExists");
     public static string NoChangesMade => GetStringValue("NoChangesMade");
     public static string TimeRangeSelectionError => GetStringValue("TimeRangeSelectionError");
+    public static string TimelineAppColor => GetStringValue("TimelineAppColor");
+    public static string TimelineCategoryColor => GetStringValue("TimelineCategoryColor");
     public static string DeleteConfirmation => GetStringValue("DeleteConfirmation");
     public static string WantPerformAction => GetStringValue("WantPerformAction");
     public static string DataExportCompleted => GetStringValue("DataExportCompleted");

@@ -318,4 +318,6 @@
     <system:String x:Key="SystemCategory">System</system:String>
     <system:String x:Key="TimelineHint">Scroll to zoom · Shift+drag to select · Double-click to reset</system:String>
     <system:String x:Key="TimelineTotalDuration">Total Duration</system:String>
+    <system:String x:Key="TimelineAppColor">App</system:String>
+    <system:String x:Key="TimelineCategoryColor">Category</system:String>
 </ResourceDictionary>

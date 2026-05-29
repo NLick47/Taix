@@ -245,6 +245,7 @@ public class ColumnChartCanvas : Control
     private double _columnWidth;
     private int _columnCount;
     private readonly Dictionary<int, List<ChartColumnInfoModel>> _columnPopupData = new();
+    private bool _isLegendDefault = true;
 
     internal void SetOwner(ColumnChart owner) => _owner = owner;
 
@@ -424,11 +425,14 @@ public class ColumnChartCanvas : Control
             if (_hoverColumnIndex >= 0)
             {
                 ClearHover();
-                if (_owner.ColumnSelectedIndex < 0)
+                if (_owner.ColumnSelectedIndex < 0 && !_isLegendDefault)
                     RestoreDefaultLegend();
+                _owner.IsShowValuesPopup = false;
             }
             return;
         }
+
+        var hasData = _columnPopupData.TryGetValue(colIndex, out var valuesPopupList) && valuesPopupList.Count > 0;
 
         if (colIndex != _hoverColumnIndex)
         {
@@ -436,10 +440,7 @@ public class ColumnChartCanvas : Control
             _hoverColumnIndex = colIndex;
             InvalidateVisual();
 
-            if (_owner.ColumnSelectedIndex < 0)
-                UpdateLegendForColumn(colIndex);
-
-            if (_columnPopupData.TryGetValue(colIndex, out var valuesPopupList) && valuesPopupList.Count > 0)
+            if (hasData)
             {
                 var popupList = new List<ChartColumnInfoModel>(valuesPopupList);
                 var total = popupList.Sum(x => x.Value);
@@ -454,12 +455,24 @@ public class ColumnChartCanvas : Control
                     });
                 }
                 _owner.ColumnValuesInfoList = popupList;
-                _owner.ValuesPopupPlacementTarget = this;
-                _owner.IsShowValuesPopup = true;
 
                 var colCenterX = colIndex * _columnWidth + _columnWidth / 2;
                 var canvasCenterX = Bounds.Width / 2;
                 _owner.ValuesPopupHorizontalOffset = colCenterX - canvasCenterX;
+                _owner.ValuesPopupPlacementTarget = this;
+
+                if (!_owner.IsShowValuesPopup)
+                    _owner.IsShowValuesPopup = true;
+
+                if (_owner.ColumnSelectedIndex < 0)
+                    UpdateLegendForColumn(colIndex);
+            }
+            else
+            {
+                _owner.IsShowValuesPopup = false;
+                // 只在图例不是默认状态时才恢复，避免重复更新
+                if (_owner.ColumnSelectedIndex < 0 && !_isLegendDefault)
+                    RestoreDefaultLegend();
             }
         }
     }
@@ -469,7 +482,7 @@ public class ColumnChartCanvas : Control
         base.OnPointerExited(e);
         ClearHover();
         _owner.IsShowValuesPopup = false;
-        if (_owner?.ColumnSelectedIndex < 0)
+        if (_owner?.ColumnSelectedIndex < 0 && !_isLegendDefault)
             RestoreDefaultLegend();
     }
 
@@ -507,11 +520,13 @@ public class ColumnChartCanvas : Control
         var list = _owner.Data?.ToList();
         if (list == null || list.Count == 0) return;
         _owner.ColumnInfoList = _owner.BuildLegend(list, colIndex);
+        _isLegendDefault = false;
     }
 
     private void RestoreDefaultLegend()
     {
         _owner?.UpdateComputedValues();
+        _isLegendDefault = true;
     }
 
     private void ClearHover()

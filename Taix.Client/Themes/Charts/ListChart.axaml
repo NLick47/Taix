@@ -48,7 +48,7 @@
                              ContextMenu="{TemplateBinding ItemMenu}">
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel />
+                                <VirtualizingStackPanel />
                             </ItemsPanelTemplate>
                         </ListBox.ItemsPanel>
                         <ListBox.Styles>

@@ -70,6 +70,31 @@ public class DataPageModel : ModelBase
         }
     }
 
+    private bool _useCategoryColor;
+    public bool UseCategoryColor
+    {
+        get => _useCategoryColor;
+        set { _useCategoryColor = value; OnPropertyChanged(); }
+    }
+
+    private SelectItemModel _selectedColorMode;
+    public SelectItemModel SelectedColorMode
+    {
+        get => _selectedColorMode;
+        set
+        {
+            _selectedColorMode = value;
+            UseCategoryColor = value?.Id == 1;
+            OnPropertyChanged();
+        }
+    }
+
+    public List<SelectItemModel> ColorModeOptions { get; } =
+    [
+        new() { Id = 0, Name = ResourceStrings.TimelineAppColor },
+        new() { Id = 1, Name = ResourceStrings.TimelineCategoryColor }
+    ];
+
     private string _multiTrackTotalDurationText = "";
     public string MultiTrackTotalDurationText
     {

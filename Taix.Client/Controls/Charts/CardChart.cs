@@ -86,7 +86,10 @@ public class CardChart : TemplatedControl
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == DataProperty) Render();
+        if (change.Property == DataProperty)
+            Render();
+        else if (change.Property == ItemMenuProperty && _cardContainer != null)
+            _cardContainer.ContextMenu = _itemMenu;
     }
 
     protected override void OnUnloaded(Avalonia.Interactivity.RoutedEventArgs e)
@@ -113,6 +116,8 @@ public class CardChart : TemplatedControl
 
         _maxValue = MaxValueLimit > 0 ? MaxValueLimit : list.Max(m => m.Value);
         var data = list;
+
+        _cardContainer.ContextMenu = _itemMenu;
 
         _cardContainer.Children.Clear();
         foreach (var item in data)
@@ -147,6 +152,8 @@ public class CardChart : TemplatedControl
             ClickCommand?.Execute(clickData);
         }
         if (e.GetCurrentPoint(el).Properties.IsRightButtonPressed && ItemMenu != null)
+        {
             ItemMenu.Tag = clickData;
+        }
     }
 }

@@ -146,6 +146,7 @@ public class DataPageViewModel : DataPageModel
         WhenPropertyChanged(this, x => x.TimelineEndHour, async _ => await DebounceUpdateFilteredDataAsync());
 
         SelectedPeriod = PeriodOptions[0];
+        SelectedColorMode = ColorModeOptions[0];
         TabbarSelectedIndex = 0;
     }
 
@@ -281,14 +282,17 @@ public class DataPageViewModel : DataPageModel
                 }
 
                 var appName = session.AppModel?.Name ?? "Unknown";
+                var categoryName = session.AppModel?.Category?.Name ?? "Unknown";
                 var paletteColor = Colors.GetTimelinePaletteColor(appName, isDark);
+                var categoryColor = session.AppModel?.Category?.Color
+                                    ?? Colors.GetTimelinePaletteColor(categoryName, isDark);
                 var isShort = session.Duration <= 60;
                 list.Add(new TimelineUsageItem
                 {
                     Name = appName,
                     Color = paletteColor,
-                    CategoryName = session.AppModel?.Category?.Name ?? "Unknown",
-                    CategoryColor = paletteColor,
+                    CategoryName = categoryName,
+                    CategoryColor = categoryColor,
                     Start = session.StartTime,
                     End = session.EndTime,
                     Duration = session.Duration,
@@ -449,7 +453,8 @@ public class DataPageViewModel : DataPageModel
                 {
                     Start = seg.Start < startTime ? startTime : seg.Start,
                     End = seg.End > endTime ? endTime : seg.End,
-                    Color = seg.Color
+                    Color = seg.Color,
+                    CategoryColor = seg.CategoryColor
                 }).ToList();
 
                 var appDurationSec = g.Sum(seg => seg.Duration);

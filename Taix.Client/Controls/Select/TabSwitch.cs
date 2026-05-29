@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Input;
+using Avalonia.Threading;
 
 namespace Taix.Client.Controls.Select;
 
@@ -22,6 +23,10 @@ public class TabSwitch : TemplatedControl
         AvaloniaProperty.Register<TabSwitch, bool>(nameof(IsShowIcon), true);
 
     private StackPanel _itemsContainer;
+    private Border _slider;
+    private Transitions _sliderTransitions;
+    private bool _sliderUpdatePending;
+    private bool _sliderInitialized;
 
     public TabSwitch()
     {
@@ -74,6 +79,8 @@ public class TabSwitch : TemplatedControl
     {
         base.OnApplyTemplate(e);
         _itemsContainer = e.NameScope.Get<StackPanel>("ItemsContainer");
+        _slider = e.NameScope.Get<Border>("Slider");
+        _sliderTransitions = _slider.Transitions;
         RenderItems();
     }
 
@@ -82,27 +89,24 @@ public class TabSwitch : TemplatedControl
         if (_itemsContainer == null || Options == null) return;
 
         _itemsContainer.Children.Clear();
+        _sliderInitialized = false;
 
         for (int i = 0; i < Options.Count; i++)
-        {
-            var item = Options[i];
-            var option = CreateOption(item, i);
-            _itemsContainer.Children.Add(option);
-        }
-        
+            _itemsContainer.Children.Add(CreateOption(Options[i], i));
+
         UpdateOptionsStyle();
     }
 
     private TabOption CreateOption(SelectItemModel item, int index)
     {
-        var option = new TabOption  
+        var option = new TabOption
         {
             Value = item,
             IsShowIcon = IsShowIcon,
             IsChecked = index == SelectedIndex
         };
 
-        option.PointerPressed += (s, e) => 
+        option.PointerPressed += (s, e) =>
         {
             SelectedIndex = index;
             e.Handled = true;
@@ -140,9 +144,50 @@ public class TabSwitch : TemplatedControl
         for (int i = 0; i < _itemsContainer.Children.Count; i++)
         {
             if (_itemsContainer.Children[i] is TabOption option)
-            {
                 option.IsChecked = i == SelectedIndex;
-            }
+        }
+
+        if (!_sliderUpdatePending)
+        {
+            _sliderUpdatePending = true;
+            Dispatcher.UIThread.Post(ScheduleSliderUpdate, DispatcherPriority.Loaded);
+        }
+    }
+
+    private void ScheduleSliderUpdate()
+    {
+        _sliderUpdatePending = false;
+        PositionSlider();
+    }
+
+    private void PositionSlider()
+    {
+        if (_slider == null || _itemsContainer == null) return;
+
+        if (SelectedIndex < 0 || SelectedIndex >= _itemsContainer.Children.Count)
+        {
+            _slider.IsVisible = false;
+            return;
+        }
+
+        var selected = _itemsContainer.Children[SelectedIndex];
+        var containerOffset = _itemsContainer.Bounds.Position;
+        var targetX = containerOffset.X + selected.Bounds.X;
+        var targetWidth = selected.Bounds.Width;
+
+        if (!_sliderInitialized)
+        {
+            _slider.Transitions = null;
+            _slider.Margin = new Thickness(targetX, 0, 0, 0);
+            _slider.Width = targetWidth;
+            _slider.IsVisible = true;
+            _slider.Transitions = _sliderTransitions;
+            _sliderInitialized = true;
+        }
+        else
+        {
+            _slider.Margin = new Thickness(targetX, 0, 0, 0);
+            _slider.Width = targetWidth;
         }
     }
 

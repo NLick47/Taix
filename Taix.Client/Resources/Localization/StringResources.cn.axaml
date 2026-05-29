@@ -332,4 +332,6 @@
 
     <system:String x:Key="TimelineHint">滚轮缩放 · Shift+拖拽选择 · 双击重置</system:String>
     <system:String x:Key="TimelineTotalDuration">轨道总时长</system:String>
+    <system:String x:Key="TimelineAppColor">应用</system:String>
+    <system:String x:Key="TimelineCategoryColor">分类</system:String>
 </ResourceDictionary>

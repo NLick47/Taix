@@ -48,7 +48,7 @@
                                  Focusable="False">
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Spacing="4" />
+                                <VirtualizingStackPanel />
                             </ItemsPanelTemplate>
                         </ListBox.ItemsPanel>
                         <ListBox.Styles>
@@ -168,6 +168,8 @@
                                                 ClipToBounds="True">
                                             <timeline:MultiTrackRow
                                                 Segments="{Binding Segments}"
+                                                UseCategoryColor="{Binding UseCategoryColor,
+                                                    RelativeSource={RelativeSource AncestorType=timeline:MultiTrackTimeline}}"
                                                 VisibleStartHour="{Binding VisibleStartHour,
                                                     RelativeSource={RelativeSource AncestorType=timeline:MultiTrackTimeline}}"
                                                 VisibleEndHour="{Binding VisibleEndHour,

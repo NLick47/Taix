@@ -8,6 +8,7 @@
                xmlns:base="using:Taix.Client.Controls.Base"
                xmlns:timeline="using:Taix.Client.Controls.Timeline"
                xmlns:control="using:Taix.Client.Controls"
+               xmlns:converters="using:Taix.Client.Controls.Converters"
                xmlns:vm="using:Taix.Client.ViewModels"
                x:DataType="vm:DataPageViewModel"
                IsFillPage="True"
@@ -18,6 +19,12 @@
         </ContextMenu>
     </control:TPage.ContextMenu>
     <Grid Margin="20">
+        <Grid.Styles>
+            <Style Selector="select|TabSwitch#ColorModeSwitch select|TabOption">
+                <Setter Property="Padding" Value="10,3" />
+                <Setter Property="FontSize" Value="11" />
+            </Style>
+        </Grid.Styles>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
@@ -99,12 +106,13 @@
                                                    MajorTickInterval="3"
                                                    Date="{Binding DayDate}"
                                                    UsageItems="{Binding TimelineUsageItems}"
+                                                   UseCategoryColor="{Binding UseCategoryColor}"
                                                    VisibleStartHour="{Binding TimelineStartHour,Mode=TwoWay}"
                                                    VisibleEndHour="{Binding TimelineEndHour,Mode=TwoWay}" />
                             </Border>
 
                             <Grid Grid.Row="1" Margin="0,8,0,0"
-                                  ColumnDefinitions="*,Auto">
+                                  ColumnDefinitions="*,Auto,Auto">
                                 <!-- 居中：时间范围 + 操作提示 -->
                                 <StackPanel Grid.Column="0"
                                             Orientation="Horizontal"
@@ -121,8 +129,17 @@
                                                VerticalAlignment="Center" />
                                 </StackPanel>
 
+                                <!-- 颜色模式切换 -->
+                                <select:TabSwitch x:Name="ColorModeSwitch"
+                                                  Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  Margin="0,0,10,0"
+                                                  IsShowIcon="False"
+                                                  SelectedItem="{Binding SelectedColorMode, Mode=TwoWay}"
+                                                  Options="{Binding ColorModeOptions}" />
+
                                 <!-- 右侧：轨道总时长 -->
-                                <Border Grid.Column="1"
+                                <Border Grid.Column="2"
                                         VerticalAlignment="Center"
                                         CornerRadius="{StaticResource RadiusSmall}"
                                         Padding="10,4"
@@ -151,6 +168,7 @@
                                 VerticalAlignment="Stretch"
                                 Date="{Binding DayDate}"
                                 DataItems="{Binding MultiTrackItems}"
+                                UseCategoryColor="{Binding UseCategoryColor}"
                                 VisibleStartHour="{Binding TimelineStartHour}"
                                 VisibleEndHour="{Binding TimelineEndHour}"
                                 ClickCommand="{Binding ToDetailCommand}" />
