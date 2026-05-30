@@ -174,7 +174,8 @@ actor SessionTracker {
             name: snapshot.appName ?? snapshot.bundleIdentifier,
             bundleIdentifier: snapshot.bundleIdentifier,
             executablePath: snapshot.executablePath,
-            iconPath: nil
+            iconPath: nil,
+            displayName: snapshot.appName
         )
         currentSession = Session(
             app: app,

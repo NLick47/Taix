@@ -19,7 +19,7 @@ private struct LegacyMessage: Codable {
     
     init(adapting event: MonitorEvent) {
         let timestamp = Int64(event.timestamp.timeIntervalSince1970)
-        
+
         switch event.kind {
         case .foregroundChanged:
             self.t = "app"
@@ -28,8 +28,8 @@ private struct LegacyMessage: Codable {
             self.a = timestamp
             self.f = event.app?.executablePath
             self.i = event.app?.iconPath
-            self.desc = event.app?.bundleIdentifier
-            
+            self.desc = event.app?.displayName
+
         case .sessionTick, .sessionEnded:
             self.t = "app"
             self.p = event.app?.name
@@ -37,8 +37,8 @@ private struct LegacyMessage: Codable {
             self.a = timestamp
             self.f = event.app?.executablePath
             self.i = event.app?.iconPath
-            self.desc = event.app?.bundleIdentifier
-            
+            self.desc = event.app?.displayName
+
         case .idleDetected:
             self.t = "sleep"
             self.p = nil
@@ -47,7 +47,7 @@ private struct LegacyMessage: Codable {
             self.f = nil
             self.i = nil
             self.desc = nil
-            
+
         case .activityResumed:
             self.t = "wake"
             self.p = nil
@@ -151,7 +151,7 @@ actor TransportClient {
         
         let written = data.withUnsafeBytes { buffer in
             guard let baseAddress = buffer.baseAddress else { return -1 }
-            return send(fd, baseAddress, buffer.count, 0)
+            return Darwin.send(fd, baseAddress, buffer.count, 0)
         }
         
         guard written == data.count else {
@@ -187,7 +187,7 @@ actor TransportClient {
         
         let result = withUnsafePointer(to: &address) { ptr in
             ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { addrPtr in
-                connect(fd, addrPtr, socklen_t(MemoryLayout<sockaddr_un>.size))
+                Darwin.connect(fd, addrPtr, socklen_t(MemoryLayout<sockaddr_un>.size))
             }
         }
         

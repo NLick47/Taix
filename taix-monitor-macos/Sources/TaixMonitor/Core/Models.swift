@@ -5,6 +5,7 @@ struct AppInfo: Codable, Sendable {
     let bundleIdentifier: String?
     let executablePath: String
     let iconPath: String?
+    let displayName: String?
 }
 
 struct WindowInfo: Codable, Sendable {

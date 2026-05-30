@@ -10,6 +10,9 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "TaixMonitor",
+            swiftSettings: [
+                .unsafeFlags(["-parse-as-library"])
+            ],
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("CoreAudio"),

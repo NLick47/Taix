@@ -19,9 +19,11 @@ actor Runner {
         self.persistence = Persistence(url: configuration.persistenceURL)
         self.iconExtractor = IconExtractor(cacheDirectory: configuration.iconCacheDirectory)
         self.appObserver = AppObserver(eventBus: eventBus, iconExtractor: iconExtractor)
+        self.gamepadMonitor = GamepadMonitor()
         self.idleDetector = IdleDetector(
             eventBus: eventBus,
-            threshold: configuration.idleThreshold
+            threshold: configuration.idleThreshold,
+            gamepadMonitor: gamepadMonitor
         )
         self.sessionTracker = SessionTracker(
             eventBus: eventBus,
@@ -29,7 +31,6 @@ actor Runner {
             persistence: persistence,
             tickInterval: configuration.tickInterval
         )
-        self.gamepadMonitor = GamepadMonitor(eventBus: eventBus)
     }
     
     func start() async {
@@ -52,6 +53,7 @@ actor Runner {
     func shutdown() async {
         Logger.info("TaixMonitor shutting down...")
         isRunning = false
+        await appObserver.stop()
         await idleDetector.stop()
         await gamepadMonitor.stop()
         await sessionTracker.stop()
