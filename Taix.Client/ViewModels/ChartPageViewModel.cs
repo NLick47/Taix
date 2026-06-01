@@ -164,7 +164,10 @@ public class ChartPageViewModel : ChartPageModel
         {
             _navigationService.NavigateTo(nameof(DetailPage), daily.AppModel);
         }
-
+        else if (chartData.Data is HoursLogModel { AppModel: not null } hours)
+        {
+            _navigationService.NavigateTo(nameof(DetailPage), hours.AppModel);
+        }
     }
 
     private async Task LoadDataAsync(CancellationToken cancellationToken)
