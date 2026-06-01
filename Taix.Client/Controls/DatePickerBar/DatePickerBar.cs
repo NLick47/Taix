@@ -298,6 +298,7 @@ public class DatePickerBar : TemplatedControl
             control.PointerPressed += (e, c) =>
             {
                 if (date > DateTime.Now.Date) return;
+                SelectedDate = date;
                 ScrollToActive(date);
             };
 
@@ -373,6 +374,7 @@ public class DatePickerBar : TemplatedControl
             control.PointerPressed += (e, c) =>
             {
                 if (date > DateTime.Now.Date) return;
+                SelectedDate = date;
                 ScrollToActive(date);
             };
 
