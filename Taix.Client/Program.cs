@@ -15,9 +15,12 @@ internal sealed class Program
 
     public static AppBuilder BuildAvaloniaApp()
     {
-        return AppBuilder.Configure<App>()
+        var builder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .WithDeveloperTools()
             .UseReactiveUI(_ => { });
+#if DEBUG
+        builder.WithDeveloperTools();
+#endif
+        return builder;
     }
 }
