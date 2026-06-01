@@ -94,15 +94,18 @@ public class DetailPageViewModel : DetailPageModel
         App = app;
 
         TabbarData = [ResourceStrings.Daily, ResourceStrings.Weekly, ResourceStrings.Monthly, ResourceStrings.Yearly];
-        WeekOptions =
+        PeriodOptions =
         [
-            new SelectItemModel { Name = ResourceStrings.ThisWeek },
-            new SelectItemModel { Name = ResourceStrings.LastWeek }
+            new SelectItemModel { Id = 0, Name = ResourceStrings.Daily },
+            new SelectItemModel { Id = 1, Name = ResourceStrings.Weekly },
+            new SelectItemModel { Id = 2, Name = ResourceStrings.Monthly },
+            new SelectItemModel { Id = 3, Name = ResourceStrings.Yearly }
         ];
 
         Date = DateTime.Now;
         ChartDate = DateTime.Now;
-        SelectedWeek = WeekOptions[0];
+        WeekDate = DateTime.Now;
+        SelectedPeriod = PeriodOptions[0];
         MonthDate = DateTime.Now;
         YearDate = DateTime.Now;
         TabbarSelectedIndex = 0;
@@ -116,7 +119,12 @@ public class DetailPageViewModel : DetailPageModel
         WhenPropertyChanged(this, x => x.Category, _ => OnCategoryChangedAsync());
         WhenPropertyChanged(this, x => x.ChartDate, _ => LoadDayDataAsync());
         WhenPropertyChanged(this, x => x.TabbarSelectedIndex, _ => LoadChartDataAsync());
-        WhenPropertyChanged(this, x => x.SelectedWeek, _ => LoadWeekDataAsync());
+        WhenPropertyChanged(this, x => x.SelectedPeriod, p =>
+        {
+            if (p != null) TabbarSelectedIndex = p.Id;
+            return Task.CompletedTask;
+        });
+        WhenPropertyChanged(this, x => x.WeekDate, _ => LoadWeekDataAsync());
         WhenPropertyChanged(this, x => x.MonthDate, _ => LoadMonthlyDataAsync());
         WhenPropertyChanged(this, x => x.YearDate, _ => LoadYearDataAsync());
     }
@@ -546,15 +554,10 @@ public class DetailPageViewModel : DetailPageModel
     {
         if (TabbarSelectedIndex != 1) return;
         DataMaximum = 0;
-        if (App == null || SelectedWeek == null) return;
-        var culture = SystemLanguage.CurrentCultureInfo;
-        var weekDateArr = SelectedWeek.Name == ResourceStrings.ThisWeek
-            ? Time.GetThisWeekDate()
-            : Time.GetLastWeekDate();
-        var toText = Application.Current?.Resources["To"] as string ?? "To";
-        WeekDateStr = $"{weekDateArr[0].ToString("d", culture)} {toText} {weekDateArr[1].ToString("d", culture)}";
+        if (App == null) return;
+        var weekDateArr = GetWeekRange(WeekDate);
 
-        var list = await _dataService.GetAppRangeDataAsync(App.ID, weekDateArr[0], weekDateArr[1], cancellationToken);
+        var list = await _dataService.GetAppRangeDataAsync(App.ID, weekDateArr.Start, weekDateArr.End, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         string[] weekNames =
         [
@@ -606,6 +609,15 @@ public class DetailPageViewModel : DetailPageModel
     }
 
     #endregion
+
+    private static (DateTime Start, DateTime End) GetWeekRange(DateTime date)
+    {
+        var dayOfWeek = (int)date.DayOfWeek;
+        dayOfWeek = dayOfWeek == 0 ? 7 : dayOfWeek;
+        var start = date.Date.AddDays(-(dayOfWeek - 1));
+        var end = start.AddDays(6).Date.AddHours(23).AddMinutes(59).AddSeconds(59);
+        return (start, end);
+    }
 
     public override void Dispose()
     {

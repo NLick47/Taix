@@ -9,18 +9,16 @@
         <Styles>
             <Style Selector="controls|DatePickerBarItem[IsSelected=True]">
                 <Style Selector="^ /template/ Border#Bg">
-                    <Setter Property="Background" Value="{DynamicResource TabOptionSelectedBrush}" />
-                    <Setter Property="BorderBrush" Value="{DynamicResource TabOptionSelectedBorderBrush}" />
-                    <Setter Property="BorderThickness" Value="0.5" />
+                    <Setter Property="Background" Value="{DynamicResource ThemeBrush}" />
                 </Style>
 
                 <Style Selector="^ /template/ TextBlock#Text">
-                    <Setter Property="Foreground" Value="white" />
+                    <Setter Property="Foreground" Value="{DynamicResource TabOptionTextCheckedColor}" />
                 </Style>
             </Style>
 
             <Style Selector="controls|DatePickerBarItem:pointerover /template/ Border#Bg">
-                <Setter Property="Background" Value="{DynamicResource NavHoverGlassBrush}" />
+                <Setter Property="Background" Value="{DynamicResource DatePickerHoverGlassBrush}" />
             </Style>
 
             <Style Selector="controls|DatePickerBarItem[IsDisabled=True]">

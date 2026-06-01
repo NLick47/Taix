@@ -13,12 +13,12 @@ public class DetailPageModel : ModelBase
     private AppModel? _app;
     private ContextMenu? _appContextMenu;
     private bool _blockBtnVisibility;
-    private bool _cancelBlockBtnVisibility = true;
+    private bool _cancelBlockBtnVisibility;
     private SelectItemModel? _category;
     private List<SelectItemModel> _categorys = [];
     private List<ChartsDataModel> _chartData = [];
     private DateTime _chartDate;
-    private List<ChartsDataModel> _data = [];
+    private List<ChartsDataModel>? _data;
     private double _dataMaximum;
     private DateTime _date;
     private bool _isIgnore;
@@ -34,10 +34,13 @@ public class DetailPageModel : ModelBase
     private string _total = string.Empty;
     private string _weekDateStr = string.Empty;
     private List<SelectItemModel> _weekOptions = [];
+    private DateTime _weekDate;
     private DateTime _yearDate;
     private string _yesterday = string.Empty;
+    private SelectItemModel? _selectedPeriod;
+    private List<SelectItemModel> _periodOptions = [];
 
-    public List<ChartsDataModel> Data
+    public List<ChartsDataModel>? Data
     {
         get => _data;
         set
@@ -239,6 +242,16 @@ public class DetailPageModel : ModelBase
         }
     }
 
+    public DateTime WeekDate
+    {
+        get => _weekDate;
+        set
+        {
+            _weekDate = value;
+            OnPropertyChanged();
+        }
+    }
+
     public DateTime MonthDate
     {
         get => _monthDate;
@@ -295,6 +308,26 @@ public class DetailPageModel : ModelBase
         set
         {
             _appContextMenu = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public List<SelectItemModel> PeriodOptions
+    {
+        get => _periodOptions;
+        set
+        {
+            _periodOptions = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public SelectItemModel? SelectedPeriod
+    {
+        get => _selectedPeriod;
+        set
+        {
+            _selectedPeriod = value;
             OnPropertyChanged();
         }
     }

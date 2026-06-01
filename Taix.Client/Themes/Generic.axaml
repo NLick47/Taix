@@ -43,6 +43,7 @@
 
         <ResourceInclude Source="/Themes/DatePickerBar/DatePickerBar.axaml" />
         <ResourceInclude Source="/Themes/DatePickerBar/DatePickerBarItem.axaml" />
+        <ResourceInclude Source="/Themes/DatePickerBar/DatePickerGridItem.axaml" />
 
 
         <ResourceInclude Source="/Themes/Charts/ChartsItemTypeCard.axaml" />

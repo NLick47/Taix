@@ -2,7 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:base="using:Taix.Client.Controls.Base"
                     xmlns:list="using:Taix.Client.Controls.List"
-                    xmlns:controls="using:Taix.Client.Controls.DatePickerBar">
+                    xmlns:controls="using:Taix.Client.Controls.DatePickerBar"
+                    xmlns:behaviors="using:Taix.Client.Behaviors">
 
     <ControlTheme x:Key="{x:Type controls:DatePickerBar}" TargetType="controls:DatePickerBar">
         <Styles>
@@ -13,7 +14,7 @@
             </Style>
 
             <Style Selector="controls|DatePickerBar:pointerover  /template/ Border#Date">
-                <Setter Property="Background" Value="{DynamicResource NavHoverGlassBrush}" />
+                <Setter Property="Background" Value="{DynamicResource DatePickerHoverGlassBrush}" />
             </Style>
 
             <Style Selector="controls|DatePickerBar[IsShowDatePickerPopup=True]  /template/ base|Icon#PopupIcon">
@@ -76,46 +77,39 @@
 
                             <Popup
                                 x:Name="DatePickerPopup"
-                                IsOpen="{TemplateBinding IsShowDatePickerPopup}"
+                                IsOpen="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=IsShowDatePickerPopup, Mode=TwoWay}"
                                 Placement="Bottom"
                                 PlacementTarget="{Binding ElementName=Date}">
+                                <Interaction.Behaviors>
+                                    <behaviors:PopupScrollDismissBehavior />
+                                </Interaction.Behaviors>
                                 <Border
-                                    Background="{DynamicResource StandardBackgroundBrush2}"
+                                    Background="{DynamicResource SettingPanelBgBrush}"
                                     CornerRadius="12"
-                                    Padding="10"
-                                    Margin="10">
+                                    Padding="15"
+                                    Margin="8">
                                     <Border.Effect>
-                                        <DropShadowDirectionEffect BlurRadius="10"
-                                                                   ShadowDepth="0"
-                                                                   Direction="0"
-                                                                   Color="Gray"
-                                                                   Opacity=".2" />
+                                        <DropShadowEffect BlurRadius="20" Color="#000000" Opacity="0.15" OffsetX="0" OffsetY="8" />
                                     </Border.Effect>
 
-                                    <Grid>
-                                        <Path
-                                            Width="15"
-                                            Height="15"
-                                            Data="M 0 15 L 7.5 7.5 L 15 15"
-                                            Fill="{DynamicResource StandardBackgroundBrush2}"
-                                            Stroke="{DynamicResource StandardBackgroundBrush2}"
-                                            StrokeThickness="1"
-                                            VerticalAlignment="Top"
-                                            HorizontalAlignment="Left"
-                                            Margin="0,-25,0,0" />
-                                        <StackPanel Orientation="Horizontal">
-                                            <StackPanel>
-                                                <TextBlock Text="年份" HorizontalAlignment="Center" />
-                                                <list:BaseList x:Name="YearsList" Height="120" Margin="0,5,0,0" />
-                                            </StackPanel>
-                                            <StackPanel x:Name="MonthSelect" Margin="10,0,0,0" IsVisible="False">
-                                                <TextBlock Text="{DynamicResource Month}" HorizontalAlignment="Center" />
-                                                <list:BaseList x:Name="MonthsList" Height="120" Margin="0,5,0,0"
-                                                               HorizontalAlignment="Center" />
-                                            </StackPanel>
+                                    <StackPanel Spacing="12">
+                                        <StackPanel>
+                                            <TextBlock Text="{DynamicResource Year}" HorizontalAlignment="Center"
+                                                       FontWeight="Medium" FontSize="13"
+                                                       Foreground="{DynamicResource SubTextBrush}"
+                                                       Margin="0,0,0,8" />
+                                            <UniformGrid x:Name="YearsGrid" Columns="4" Rows="2"
+                                                         Width="200" Height="80" />
                                         </StackPanel>
-
-                                    </Grid>
+                                        <StackPanel x:Name="MonthSelect" IsVisible="False">
+                                            <TextBlock Text="{DynamicResource Month}" HorizontalAlignment="Center"
+                                                       FontWeight="Medium" FontSize="13"
+                                                       Foreground="{DynamicResource SubTextBrush}"
+                                                       Margin="0,0,0,8" />
+                                            <UniformGrid x:Name="MonthsGrid" Columns="4" Rows="3"
+                                                         Width="200" Height="120" />
+                                        </StackPanel>
+                                    </StackPanel>
                                 </Border>
                             </Popup>
                         </Grid>

@@ -16,9 +16,9 @@
                     <!-- 时间刻度尺 -->
                     <Grid Grid.Row="0" Margin="0,0,0,4">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="auto" SharedSizeGroup="NameColumn" />
+                            <ColumnDefinition Width="180" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="auto" SharedSizeGroup="DurationColumn" />
+                            <ColumnDefinition Width="80" />
                         </Grid.ColumnDefinitions>
 
                         <!-- 左侧占位（宽度由 SharedSizeGroup 与数据行对齐） -->
@@ -99,9 +99,9 @@
                                         Classes="row">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="auto" SharedSizeGroup="NameColumn" />
+                                            <ColumnDefinition Width="180" />
                                             <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="auto" SharedSizeGroup="DurationColumn" />
+                                            <ColumnDefinition Width="80" />
                                         </Grid.ColumnDefinitions>
 
                                         <!-- 左侧：图标 + 名称/分类 -->
@@ -131,14 +131,14 @@
 
                                                 <StackPanel Grid.Column="1"
                                                             VerticalAlignment="Center"
-                                                            Margin="12,0,0,0">
+                                                            Margin="12,0,0,0"
+                                                            MaxWidth="120">
                                                     <TextBlock Text="{Binding Name}"
                                                                FontSize="13"
                                                                FontWeight="SemiBold"
                                                                Foreground="{DynamicResource DefaultTextBrush}"
                                                                VerticalAlignment="Center"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               MaxWidth="140" />
+                                                               TextTrimming="CharacterEllipsis" />
                                                     <Border CornerRadius="3"
                                                             Padding="5,1"
                                                             Margin="0,3,0,0"

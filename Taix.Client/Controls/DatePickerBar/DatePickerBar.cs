@@ -5,7 +5,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Taix.Client.Controls.List;
 
 namespace Taix.Client.Controls.DatePickerBar;
 
@@ -29,16 +28,11 @@ public class DatePickerBar : TemplatedControl
             o => o.SelectedDateString,
             (o, v) => o.SelectedDateString = v);
 
-    public static readonly DirectProperty<DatePickerBar, bool> IsShowDatePickerPopupProperty =
-        AvaloniaProperty.RegisterDirect<DatePickerBar, bool>(
-            nameof(IsShowDatePickerPopup),
-            o => o.IsShowDatePickerPopup,
-            (o, v) => o.IsShowDatePickerPopup = v);
+    public static readonly StyledProperty<bool> IsShowDatePickerPopupProperty =
+        AvaloniaProperty.Register<DatePickerBar, bool>(nameof(IsShowDatePickerPopup));
 
     private readonly List<DateTime> DateList;
     private readonly Dictionary<DateTime, DatePickerBarItem> ItemsDictionary;
-
-    private bool _isShowDatePickerPopup;
 
     private DateTime _selectedDate;
 
@@ -57,7 +51,13 @@ public class DatePickerBar : TemplatedControl
     private StackPanel MonthSelect;
     private int renderIndex;
     private ScrollViewer ScrollViewer;
-    private BaseList YearsList, MonthsList;
+    private UniformGrid YearsGrid, MonthsGrid;
+
+    // 网格项集合
+    private readonly List<DatePickerGridItem> YearItems = new();
+    private readonly List<DatePickerGridItem> MonthItems = new();
+    private int currentYear;
+    private int currentMonth;
 
     public DatePickerBar()
     {
@@ -85,8 +85,8 @@ public class DatePickerBar : TemplatedControl
 
     public bool IsShowDatePickerPopup
     {
-        get => _isShowDatePickerPopup;
-        set => SetAndRaise(IsShowDatePickerPopupProperty, ref _isShowDatePickerPopup, value);
+        get => GetValue(IsShowDatePickerPopupProperty);
+        set => SetValue(IsShowDatePickerPopupProperty, value);
     }
 
     protected override Type StyleKeyOverride => typeof(DatePickerBar);
@@ -102,6 +102,17 @@ public class DatePickerBar : TemplatedControl
             DateTime.TryParse(change.NewValue.ToString(), out var newDateTime);
             control?.ScrollToActive(newDateTime);
             control?.UpdateDateString();
+            control?.UpdateGridSelection();
+            control?.SyncCurrentDateFromSelected();
+        }
+    }
+
+    private void SyncCurrentDateFromSelected()
+    {
+        if (SelectedDate != DateTime.MinValue)
+        {
+            currentYear = SelectedDate.Year;
+            currentMonth = SelectedDate.Month;
         }
     }
 
@@ -112,36 +123,116 @@ public class DatePickerBar : TemplatedControl
         ScrollViewer = e.NameScope.Get<ScrollViewer>("ScrollViewer");
         DatePickerPopup = e.NameScope.Get<Popup>("DatePickerPopup");
         Date = e.NameScope.Get<Border>("Date");
-        YearsList = e.NameScope.Get<BaseList>("YearsList");
-        MonthsList = e.NameScope.Get<BaseList>("MonthsList");
+        YearsGrid = e.NameScope.Get<UniformGrid>("YearsGrid");
+        MonthsGrid = e.NameScope.Get<UniformGrid>("MonthsGrid");
         MonthSelect = e.NameScope.Get<StackPanel>("MonthSelect");
 
         Init();
 
+        // 根据SelectedDate初始化currentYear和currentMonth
+        if (SelectedDate != DateTime.MinValue)
+        {
+            currentYear = SelectedDate.Year;
+            currentMonth = SelectedDate.Month;
+        }
+
         //  渲染日期
-        Render(DateTime.Now);
+        Render(SelectedDate != DateTime.MinValue ? SelectedDate : DateTime.Now);
     }
 
     private void Init()
     {
-        //  填充年份数据
-        YearsList.SelectedItem = DateTime.Now.Year.ToString();
-        //YearsList.SelectedItem = "2073";
         Date.PointerPressed += OnDatePointerPressed;
-        for (var i = 2021; i <= DateTime.Now.Year; i++) YearsList.Items.Add(i.ToString());
-        YearsList.SelectedItemChanged += DateChanged;
+
+        // 根据SelectedDate初始化currentYear和currentMonth
+        if (SelectedDate != DateTime.MinValue)
+        {
+            currentYear = SelectedDate.Year;
+            currentMonth = SelectedDate.Month;
+        }
+        else
+        {
+            currentYear = DateTime.Now.Year;
+            currentMonth = DateTime.Now.Month;
+        }
+
+        // 初始化年份网格
+        var startYear = 2021;
+        var endYear = DateTime.Now.Year;
+
+        for (var year = startYear; year <= endYear; year++)
+        {
+            var item = new DatePickerGridItem { Title = year.ToString(), Value = year };
+            item.PointerPressed += OnYearSelectedHandler;
+            YearsGrid.Children.Add(item);
+            YearItems.Add(item);
+            if (year == currentYear) item.IsSelected = true;
+        }
 
         if (ShowType == DatePickerShowType.Day)
         {
-            //  填充月份数据
             MonthSelect.IsVisible = true;
 
-            MonthsList.SelectedItem = DateTime.Now.Month.ToString();
-            //MonthsList.SelectedItem = "1";
+            // 初始化月份网格
+            for (var month = 1; month <= 12; month++)
+            {
+                var item = new DatePickerGridItem { Title = month.ToString(), Value = month };
+                item.PointerPressed += OnMonthSelectedHandler;
+                MonthsGrid.Children.Add(item);
+                MonthItems.Add(item);
+                if (month == currentMonth) item.IsSelected = true;
+            }
+        }
+        else
+        {
+            // ShowType=Month 时，月份选择通过底部月份条完成，不需要弹窗中的月份网格
+            MonthSelect.IsVisible = false;
+        }
+    }
 
-            for (var i = 1; i <= 12; i++) MonthsList.Items.Add(i.ToString());
+    private void OnYearSelected(int year)
+    {
+        currentYear = year;
+        UpdateGridSelection();
 
-            MonthsList.SelectedItemChanged += DateChanged;
+        // 根据ShowType更新SelectedDate
+        if (ShowType == DatePickerShowType.Day)
+        {
+            SelectedDate = new DateTime(year, currentMonth, 1);
+            Render(SelectedDate);
+        }
+        else if (ShowType == DatePickerShowType.Month)
+        {
+            // ShowType=Month时，底部显示月份条，需要重新渲染
+            // 保持当前月份，但切换到新年份
+            SelectedDate = new DateTime(year, currentMonth, 1);
+            Render(SelectedDate);
+            // Month模式下选完年份直接关闭
+            IsShowDatePickerPopup = false;
+        }
+    }
+
+    private void OnMonthSelected(int month)
+    {
+        currentMonth = month;
+        UpdateGridSelection();
+        SelectedDate = new DateTime(currentYear, month, 1);
+        Render(SelectedDate);
+        IsShowDatePickerPopup = false;
+    }
+
+    private void UpdateGridSelection()
+    {
+        // 更新年份选中状态
+        foreach (var item in YearItems)
+        {
+            item.IsSelected = item.Value == currentYear;
+        }
+
+        // 更新月份选中状态
+        foreach (var item in MonthItems)
+        {
+            item.IsSelected = item.Value == currentMonth;
         }
     }
 
@@ -154,17 +245,37 @@ public class DatePickerBar : TemplatedControl
     {
         base.OnUnloaded(e);
         Date.PointerPressed -= OnDatePointerPressed;
-        MonthsList.SelectedItemChanged -= DateChanged;
-        YearsList.SelectedItemChanged -= DateChanged;
+
+        // 清理年份网格项的事件订阅
+        foreach (var item in YearItems)
+        {
+            item.PointerPressed -= OnYearSelectedHandler;
+        }
+        YearItems.Clear();
+
+        // 清理月份网格项的事件订阅
+        foreach (var item in MonthItems)
+        {
+            item.PointerPressed -= OnMonthSelectedHandler;
+        }
+        MonthItems.Clear();
     }
 
-    private void DateChanged(object? sender, EventArgs e)
+
+    private void OnYearSelectedHandler(object? sender, PointerPressedEventArgs e)
     {
-        if (ShowType == DatePickerShowType.Day)
-            SelectedDate = new DateTime(int.Parse(YearsList.SelectedItem), int.Parse(MonthsList.SelectedItem), 1);
-        else
-            SelectedDate = new DateTime(int.Parse(YearsList.SelectedItem), 1, 1);
-        Render(SelectedDate);
+        if (sender is DatePickerGridItem item)
+        {
+            OnYearSelected(item.Value);
+        }
+    }
+
+    private void OnMonthSelectedHandler(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is DatePickerGridItem item)
+        {
+            OnMonthSelected(item.Value);
+        }
     }
 
     private void UpdateDateString()
@@ -202,7 +313,6 @@ public class DatePickerBar : TemplatedControl
                         ScrollToActive(SelectedDate);
                     }
                 };
-            //  后一天
             var next = DateList.IndexOf(date.AddDays(+1));
 
             if (next != -1)
@@ -297,16 +407,15 @@ public class DatePickerBar : TemplatedControl
             date = new DateTime(date.Year, date.Month, date.Day);
 
         if (!ItemsDictionary.ContainsKey(date)) return;
-        if (ItemsDictionary.ContainsKey(SelectedDate))
-            //  如果存在旧的选中，先取消
-            ItemsDictionary[SelectedDate].IsSelected = false;
 
-        if (date != SelectedDate) SelectedDate = date;
+        // 取消所有选中状态（SelectedDate可能带时间，字典key是归零的，无法直接匹配）
+        foreach (var item in ItemsDictionary.Values)
+            item.IsSelected = false;
 
-
+        // 更新视觉选中状态和滚动位置
         ItemsDictionary[date].IsSelected = true;
 
-        var control = ItemsDictionary[SelectedDate];
+        var control = ItemsDictionary[date];
 
         var transform = control.TransformToVisual(ScrollViewer);
         if (!transform.HasValue) return;

@@ -26,6 +26,7 @@ public class WebSiteDetailPageModel : ModelBase
     private ContextMenu? _webSiteContextMenu;
     private string _weekDateStr = string.Empty;
     private List<SelectItemModel> _weekOptions = [];
+    private DateTime _weekDate;
     private DateTime _yearDate;
 
     public WebSiteModel? WebSite
@@ -104,6 +105,16 @@ public class WebSiteDetailPageModel : ModelBase
         set
         {
             _selectedWeek = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public DateTime WeekDate
+    {
+        get => _weekDate;
+        set
+        {
+            _weekDate = value;
             OnPropertyChanged();
         }
     }
@@ -194,6 +205,28 @@ public class WebSiteDetailPageModel : ModelBase
         set
         {
             _isIgnore = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private List<SelectItemModel> _periodOptions = [];
+    public List<SelectItemModel> PeriodOptions
+    {
+        get => _periodOptions;
+        set
+        {
+            _periodOptions = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private SelectItemModel? _selectedPeriod;
+    public SelectItemModel? SelectedPeriod
+    {
+        get => _selectedPeriod;
+        set
+        {
+            _selectedPeriod = value;
             OnPropertyChanged();
         }
     }

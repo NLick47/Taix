@@ -1,0 +1,54 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:Taix.Client.Controls.DatePickerBar">
+
+    <ControlTheme x:Key="{x:Type controls:DatePickerGridItem}" TargetType="controls:DatePickerGridItem">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Width" Value="44" />
+        <Setter Property="Height" Value="32" />
+        <Styles>
+            <Style Selector="controls|DatePickerGridItem[IsSelected=True]">
+                <Style Selector="^ /template/ Border#Bg">
+                    <Setter Property="Background" Value="{DynamicResource ThemeBrush}" />
+                </Style>
+
+
+                <Style Selector="^ /template/ TextBlock#Text">
+                    <Setter Property="Foreground" Value="{DynamicResource TabOptionTextCheckedColor}" />
+                    <Setter Property="FontWeight" Value="Medium" />
+                </Style>
+            </Style>
+
+            <Style Selector="controls|DatePickerGridItem:pointerover /template/ Border#Bg">
+                <Setter Property="Background" Value="{DynamicResource DatePickerHoverGlassBrush}" />
+            </Style>
+
+            <Style Selector="controls|DatePickerGridItem[IsSelected=True]:pointerover /template/ Border#Bg">
+                <Setter Property="Background" Value="{DynamicResource ThemeBrush}" />
+            </Style>
+        </Styles>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border x:Name="Bg"
+                        Background="{DynamicResource DatePickerItemBgBrush}"
+                        CornerRadius="8"
+                        BorderThickness="0">
+                    <Border.Transitions>
+                        <Transitions>
+                            <BrushTransition Property="Background" Duration="0.15" />
+                            <BrushTransition Property="BorderBrush" Duration="0.15" />
+                        </Transitions>
+                    </Border.Transitions>
+
+                    <TextBlock x:Name="Text"
+                               Foreground="{DynamicResource DefaultTextBrush}"
+                               Text="{TemplateBinding Title}"
+                               FontSize="13"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

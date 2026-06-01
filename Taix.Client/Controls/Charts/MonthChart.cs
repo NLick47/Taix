@@ -14,9 +14,8 @@ namespace Taix.Client.Controls.Charts;
 
 public class MonthChart : TemplatedControl
 {
-    public static readonly DirectProperty<MonthChart, IEnumerable<ChartsDataModel>> DataProperty =
-        AvaloniaProperty.RegisterDirect<MonthChart, IEnumerable<ChartsDataModel>>(
-            nameof(Data), o => o.Data, (o, v) => o.Data = v);
+    public static readonly StyledProperty<IEnumerable<ChartsDataModel>> DataProperty =
+        AvaloniaProperty.Register<MonthChart, IEnumerable<ChartsDataModel>>(nameof(Data));
 
     public static readonly DirectProperty<MonthChart, int> ShowLimitProperty =
         AvaloniaProperty.RegisterDirect<MonthChart, int>(
@@ -30,7 +29,7 @@ public class MonthChart : TemplatedControl
         AvaloniaProperty.RegisterDirect<MonthChart, ContextMenu>(
             nameof(ItemMenu), o => o.ItemMenu, (o, v) => o.ItemMenu = v);
 
-    private IEnumerable<ChartsDataModel> _data = [];
+    private IEnumerable<ChartsDataModel>? _data;
     private int _showLimit;
     private ICommand _clickCommand;
     private ContextMenu _itemMenu;
@@ -41,10 +40,10 @@ public class MonthChart : TemplatedControl
 
     public event EventHandler? OnItemClick;
 
-    public IEnumerable<ChartsDataModel> Data
+    public IEnumerable<ChartsDataModel>? Data
     {
-        get => _data;
-        set => SetAndRaise(DataProperty, ref _data, value);
+        get => GetValue(DataProperty);
+        set => SetValue(DataProperty, value);
     }
 
     public int ShowLimit
@@ -72,13 +71,15 @@ public class MonthChart : TemplatedControl
         base.OnApplyTemplate(e);
         _monthContainer = e.NameScope.Get<Grid>("MonthContainer");
         _emptyDataView = e.NameScope.Find<EmptyData>("EmptyDataView");
-        Render();
+        if (Data != null)
+            Render();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == DataProperty) Render();
+        if (change.Property == DataProperty)
+            Render();
     }
 
     protected override void OnUnloaded(Avalonia.Interactivity.RoutedEventArgs e)
@@ -97,7 +98,11 @@ public class MonthChart : TemplatedControl
         _monthContainer.Children.Clear();
 
         var list = Data?.ToList();
-        if (list == null || list.Count == 0)
+        if (list == null)
+        {
+            return;
+        }
+        if (list.Count == 0)
         {
             if (_emptyDataView != null) _emptyDataView.IsVisible = true;
             return;

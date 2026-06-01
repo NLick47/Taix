@@ -8,7 +8,6 @@
              xmlns:base="using:Taix.Client.Controls.Base"
              xmlns:charts="using:Taix.Client.Controls.Charts"
              xmlns:select="using:Taix.Client.Controls.Select"
-             xmlns:tabbar="using:Taix.Client.Controls.Tabbar"
              xmlns:model="using:Taix.Client.ViewModels"
              x:DataType="model:WebSiteDetailPageViewModel"
              x:Class="Taix.Client.Views.WebSiteDetailPage">
@@ -20,7 +19,37 @@
 
     <Grid>
         <StackPanel Margin="20">
-            <TextBlock Text="{DynamicResource Website}" FontSize="18" Margin="0,5,0,20" />
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,5,0,20">
+                <TextBlock Grid.Column="0" Text="{DynamicResource Website}"
+                           FontSize="18" VerticalAlignment="Center" />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <!-- 日期选择 -->
+                    <Grid VerticalAlignment="Center">
+                        <!--按天-->
+                        <base:View Condition="0" Value="{Binding TabbarSelectedIndex}">
+                            <select:DateSelect Date="{Binding ChartDate,Mode=TwoWay}" />
+                        </base:View>
+                        <!--按周-->
+                        <base:View Condition="1" Value="{Binding TabbarSelectedIndex}">
+                            <select:DateSelect Date="{Binding WeekDate,Mode=TwoWay}" SelectType="Week" />
+                        </base:View>
+                        <!--按月-->
+                        <base:View Condition="2" Value="{Binding TabbarSelectedIndex}">
+                            <select:DateSelect Date="{Binding MonthDate,Mode=TwoWay}" SelectType="Month" />
+                        </base:View>
+                        <!--按年-->
+                        <base:View Condition="3" Value="{Binding TabbarSelectedIndex}">
+                            <select:DateSelect Date="{Binding YearDate,Mode=TwoWay}" SelectType="Year" />
+                        </base:View>
+                    </Grid>
+
+                    <!-- 周期切换 -->
+                    <select:TabSwitch IsShowIcon="False"
+                                      SelectedItem="{Binding SelectedPeriod,Mode=TwoWay}"
+                                      Options="{Binding PeriodOptions}" />
+                </StackPanel>
+            </Grid>
             <!--基本信息-->
             <Border
                 Background="{DynamicResource SettingPanelBgBrush}"
@@ -87,38 +116,6 @@
                     </StackPanel>
                 </Grid>
             </Border>
-
-            <tabbar:Tabbar Margin="0,15,0,5"
-                           Data="{Binding TabbarData}"
-                           SelectedIndex="{Binding TabbarSelectedIndex,Mode=TwoWay}"
-                           HorizontalAlignment="Left" />
-
-            <Grid>
-                <!--按天-->
-                <base:View Condition="0" Value="{Binding TabbarSelectedIndex}">
-                    <select:DateSelect Date="{Binding ChartDate,Mode=TwoWay}" />
-                </base:View>
-
-                <!--按周-->
-                <base:View Condition="1" Value="{Binding TabbarSelectedIndex}">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <select:Select IsShowIcon="False" SelectedItem="{Binding SelectedWeek,Mode=TwoWay}"
-                                       Options="{Binding WeekOptions}" />
-                        <TextBlock Foreground="{DynamicResource DefaultTextBrush}" Margin="20,0,0,0" FontSize="14"
-                                   Text="{Binding WeekDateStr}" VerticalAlignment="Center" />
-                    </StackPanel>
-                </base:View>
-                <!--按月-->
-                <base:View Condition="2" Value="{Binding TabbarSelectedIndex}">
-                    <select:DateSelect Date="{Binding MonthDate,Mode=TwoWay}" SelectType="Month" />
-
-                </base:View>
-                <!--按年-->
-                <base:View Condition="3" Value="{Binding TabbarSelectedIndex}">
-                    <select:DateSelect Date="{Binding YearDate,Mode=TwoWay}" SelectType="Year" />
-
-                </base:View>
-            </Grid>
             <!--统计图表-->
             <WrapPanel Margin="-10">
                 <StackPanel Margin="10,10,0,0">

@@ -65,7 +65,7 @@
                                     <Border
                                         Width="20"
                                         Height="20"
-                                        Background="{DynamicResource TabOptionSelectedBrush}"
+                                        Background="{DynamicResource OptionCheckedBackgroundBrush}"
                                         BorderBrush="{DynamicResource OptionCheckedBorderBrush}"
                                         BorderThickness="2"
                                         CornerRadius="20"
