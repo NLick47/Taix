@@ -18,41 +18,48 @@
                    <Binding Path="IsDisabled" />
                </MultiBinding>
            </Border.IsEnabled>
-          
-           
-           <Border 
+
+
+           <Border
                Margin="0,0,0,0"
                Width="35"
                Height="35"
                CornerRadius="5">
-              
+
                <Border.Styles>
                    <Style Selector="Border">
                        <Setter Property="Background" Value="Transparent"/>
                    </Style>
-                
+
                    <Style Selector="Border:pointerover">
                        <Setter Property="Background" Value="{DynamicResource ThemeLightBrush}"/>
                    </Style>
-                   
+
                    <Style Selector="Border:disabled TextBlock">
                        <Setter Property="Foreground"
                                Value="{DynamicResource DisabledTextBrush}" />
                    </Style>
                </Border.Styles>
-            
-          
 
-               <TextBlock x:DataType="controls:DayModel"
-                          VerticalAlignment="Center"
-                          HorizontalAlignment="Center"
-                          Text="{Binding Day,
-                       Converter={StaticResource DateFormatConverter},
-                       ConverterParameter={x:Static controls:DateSelectType.Date}}" />
+
+
+               <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                   <TextBlock x:DataType="controls:DayModel"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Center"
+                              Text="{Binding Day,
+                           Converter={StaticResource DateFormatConverter},
+                           ConverterParameter={x:Static controls:DateSelectType.Date}}" />
+                   <Border x:DataType="controls:DayModel"
+                           Width="4" Height="4" CornerRadius="2"
+                           Background="{DynamicResource ThemeBrush}"
+                           IsVisible="{Binding IsToday}"
+                           Margin="0,2,0,0" />
+               </StackPanel>
 
                <Interaction.Behaviors>
                    <EventTriggerBehavior EventName="PointerReleased">
-                       <InvokeCommandAction Command="{Binding $parent[controls:DateSelect].SelectDayCommand}" 
+                       <InvokeCommandAction Command="{Binding $parent[controls:DateSelect].SelectDayCommand}"
                                             CommandParameter="{Binding }" />
                    </EventTriggerBehavior>
                </Interaction.Behaviors>
@@ -62,13 +69,13 @@
 
     <!-- 月视图模板 -->
     <DataTemplate x:Key="MonthViewTemplate" x:DataType="controls:DayModel">
-        <Border     
+        <Border
             IsEnabled="{Binding !IsDisabled}"
             Margin="0,0,0,0"
             Padding="0"
             Width="55"
             Height="55">
-            
+
           <Border Width="45"
                   CornerRadius="8"
                   Height="45">
@@ -76,19 +83,19 @@
                   <Style Selector="Border">
                       <Setter Property="Background" Value="Transparent"/>
                   </Style>
-                
+
                   <Style Selector="Border:pointerover">
                       <Setter Property="Background" Value="{DynamicResource ThemeLightBrush}"/>
                   </Style>
-                  
+
                   <Style Selector="Border:disabled TextBlock">
                       <Setter Property="Foreground"
                               Value="{DynamicResource DisabledTextBrush}" />
                   </Style>
               </Border.Styles>
-              
-              
-              
+
+
+
               <Border.IsEnabled>
                   <MultiBinding
                       Converter="{StaticResource MultiValueToBoolConverter}">
@@ -96,7 +103,7 @@
                       <Binding Path="IsDisabled" />
                   </MultiBinding>
               </Border.IsEnabled>
-            
+
               <TextBlock x:DataType="controls:DayModel"
                          VerticalAlignment="Center"
                          HorizontalAlignment="Center"
@@ -106,19 +113,19 @@
 
               <Interaction.Behaviors>
                   <EventTriggerBehavior EventName="PointerReleased">
-                      <InvokeCommandAction Command="{Binding $parent[controls:DateSelect].SelectDayCommand}" 
+                      <InvokeCommandAction Command="{Binding $parent[controls:DateSelect].SelectDayCommand}"
                                            CommandParameter="{Binding }"/>
                   </EventTriggerBehavior>
               </Interaction.Behaviors>
           </Border>
-            
-           
+
+
         </Border>
     </DataTemplate>
 
     <!-- 年视图模板 -->
     <DataTemplate x:Key="YearViewTemplate" x:DataType="controls:DayModel">
-        <Border     
+        <Border
             IsEnabled="{Binding !IsDisabled}"
             Margin="0,0,0,0"
             Padding="0"
@@ -131,12 +138,12 @@
                     <Style Selector="Border">
                         <Setter Property="Background" Value="Transparent"/>
                     </Style>
-                    
+
                     <Style Selector="Border:pointerover">
                         <Setter Property="Background" Value="{DynamicResource ThemeLightBrush}"/>
                     </Style>
                 </Border.Styles>
-                
+
                 <TextBlock x:DataType="controls:DayModel"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
@@ -146,7 +153,7 @@
 
                 <Interaction.Behaviors>
                     <EventTriggerBehavior EventName="PointerReleased">
-                        <InvokeCommandAction Command="{Binding $parent[controls:DateSelect].SelectDayCommand}" 
+                        <InvokeCommandAction Command="{Binding $parent[controls:DateSelect].SelectDayCommand}"
                                              CommandParameter="{Binding }"/>
                     </EventTriggerBehavior>
                 </Interaction.Behaviors>
@@ -156,16 +163,16 @@
 
 
     <converter:ToStringConverter x:Key="ToStringConverter" />
-    
+
     <ControlTheme x:Key="{x:Type controls:DateSelect}" TargetType="controls:DateSelect">
         <Setter Property="Background" Value="Transparent" />
-        
+
         <Styles>
             <Style Selector="controls|DateSelect[SelectType=Date]">
                 <Style Selector="^ /template/ Border#DaySelect">
                     <Setter Property="IsVisible" Value="True" />
                 </Style>
-                
+
                 <Style Selector="^ /template/ ItemsControl#ItemsControl">
                     <Setter Property="ItemTemplate">
                         <StaticResource ResourceKey="DayViewTemplate"/>
@@ -186,7 +193,7 @@
                 <Style Selector="^ /template/ Border#DaySelect">
                     <Setter Property="IsVisible" Value="True" />
                 </Style>
-                
+
                 <Style Selector="^ /template/ ItemsControl#ItemsControl">
                     <Setter Property="ItemTemplate">
                         <StaticResource ResourceKey="MonthViewTemplate"/>
@@ -211,7 +218,7 @@
                 <Style Selector="^ /template/ Border#YearMonthSelection">
                     <Setter Property="IsVisible" Value="False" />
                 </Style>
-                
+
                 <Style Selector="^ /template/ ItemsControl#ItemsControl">
                     <Setter Property="ItemTemplate">
                         <StaticResource ResourceKey="YearViewTemplate"/>
@@ -247,16 +254,19 @@
                                                    Command="{Binding GoPreviousCommand, RelativeSource={RelativeSource TemplatedParent}}" />
                                 <Border Padding="8,5"
                                         CornerRadius="6"
+                                        MinWidth="96"
                                         Background="Transparent"
                                         Cursor="Hand">
                                     <Interaction.Behaviors>
                                         <EventTriggerBehavior EventName="PointerPressed">
                                             <InvokeCommandAction
-                                                Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:DateSelect}}, 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:DateSelect}},
 										Path=ShowSelectCommand}" />
                                         </EventTriggerBehavior>
                                     </Interaction.Behaviors>
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
                                         <base:Icon x:Name="Icon" IconType="Calendar"
                                                    Foreground="{DynamicResource StandardTextBrush}" />
                                         <TextBlock Foreground="{DynamicResource StandardTextBrush}"
@@ -271,11 +281,11 @@
                         </Border>
 
                         <!--选择-->
-                        <Popup 
+                        <Popup
                                x:Name="Popup"
                                Placement="Bottom"
                                PlacementTarget="{Binding ElementName=Main}"
-                               IsOpen="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:DateSelect}}, 
+                               IsOpen="{Binding RelativeSource={RelativeSource AncestorType={x:Type controls:DateSelect}},
 							Path=IsOpen,Mode=TwoWay}">
                             <Interaction.Behaviors>
                                 <behaviors:PopupScrollDismissBehavior />
@@ -429,8 +439,8 @@
                                                         <Setter Property="HorizontalAlignment" Value="Center" />
                                                         <Setter Property="VerticalAlignment" Value="Center" />
                                                     </Style>
-                                                    
-                                                    
+
+
                                                 </ItemsControl.Styles>
 
                                                 <ItemsControl.ItemsPanel>
@@ -438,7 +448,7 @@
                                                         <WrapPanel HorizontalAlignment="Center"/>
                                                     </ItemsPanelTemplate>
                                                 </ItemsControl.ItemsPanel>
-                                                
+
                                             </ItemsControl>
                                         </Grid>
                                     </Border>
