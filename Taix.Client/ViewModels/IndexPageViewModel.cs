@@ -78,7 +78,13 @@ public class IndexPageViewModel : IndexPageModel
         ];
         SelectedPeriod = PeriodOptions[0];
 
-        WhenPropertyChanged(this, x => x.SelectedPeriod, _ => LoadDataAsync());
+        WhenPropertyChanged(this, x => x.TabbarSelectedIndex, _ => LoadDataAsync());
+
+        WhenPropertyChanged(this, x => x.SelectedPeriod, p =>
+        {
+            if (p != null) TabbarSelectedIndex = p.Id;
+            return Task.CompletedTask;
+        });
 
         AppContextMenu = _appContextMenuService.GetContextMenu();
         WebSiteContextMenu = _webSiteContextMenuService.GetContextMenu();
@@ -112,15 +118,17 @@ public class IndexPageViewModel : IndexPageModel
 
     private Task LoadDataAsync()
     {
-        CancelAndResetLoadToken();
-
-        if (TabbarSelectedIndex == 0)
-            return ExecuteAsync(LoadTodayDataAsync);
-
-        if (TabbarSelectedIndex == 1)
-            return ExecuteAsync(LoadThisWeekDataAsync);
-
-        return Task.CompletedTask;
+        return ExecuteAsync(async ct =>
+        {
+            if (TabbarSelectedIndex == 0)
+            {
+                await LoadTodayDataAsync(ct);
+            }
+            else if (TabbarSelectedIndex == 1)
+            {
+                await LoadThisWeekDataAsync(ct);
+            }
+        });
     }
 
     /// <summary>
@@ -130,7 +138,7 @@ public class IndexPageViewModel : IndexPageModel
     {
         var week = Time.GetThisWeekDate();
 
-        var appDataTask = _dataService.GetThisWeeklogListAsync(cancellationToken);
+        var appDataTask = _dataService.GetDateRangelogListAsync(week[0], week[1], cancellationToken: cancellationToken);
         var webDataTask = _webDataService.GetDateRangeWebSiteListAsync(week[0], week[1], cancellationToken: cancellationToken);
 
         await Task.WhenAll(appDataTask, webDataTask);
