@@ -10,6 +10,12 @@ actor IdleDetector {
     private let audioMonitor: AudioMonitor
     private var gamepadMonitor: GamepadMonitor?
 
+    // 锁屏/休眠检测
+    private var lastIdleTime: TimeInterval?
+    private let resumeJumpThreshold: TimeInterval = 60  // idle 单次跳变超过 60 秒视为系统恢复
+    private let resumeIdleThreshold: TimeInterval = 30  // 恢复后判定用户活跃的 idle 阈值
+    private var isResumePending: Bool = false
+
     init(
         eventBus: EventBus,
         threshold: TimeInterval,
@@ -44,6 +50,36 @@ actor IdleDetector {
         let gamepadActive = await gamepadMonitor?.consumeActivity() ?? false
 
         Logger.debug("Idle check: \(String(format: "%.1f", idleSeconds))s idle (threshold: \(threshold)s), audio: \(audioPlaying ? "playing" : "silent"), gamepad: \(gamepadActive ? "active" : "inactive")")
+
+        // 检测锁屏/休眠恢复：idle 在单个 tick 内大幅跳变
+        if let lastIdle = lastIdleTime, !isIdle {
+            let idleJump = idleSeconds - lastIdle
+            if idleJump > resumeJumpThreshold {
+                // 系统从锁屏/休眠恢复
+                Logger.info("System resume detected (idle jump: \(String(format: "%.1f", lastIdle))s -> \(String(format: "%.1f", idleSeconds))s), entering resume pending state")
+                isResumePending = true
+                // 先发送 idle 事件暂停计时
+                isIdle = true
+                await publish(kind: .idleDetected)
+                lastIdleTime = idleSeconds
+                return
+            }
+        }
+
+        // 恢复后等待用户操作确认
+        if isResumePending {
+            let userActive = idleSeconds < resumeIdleThreshold || gamepadActive || audioPlaying
+            if userActive {
+                Logger.info("User activity detected after resume, exiting resume cooldown")
+                isResumePending = false
+                isIdle = false
+                await publish(kind: .activityResumed)
+            }
+            lastIdleTime = idleSeconds
+            return
+        }
+
+        lastIdleTime = idleSeconds
 
         // 如果有音频播放或手柄输入，不算空闲
         let effectiveIdle = !audioPlaying && !gamepadActive && idleSeconds >= threshold

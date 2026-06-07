@@ -1,0 +1,315 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:button="using:Taix.Client.Controls.Button"
+                    xmlns:base="using:Taix.Client.Controls.Base"
+                    xmlns:input="using:Taix.Client.Controls.Input"
+                    xmlns:controls="using:Taix.Client.Controls.Window">
+
+    <x:Double x:Key="WindowTitleBarHeight">40</x:Double>
+
+    <ControlTheme x:Key="{x:Type controls:MacOSWindow}"
+                  TargetType="controls:MacOSWindow">
+        <Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="Background" Value="{DynamicResource WindowBackground}" />
+
+        <Styles>
+            <Style Selector="controls|MacOSWindow">
+                <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+                <Setter Property="Transitions">
+                    <Transitions>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.35" Easing="BackEaseOut" />
+                    </Transitions>
+                </Setter>
+            </Style>
+
+            <Style Selector="controls|MacOSWindow[WindowState=Minimized]">
+                <Setter Property="RenderTransform" Value="scale(0.7)" />
+            </Style>
+
+            <Style Selector="controls|MacOSWindow">
+                <Style Selector="^ /template/ button|IconButton#BackBtn">
+                    <Setter Property="Transitions">
+                        <Transitions>
+                            <DoubleTransition Property="Width" Duration="0:0:0.1" />
+                        </Transitions>
+                    </Setter>
+                </Style>
+
+                <Style Selector="^[IsCanBack=True] /template/ button|IconButton#BackBtn">
+                    <Setter Property="Width" Value="35" />
+                </Style>
+
+                <Style Selector="^[ToastType=Success]">
+                    <Style Selector="^ /template/ Border#ToastBorder">
+                        <Setter Property="Background" Value="#24bf5f" />
+                    </Style>
+                    <Style Selector="^ /template/ base|Icon#ToastIcon">
+                        <Setter Property="Foreground" Value="#fff" />
+                    </Style>
+                    <Style Selector="^ /template/ TextBlock#ToastText">
+                        <Setter Property="Foreground" Value="#fff" />
+                    </Style>
+                </Style>
+
+                <Style Selector="^[ToastType=Error]">
+                    <Style Selector="^ /template/ Border#ToastBorder">
+                        <Setter Property="Background" Value="#f54f4e" />
+                    </Style>
+                    <Style Selector="^ /template/ base|Icon#ToastIcon">
+                        <Setter Property="Foreground" Value="#fff" />
+                    </Style>
+                    <Style Selector="^ /template/ TextBlock#ToastText">
+                        <Setter Property="Foreground" Value="#fff" />
+                    </Style>
+                </Style>
+            </Style>
+        </Styles>
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border x:Name="ContentBorder"
+                        CornerRadius="10"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource WindowBorderBrush}"
+                        Background="{DynamicResource WindowBackground}">
+                    <Grid x:Name="WindowContent">
+                        <Grid
+                            x:Name="TitleBar"
+                            Panel.ZIndex="999"
+                            Height="{DynamicResource WindowTitleBarHeight}"
+                            VerticalAlignment="Top"
+                            Background="Transparent">
+                            <Grid Panel.ZIndex="3"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Left"
+                                  Margin="80,0,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <button:IconButton Width="0"
+                                                       VerticalAlignment="Center"
+                                                       ToolTip.Tip="{DynamicResource Back}"
+                                                       FontSize="10"
+                                                       x:Name="BackBtn"
+                                                       Command="{x:Static controls:MacOSWindow.BackCommand}"
+                                                       Icon="Back" />
+
+                                    <Panel VerticalAlignment="Center">
+                                        <Image Source="{TemplateBinding IconSource}" VerticalAlignment="Center"
+                                               Stretch="Uniform" Width="18" />
+                                        <Border x:Name="StatusDot"
+                                                Width="8" Height="8"
+                                                CornerRadius="4"
+                                                Background="#999999"
+                                                BorderBrush="{DynamicResource WindowBackground}"
+                                                BorderThickness="1.5"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Bottom"
+                                                Margin="0,0,-2,-2">
+                                            <Border.Styles>
+                                                <Style Selector="Border">
+                                                    <Style.Animations>
+                                                        <Animation Duration="0:0:4"
+                                                                   IterationCount="INFINITE">
+                                                            <KeyFrame Cue="0%">
+                                                                <Setter Property="Opacity" Value="1.0" />
+                                                            </KeyFrame>
+                                                            <KeyFrame Cue="50%">
+                                                                <Setter Property="Opacity" Value="0.8" />
+                                                            </KeyFrame>
+                                                            <KeyFrame Cue="100%">
+                                                                <Setter Property="Opacity" Value="1.0" />
+                                                            </KeyFrame>
+                                                        </Animation>
+                                                    </Style.Animations>
+                                                </Style>
+                                            </Border.Styles>
+                                        </Border>
+                                    </Panel>
+                                    <TextBlock VerticalAlignment="Center" Text="{TemplateBinding Title}"
+                                               IsEnabled="{TemplateBinding IsActive}"
+                                               Foreground="{DynamicResource DefaultTextBrush}" Margin="10,0,0,0" />
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+
+                        <ContentPresenter Content="{TemplateBinding Content}" />
+
+                        <Grid ZIndex="999" x:Name="ToastGrid" IsVisible="False">
+                        <Border
+                            Padding="16,14"
+                            CornerRadius="{StaticResource RadiusLarge}"
+                            MaxWidth="340"
+                            x:Name="ToastBorder"
+                            Background="{DynamicResource WindowContentBackground}"
+                            BorderBrush="{DynamicResource WindowBorderBrush}"
+                            BorderThickness="1"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Top" ZIndex="99999">
+                            <Border.RenderTransform>
+                                <TransformGroup>
+                                    <TranslateTransform Y="-150" />
+                                </TransformGroup>
+                            </Border.RenderTransform>
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="20" Color="Black" Opacity="0.12" OffsetX="0" OffsetY="6" />
+                            </Border.Effect>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="30" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <base:Icon IconType="{TemplateBinding ToastIcon}"
+                                           VerticalAlignment="Top" Margin="0,0,10,0" x:Name="ToastIcon" />
+                                <TextBlock x:Name="ToastText" Grid.Column="1"
+                                           Text="{TemplateBinding ToastContent}" VerticalAlignment="Top"
+                                           TextWrapping="WrapWithOverflow" />
+                            </Grid>
+                        </Border>
+
+                        <Border
+                            Padding="24,20"
+                            CornerRadius="{StaticResource RadiusLarge}"
+                            Width="340"
+                            x:Name="DialogBorder"
+                            Background="{DynamicResource WindowContentBackground}"
+                            BorderBrush="{DynamicResource WindowBorderBrush}"
+                            BorderThickness="1"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Top" ZIndex="1000">
+                            <Border.RenderTransform>
+                                <TransformGroup>
+                                    <TranslateTransform Y="-150" />
+                                </TransformGroup>
+                            </Border.RenderTransform>
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="24" Color="Black" Opacity="0.15" OffsetX="0" OffsetY="8" />
+                            </Border.Effect>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="auto" />
+                                    <RowDefinition Height="auto" />
+                                    <RowDefinition Height="auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="{TemplateBinding DialogTitle}"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource StandardTextBrush}"
+                                           Margin="0,0,0,4" />
+                                <TextBlock Grid.Row="1"
+                                           Text="{TemplateBinding DialogMessage}"
+                                           FontSize="14"
+                                           LineHeight="22"
+                                           Foreground="{DynamicResource SubTextBrush}"
+                                           TextWrapping="Wrap" />
+                                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right"
+                                            Margin="0,20,0,0">
+                                    <button:Button x:Name="CancelBtn" Width="100"
+                                               Background="{DynamicResource StandardBackgroundBrush2}"
+                                               Foreground="{DynamicResource StandardTextBrush}"
+                                               Content="{DynamicResource Cancel}" />
+                                    <button:Button x:Name="ConfirmBtn"
+                                               Background="{DynamicResource ThemeBrush}" Foreground="White"
+                                               Width="100" Margin="12,0,0,0"
+                                               Content="{DynamicResource Confirm}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Border
+                            Padding="24,20"
+                            CornerRadius="{StaticResource RadiusLarge}"
+                            Width="360"
+                            x:Name="ActionDialogBorder"
+                            Background="{DynamicResource WindowContentBackground}"
+                            BorderBrush="{DynamicResource WindowBorderBrush}"
+                            BorderThickness="1"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Top" ZIndex="1000">
+                            <Border.RenderTransform>
+                                <TransformGroup>
+                                    <TranslateTransform Y="-150" />
+                                </TransformGroup>
+                            </Border.RenderTransform>
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="24" Color="Black" Opacity="0.15" OffsetX="0" OffsetY="8" />
+                            </Border.Effect>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="auto" />
+                                    <RowDefinition Height="auto" />
+                                    <RowDefinition Height="auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="{TemplateBinding DialogTitle}"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource StandardTextBrush}"
+                                           Margin="0,0,0,4" />
+                                <TextBlock Grid.Row="1"
+                                           Text="{TemplateBinding DialogMessage}"
+                                           FontSize="14"
+                                           LineHeight="22"
+                                           Foreground="{DynamicResource SubTextBrush}"
+                                           TextWrapping="Wrap" />
+                                <StackPanel Grid.Row="2" x:Name="ActionDialogButtonsPanel"
+                                            Orientation="Horizontal" HorizontalAlignment="Right"
+                                            Margin="0,20,0,0" />
+                            </Grid>
+                        </Border>
+
+                        <Border
+                            Padding="24,20"
+                            CornerRadius="{StaticResource RadiusLarge}"
+                            Width="380"
+                            x:Name="InputModalBorder"
+                            Background="{DynamicResource WindowContentBackground}"
+                            BorderBrush="{DynamicResource WindowBorderBrush}"
+                            BorderThickness="1"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Top" ZIndex="1000">
+                            <Border.RenderTransform>
+                                <TransformGroup>
+                                    <TranslateTransform Y="-150" />
+                                </TransformGroup>
+                            </Border.RenderTransform>
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="24" Color="Black" Opacity="0.15" OffsetX="0" OffsetY="8" />
+                            </Border.Effect>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="auto" />
+                                    <RowDefinition Height="auto" />
+                                    <RowDefinition Height="auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="{TemplateBinding DialogTitle}"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource StandardTextBrush}"
+                                           Margin="0,0,0,4" />
+                                <Border Grid.Row="1" Margin="0,4,0,0">
+                                    <input:InputBox x:Name="InputModalInputBox"
+                                                    Placeholder="{TemplateBinding DialogMessage}" />
+                                </Border>
+                                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right"
+                                            Margin="0,20,0,0">
+                                    <button:Button x:Name="InputModalCancelBtn" Width="100"
+                                               Background="{DynamicResource StandardBackgroundBrush2}"
+                                               Foreground="{DynamicResource StandardTextBrush}">
+                                        取消
+                                    </button:Button>
+                                    <button:Button x:Name="InputModalConfirmBtn"
+                                               Background="{DynamicResource ThemeBrush}" Foreground="White"
+                                               Width="100" Margin="12,0,0,0">
+                                        确定
+                                    </button:Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Border x:Name="Masklayer" Background="Black" Opacity="0" />
+                        </Grid>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>
