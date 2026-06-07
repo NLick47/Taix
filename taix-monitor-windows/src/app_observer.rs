@@ -37,7 +37,7 @@ thread_local! {
 
 pub struct AppObserver {
     tx: broadcast::Sender<AppActiveEvent>,
-    hwnd_tx: Option<crossbeam::channel::Sender<HwndSnapshot>>,
+    hwnd_tx: Option<std::sync::mpsc::SyncSender<HwndSnapshot>>,
     thread: Option<thread::JoinHandle<()>>,
     resolver_thread: Option<thread::JoinHandle<()>>,
     thread_id: u32,
@@ -48,7 +48,7 @@ impl AppObserver {
         let (tx, _rx) = broadcast::channel(1024);
         let tx2 = tx.clone();
 
-        let (hwnd_tx, hwnd_rx) = crossbeam::channel::bounded::<HwndSnapshot>(RESOLVER_QUEUE_CAPACITY);
+        let (hwnd_tx, hwnd_rx) = std::sync::mpsc::sync_channel::<HwndSnapshot>(RESOLVER_QUEUE_CAPACITY);
 
         let resolver_thread = thread::spawn(move || {
             while let Ok(snapshot) = hwnd_rx.recv() {
@@ -193,10 +193,10 @@ impl AppObserver {
                             // 有界 channel 满时丢弃，避免消息循环线程阻塞
                             match hwnd_tx2.try_send(snapshot) {
                                 Ok(()) => {}
-                                Err(crossbeam::channel::TrySendError::Full(_)) => {
+                                Err(std::sync::mpsc::TrySendError::Full(_)) => {
                                     tracing::warn!(target: "app_observer", "Resolver queue full, dropping foreground change");
                                 }
-                                Err(crossbeam::channel::TrySendError::Disconnected(_)) => {
+                                Err(std::sync::mpsc::TrySendError::Disconnected(_)) => {
                                     tracing::warn!(target: "app_observer", "Resolver channel disconnected, dropping foreground change");
                                 }
                             }

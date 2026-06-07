@@ -1,4 +1,6 @@
 use crate::models::WindowInfo;
+use std::fs::File;
+use std::io::BufWriter;
 use std::path::Path;
 use windows::Win32::Foundation::{HWND, LPARAM, RECT};
 use windows::Win32::Graphics::Gdi::{
@@ -245,7 +247,8 @@ pub fn extract_icon_to_png(exe_path: &str, output_path: &Path) -> Result<(), Box
             tracing::debug!(target: "win32::window", "DestroyIcon(large) failed");
         }
 
-        let mut img = image::RgbaImage::new(width as u32, height as u32);
+        // 转换 BGRA -> RGBA 并保存为 PNG
+        let mut rgba_pixels = vec![0u8; (width * height * 4) as usize];
         for y in 0..height {
             for x in 0..width {
                 let idx = ((y * width + x) * 4) as usize;
@@ -253,11 +256,18 @@ pub fn extract_icon_to_png(exe_path: &str, output_path: &Path) -> Result<(), Box
                 let g = pixels[idx + 1];
                 let r = pixels[idx + 2];
                 let a = pixels[idx + 3];
-                img.put_pixel(x as u32, y as u32, image::Rgba([r, g, b, a]));
+                rgba_pixels[idx] = r;
+                rgba_pixels[idx + 1] = g;
+                rgba_pixels[idx + 2] = b;
+                rgba_pixels[idx + 3] = a;
             }
         }
 
-        img.save(output_path)?;
+        let file = File::create(output_path)?;
+        let mut encoder = png::Encoder::new(BufWriter::new(file), width as u32, height as u32);
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        encoder.write_header()?.write_image_data(&rgba_pixels)?;
         Ok(())
     }
 }
