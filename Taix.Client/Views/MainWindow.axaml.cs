@@ -1,4 +1,4 @@
-using Avalonia;
+using System;
 using Avalonia.Controls;
 using Taix.Client.Controls.Window;
 
@@ -11,12 +11,16 @@ public partial class MainWindow : DefaultWindow
         InitializeComponent();
         RequestClose += (_, _) => Close();
 
-        if (!UseCustomWindowChrome)
+        if (OperatingSystem.IsMacOS())
         {
-            NavigationHost.Margin = new Thickness(0, 0, 0, 15);
-            PageHost.Margin = new Thickness(0, 0, 10, 10);
+            ExtendClientAreaToDecorationsHint = true;
+            ExtendClientAreaTitleBarHeightHint = -1;
+            WindowDecorations = WindowDecorations.Full;
         }
     }
+
+    protected override Type StyleKeyOverride =>
+        OperatingSystem.IsMacOS() ? typeof(MacOSWindow) : typeof(DefaultWindow);
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {

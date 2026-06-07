@@ -27,6 +27,7 @@
 
 
         <ResourceInclude Source="/Themes/Window/DefaultWIndow.axaml" />
+        <ResourceInclude Source="/Themes/Window/MacOSWindow.axaml" />
 
         <ResourceInclude Source="/Themes/Navigation/Navigation.axaml" />
         <ResourceInclude Source="/Themes/Navigation/NavigationItem.axaml" />

@@ -3,19 +3,12 @@
                     xmlns:button="using:Taix.Client.Controls.Button"
                     xmlns:base="using:Taix.Client.Controls.Base"
                     xmlns:input="using:Taix.Client.Controls.Input"
-                    xmlns:controls="using:Taix.Client.Controls.Window"
-    xmlns:system="clr-namespace:System;assembly=System.Runtime">
+                    xmlns:controls="using:Taix.Client.Controls.Window">
 
-    <system:Double x:Key="WindowTitleBarHeight">40</system:Double>
+    <x:Double x:Key="WindowTitleBarHeight">40</x:Double>
 
     <ControlTheme x:Key="{x:Type controls:DefaultWindow}"
                   TargetType="controls:DefaultWindow">
-        <Setter Property="ExtendClientAreaToDecorationsHint"
-                Value="True" />
-        <Setter Property="ExtendClientAreaTitleBarHeightHint" Value="40" />
-        <Setter Property="WindowDecorations" Value="None" />
-        <!-- <Setter Property="ExtendClientAreaChromeHints" Value="NoChrome" /> -->
-
         <Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
         <Setter Property="UseLayoutRounding" Value="True" />
 
@@ -113,15 +106,13 @@
                         BorderBrush="{DynamicResource WindowBorderBrush}"
                         Background="{DynamicResource WindowBackground}">
                         <Grid>
-                            <!-- 原有窗口内容 -->
                             <Grid x:Name="WindowContent">
-                            <!--标题栏-->
                             <Grid
                                 x:Name="TitleBar"
                                 Panel.ZIndex="999"
                                 Height="{DynamicResource WindowTitleBarHeight}"
                                 VerticalAlignment="Top"
-                                IsVisible="{TemplateBinding UseCustomWindowChrome}"
+                                IsVisible="True"
                                 Background="Transparent">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
@@ -223,11 +214,10 @@
                                     </StackPanel>
                                 </Grid>
                             </Grid>
+
                             <ContentPresenter Content="{TemplateBinding Content}" Grid.Row="1" />
 
-                            <!--提醒框-->
                             <Grid ZIndex="999" x:Name="ToastGrid" IsVisible="False">
-                                <!--内容-->
                                 <Border
                                     Padding="16,14"
                                     CornerRadius="{StaticResource RadiusLarge}"
@@ -261,7 +251,6 @@
                                     </Grid>
                                 </Border>
 
-                                <!--Dialog-->
                                 <Border
                                     Padding="24,20"
                                     CornerRadius="{StaticResource RadiusLarge}"
@@ -311,7 +300,6 @@
                                     </Grid>
                                 </Border>
 
-                                <!--Action Dialog-->
                                 <Border
                                     Padding="24,20"
                                     CornerRadius="{StaticResource RadiusLarge}"
@@ -353,7 +341,6 @@
                                     </Grid>
                                 </Border>
 
-                                <!--Dialog-->
                                 <Border
                                     Padding="24,20"
                                     CornerRadius="{StaticResource RadiusLarge}"
@@ -403,7 +390,6 @@
                                     </Grid>
                                 </Border>
 
-                                <!--遮罩层-->
                                 <Border x:Name="Masklayer" Background="Black" Opacity="0" />
                             </Grid>
 
@@ -421,7 +407,6 @@
                                         Background="Transparent"
                                         WindowDecorationProperties.ElementRole="ResizeS"/>
 
-                    <!-- 四角（斜向拉伸） -->
                     <Border Width="12" Height="8" HorizontalAlignment="Left"  VerticalAlignment="Top"
                             Background="Transparent"
                             WindowDecorationProperties.ElementRole="ResizeNW"/>
@@ -437,7 +422,6 @@
                 </Panel>
                             </Grid>
 
-                            <!-- 顶部玻璃高光：模拟玻璃边缘反光 -->
                             <Border x:Name="GlassHighlightBorder"
                                     CornerRadius="{StaticResource RadiusXLarge}"
                                     BorderThickness="1,1,0,0"

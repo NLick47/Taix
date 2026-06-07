@@ -64,7 +64,7 @@ public class DefaultWindow : Avalonia.Controls.Window
     public static readonly StyledProperty<bool> UseCustomWindowChromeProperty =
         AvaloniaProperty.Register<DefaultWindow, bool>(
             nameof(UseCustomWindowChrome),
-            !OperatingSystem.IsMacOS());
+            true);
 
     public static readonly StyledProperty<ConnectionStatus> ConnectionStatusProperty =
         AvaloniaProperty.Register<DefaultWindow, ConnectionStatus>(nameof(ConnectionStatus), ConnectionStatus.Checking);
@@ -487,7 +487,9 @@ public class DefaultWindow : Avalonia.Controls.Window
         InputModalCancelBtn = e.NameScope.Find<Button.Button>("InputModalCancelBtn");
         InputModalConfirmBtn = e.NameScope.Find<Button.Button>("InputModalConfirmBtn");
         InputModalInputBox = e.NameScope.Find<InputBox>("InputModalInputBox");
+
         _statusDot = e.NameScope.Find<Border>("StatusDot");
+
         UpdateConnectionStatus();
 
         if (CancelBtn != null)
