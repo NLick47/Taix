@@ -116,19 +116,19 @@ jobs:
         run: |
           Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-win64.zip" -OutFile "upx.zip"
           Expand-Archive -Path "upx.zip" -DestinationPath "." -Force
+          New-Item -ItemType Directory -Path "taix-installer/tools" -Force | Out-Null
           Move-Item -Path "upx-4.2.4-win64/upx.exe" -Destination "taix-installer/tools/upx.exe" -Force
 
       - name: Build Installer
         shell: bash
         run: |
-          cd taix-installer
-          bash build-installer.sh "../output/${{ matrix.cpu }}" "${{ env.APP_VERSION }}"
+          bash taix-installer/build-installer.sh "output/${{ matrix.cpu }}" "${{ env.APP_VERSION }}" "."
 
       - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
           name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}-Setup
-          path: ./Taix-${{ env.APP_VERSION }}-Setup.exe
+          path: Taix-${{ env.APP_VERSION }}-Setup.exe
 
       - name: Read release notes from file
         id: release-notes

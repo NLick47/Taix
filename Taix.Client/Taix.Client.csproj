@@ -17,6 +17,8 @@
 
     <PropertyGroup Condition="'$(PublishAot)' == 'true'">
         <TrimMode>full</TrimMode>
+        <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+        <EnableComHosting>false</EnableComHosting>
 
         <UseWindowsThreadPool>true</UseWindowsThreadPool>
         <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
@@ -24,6 +26,9 @@
         <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
         <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
         <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
+
+        <OptimizationPreference>Size</OptimizationPreference>
+        <IlcInstructionSet>base</IlcInstructionSet>
     </PropertyGroup>
 
     <ItemGroup>
