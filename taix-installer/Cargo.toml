@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-zstd = "0.13"
+xz2 = "0.1"
 anyhow = "1"
 thiserror = "2"
 clap = { version = "4", features = ["derive"] }
