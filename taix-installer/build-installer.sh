@@ -58,7 +58,17 @@ for exe in "${RUST_EXES[@]}"; do
 done
 
 echo "[3/5] 编译安装器并打包 payload..."
-cargo build --release --manifest-path "$INSTALLER_DIR/Cargo.toml" 2>&1 | grep -E "Compiling taix-installer|Finished" || true
+cargo build --release --manifest-path "$INSTALLER_DIR/Cargo.toml"
+
+# 检查编译结果
+if [ ! -f "$PACK_PAYLOAD_PATH" ]; then
+    echo "ERROR: pack-payload.exe not found after build: $PACK_PAYLOAD_PATH"
+    exit 1
+fi
+if [ ! -f "$INSTALLER_DIR/target/release/taix-installer.exe" ]; then
+    echo "ERROR: taix-installer.exe not found after build"
+    exit 1
+fi
 
 PAYLOAD_FILE="$TEMP_DIR/payload.bin"
 "$PACK_PAYLOAD_PATH" "$TEMP_DIR" "$PAYLOAD_FILE"
