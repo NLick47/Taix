@@ -15,7 +15,6 @@ jobs:
     strategy:
       matrix:
         cpu: [ x64 ]
-        kind: [ zip ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -98,18 +97,6 @@ jobs:
             Write-Host "Removed PDB: $($_.FullName)"
           }
 
-      - name: Compress build artifacts
-        shell: pwsh
-        run: |
-          $items = Get-ChildItem -Path ./output/${{ matrix.cpu }} | Select-Object -ExpandProperty FullName
-          Compress-Archive -Path $items -DestinationPath ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip -Force
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}
-          path: ./output/${{ matrix.cpu }}/**
-
       # ========== Installer Build ==========
       - name: Download UPX
         shell: pwsh
@@ -141,7 +128,5 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         with:
           allowUpdates: true
-          artifacts: |
-            ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
-            ./Taix-${{ env.APP_VERSION }}-Setup.exe
+          artifacts: ./Taix-${{ env.APP_VERSION }}-Setup.exe
           body: ${{ steps.release-notes.outputs.content }}
