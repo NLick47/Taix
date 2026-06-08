@@ -1,6 +1,6 @@
 use anyhow::{bail, Context, Result};
 use std::fs;
-use std::io::{Cursor, Write};
+use std::io::Write;
 use std::path::Path;
 
 fn main() -> Result<()> {
