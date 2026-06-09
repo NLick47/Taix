@@ -17,6 +17,9 @@ public class MultiTrackRow : Control
     private const int SecondsPerHour = 3600;
     private const double MinSegmentWidth = 3;
     private static readonly Color DefaultColor = Color.Parse("#888888");
+
+    private static readonly Typeface MediumTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Medium);
+
     private Color _highlightOverlay;
     private Color _shadowOverlay;
 
@@ -252,7 +255,7 @@ public class MultiTrackRow : Control
         var text = $"{startStr} – {endStr}   {durStr}";
         var label = new FormattedText(text, CultureInfo.CurrentCulture,
             FlowDirection.LeftToRight,
-            new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Medium),
+            MediumTypeface,
             10, _tipText);
 
         ctx.DrawText(label, new Point(x + p, y + (th - label.Height) / 2));

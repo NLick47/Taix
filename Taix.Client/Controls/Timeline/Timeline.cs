@@ -18,6 +18,11 @@ public class Timeline : Control
     private const int HourSeconds = 3600;
     private const double DefaultPixelsPerHour = 180.0;
 
+    private static readonly Typeface NormalTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
+    private static readonly Typeface MediumTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Medium);
+    private static readonly Typeface SemiBoldTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
+    private static readonly DashStyle SelectionDashStyle = new([3.0, 3.0], 0);
+
     private int MaxDaySeconds
     {
         get
@@ -183,6 +188,7 @@ public class Timeline : Control
     // 框选新样式笔刷
     private IBrush _selectionMaskBrush = null!;
     private IPen _selectionBorderPen = null!;
+    private IPen _selectionDashPen = null!; // 带虚线样式的 Pen
     private IBrush _selectionGlowBrush = null!;
     private IBrush _selectionHandleBrush = null!;
     private IPen _selectionHandleBorderPen = null!;
@@ -242,6 +248,7 @@ public class Timeline : Control
         _periodEveningBrush = FindBrush("TimelinePeriodEveningBgBrush");
         _selectionMaskBrush = FindBrush("TimelineSelectionMaskBrush", 0.5);
         _selectionBorderPen = new Pen(FindBrush("TimelineSelectionBorderBrush"), 1.5);
+        _selectionDashPen = new Pen(_selectionBorderPen.Brush, 0.8) { DashStyle = SelectionDashStyle };
         _selectionGlowBrush = FindBrush("TimelineSelectionGlowBrush", 0.12);
         _selectionHandleBrush = FindBrush("TimelineSelectionHandleBrush");
         _selectionHandleBorderPen = new Pen(FindBrush("TimelineSelectionHandleBorderBrush"), 2);
@@ -673,7 +680,7 @@ public class Timeline : Control
 
                 var label = new FormattedText($"{h:D2}:00", CultureInfo.CurrentCulture,
                     FlowDirection.LeftToRight,
-                    new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Medium),
+                    MediumTypeface,
                     10, _tickText);
 
                 // 修复标签被裁剪：左侧不超出边界
@@ -733,7 +740,7 @@ public class Timeline : Control
         else labelIntervalMinutes = 15;
 
         var stepSeconds = labelIntervalMinutes * 60;
-        var font = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
+        var font = NormalTypeface;
 
         for (var h = 0; h < maxHours; h++)
         {
@@ -853,7 +860,7 @@ public class Timeline : Control
 
         var title = new FormattedText(_hoveredItem.Name, CultureInfo.CurrentCulture,
             FlowDirection.LeftToRight,
-            new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold),
+            SemiBoldTypeface,
             12, _tipText);
         ctx.DrawText(title, new Point(x + p + 6, y + p));
 
@@ -867,7 +874,7 @@ public class Timeline : Control
         var info = new FormattedText(
             $"{_hoveredItem.Start:HH:mm} – {_hoveredItem.End:HH:mm} · {durStr}",
             CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            new Typeface(FontFamily.Default), 10, _tipSub);
+            NormalTypeface, 10, _tipSub);
         ctx.DrawText(info, new Point(x + p + 6, y + p + 22));
     }
 
@@ -979,18 +986,14 @@ public class Timeline : Control
         // 202.5: 框选范围内的小时分割线
         var splitStartHour = (int)Math.Ceiling(startSec / HourSeconds);
         var splitEndHour = (int)Math.Floor(endSec / HourSeconds);
-        var hourFont = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
+        var hourFont = NormalTypeface;
         for (var h = splitStartHour; h <= splitEndHour; h++)
         {
             var hx = h * HourSeconds * pps + _offsetX;
             if (hx < drawX1 || hx > drawX2) continue;
 
             // 垂直虚线
-            var dashPen = new Pen(_selectionBorderPen.Brush, 0.8)
-            {
-                DashStyle = new DashStyle([3, 3], 0)
-            };
-            ctx.DrawLine(dashPen, new Point(hx, UsageY), new Point(hx, b.Height));
+            ctx.DrawLine(_selectionDashPen, new Point(hx, UsageY), new Point(hx, b.Height));
 
             // 小时标签
             var hourTime = Date.Date.AddHours(h);
@@ -1041,7 +1044,7 @@ public class Timeline : Control
         var startTime = Date.Date.AddSeconds(startSec);
         var endTime = Date.Date.AddSeconds(endSec);
 
-        var font = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
+        var font = SemiBoldTypeface;
         const double labelHeight = 18;
         const double padding = 6;
         var y = UsageY - labelHeight - 3;
