@@ -139,9 +139,9 @@ impl Platform for () {
     }
 
     fn default_install_dir() -> PathBuf {
-        dirs::data_local_dir()
-            .unwrap_or_else(|| PathBuf::from(r"C:\Users\Default\AppData\Local"))
-            .join("Taix")
+        let program_files = std::env::var("ProgramFiles")
+            .unwrap_or_else(|_| r"C:\Program Files".to_string());
+        PathBuf::from(program_files).join("Taix")
     }
 
     fn start_menu_dir() -> PathBuf {

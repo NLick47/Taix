@@ -4,12 +4,12 @@ use dialoguer::{Confirm, Select};
 use std::path::PathBuf;
 
 pub fn prompt_install_dir(default: PathBuf) -> Result<PathBuf> {
-    println!("\n安装目录: {}", default.display());
+    println!("\n默认安装目录: {}", default.display());
 
-    let choices = ["使用默认目录", "选择其他目录"];
+    let choices = ["确认，开始安装", "自定义安装目录"];
 
     let selection = Select::new()
-        .with_prompt("请选择")
+        .with_prompt("请选择操作")
         .default(0)
         .items(&choices)
         .interact()
