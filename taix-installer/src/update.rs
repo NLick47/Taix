@@ -31,6 +31,7 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
     let mut step = 0;
 
     if !silent {
+        println!("\n检测到安装目录: {}", install_dir.display());
         if !cli::confirm_update()? {
             println!("更新已取消。");
             return Ok(());

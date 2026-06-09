@@ -62,7 +62,7 @@ pub fn run(data_dir: Option<PathBuf>) -> anyhow::Result<()> {
                     }
                 }
                 _ = tokio::signal::ctrl_c() => {
-                    tracing::info!(target: "taix_shell::runner", "ctrl-c received, shutting down");
+                    tracing::info!(target: "taix_shell::runner", "shutdown signal received");
                     break;
                 }
             }

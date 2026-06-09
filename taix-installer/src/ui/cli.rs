@@ -4,10 +4,12 @@ use dialoguer::{Confirm, Select};
 use std::path::PathBuf;
 
 pub fn prompt_install_dir(default: PathBuf) -> Result<PathBuf> {
-    println!("默认安装目录: {}", default.display());
+    println!("\n安装目录: {}", default.display());
+    println!("  [Y] 使用默认目录");
+    println!("  [N] 选择其他目录");
 
     let use_default = Confirm::new()
-        .with_prompt("使用默认目录?")
+        .with_prompt("")
         .default(true)
         .interact()
         .map_err(|e| anyhow::anyhow!("Confirm error: {}", e))?;
@@ -17,23 +19,15 @@ pub fn prompt_install_dir(default: PathBuf) -> Result<PathBuf> {
     }
 
     // 打开文件夹选择对话框
+    println!("\n正在打开文件夹选择对话框...");
     if let Some(path) = browse_folder() {
+        println!("已选择: {}", path.display());
         return Ok(path);
     }
 
-    // 对话框取消或失败，回退到文本输入
-    println!("\n文件夹选择已取消，请手动输入路径:");
-
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input)?;
-    let path = PathBuf::from(input.trim());
-
-    if path.as_os_str().is_empty() {
-        println!("使用默认目录: {}", default.display());
-        return Ok(default);
-    }
-
-    Ok(path)
+    // 对话框取消
+    println!("\n已取消选择，使用默认目录: {}", default.display());
+    Ok(default)
 }
 
 /// 调用系统对话框选择文件夹 (Windows)
