@@ -17,6 +17,7 @@ public class ApiWebData : IWebData
 {
     private readonly ITaixApiClient _apiClient;
     private readonly IWebSiteData _webSiteData;
+    private IReadOnlyList<WebSiteCategoryModel>? _cachedCategories;
 
     public ApiWebData(ITaixApiClient apiClient, IWebSiteData webSiteData)
     {
@@ -37,23 +38,35 @@ public class ApiWebData : IWebData
 
     public async Task<IReadOnlyList<WebSiteCategoryModel>> GetWebSiteCategoriesAsync(CancellationToken cancellationToken = default)
     {
-        var result = await _apiClient.GetWebSiteCategoriesAsync(cancellationToken);
-        return result.AsReadOnly();
+        if (_cachedCategories != null)
+            return _cachedCategories;
+
+        _cachedCategories = await _apiClient.GetWebSiteCategoriesAsync(cancellationToken);
+        return _cachedCategories;
+    }
+
+    public void RefreshCategoriesCache()
+    {
+        _cachedCategories = null;
     }
 
     public async Task<WebSiteCategoryModel> CreateWebSiteCategoryAsync(WebSiteCategoryModel data)
     {
-        return await _apiClient.CreateWebSiteCategoryAsync(data);
+        var result = await _apiClient.CreateWebSiteCategoryAsync(data);
+        RefreshCategoriesCache();
+        return result;
     }
 
     public async Task UpdateWebSiteCategoryAsync(WebSiteCategoryModel data)
     {
         await _apiClient.UpdateWebSiteCategoryAsync(data);
+        RefreshCategoriesCache();
     }
 
     public async Task DeleteWebSiteCategoryAsync(WebSiteCategoryModel data)
     {
         await _apiClient.DeleteWebSiteCategoryAsync(data.ID);
+        RefreshCategoriesCache();
     }
 
     public async Task<IReadOnlyCollection<WebSiteModel>> GetWebSitesAsync(int categoryId, CancellationToken cancellationToken = default)
@@ -90,8 +103,8 @@ public class ApiWebData : IWebData
 
     public async Task<WebSiteCategoryModel> GetWebSiteCategoryAsync(int categoryId, CancellationToken cancellationToken = default)
     {
-        var result = await _apiClient.GetWebSiteCategoriesAsync();
-        return result.FirstOrDefault(m => m.ID == categoryId)!;
+        var categories = await GetWebSiteCategoriesAsync(cancellationToken);
+        return categories.FirstOrDefault(m => m.ID == categoryId)!;
     }
 
     public async Task<IReadOnlyList<InfrastructureDataModel>> GetBrowseDataStatisticsAsync(DateTime start, DateTime end, int siteId = 0, CancellationToken cancellationToken = default)

@@ -423,8 +423,17 @@ public class DefaultWindow : Avalonia.Controls.Window
             return;
 
         ToastBorder.RenderTransform = TransformOperations.Parse("translateY(-150px)");
-        Masklayer.Opacity = 0;
-        ToastGrid.IsVisible = false;
+        // 如果 InputModal 正在显示，不重置遮罩层
+        if (!IsShowInputModal)
+        {
+            Masklayer.Opacity = 0;
+            ToastGrid.IsVisible = false;
+        }
+        else
+        {
+            // InputModal 显示中，只隐藏 Toast，保持遮罩
+            ToastBorder.IsVisible = false;
+        }
     }
 
     private static void OnIsCanBackChanged(AvaloniaPropertyChangedEventArgs e)

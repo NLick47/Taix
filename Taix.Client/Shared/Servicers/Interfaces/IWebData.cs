@@ -145,4 +145,9 @@ public interface IWebData
     /// 更新站点数据
     /// </summary>
     Task<WebSiteModel?> UpdateAsync(WebSiteModel website);
+
+    /// <summary>
+    /// 清除网站分类缓存，下次获取时将重新从API加载
+    /// </summary>
+    void RefreshCategoriesCache();
 }

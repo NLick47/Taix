@@ -135,6 +135,11 @@ public static class ResourceStrings
     public static string SystemCategory => GetStringValue("SystemCategory");
     public static string SelectTargetCategory => GetStringValue("SelectTargetCategory");
 
+    public static string NewCategory => GetStringValue("NewCategory");
+    public static string EnterCategoryName => GetStringValue("PleaseEnterCategoryName");
+    public static string CategoryNameMaxLength => GetStringValue("AliasMaxLengthTip");
+    public static string CategoryCreated => GetStringValue("CreationCompleted");
+
     private static string GetStringValue(string key)
     {
         if (Application.Current == null) return string.Empty;

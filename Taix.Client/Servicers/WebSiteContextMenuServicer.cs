@@ -20,7 +20,6 @@ namespace Taix.Client.Servicers;
 public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposable
 {
     private readonly IAppConfig _appConfig;
-    private readonly IThemeServicer _theme;
     private readonly IUIServicer _uIServicer;
     private readonly IWebData _webData;
     private MainViewModel? _mainViewModel;
@@ -35,12 +34,10 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
 
     public WebSiteContextMenuServicer(
         IAppConfig appConfig,
-        IThemeServicer theme,
         IWebData webData,
         IUIServicer uiServicer)
     {
         _appConfig = appConfig;
-        _theme = theme;
         _webData = webData;
         _uIServicer = uiServicer;
     }
@@ -236,7 +233,9 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
 
         var data = _menu.Tag as ChartsDataModel;
         var site = data.Data as WebSiteModel;
+
         var categories = await _webData.GetWebSiteCategoriesAsync();
+
         var siteCategoryId = site?.CategoryID ?? 0;
         foreach (var category in categories)
         {
@@ -261,6 +260,15 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
             uncategorizedMenuItem.Click += async (s, e) => await ClearSiteCategoryAsync();
             _setCategory.Items.Add(uncategorizedMenuItem);
         }
+
+        // 添加新建分类选项
+        _setCategory.Items.Add(new Separator());
+        var newCategoryMenuItem = new MenuItem
+        {
+            Header = ResourceStrings.NewCategory
+        };
+        newCategoryMenuItem.Click += async (s, e) => await CreateNewCategoryAndAssignSiteAsync(categories);
+        _setCategory.Items.Add(newCategoryMenuItem);
     }
 
     private async Task ClearSiteCategoryAsync()
@@ -300,5 +308,46 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
             });
             data.BadgeList = newBadgeList;
         }
+    }
+
+    private async Task CreateNewCategoryAndAssignSiteAsync(IReadOnlyList<WebSiteCategoryModel> existingCategories)
+    {
+        var data = _menu.Tag as ChartsDataModel;
+        if (data?.Data is not WebSiteModel site) return;
+
+        var existingNames = existingCategories.Select(c => c.Name);
+
+        var result = await _uIServicer.ShowCreateCategoryDialogAsync(
+            ResourceStrings.NewCategory,
+            null,
+            existingNames);
+
+        if (result == null) return;
+
+        // 检查颜色是否已存在（网站分类需要唯一颜色）
+        if (existingCategories.Any(c => c.Color?.Equals(result.Color, StringComparison.OrdinalIgnoreCase) == true))
+        {
+            _mainViewModel?.Error(ResourceStrings.ColoreExists);
+            return;
+        }
+
+        // 创建新分类
+        var newCategory = await _webData.CreateWebSiteCategoryAsync(new WebSiteCategoryModel
+        {
+            Name = result.Name,
+            IconFile = result.IconFile,
+            Color = result.Color
+        });
+
+        if (newCategory == null)
+        {
+            _mainViewModel?.Error(ResourceStrings.CreationFailed);
+            return;
+        }
+
+        // 自动将网站分配到新分类
+        await UpdateSiteCategoryAsync(data, newCategory.ID);
+
+        _mainViewModel?.Success(ResourceStrings.CategoryCreated);
     }
 }

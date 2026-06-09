@@ -29,7 +29,6 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
     private readonly IAppConfig _appConfig;
     private readonly IAppData _appData;
     private readonly ICategorys _categorys;
-    private readonly IThemeServicer _themeServicer;
     private MainViewModel? _mainViewModel;
 
     private ContextMenu _contextMenu;
@@ -45,13 +44,11 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         ICategorys categorys,
         IAppData appData,
         IAppConfig appConfig,
-        IThemeServicer themeServicer,
         IUIServicer uiServicer)
     {
         _categorys = categorys;
         _appData = appData;
         _appConfig = appConfig;
-        _themeServicer = themeServicer;
         _uiServicer = uiServicer;
     }
 
@@ -179,7 +176,6 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         UpdateBlockMenuItemText(app);
         UpdateWhiteListMenuItemText(app);
         await UpdateCategoryMenuItemsAsync();
-
     }
 
     private AppModel? GetAppFromContextMenu()
@@ -219,6 +215,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         if (app == null) return;
 
         var categories = await _categorys.GetCategoriesAsync();
+
         var appCategoryId = app?.CategoryID ?? 0;
 
         foreach (var category in categories)
@@ -241,7 +238,16 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
             _setCategoryMenuItem.Items.Add(uncategorizedMenuItem);
         }
 
-        _setCategoryMenuItem.IsEnabled = _setCategoryMenuItem.Items.Count > 0;
+        // 添加新建分类选项
+        _setCategoryMenuItem.Items.Add(new Separator());
+        var newCategoryMenuItem = new MenuItem
+        {
+            Header = ResourceStrings.NewCategory
+        };
+        newCategoryMenuItem.Click += async (s, e) => await CreateNewCategoryAndAssignAppAsync(categories);
+        _setCategoryMenuItem.Items.Add(newCategoryMenuItem);
+
+        _setCategoryMenuItem.IsEnabled = true;
     }
 
     private MenuItem CreateCategoryMenuItem(CategoryModel category, int appCategoryId, int appId)
@@ -400,6 +406,42 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
             dailyLog.AppModel = updatedApp;
         else if (data?.Data is HoursLogModel hoursLog)
             hoursLog.AppModel = updatedApp;
+    }
+
+    private async Task CreateNewCategoryAndAssignAppAsync(IReadOnlyList<CategoryModel> existingCategories)
+    {
+        var app = GetAppFromContextMenu();
+        if (app == null) return;
+
+        var existingNames = existingCategories.Select(c => c.Name);
+
+        var result = await _uiServicer.ShowCreateCategoryDialogAsync(
+            ResourceStrings.NewCategory,
+            null,
+            existingNames);
+
+        if (result == null) return;
+
+        // 创建新分类
+        var newCategory = await _categorys.CreateAsync(new CategoryModel
+        {
+            Name = result.Name,
+            IconFile = result.IconFile,
+            Color = result.Color,
+            IsDirectoryMatch = false,
+            Directories = null
+        });
+
+        if (newCategory == null)
+        {
+            _mainViewModel?.Error(ResourceStrings.CreationFailed);
+            return;
+        }
+
+        // 自动将应用分配到新分类
+        await SetAppCategoryAsync(app.ID, newCategory);
+
+        _mainViewModel?.Success(ResourceStrings.CategoryCreated);
     }
 
     private void UpdateCategoryBadge(ChartsDataModel? data, CategoryModel category)

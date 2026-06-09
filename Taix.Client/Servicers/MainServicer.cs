@@ -15,8 +15,10 @@ public class MainServicer : IMainServicer
 {
     private readonly IAppContextMenuServicer _appContextMenuServicer;
     private readonly IAppConfig _config;
+    private readonly ICategorys _categorys;
     private readonly IShutdownService _shutdownService;
     private readonly IThemeServicer _themeServicer;
+    private readonly IWebData _webData;
     private readonly IWebSiteContextMenuServicer _webSiteContextMenuServicer;
     private readonly IWindowStateService _windowStateService;
 
@@ -26,7 +28,9 @@ public class MainServicer : IMainServicer
         IWebSiteContextMenuServicer webSiteContextMenuServicer,
         IWindowStateService windowStateService,
         IAppConfig config,
-        IShutdownService shutdownService)
+        IShutdownService shutdownService,
+        ICategorys categorys,
+        IWebData webData)
     {
         _themeServicer = themeServicer;
         _appContextMenuServicer = appContextMenuServicer;
@@ -34,6 +38,8 @@ public class MainServicer : IMainServicer
         _windowStateService = windowStateService;
         _config = config;
         _shutdownService = shutdownService;
+        _categorys = categorys;
+        _webData = webData;
     }
 
     public async Task Start()
@@ -51,10 +57,27 @@ public class MainServicer : IMainServicer
 
         _themeServicer.Init();
 
+        _ = PreloadCategoriesAsync();
+
         ShowMainWindow();
 
         _appContextMenuServicer.Init();
         _webSiteContextMenuServicer.Init();
+    }
+
+    private async Task PreloadCategoriesAsync()
+    {
+        try
+        {
+            await Task.WhenAll(
+                _categorys.GetCategoriesAsync(),
+                _webData.GetWebSiteCategoriesAsync()
+            );
+        }
+        catch (Exception ex)
+        {
+            Logging.Logger.Error($"预加载分类缓存失败: {ex.Message}", ex);
+        }
     }
 
     private void ShowMainWindow()
