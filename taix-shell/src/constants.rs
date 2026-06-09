@@ -1,4 +1,9 @@
+#[cfg(target_os = "windows")]
 pub const CLIENT_PIPE_NAME: &str = r"\\.\pipe\TaixClient";
+
+#[cfg(not(target_os = "windows"))]
+pub const CLIENT_PIPE_NAME: &str = "/tmp/taix-client.sock";
+
 pub const CLIENT_EXE_NAME: &str = "Taix.exe";
 
 #[cfg(target_os = "windows")]

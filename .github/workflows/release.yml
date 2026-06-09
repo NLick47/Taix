@@ -71,7 +71,7 @@ jobs:
           Write-Host "Publishing with AOT enabled"
           dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
 
-      - name: Copy Rust binaries and scripts
+      - name: Copy Rust binaries
         shell: pwsh
         run: |
           $publishDir = "./output/${{ matrix.cpu }}"
@@ -83,10 +83,6 @@ jobs:
 
           # Copy taix-shell resources (tray icon etc.)
           Copy-Item "taix-shell/resources" -Destination $publishDir -Recurse -Force
-
-          # Copy install scripts
-          Copy-Item "script/install.ps1"   -Destination $publishDir -Force
-          Copy-Item "script/uninstall.ps1" -Destination $publishDir -Force
 
       - name: Remove debug symbol files
         shell: pwsh
@@ -111,11 +107,25 @@ jobs:
         run: |
           bash taix-installer/build-installer.sh "output/${{ matrix.cpu }}" "${{ env.APP_VERSION }}" "."
 
+      - name: Create ZIP
+        shell: pwsh
+        run: |
+          $publishDir = "./output/${{ matrix.cpu }}"
+          $zipName = "Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}"
+          Compress-Archive -Path "$publishDir/*" -DestinationPath "$zipName.zip"
+          Write-Host "Created $zipName.zip"
+
       - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
           name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}-Setup
           path: Taix-${{ env.APP_VERSION }}-Setup.exe
+
+      - name: Upload ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}
+          path: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip
 
       - name: Read release notes from file
         id: release-notes
@@ -128,5 +138,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         with:
           allowUpdates: true
-          artifacts: ./Taix-${{ env.APP_VERSION }}-Setup.exe
+          artifacts: |
+            ./Taix-${{ env.APP_VERSION }}-Setup.exe
+            ./Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip
           body: ${{ steps.release-notes.outputs.content }}

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tracing::info;
 
-use crate::platform::{Platform, PROCESSES};
+use crate::platform::{Platform, PROCESSES, save_install_location};
 use crate::sfx;
 use crate::ui::cli;
 
@@ -119,11 +119,14 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
 
     let _ = std::fs::remove_dir_all(&backup_dir);
 
-    cli::show_success("Taix 更新完成!");
-    println!("安装目录: {}", install_dir.display());
+    // 更新安装路径记录
+    save_install_location(&install_dir)?;
 
     if !silent {
-        cli::show_complete_and_wait("更新完成。");
+        cli::show_update_complete(&install_dir);
+    } else {
+        cli::show_success("Taix 更新完成!");
+        println!("安装目录: {}", install_dir.display());
     }
 
     Ok(())
