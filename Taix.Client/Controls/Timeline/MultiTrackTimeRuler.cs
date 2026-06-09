@@ -12,6 +12,8 @@ public class MultiTrackTimeRuler : Control
 {
     private const int SecondsPerHour = 3600;
 
+    private static readonly Typeface NormalTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
+
     private double _visibleStartHour = 0.0;
     private double _visibleEndHour = 24.0;
     private DateTime _date = DateTime.Today;
@@ -124,7 +126,7 @@ public class MultiTrackTimeRuler : Control
 
         // Draw ticks
         var totalHours = viewEndSec / SecondsPerHour + 1;
-        var font = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
+        var font = NormalTypeface;
         var bottomY = bounds.Height;
         var labelY = 2.0;
 
@@ -226,7 +228,7 @@ public class MultiTrackTimeRuler : Control
         else labelIntervalMinutes = 15;
 
         var stepSeconds = labelIntervalMinutes * 60;
-        var font = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
+        var font = NormalTypeface;
         var maxHour = (int)(viewEndSec / SecondsPerHour) + 1;
         var minHour = Math.Max(0, (int)(viewStartSec / SecondsPerHour));
 
