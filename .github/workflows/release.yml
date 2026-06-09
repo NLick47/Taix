@@ -112,9 +112,23 @@ jobs:
         run: |
           $publishDir = "./output/${{ matrix.cpu }}"
           $zipName = "Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}"
+
+          # Move installer exe out temporarily to exclude from ZIP
+          $setupExe = Get-ChildItem -Path $publishDir -Filter "*-Setup.exe" -ErrorAction SilentlyContinue
+          if ($setupExe) {
+            Move-Item -Path $setupExe.FullName -Destination "." -Force
+          }
+
+          # Create ZIP from remaining files (flat structure)
           Push-Location $publishDir
-          Compress-Archive -Path "*" -DestinationPath "../$zipName.zip"
+          Compress-Archive -Path "*" -DestinationPath "../../$zipName.zip"
           Pop-Location
+
+          # Move installer exe back
+          if ($setupExe) {
+            Move-Item -Path "./$($setupExe.Name)" -Destination $publishDir -Force
+          }
+
           Write-Host "Created $zipName.zip"
 
       - name: Upload Installer

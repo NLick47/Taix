@@ -5,16 +5,17 @@ use std::path::PathBuf;
 
 pub fn prompt_install_dir(default: PathBuf) -> Result<PathBuf> {
     println!("\n安装目录: {}", default.display());
-    println!("  [Y] 使用默认目录");
-    println!("  [N] 选择其他目录");
 
-    let use_default = Confirm::new()
-        .with_prompt("")
-        .default(true)
+    let choices = ["使用默认目录", "选择其他目录"];
+
+    let selection = Select::new()
+        .with_prompt("请选择")
+        .default(0)
+        .items(&choices)
         .interact()
-        .map_err(|e| anyhow::anyhow!("Confirm error: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Select error: {}", e))?;
 
-    if use_default {
+    if selection == 0 {
         return Ok(default);
     }
 
