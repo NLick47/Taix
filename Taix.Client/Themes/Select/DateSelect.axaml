@@ -276,7 +276,11 @@
                                 <button:IconButton Icon="ChevronRight" FontSize="10"
                                                    Width="24" Height="24"
                                                    VerticalAlignment="Center"
+                                                   IsVisible="{Binding CanGoNext, RelativeSource={RelativeSource TemplatedParent}}"
                                                    Command="{Binding GoNextCommand, RelativeSource={RelativeSource TemplatedParent}}" />
+                                <!-- 占位元素，当不能往后时显示，保持布局稳定 -->
+                                <Border Width="24" Height="24"
+                                        IsVisible="{Binding !CanGoNext, RelativeSource={RelativeSource TemplatedParent}}" />
                             </StackPanel>
                         </Border>
 
