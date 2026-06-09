@@ -35,11 +35,29 @@ struct Args {
     extract_only: Option<PathBuf>,
 }
 
-fn main() -> Result<()> {
+fn main() {
     let _guard = taix_logging::init("taix-installer", "info", taix_logging::PanicMode::LogOnly);
 
     let args = Args::parse();
 
+    let result = run(args);
+
+    if let Err(e) = result {
+        eprintln!("\n[错误] {}", e);
+
+        for cause in e.chain().skip(1) {
+            eprintln!("  原因: {}", cause);
+        }
+
+        tracing::error!("Installer failed: {}", e);
+
+        println!("\n按 Enter 键退出...");
+        let _ = std::io::stdin().read_line(&mut String::new());
+        std::process::exit(1);
+    }
+}
+
+fn run(args: Args) -> Result<()> {
     if let Some(dest) = args.extract_only {
         return sfx::extract_to(&dest);
     }
@@ -52,9 +70,7 @@ fn main() -> Result<()> {
         return install::run_uninstall(args.install_dir, args.silent);
     }
 
-    // 智能检测：已安装时询问是否更新
     if !sfx::has_payload() {
-        // 无 payload，只能更新/卸载
         let existing_install = read_install_location();
         if existing_install.is_some() {
             println!("检测到已安装的 Taix。");
@@ -63,10 +79,11 @@ fn main() -> Result<()> {
             println!("未检测到 Taix 安装。");
             println!("此安装器无内嵌文件，无法进行安装。");
         }
+        println!("\n按 Enter 键退出...");
+        let _ = std::io::stdin().read_line(&mut String::new());
         return Ok(());
     }
 
-    // 检测已安装，提示用户选择操作
     let existing_install = read_install_location();
     if let Some(existing_dir) = existing_install {
         println!("检测到已安装的 Taix: {}", existing_dir.display());
@@ -76,14 +93,14 @@ fn main() -> Result<()> {
             InstallAction::Update => {
                 return update::run_update(Some(existing_dir), args.silent);
             }
-            InstallAction::Reinstall => {
-                // 继续安装流程（会覆盖）
-            }
+            InstallAction::Reinstall => {}
             InstallAction::Uninstall => {
                 return install::run_uninstall(Some(existing_dir), args.silent);
             }
             InstallAction::Cancel => {
                 println!("操作已取消。");
+                println!("\n按 Enter 键退出...");
+                let _ = std::io::stdin().read_line(&mut String::new());
                 return Ok(());
             }
         }

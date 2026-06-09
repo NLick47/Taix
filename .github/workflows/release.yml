@@ -112,7 +112,9 @@ jobs:
         run: |
           $publishDir = "./output/${{ matrix.cpu }}"
           $zipName = "Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}"
-          Compress-Archive -Path "$publishDir/*" -DestinationPath "$zipName.zip"
+          Push-Location $publishDir
+          Compress-Archive -Path "*" -DestinationPath "../$zipName.zip"
+          Pop-Location
           Write-Host "Created $zipName.zip"
 
       - name: Upload Installer
