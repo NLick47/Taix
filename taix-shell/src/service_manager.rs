@@ -1,198 +1,152 @@
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
-use tokio::process::{Child, Command};
-use tokio::time::sleep;
 
 #[derive(Clone)]
 pub struct ServiceManager {
     data_dir: Option<PathBuf>,
-    shutdown_tx: tokio::sync::broadcast::Sender<()>,
-}
-
-enum RunOutcome {
-    Exited,
-    Shutdown,
 }
 
 impl ServiceManager {
-    /// 累计等待约 105 秒后放弃（5+10+15+20+25+30）。
     const MAX_MISSING_RETRIES: u32 = 6;
-    const MAX_MISSING_WAIT_SECS: u64 = 105;
 
     pub fn new(data_dir: Option<PathBuf>) -> Self {
-        let (shutdown_tx, _) = tokio::sync::broadcast::channel(1);
-        Self { data_dir, shutdown_tx }
+        Self { data_dir }
     }
 
-    pub fn shutdown(&self) {
-        let _ = self.shutdown_tx.send(());
-    }
+    pub fn run(self, shutdown: std::sync::Arc<AtomicBool>) {
+        let self_clone = self.clone();
+        let shutdown_clone = shutdown.clone();
+        let monitor_handle = std::thread::spawn(move || {
+            self_clone.supervise(
+                crate::constants::MONITOR_EXE_NAME,
+                &["run"],
+                shutdown_clone,
+            );
+        });
 
-    pub async fn run(self) {
-        let monitor = self.clone().supervise(
-            crate::constants::MONITOR_EXE_NAME,
-            &["run"],
-            "taix-monitor",
-        );
-        let server = self.supervise(
+        self.supervise(
             crate::constants::SERVER_EXE_NAME,
             &[],
-            "taix-server",
+            shutdown,
         );
 
-        let ((), ()) = tokio::join!(monitor, server);
-        tracing::info!(target: "taix_shell::service_manager", "All services stopped");
+        let _ = monitor_handle.join();
     }
 
-    async fn supervise(
-        self,
+    fn supervise(
+        &self,
         exe_name: &'static str,
         extra_args: &'static [&'static str],
-        name: &'static str,
+        shutdown: std::sync::Arc<AtomicBool>,
     ) {
         #[cfg(target_os = "windows")]
         let job = crate::platform::job_object::JobObject::new();
 
-        let mut shutdown_rx = self.shutdown_tx.subscribe();
         let mut backoff = Backoff::new();
         let mut missing_retries: u32 = 0;
 
         loop {
+            if shutdown.load(Ordering::Relaxed) {
+                return;
+            }
+
             let exe_path = match resolve_exe_path(exe_name) {
                 Some(p) => p,
                 None => {
                     missing_retries += 1;
                     if missing_retries > Self::MAX_MISSING_RETRIES {
-                        tracing::error!(
-                            target: "taix_shell::service_manager",
-                            "Giving up on {}: executable not found after {} retries (~{}s total)",
-                            name,
-                            Self::MAX_MISSING_RETRIES,
-                            Self::MAX_MISSING_WAIT_SECS
-                        );
                         return;
                     }
-                    tracing::error!(
-                        target: "taix_shell::service_manager",
-                        "{} executable not found (retry {}/{})",
-                        name,
-                        missing_retries,
-                        Self::MAX_MISSING_RETRIES
-                    );
                     let delay = backoff.next_delay().max(Duration::from_secs(5));
-                    tokio::select! {
-                        _ = sleep(delay) => continue,
-                        _ = shutdown_rx.recv() => {
-                            tracing::info!(
-                                target: "taix_shell::service_manager",
-                                "Shutdown requested while {} executable was missing",
-                                name
-                            );
-                            return;
-                        }
-                    }
+                    std::thread::sleep(delay);
+                    continue;
                 }
             };
 
             if missing_retries > 0 {
-                tracing::info!(
-                    target: "taix_shell::service_manager",
-                    "Found {} at {}, resetting backoff",
-                    name,
-                    exe_path.display()
-                );
                 missing_retries = 0;
                 backoff = Backoff::new();
             }
 
             let delay = backoff.next_delay();
             if delay > Duration::ZERO {
-                tracing::info!(
-                    target: "taix_shell::service_manager",
-                    "Waiting {:?} before restarting {} ({} consecutive failures)",
-                    delay,
-                    name,
-                    backoff.failures
-                );
-                tokio::select! {
-                    _ = sleep(delay) => {}
-                    _ = shutdown_rx.recv() => {
-                        tracing::info!(
-                            target: "taix_shell::service_manager",
-                            "Shutdown requested during {} backoff",
-                            name
-                        );
+                let start = std::time::Instant::now();
+                while start.elapsed() < delay {
+                    if shutdown.load(Ordering::Relaxed) {
                         return;
                     }
+                    std::thread::sleep(Duration::from_millis(500));
                 }
             }
 
-            // 检查是否已有同名进程在运行（如旧 shell 崩溃残留）
             #[cfg(target_os = "windows")]
             if let Some(pid) = find_existing_process(exe_name) {
-                tracing::info!(
-                    target: "taix_shell::service_manager",
-                    "Existing {} process found (pid={}), taking over monitoring",
-                    name,
-                    pid
-                );
-                match wait_for_existing_process(pid, &mut shutdown_rx, name).await {
-                    RunOutcome::Exited => continue,
-                    RunOutcome::Shutdown => return,
+                loop {
+                    if shutdown.load(Ordering::Relaxed) {
+                        return;
+                    }
+                    if !crate::platform::is_process_alive(pid) {
+                        break;
+                    }
+                    std::thread::sleep(Duration::from_secs(1));
                 }
+                continue;
             }
 
-            tracing::info!(
-                target: "taix_shell::service_manager",
-                "Starting {}: {} {:?}",
-                name,
-                exe_path.display(),
-                extra_args
-            );
-
             let args = build_args(extra_args, self.data_dir.as_ref());
-            let mut child = match spawn_process(&exe_path, &args).await {
+            let mut child = match spawn_process(&exe_path, &args) {
                 Ok(c) => c,
-                Err(e) => {
-                    tracing::error!(
-                        target: "taix_shell::service_manager",
-                        "Failed to spawn {}: {}",
-                        name,
-                        e
-                    );
+                Err(_) => {
                     backoff.record_failure();
                     continue;
                 }
             };
 
-            // 将子进程加入 Job Object：shell 异常崩溃时子进程随 Job 关闭而被系统终止。
             #[cfg(target_os = "windows")]
-            if let (Some(pid), Ok(ref job)) = (child.id(), &job) {
-                if let Err(e) = job.assign_process(pid) {
-                    tracing::warn!(
-                        target: "taix_shell::service_manager",
-                        "Failed to assign {} (pid={}) to job object: {}. \
-                         Shell crash may leave orphan process.",
-                        name,
-                        pid,
-                        e
-                    );
+            if let (pid, Ok(ref job)) = (child.id(), &job) {
+                let _ = job.assign_process(pid);
+            }
+
+            std::thread::sleep(Duration::from_secs(2));
+            let pid = child.id();
+            if !crate::platform::is_process_alive(pid) {
+                backoff.record_failure();
+                continue;
+            }
+
+            loop {
+                if shutdown.load(Ordering::Relaxed) {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return;
+                }
+                match child.try_wait() {
+                    Ok(Some(_)) => break,
+                    Ok(None) => {
+                        std::thread::sleep(Duration::from_secs(1));
+                    }
+                    Err(_) => break,
                 }
             }
 
-            match run_until_exit(&mut child, &mut shutdown_rx, name).await {
-                RunOutcome::Exited => {
-                    backoff.record_failure();
+            backoff.record_failure();
+
+            let start = std::time::Instant::now();
+            while start.elapsed() < Duration::from_secs(5) {
+                if shutdown.load(Ordering::Relaxed) {
+                    return;
                 }
-                RunOutcome::Shutdown => return,
+                std::thread::sleep(Duration::from_millis(500));
             }
         }
     }
 }
 
 fn build_args(extra: &[&str], data_dir: Option<&PathBuf>) -> Vec<String> {
-    let mut args: Vec<String> = extra.iter().map(|&s| s.to_owned()).collect();
+    let mut args: Vec<String> = Vec::with_capacity(4);
+    args.extend(extra.iter().map(|&s| s.to_owned()));
     if let Some(dir) = data_dir {
         args.push("--data-dir".to_owned());
         args.push(dir.to_string_lossy().into_owned());
@@ -228,120 +182,14 @@ fn resolve_exe_path(exe_name: &str) -> Option<PathBuf> {
     None
 }
 
-/// 重定向标准流防止管道缓冲区死锁。
-async fn spawn_process(exe: &Path, args: &[String]) -> std::io::Result<Child> {
-    Command::new(exe)
+fn spawn_process(exe: &Path, args: &[String]) -> std::io::Result<std::process::Child> {
+    std::process::Command::new(exe)
         .current_dir(exe.parent().unwrap_or_else(|| Path::new(".")))
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-}
-
-/// 包含启动后 2 秒存活检查；若进程在 2 秒内退出，视为启动失败。
-async fn run_until_exit(
-    child: &mut Child,
-    shutdown_rx: &mut tokio::sync::broadcast::Receiver<()>,
-    name: &str,
-) -> RunOutcome {
-    let alive = tokio::select! {
-        _ = sleep(Duration::from_secs(2)) => check_startup_alive(child, name),
-        _ = shutdown_rx.recv() => {
-            tracing::info!(
-                target: "taix_shell::service_manager",
-                "Shutdown requested during {} startup",
-                name
-            );
-            let _ = child.kill().await;
-            let _ = child.wait().await;
-            return RunOutcome::Shutdown;
-        }
-    };
-
-    if !alive {
-        let _ = child.kill().await;
-        let _ = child.wait().await;
-        return RunOutcome::Exited;
-    }
-
-    tokio::select! {
-        status = child.wait() => {
-            match status {
-                Ok(code) => {
-                    tracing::warn!(
-                        target: "taix_shell::service_manager",
-                        "{} exited with status: {}",
-                        name,
-                        code
-                    );
-                }
-                Err(e) => {
-                    tracing::error!(
-                        target: "taix_shell::service_manager",
-                        "{} wait error: {}",
-                        name,
-                        e
-                    );
-                    let _ = child.kill().await;
-                    let _ = child.wait().await;
-                }
-            }
-
-            tokio::select! {
-                _ = sleep(Duration::from_secs(5)) => {}
-                _ = shutdown_rx.recv() => {
-                    tracing::info!(
-                        target: "taix_shell::service_manager",
-                        "Shutdown requested during {} restart delay",
-                        name
-                    );
-                    return RunOutcome::Shutdown;
-                }
-            }
-            RunOutcome::Exited
-        }
-        _ = shutdown_rx.recv() => {
-            tracing::info!(
-                target: "taix_shell::service_manager",
-                "Shutting down {}",
-                name
-            );
-            let _ = child.kill().await;
-            let _ = child.wait().await;
-            RunOutcome::Shutdown
-        }
-    }
-}
-
-async fn wait_for_existing_process(
-    pid: u32,
-    shutdown_rx: &mut tokio::sync::broadcast::Receiver<()>,
-    name: &str,
-) -> RunOutcome {
-    loop {
-        if !crate::platform::is_process_alive(pid) {
-            tracing::info!(
-                target: "taix_shell::service_manager",
-                "Existing {} (pid={}) has exited",
-                name,
-                pid
-            );
-            return RunOutcome::Exited;
-        }
-
-        tokio::select! {
-            _ = sleep(Duration::from_secs(1)) => {}
-            _ = shutdown_rx.recv() => {
-                tracing::info!(
-                    target: "taix_shell::service_manager",
-                    "Shutdown requested while watching existing {}",
-                    name
-                );
-                return RunOutcome::Shutdown;
-            }
-        }
-    }
 }
 
 #[cfg(target_os = "windows")]
@@ -356,7 +204,6 @@ fn find_existing_process(exe_name: &str) -> Option<u32> {
     let mut pids = [0u32; 1024];
     let mut needed = 0u32;
 
-    // SAFETY: pids 是有效的栈数组，指针和长度均合法。
     unsafe {
         if EnumProcesses(pids.as_mut_ptr(), (pids.len() * std::mem::size_of::<u32>()) as u32, &mut needed).is_err() {
             return None;
@@ -365,14 +212,19 @@ fn find_existing_process(exe_name: &str) -> Option<u32> {
 
     let count = ((needed / std::mem::size_of::<u32>() as u32) as usize).min(pids.len());
     let current_pid = std::process::id();
-    let exe_wide: Vec<u16> = exe_name.encode_utf16().collect();
+
+    let exe_bytes = exe_name.as_bytes();
+    let mut exe_wide = [0u16; 64];
+    for (i, &b) in exe_bytes.iter().enumerate() {
+        exe_wide[i] = b as u16;
+    }
+    let exe_wide = &exe_wide[..exe_bytes.len()];
 
     for &pid in &pids[..count] {
         if pid == 0 || pid == current_pid {
             continue;
         }
 
-        // SAFETY: pid 来自 EnumProcesses，是合法的系统进程 ID。
         let handle = match unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) } {
             Ok(h) => h,
             Err(_) => continue,
@@ -380,7 +232,6 @@ fn find_existing_process(exe_name: &str) -> Option<u32> {
 
         let mut name_buf = [0u16; 260];
         let mut name_len = name_buf.len() as u32;
-        // SAFETY: handle 是有效的进程句柄；name_buf 是有效的栈缓冲区。
         let name_result = unsafe {
             QueryFullProcessImageNameW(
                 handle,
@@ -404,7 +255,7 @@ fn find_existing_process(exe_name: &str) -> Option<u32> {
             file_name
         };
 
-        if file_name == exe_wide.as_slice() {
+        if file_name == exe_wide {
             return Some(pid);
         }
     }
@@ -417,31 +268,6 @@ fn find_existing_process(_exe_name: &str) -> Option<u32> {
     None
 }
 
-fn check_startup_alive(child: &Child, name: &str) -> bool {
-    let Some(pid) = child.id() else {
-        tracing::warn!(
-            target: "taix_shell::service_manager",
-            "Could not get PID for {}, assuming startup failure",
-            name
-        );
-        return false;
-    };
-
-    if crate::platform::is_process_alive(pid) {
-        true
-    } else {
-        tracing::warn!(
-            target: "taix_shell::service_manager",
-            "{} (pid={}) exited within 2s, treating as startup failure",
-            name,
-            pid
-        );
-        false
-    }
-}
-
-/// 首次失败等待 5 秒，之后每次增加 5 秒，最大 30 秒封顶。
-/// 成功启动后自动重置。
 struct Backoff {
     failures: u32,
 }

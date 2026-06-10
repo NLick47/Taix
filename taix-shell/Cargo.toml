@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "taix-shell"
 version = "0.1.0"
 edition = "2021"
@@ -10,22 +10,23 @@ codegen-units = 1
 strip = true
 panic = "abort"
 
+[profile.release.package."*"]
+opt-level = "z"
+
 [dependencies]
-tokio = { version = "1", features = ["rt", "macros", "net", "signal", "sync", "time", "io-util", "process"] }
-tracing = "0.1"
-taix-logging = { path = "../taix-logging" }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tray-icon = "0.19"
+tracing = "0.1"
 windows = { version = "0.62", features = [
     "Win32_Foundation",
     "Win32_Security",
     "Win32_System_Threading",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Pipes",
     "Win32_UI_WindowsAndMessaging",
-    "Win32_System_Registry",
-    "Win32_Globalization",
+    "Win32_UI_Shell",
+    "Win32_Graphics_Gdi",
     "Win32_System_JobObjects",
     "Win32_System_ProcessStatus",
-    "Win32_System_LibraryLoader",
 ] }

@@ -7,7 +7,7 @@ pub use scheduler::{install, uninstall};
 pub use single_instance::try_acquire as try_acquire_single_instance;
 pub use tray::run_tray;
 
-use crate::config::{Language, Theme};
+use crate::config::Theme;
 
 #[cfg(target_os = "windows")]
 pub fn apply_menu_theme(theme: Theme) {
@@ -68,20 +68,5 @@ pub fn is_process_alive(pid: u32) -> bool {
         };
         let _ = CloseHandle(handle);
         alive
-    }
-}
-
-#[cfg(target_os = "windows")]
-pub fn detect_system_language() -> Language {
-    use windows::Win32::Globalization::GetUserDefaultUILanguage;
-
-    unsafe {
-        let lang_id = GetUserDefaultUILanguage();
-        let primary_lang = lang_id & 0x3FF;
-        if primary_lang == 0x04 {
-            Language::ZhCn
-        } else {
-            Language::EnUs
-        }
     }
 }

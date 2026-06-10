@@ -33,19 +33,6 @@ impl Language {
             _ => Self::Auto,
         }
     }
-
-    pub fn resolve(self) -> Self {
-        if self == Self::Auto {
-            #[cfg(target_os = "windows")]
-            {
-                crate::platform::detect_system_language()
-            }
-            #[cfg(not(target_os = "windows"))]
-            Self::EnUs
-        } else {
-            self
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -101,5 +88,3 @@ pub fn load_tray_config(data_dir: &Path) -> Option<TrayConfig> {
         is_visible: config.general.is_enable_tray,
     })
 }
-
-

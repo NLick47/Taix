@@ -3,7 +3,6 @@
 mod client;
 mod config;
 mod constants;
-mod i18n;
 mod platform;
 mod runner;
 mod service_manager;
