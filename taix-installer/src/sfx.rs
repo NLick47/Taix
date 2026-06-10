@@ -14,7 +14,7 @@ pub fn extract_to(dest: &Path) -> Result<()> {
 
     println!("Extracting files to {}...", dest.display());
 
-    // 解压 LZMA payload
+    // 解压 XZ payload
     let mut decompressed = Vec::new();
     xz2::read::XzDecoder::new(&payload[..])
         .read_to_end(&mut decompressed)

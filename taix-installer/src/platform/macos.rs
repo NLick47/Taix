@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
-use tracing::{info, warn};
 
 use super::Platform;
 
@@ -51,19 +50,9 @@ impl Platform for () {
         std::fs::write(&plist_path, &plist_content)
             .with_context(|| format!("Failed to write plist: {}", plist_path.display()))?;
 
-        let output = std::process::Command::new("launchctl")
+        let _ = std::process::Command::new("launchctl")
             .args(["load", "-w", plist_path.to_str().unwrap_or("")])
-            .output()
-            .context("Failed to run launchctl")?;
-
-        if output.status.success() {
-            info!("Registered login item: {}", BUNDLE_ID);
-        } else {
-            warn!(
-                "launchctl load failed: {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
+            .output();
 
         Ok(())
     }
@@ -82,7 +71,6 @@ impl Platform for () {
                 .output();
 
             std::fs::remove_file(&plist_path)?;
-            info!("Unregistered login item: {}", BUNDLE_ID);
         }
 
         Ok(())
@@ -94,11 +82,7 @@ impl Platform for () {
             .output()
             .context("Failed to run pkill")?;
 
-        let found = output.status.success();
-        if found {
-            info!("Stopped process: {}", name);
-        }
-        Ok(found)
+        Ok(output.status.success())
     }
 
     fn start_process(exe_path: &Path) -> Result<()> {
@@ -113,7 +97,6 @@ impl Platform for () {
             .spawn()
             .with_context(|| format!("Failed to start process: {}", exe_str))?;
 
-        info!("Started process: {}", exe_str);
         Ok(())
     }
 
@@ -178,7 +161,7 @@ pub fn generate_info_plist(version: &str) -> String {
 }
 
 #[allow(dead_code)]
-pub fn create_app_bundle(dest: &Path, version: &str) -> Result<()> {
+pub fn create_app_bundle(dest: &Path, _version: &str) -> Result<()> {
     let contents = dest.join("Contents");
     let macos_dir = contents.join("MacOS");
     let resources_dir = contents.join("Resources");
@@ -188,10 +171,5 @@ pub fn create_app_bundle(dest: &Path, version: &str) -> Result<()> {
     std::fs::create_dir_all(&resources_dir)
         .with_context(|| format!("Failed to create Resources dir: {}", resources_dir.display()))?;
 
-    let plist_path = contents.join("Info.plist");
-    std::fs::write(&plist_path, generate_info_plist(version))
-        .with_context(|| format!("Failed to write Info.plist: {}", plist_path.display()))?;
-
-    info!("Created .app bundle structure at: {}", dest.display());
     Ok(())
 }

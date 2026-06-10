@@ -8,9 +8,6 @@ xz2 = "0.1"
 anyhow = "1"
 thiserror = "2"
 clap = { version = "4", features = ["derive"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-taix-logging = { path = "../taix-logging" }
 dialoguer = "0.11"
 indicatif = "0.17"
 dirs = "5"

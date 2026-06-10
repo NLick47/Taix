@@ -15,7 +15,6 @@ jobs:
     strategy:
       matrix:
         cpu: [ x64 ]
-        kind: [ zip ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -72,7 +71,7 @@ jobs:
           Write-Host "Publishing with AOT enabled"
           dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
 
-      - name: Copy Rust binaries and scripts
+      - name: Copy Rust binaries
         shell: pwsh
         run: |
           $publishDir = "./output/${{ matrix.cpu }}"
@@ -85,10 +84,6 @@ jobs:
           # Copy taix-shell resources (tray icon etc.)
           Copy-Item "taix-shell/resources" -Destination $publishDir -Recurse -Force
 
-          # Copy install scripts
-          Copy-Item "script/install.ps1"   -Destination $publishDir -Force
-          Copy-Item "script/uninstall.ps1" -Destination $publishDir -Force
-
       - name: Remove debug symbol files
         shell: pwsh
         run: |
@@ -97,18 +92,6 @@ jobs:
             Remove-Item $_.FullName -Force
             Write-Host "Removed PDB: $($_.FullName)"
           }
-
-      - name: Compress build artifacts
-        shell: pwsh
-        run: |
-          $items = Get-ChildItem -Path ./output/${{ matrix.cpu }} | Select-Object -ExpandProperty FullName
-          Compress-Archive -Path $items -DestinationPath ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip -Force
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}
-          path: ./output/${{ matrix.cpu }}/**
 
       # ========== Installer Build ==========
       - name: Download UPX
@@ -124,11 +107,27 @@ jobs:
         run: |
           bash taix-installer/build-installer.sh "output/${{ matrix.cpu }}" "${{ env.APP_VERSION }}" "."
 
+      - name: Create ZIP
+        shell: pwsh
+        run: |
+          $publishDir = "./output/${{ matrix.cpu }}"
+          $zipName = "Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}"
+          Push-Location $publishDir
+          Compress-Archive -Path "*" -DestinationPath "../../$zipName.zip"
+          Pop-Location
+          Write-Host "Created $zipName.zip"
+
       - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
           name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}-Setup
           path: Taix-${{ env.APP_VERSION }}-Setup.exe
+
+      - name: Upload ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}
+          path: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip
 
       - name: Read release notes from file
         id: release-notes
@@ -142,6 +141,6 @@ jobs:
         with:
           allowUpdates: true
           artifacts: |
-            ./output/Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.${{ matrix.kind }}
             ./Taix-${{ env.APP_VERSION }}-Setup.exe
+            ./Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip
           body: ${{ steps.release-notes.outputs.content }}

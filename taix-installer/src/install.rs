@@ -1,8 +1,7 @@
 use anyhow::{bail, Context, Result};
 use std::path::PathBuf;
-use tracing::info;
 
-use crate::platform::{Platform, PROCESSES, TASK_NAME};
+use crate::platform::{Platform, PROCESSES, TASK_NAME, save_install_location, remove_install_location};
 use crate::sfx;
 use crate::ui::cli;
 
@@ -40,7 +39,6 @@ pub fn run_install(
     cli::show_step(step, total_steps, "检查运行中的进程...");
     for proc_name in PROCESSES {
         if <() as Platform>::is_process_running(proc_name) {
-            info!("Process {} is running, stopping...", proc_name);
             <() as Platform>::stop_process(proc_name)?;
             std::thread::sleep(std::time::Duration::from_secs(1));
         }
@@ -50,22 +48,6 @@ pub fn run_install(
     step += 1;
     cli::show_step(step, total_steps, "解压文件...");
     sfx::extract_to(&dest)?;
-
-    #[cfg(target_os = "macos")]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let macos_dir = dest.join("Contents").join("MacOS");
-        if macos_dir.exists() {
-            for entry in std::fs::read_dir(&macos_dir)? {
-                let entry = entry?;
-                if entry.path().is_file() {
-                    let mut perms = std::fs::metadata(entry.path())?.permissions();
-                    perms.set_mode(0o755);
-                    std::fs::set_permissions(entry.path(), perms)?;
-                }
-            }
-        }
-    }
 
     // 创建开始菜单快捷方式
     step += 1;
@@ -110,11 +92,14 @@ pub fn run_install(
         <() as Platform>::start_process(&shell_exe)?;
     }
 
-    cli::show_success("Taix 安装完成!");
-    println!("安装目录: {}", dest.display());
+    // 保存安装路径
+    save_install_location(&dest)?;
 
     if !silent {
-        cli::show_complete_and_wait("安装完成。");
+        cli::show_install_complete(&dest);
+    } else {
+        cli::show_success("Taix 安装完成!");
+        println!("安装目录: {}", dest.display());
     }
 
     Ok(())
@@ -173,7 +158,7 @@ pub fn run_uninstall(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
                 .output();
             if let Ok(output) = output {
                 if output.status.success() {
-                    info!("Cleaned legacy registry entry: {}", key);
+                    let _ = output;
                 }
             }
         }
@@ -201,7 +186,6 @@ pub fn run_uninstall(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
         if path.exists() {
             std::fs::remove_file(&path)
                 .with_context(|| format!("Failed to remove: {}", path.display()))?;
-            info!("Removed: {}", path.display());
         }
     }
 
@@ -210,12 +194,14 @@ pub fn run_uninstall(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
         let _ = std::fs::remove_dir_all(&resources_dir);
     }
 
-    cli::show_success("Taix 卸载完成!");
-    println!("注意: 用户数据 (配置、数据库、日志等) 已保留。");
-    println!("如需完全删除，请手动删除: {}", install_dir.display());
+    // 删除安装路径记录
+    remove_install_location()?;
 
     if !silent {
-        cli::show_complete_and_wait("卸载完成。");
+        cli::show_uninstall_complete(&install_dir);
+    } else {
+        cli::show_success("Taix 卸载完成!");
+        println!("注意: 用户数据已保留。");
     }
 
     Ok(())

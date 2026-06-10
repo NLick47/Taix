@@ -1,6 +1,5 @@
 use anyhow::{bail, Context, Result};
 use std::path::{Path, PathBuf};
-use tracing::{info, warn};
 
 use super::Platform;
 
@@ -13,7 +12,6 @@ impl Platform for () {
         if shortcut.exists() {
             std::fs::remove_file(shortcut)
                 .with_context(|| format!("Failed to remove shortcut: {}", shortcut.display()))?;
-            info!("Removed shortcut: {}", shortcut.display());
         }
         Ok(())
     }
@@ -26,13 +24,7 @@ impl Platform for () {
             .output()
             .context("Failed to run taix-shell install")?;
 
-        if shell_output.status.success() {
-            info!("Registered startup via taix-shell install: {}", name);
-        } else {
-            warn!(
-                "taix-shell install failed, falling back to schtasks: {}",
-                String::from_utf8_lossy(&shell_output.stderr)
-            );
+        if !shell_output.status.success() {
             let cmd = format!("\"{}\"", exe_str);
             let output = std::process::Command::new("schtasks")
                 .args([
@@ -50,9 +42,7 @@ impl Platform for () {
                 .output()
                 .context("Failed to run schtasks")?;
 
-            if output.status.success() {
-                info!("Registered task scheduler: {}", name);
-            } else {
+            if !output.status.success() {
                 bail!(
                     "Failed to register startup: {}",
                     String::from_utf8_lossy(&output.stderr)
@@ -73,25 +63,15 @@ impl Platform for () {
 
             if let Ok(output) = output {
                 if output.status.success() {
-                    info!("Unregistered startup via taix-shell uninstall");
                     return Ok(());
                 }
             }
         }
 
-        let output = std::process::Command::new("schtasks")
+        let _ = std::process::Command::new("schtasks")
             .args(["/DELETE", "/F", "/TN", name])
-            .output()
-            .context("Failed to run schtasks")?;
+            .output();
 
-        if output.status.success() {
-            info!("Unregistered task scheduler: {}", name);
-        } else {
-            warn!(
-                "schtasks delete failed (may not exist): {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
         Ok(())
     }
 
@@ -101,11 +81,7 @@ impl Platform for () {
             .output()
             .context("Failed to run taskkill")?;
 
-        let found = output.status.success();
-        if found {
-            info!("Stopped process: {}", name);
-        }
-        Ok(found)
+        Ok(output.status.success())
     }
 
     fn start_process(exe_path: &Path) -> Result<()> {
@@ -120,7 +96,6 @@ impl Platform for () {
             .spawn()
             .with_context(|| format!("Failed to start process: {}", exe_str))?;
 
-        info!("Started process: {}", exe_str);
         Ok(())
     }
 
@@ -139,9 +114,9 @@ impl Platform for () {
     }
 
     fn default_install_dir() -> PathBuf {
-        dirs::data_local_dir()
-            .unwrap_or_else(|| PathBuf::from(r"C:\Users\Default\AppData\Local"))
-            .join("Taix")
+        let program_files = std::env::var("ProgramFiles")
+            .unwrap_or_else(|_| r"C:\Program Files".to_string());
+        PathBuf::from(program_files).join("Taix")
     }
 
     fn start_menu_dir() -> PathBuf {
@@ -186,34 +161,20 @@ $sc.Save()
         );
     }
 
-    info!(
-        "Created shortcut: {} -> {}",
-        shortcut.display(),
-        target.display()
-    );
     Ok(())
 }
 
 pub fn add_defender_exclusion(path: &Path) -> Result<()> {
     let path_str = path.to_str().context("Invalid path")?;
 
-    let output = std::process::Command::new("powershell")
+    let _ = std::process::Command::new("powershell")
         .args([
             "-NoProfile",
             "-Command",
             &format!("Add-MpPreference -ExclusionPath '{}'", path_str),
         ])
-        .output()
-        .context("Failed to run PowerShell")?;
+        .output();
 
-    if output.status.success() {
-        info!("Added Windows Defender exclusion: {}", path_str);
-    } else {
-        warn!(
-            "Failed to add Defender exclusion (may need admin): {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
     Ok(())
 }
 
@@ -221,18 +182,14 @@ pub fn add_defender_exclusion(path: &Path) -> Result<()> {
 pub fn remove_defender_exclusion(path: &Path) -> Result<()> {
     let path_str = path.to_str().context("Invalid path")?;
 
-    let output = std::process::Command::new("powershell")
+    let _ = std::process::Command::new("powershell")
         .args([
             "-NoProfile",
             "-Command",
             &format!("Remove-MpPreference -ExclusionPath '{}'", path_str),
         ])
-        .output()
-        .context("Failed to run PowerShell")?;
+        .output();
 
-    if output.status.success() {
-        info!("Removed Windows Defender exclusion: {}", path_str);
-    }
     Ok(())
 }
 

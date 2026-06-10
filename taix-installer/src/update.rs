@@ -1,9 +1,8 @@
 use anyhow::{bail, Context, Result};
 use std::path::PathBuf;
 use std::time::Duration;
-use tracing::info;
 
-use crate::platform::{Platform, PROCESSES};
+use crate::platform::{Platform, PROCESSES, save_install_location};
 use crate::sfx;
 use crate::ui::cli;
 
@@ -25,12 +24,11 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
         );
     }
 
-    info!("Updating installation at: {}", install_dir.display());
-
     let total_steps = 5;
     let mut step = 0;
 
     if !silent {
+        println!("\n检测到安装目录: {}", install_dir.display());
         if !cli::confirm_update()? {
             println!("更新已取消。");
             return Ok(());
@@ -42,7 +40,6 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
     cli::show_step(step, total_steps, "停止运行中的进程...");
     for proc_name in PROCESSES {
         if <() as Platform>::is_process_running(proc_name) {
-            info!("Stopping process: {}", proc_name);
             <() as Platform>::stop_process(proc_name)?;
         }
     }
@@ -53,7 +50,6 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
     for proc_name in PROCESSES {
         let mut retries = 0;
         while <() as Platform>::is_process_running(proc_name) && retries < 5 {
-            info!("Process {} still running, retrying...", proc_name);
             <() as Platform>::stop_process(proc_name)?;
             std::thread::sleep(Duration::from_secs(1));
             retries += 1;
@@ -89,7 +85,6 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
                 .with_context(|| format!("Failed to backup: {}", src.display()))?;
         }
     }
-    info!("Backup created at: {}", backup_dir.display());
 
     // 解压新文件
     step += 1;
@@ -119,11 +114,14 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
 
     let _ = std::fs::remove_dir_all(&backup_dir);
 
-    cli::show_success("Taix 更新完成!");
-    println!("安装目录: {}", install_dir.display());
+    // 更新安装路径记录
+    save_install_location(&install_dir)?;
 
     if !silent {
-        cli::show_complete_and_wait("更新完成。");
+        cli::show_update_complete(&install_dir);
+    } else {
+        cli::show_success("Taix 更新完成!");
+        println!("安装目录: {}", install_dir.display());
     }
 
     Ok(())
@@ -137,6 +135,5 @@ fn restore_backup(backup_dir: &PathBuf, install_dir: &PathBuf) -> Result<()> {
         std::fs::copy(&src, &dst)
             .with_context(|| format!("Failed to restore: {}", src.display()))?;
     }
-    info!("Backup restored from: {}", backup_dir.display());
     Ok(())
 }
