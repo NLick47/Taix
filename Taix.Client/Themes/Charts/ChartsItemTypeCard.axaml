@@ -86,7 +86,7 @@
                                     </Border.Background>
                                 </Border>
 
-                                <base:Img x:Name="IconObj" Width="32" Height="32" HorizontalAlignment="Center"
+                                <base:Img x:Name="IconObj" Width="{OnPlatform '32', macOS='37', x:TypeArguments=x:Double}" Height="{OnPlatform '32', macOS='37', x:TypeArguments=x:Double}" HorizontalAlignment="Center"
                                                  DecodeWidth="64"
                                                  URL="{Binding Data.Icon,RelativeSource={RelativeSource AncestorType={x:Type controls:ChartsItemTypeCard}}}"
                                                  VerticalAlignment="Center" />

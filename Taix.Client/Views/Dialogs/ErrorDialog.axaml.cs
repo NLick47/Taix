@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Taix.Client.Platform;
 
 namespace Taix.Client.Views.Dialogs;
 
@@ -17,7 +18,7 @@ public partial class ErrorDialog : Window
     {
         var loggerName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
             "Log", DateTime.Now.ToString("yyyy-MM-dd") + ".log");
-        if (File.Exists(loggerName)) Process.Start("explorer.exe", "/select, " + loggerName);
+        if (File.Exists(loggerName)) PlatformHelper.OpenFileInExplorer(loggerName);
     }
 
     private void IssuesHyperlinkClick(object sender, RoutedEventArgs e)

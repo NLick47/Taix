@@ -69,8 +69,9 @@
                         </Grid.ColumnDefinitions>
 
                         <Border Margin="0,0,10,0" x:Name="IconBorder" BorderBrush="Transparent" BorderThickness="2"
-                                Background="{DynamicResource ListItemIconBgBrush}" CornerRadius="6" Width="50"
-                                Height="50"
+                                Background="{DynamicResource ListItemIconBgBrush}" CornerRadius="6"
+                                Width="{OnPlatform '50', macOS='52', x:TypeArguments=x:Double}"
+                                Height="{OnPlatform '50', macOS='52', x:TypeArguments=x:Double}"
                                 HorizontalAlignment="Left">
                             <base:Img x:Name="IconObj" Width="{TemplateBinding IconSize}"
                                              Height="{TemplateBinding IconSize}"

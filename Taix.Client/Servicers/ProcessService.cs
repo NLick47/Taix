@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO;
+using Taix.Client.Platform;
 using Taix.Client.Servicers.Interfaces;
 
 namespace Taix.Client.Servicers;
@@ -22,6 +23,6 @@ public class ProcessService : IProcessService
     public void OpenDirectory(string filePath)
     {
         if (string.IsNullOrWhiteSpace(filePath)) return;
-        Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+        PlatformHelper.OpenFileInExplorer(filePath);
     }
 }
