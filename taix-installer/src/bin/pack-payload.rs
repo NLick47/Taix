@@ -53,14 +53,9 @@ fn pack_payload(source_dir: &Path, output_path: &Path) -> Result<()> {
 
     println!("Raw payload size: {} bytes", raw_payload.len());
 
-    // 使用 LZMA2 压缩
-    let options = xz2::stream::LzmaOptions::new_preset(9)
-        .context("Failed to create LZMA options")?;
-    let stream = xz2::stream::Stream::new_lzma_encoder(&options)
-        .context("Failed to create LZMA encoder stream")?;
-
+    // 使用 XZ 压缩 (LZMA2 算法)
     let mut compressed = Vec::new();
-    let mut encoder = xz2::write::XzEncoder::new_stream(compressed, stream);
+    let mut encoder = xz2::write::XzEncoder::new(compressed, 9);
     encoder.write_all(&raw_payload).context("Failed to compress")?;
     compressed = encoder.finish().context("Failed to finalize compression")?;
 
