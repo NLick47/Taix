@@ -1,26 +1,17 @@
 import Foundation
 
 actor SessionTracker {
-    private struct Session {
-        let app: AppInfo
-        let window: WindowInfo?
-        var startTime: Date
-        var accumulatedDuration: TimeInterval
-        var isSuspended: Bool
-        var lastFlushTime: Date  // 上次 flush 的时间，用于计算增量
-        var accumulatedMs: TimeInterval  // 毫秒零头累积，避免整数截断丢失
-
-        var totalDuration: TimeInterval {
-            guard !isSuspended else { return accumulatedDuration }
-            return accumulatedDuration + Date().timeIntervalSince(startTime)
-        }
+    private enum TimerState {
+        case idle
+        case tracking(app: AppInfo, window: WindowInfo?, start: Date, accumulatedMs: TimeInterval)
+        case suspended(app: AppInfo?, window: WindowInfo?, accumulatedMs: TimeInterval)
     }
 
     private let eventBus: EventBus
     private let transport: TransportClient
     private let persistence: Persistence
     private let tickInterval: TimeInterval
-    private var currentSession: Session?
+    private var state: TimerState = .idle
     private var tickTask: Task<Void, Never>?
     private var eventTask: Task<Void, Never>?
 
@@ -60,17 +51,18 @@ actor SessionTracker {
         eventTask?.cancel()
         tickTask = nil
         eventTask = nil
-        await endSession()
+        await flushFinal()
     }
 
     private func handle(event: MonitorEvent) async {
         switch event.kind {
         case .foregroundChanged:
-            await endSession()
+            await flushFinal()
             if let app = event.app {
                 await beginSession(app: app, window: event.window)
             }
         case .idleDetected:
+            await flushFinal()
             await suspendSession()
         case .activityResumed:
             await resumeSession()
@@ -81,16 +73,7 @@ actor SessionTracker {
 
     private func beginSession(app: AppInfo, window: WindowInfo?) async {
         let now = Date()
-        let session = Session(
-            app: app,
-            window: window,
-            startTime: now,
-            accumulatedDuration: 0,
-            isSuspended: false,
-            lastFlushTime: now,
-            accumulatedMs: 0
-        )
-        currentSession = session
+        state = .tracking(app: app, window: window, start: now, accumulatedMs: 0)
         await saveSnapshot()
 
         Logger.info("Session started: \(app.name) [\(app.bundleIdentifier ?? "no-bundle-id")]")
@@ -105,109 +88,139 @@ actor SessionTracker {
         await transport.send(event)
     }
 
-    private func endSession() async {
-        guard let session = currentSession else { return }
-        var duration = session.totalDuration + session.accumulatedMs / 1000.0
-        // 最终刷盘：毫秒零头四舍五入
-        let remainderMs = duration.truncatingRemainder(dividingBy: 1.0) * 1000
-        if remainderMs >= 500 {
-            duration = (duration * 1000).rounded(.down) / 1000 + 1
-        }
-        let durationSecs = Int64(duration)
-
-        currentSession = nil
-        await persistence.clear()
-
-        Logger.info("Session ended: \(session.app.name) [duration: \(durationSecs)s]")
-
-        // 计算会话开始时间：结束时间 - 持续时间
-        // 服务端期望收到的是开始时间（a 字段），而不是结束时间
-        let startTime = Date().addingTimeInterval(-Double(durationSecs))
-
-        let event = MonitorEvent(
-            kind: .sessionEnded,
-            timestamp: startTime,
-            app: session.app,
-            duration: Double(durationSecs),
-            window: session.window
-        )
-        await transport.send(event)
-    }
-
     private func suspendSession() async {
-        guard var session = currentSession, !session.isSuspended else { return }
-        let now = Date()
-        let elapsed = now.timeIntervalSince(session.startTime)
-        session.accumulatedDuration += elapsed
-        session.isSuspended = true
-        session.lastFlushTime = now
-        session.accumulatedMs = 0  // 重置毫秒零头
-        currentSession = session
-        await saveSnapshot()
-
-        Logger.info("Session suspended: \(session.app.name) [accumulated: \(String(format: "%.1f", session.accumulatedDuration))s]")
+        switch state {
+        case .tracking(let app, let window, _, let accumulatedMs):
+            state = .suspended(app: app, window: window, accumulatedMs: accumulatedMs)
+            await saveSnapshot()
+            Logger.info("Session suspended: \(app.name)")
+        case .idle:
+            state = .suspended(app: nil, window: nil, accumulatedMs: 0)
+        case .suspended:
+            break
+        }
     }
 
     private func resumeSession() async {
-        guard var session = currentSession, session.isSuspended else { return }
         let now = Date()
-        session.startTime = now
-        session.isSuspended = false
-        session.lastFlushTime = now
-        session.accumulatedMs = 0  // 重置毫秒零头
-        currentSession = session
-        await saveSnapshot()
-
-        Logger.info("Session resumed: \(session.app.name)")
+        switch state {
+        case .suspended(let app, let window, let accumulatedMs):
+            if let app = app {
+                let window = window ?? WindowInfo(title: "", windowClass: "")
+                state = .tracking(app: app, window: window, start: now, accumulatedMs: accumulatedMs)
+                await saveSnapshot()
+                Logger.info("Session resumed: \(app.name)")
+            } else {
+                state = .idle
+            }
+        default:
+            break
+        }
     }
 
     private func flushTick() async {
-        guard var session = currentSession, !session.isSuspended else { return }
         let now = Date()
+        switch state {
+        case .tracking(let app, let window, let start, var accumulatedMs):
+            if let event = computeFlush(start: start, end: now, accumulatedMs: &accumulatedMs, app: app, isFinal: false) {
+                Logger.debug("Session tick: \(app.name) [duration: \(event.duration ?? 0)s]")
+                await transport.send(event)
+                state = .tracking(app: app, window: window, start: now, accumulatedMs: accumulatedMs)
+                await saveSnapshot()
+            }
+        default:
+            break
+        }
+    }
 
-        let incrementalDuration = now.timeIntervalSince(session.lastFlushTime)
+    private func flushFinal() async {
+        let now = Date()
+        switch state {
+        case .tracking(let app, let window, let start, var accumulatedMs):
+            if let event = computeFlush(start: start, end: now, accumulatedMs: &accumulatedMs, app: app, isFinal: true) {
+                Logger.info("Session ended: \(app.name) [duration: \(event.duration ?? 0)s]")
+                await transport.send(event)
+            }
+            state = .idle
+            await persistence.clear()
+        default:
+            break
+        }
+    }
 
-        // 服务端期望收到的是这段时间的开始时刻，而不是结束时刻
-        let startTime = session.lastFlushTime
+    private func computeFlush(
+        start: Date,
+        end: Date,
+        accumulatedMs: inout TimeInterval,
+        app: AppInfo,
+        isFinal: Bool
+    ) -> MonitorEvent? {
+        let durationMs = end.timeIntervalSince(start) * 1000
+        guard durationMs > 0 else { return nil }
 
-        // 累积毫秒零头，避免整数截断丢失
-        let totalMs = incrementalDuration * 1000 + session.accumulatedMs
-        let durationSecs = Int64(totalMs / 1000)
-        let remainderMs = totalMs.truncatingRemainder(dividingBy: 1000)
+        let maxFlushDurationMs: TimeInterval = 3600_000
+        let cappedDurationMs = min(durationMs, maxFlushDurationMs)
 
-        // 周期刷盘保留毫秒零头继续累积
-        session.lastFlushTime = now
-        session.accumulatedMs = remainderMs
-        currentSession = session
-        await saveSnapshot()
+        let totalMs = cappedDurationMs + accumulatedMs
+        var durationSecs = Int64(totalMs / 1000)
+        let remainder = totalMs.truncatingRemainder(dividingBy: 1000)
 
-        Logger.debug("Session tick: \(session.app.name) [incremental: \(durationSecs)s, remainder: \(Int(remainderMs))ms]")
+        if isFinal {
+            if remainder >= 500 {
+                durationSecs += 1
+            }
+            accumulatedMs = 0
+        } else {
+            accumulatedMs = remainder
+        }
 
-        let event = MonitorEvent(
-            kind: .sessionTick,
-            timestamp: startTime,
-            app: session.app,
+        guard durationSecs > 0 else { return nil }
+
+        return MonitorEvent(
+            kind: isFinal ? .sessionEnded : .sessionTick,
+            timestamp: start,
+            app: app,
             duration: Double(durationSecs),
-            window: session.window
+            window: nil
         )
-        await transport.send(event)
     }
 
     private func saveSnapshot() async {
-        guard let session = currentSession else { return }
-        let snapshot = SessionSnapshot(
-            bundleIdentifier: session.app.bundleIdentifier ?? "",
-            executablePath: session.app.executablePath,
-            startTime: session.startTime,
-            accumulatedSeconds: session.accumulatedDuration,
-            appName: session.app.name
-        )
-        await persistence.save(snapshot: snapshot)
+        switch state {
+        case .tracking(let app, let window, let start, let accumulatedMs):
+            let snapshot = SessionSnapshot(
+                bundleIdentifier: app.bundleIdentifier ?? "",
+                executablePath: app.executablePath,
+                startTime: start,
+                accumulatedSeconds: accumulatedMs / 1000,
+                appName: app.name
+            )
+            await persistence.save(snapshot: snapshot)
+        case .suspended(let app, _, let accumulatedMs):
+            guard let app = app else { return }
+            let snapshot = SessionSnapshot(
+                bundleIdentifier: app.bundleIdentifier ?? "",
+                executablePath: app.executablePath,
+                startTime: Date(),
+                accumulatedSeconds: accumulatedMs / 1000,
+                appName: app.name
+            )
+            await persistence.save(snapshot: snapshot)
+        default:
+            break
+        }
     }
 
     private func restoreSessionIfNeeded() async {
         guard let snapshot = await persistence.load() else { return }
-        let now = Date()
+        await persistence.clear()
+
+        let elapsed = Date().timeIntervalSince(snapshot.startTime)
+        if elapsed > 300 {
+            Logger.info("Session snapshot expired (\(Int(elapsed))s), skipping recovery")
+            return
+        }
+
         let app = AppInfo(
             name: snapshot.appName ?? snapshot.bundleIdentifier,
             bundleIdentifier: snapshot.bundleIdentifier,
@@ -215,14 +228,8 @@ actor SessionTracker {
             iconPath: nil,
             displayName: snapshot.appName
         )
-        currentSession = Session(
-            app: app,
-            window: nil,
-            startTime: snapshot.startTime,
-            accumulatedDuration: snapshot.accumulatedSeconds,
-            isSuspended: true,
-            lastFlushTime: now,
-            accumulatedMs: 0
-        )
+
+        state = .suspended(app: app, window: nil, accumulatedMs: snapshot.accumulatedSeconds * 1000)
+        Logger.info("Session recovered: \(app.name) [\(Int(snapshot.accumulatedSeconds))s, pending user activity]")
     }
 }

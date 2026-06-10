@@ -1,5 +1,6 @@
 import Foundation
 import IOKit
+import Cocoa
 
 actor IdleDetector {
     private let eventBus: EventBus
@@ -16,6 +17,10 @@ actor IdleDetector {
     private let resumeIdleThreshold: TimeInterval = 30  // 恢复后判定用户活跃的 idle 阈值
     private var isResumePending: Bool = false
 
+    // 系统睡眠通知
+    private var sleepObserver: Any?
+    private var wakeObserver: Any?
+
     init(
         eventBus: EventBus,
         threshold: TimeInterval,
@@ -30,6 +35,28 @@ actor IdleDetector {
     }
 
     func start() {
+        // 监听系统睡眠通知
+        sleepObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.willSleepNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task {
+                await self?.handleSystemSleep()
+            }
+        }
+
+        // 监听系统唤醒通知
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task {
+                await self?.handleSystemWake()
+            }
+        }
+
         monitorTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { break }
@@ -40,8 +67,32 @@ actor IdleDetector {
     }
 
     func stop() {
+        // 移除睡眠通知监听
+        if let observer = sleepObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            sleepObserver = nil
+        }
+        if let observer = wakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            wakeObserver = nil
+        }
         monitorTask?.cancel()
         monitorTask = nil
+    }
+
+    private func handleSystemSleep() async {
+        // 系统即将睡眠，立即暂停计时
+        guard !isIdle else { return }
+        isIdle = true
+        isResumePending = true  // 标记为待恢复状态，等待唤醒后用户活动
+        Logger.info("System will sleep, pausing session timer")
+        await publish(kind: .idleDetected)
+    }
+
+    private func handleSystemWake() async {
+        // 系统唤醒，进入待恢复状态等待用户活动
+        Logger.info("System woke from sleep, waiting for user activity")
+        // isResumePending 已经在睡眠时设置，check() 方法会检测用户活动并恢复
     }
 
     private func check() async {
