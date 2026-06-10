@@ -1095,6 +1095,13 @@ async fn save_icon(icon_url: &str, favicons_dir: &Path, site_id: i64, url_id: i6
         return Ok(());
     }
 
+    let png_filename = format!("site_{}.png", site_id);
+    let png_filepath = favicons_dir.join(&png_filename);
+    if png_filepath.exists() {
+        tracing::debug!("Icon already exists for site {}, skipping download", site_id);
+        return Ok(());
+    }
+
     let is_svg_by_url = icon_url.to_lowercase().ends_with(".svg");
 
     let ext = std::path::Path::new(icon_url)

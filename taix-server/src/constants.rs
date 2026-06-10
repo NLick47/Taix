@@ -23,7 +23,7 @@ pub const DAY_VIEW_THRESHOLD: i64 = 31;
 
 pub const ICON_DOWNLOAD_TIMEOUT_SECS: u64 = 10;
 pub const SVG_PREFIX_CHECK_LEN: usize = 256;
-pub const MAX_ICON_SIZE_PX: u32 = 256;
+pub const MAX_ICON_SIZE_PX: u32 = 128;
 
 pub const MIGRATION_BATCH_SIZE: usize = 1_000;
 
