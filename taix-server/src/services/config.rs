@@ -181,7 +181,12 @@ impl ConfigService {
 
             let mut ignored = false;
             for p in &literal_patterns {
-                if p.eq_ignore_ascii_case(&domain_lower) || domain_lower.contains(p) {
+                if p.eq_ignore_ascii_case(&domain_lower) {
+                    ignored = true;
+                    break;
+                }
+             
+                if domain_lower.ends_with(&format!(".{}", p)) {
                     ignored = true;
                     break;
                 }

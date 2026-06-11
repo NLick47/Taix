@@ -196,7 +196,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
     }
 
 
-    private void Block_Click(object? sender, PointerPressedEventArgs e)
+    private async void Block_Click(object? sender, PointerPressedEventArgs e)
     {
         var data = _menu.Tag as ChartsDataModel;
         var site = data.Data as WebSiteModel;
@@ -224,6 +224,8 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         }
 
         data.BadgeList = newBadgeList;
+
+        await _appConfig.SaveAsync();
     }
 
 

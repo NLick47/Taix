@@ -408,7 +408,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         }
     }
 
-    private void OnBlockAction()
+    private async void OnBlockAction()
     {
         if (WebSite == null) return;
         var config = _appConfig.GetConfig();
@@ -420,6 +420,8 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
         IsIgnore = !IsIgnore;
         _toastService.Success(ResourceStrings.OperationCompleted);
+
+        await _appConfig.SaveAsync();
     }
 
     private async Task ClearSiteCategoryAsync()
@@ -445,7 +447,14 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
     {
         if (IsRegexPattern(pattern))
             return RegexHelper.IsMatch(url, pattern);
-        return url.Contains(pattern);
+
+        // 精确匹配
+        if (url.Equals(pattern, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // 域名后缀匹配：pattern 匹配 url 或 url 的子域名
+        // 例如 github.com 匹配 api.github.com，但不匹配 ogithub.com
+        return url.EndsWith("." + pattern, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsRegexPattern(string pattern)
