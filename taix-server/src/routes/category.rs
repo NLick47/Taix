@@ -16,6 +16,7 @@ pub fn router() -> Router<SqlitePool> {
         .route("/api/category", get(get_categories).post(create_category))
         .route("/api/category/:id", get(get_category).put(update_category).delete(delete_category))
         .route("/api/category/:id/restore", post(restore_system_category))
+        .route("/api/category/apply-directory-match", post(apply_directory_match))
 }
 
 async fn get_categories(
@@ -109,6 +110,19 @@ async fn delete_category(
             message: msg,
             data: None,
         }),
+        Err(e) => Json(ApiResponse {
+            code: 500,
+            message: e.to_string(),
+            data: None,
+        }),
+    }
+}
+
+async fn apply_directory_match(
+    State(pool): State<SqlitePool>,
+) -> Json<ApiResponse<usize>> {
+    match CategoryService::apply_directory_match(&pool).await {
+        Ok(count) => Json(ApiResponse::ok(count)),
         Err(e) => Json(ApiResponse {
             code: 500,
             message: e.to_string(),

@@ -220,6 +220,9 @@ public class TaixApiClient : ITaixApiClient
 
     public Task DeleteCategoryAsync(int id) => DeleteAsync($"api/category/{id}");
 
+    public Task<int> ApplyDirectoryMatchAsync() =>
+        PostEmptyAsync<int>("api/category/apply-directory-match");
+
     // Data
     private static string TzQuery(string url)
     {

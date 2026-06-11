@@ -19,8 +19,7 @@ public interface ICategorys
 
     Task DeleteAsync(CategoryModel category);
 
-    /// <summary>
-    /// 清除分类缓存，下次获取时将重新从API加载
-    /// </summary>
+    Task<int> ApplyDirectoryMatchAsync();
+
     void RefreshCache();
 }

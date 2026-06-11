@@ -57,9 +57,8 @@ public class CategoryPageViewModel : CategoryPageModel
         AddDirectoryCommand = ReactiveCommand.CreateFromTask<object>(OnAddDirectoryAsync).DisposeWith(Disposables);
         DirectoriesCommand = ReactiveCommand.Create<object>(OnDirectoriesCommand).DisposeWith(Disposables);
         RestoreSystemCategoryCommand = ReactiveCommand.CreateFromTask<object>(OnRestoreSystemCategoryAsync).DisposeWith(Disposables);
-
-        WhenPropertyChanged(this, x => x.ShowType, _ => ExecuteAsync(LoadDataCoreAsync))
-            .DisposeWith(Disposables);
+        ApplyDirectoryMatchCommand = ReactiveCommand.CreateFromTask<object>(OnApplyDirectoryMatchAsync).DisposeWith(Disposables);
+        WhenPropertyChanged(this, x => x.ShowType, _ => ExecuteAsync(LoadDataCoreAsync)).DisposeWith(Disposables);
     }
 
     public override Task OnNavigatedToAsync()
@@ -77,8 +76,36 @@ public class CategoryPageViewModel : CategoryPageModel
     public ReactiveCommand<object, Unit> AddDirectoryCommand { get; }
     public ReactiveCommand<object, Unit> DirectoriesCommand { get; }
     public ReactiveCommand<object, Unit> RestoreSystemCategoryCommand { get; }
+    public ReactiveCommand<object, Unit> ApplyDirectoryMatchCommand { get; }
+
+
+    private bool _hasDirectoryMatchCategory;
+    public bool HasDirectoryMatchCategory
+    {
+        get => _hasDirectoryMatchCategory;
+        set
+        {
+            _hasDirectoryMatchCategory = value;
+            OnPropertyChanged();
+        }
+    }
 
     private Task OnRefreshAsync(object _) => ExecuteAsync(LoadDataCoreAsync);
+
+    private async Task OnApplyDirectoryMatchAsync(object _)
+    {
+        try
+        {
+            var count = await _categoryService.ApplyDirectoryMatchAsync();
+            _toastService.Success(string.Format(ResourceStrings.ApplyDirectoryMatchSuccess, count));
+            await LoadDataCoreAsync(default);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex.Message, ex);
+            _toastService.Error(ResourceStrings.OperationFailedRetry);
+        }
+    }
 
     private async Task OnRestoreSystemCategoryAsync(object arg)
     {
@@ -282,6 +309,11 @@ public class CategoryPageViewModel : CategoryPageModel
         }
     }
 
+    private void ComputeHasDirectoryMatchCategory()
+    {
+        HasDirectoryMatchCategory = Data.Any(m => m.Data.IsDirectoryMatch);
+    }
+
     private async Task EditAppCategoryActionAsync()
     {
         try
@@ -379,6 +411,24 @@ public class CategoryPageViewModel : CategoryPageModel
                 _toastService.Success(ResourceStrings.Updated);
             }
 
+            if (EditIsDirectoryMatch && EditDirectories.Count > 0)
+            {
+                try
+                {
+                    var matchCount = await _categoryService.ApplyDirectoryMatchAsync();
+                    if (matchCount > 0)
+                    {
+                        await LoadDataCoreAsync(default);
+                        _toastService.Success(string.Format(ResourceStrings.ApplyDirectoryMatchSuccess, matchCount));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex.Message, ex);
+                }
+            }
+
+            ComputeHasDirectoryMatchCategory();
             EditVisibility = false;
             SelectedAppCategoryItem = null;
         }
@@ -641,9 +691,11 @@ public class CategoryPageViewModel : CategoryPageModel
                     Data = item
                 });
             }
+            ComputeHasDirectoryMatchCategory();
         }
         else
         {
+            HasDirectoryMatchCategory = false;
             WebCategoryData.Clear();
             var webCategories = await _webDataService.GetWebSiteCategoriesAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();

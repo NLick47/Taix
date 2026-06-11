@@ -157,13 +157,16 @@ impl AppTimerService {
             }
             None => {
                 info!("update_app_duration: auto-creating AppModel for '{}'", process);
-                let default_category_id = CategoryService::get_system_category_id(&mut *tx).await?;
+                let category_id = match CategoryService::match_category_by_path(pool, req.file.as_deref()).await {
+                    Some(id) => id,
+                    None => CategoryService::get_system_category_id(&mut *tx).await?,
+                };
                 let result = sqlx::query(
                     "INSERT INTO AppModels (Name, Alias, CategoryID, TotalTime, File, IconFile, Description) VALUES (?, ?, ?, 0, ?, ?, ?)",
                 )
                 .bind(&process)
                 .bind(None::<&str>)
-                .bind(default_category_id)
+                .bind(category_id)
                 .bind(&req.file)
                 .bind(&req.icon_file)
                 .bind(&req.description)

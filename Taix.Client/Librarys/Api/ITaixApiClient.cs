@@ -28,6 +28,7 @@ public interface ITaixApiClient
     Task UpdateCategoryAsync(CategoryModel category);
     Task<CategoryModel> RestoreSystemCategoryAsync(int id);
     Task DeleteCategoryAsync(int id);
+    Task<int> ApplyDirectoryMatchAsync();
 
     // Data
     Task<List<DailyLogModel>> GetDateRangeLogListAsync(DateTime start, DateTime end, int take = -1, int skip = -1, CancellationToken cancellationToken = default);

@@ -137,6 +137,9 @@
     <system:String x:Key="Edit">Edit</system:String>
     <system:String x:Key="DeleteCategory">Delete Category</system:String>
     <system:String x:Key="DirectoryMatch">Directory Match</system:String>
+    <system:String x:Key="ApplyDirectoryMatch">Apply Directory Match</system:String>
+    <system:String x:Key="ApplyDirectoryMatchTip">Batch categorize apps based on directory settings</system:String>
+    <system:String x:Key="ApplyDirectoryMatchSuccess">{0} apps categorized</system:String>
     <system:String x:Key="CategoryAppCount">Category App Count</system:String>
     <system:String x:Key="ViewWebsiteList">View Website List</system:String>
 

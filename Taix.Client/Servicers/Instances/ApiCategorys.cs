@@ -62,4 +62,9 @@ public class ApiCategorys : ICategorys
         await _apiClient.DeleteCategoryAsync(category.ID);
         RefreshCache();
     }
+
+    public async Task<int> ApplyDirectoryMatchAsync()
+    {
+        return await _apiClient.ApplyDirectoryMatchAsync();
+    }
 }

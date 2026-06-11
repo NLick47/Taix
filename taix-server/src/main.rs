@@ -22,6 +22,7 @@ use tokio::sync::broadcast;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use routes::web_sentry::SentryState;
+use services::category::CategoryService;
 use services::config::ConfigService;
 
 #[tokio::main]
@@ -124,6 +125,21 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
     tokio::spawn(services::app_timer::AppTimerService::run_cleanup_task(
         pool.clone(),
     ));
+
+    let startup_pool = pool.clone();
+    tokio::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        match CategoryService::apply_directory_match(&startup_pool).await {
+            Ok(count) => {
+                if count > 0 {
+                    tracing::info!("Startup directory match: {} apps re-categorized", count);
+                }
+            }
+            Err(e) => {
+                tracing::warn!("Startup directory match skipped: {}", e);
+            }
+        }
+    });
 
     http_server.await?;
 

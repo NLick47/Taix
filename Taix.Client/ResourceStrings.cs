@@ -139,6 +139,7 @@ public static class ResourceStrings
     public static string EnterCategoryName => GetStringValue("PleaseEnterCategoryName");
     public static string CategoryNameMaxLength => GetStringValue("AliasMaxLengthTip");
     public static string CategoryCreated => GetStringValue("CreationCompleted");
+    public static string ApplyDirectoryMatchSuccess => GetStringValue("ApplyDirectoryMatchSuccess");
 
     private static string GetStringValue(string key)
     {

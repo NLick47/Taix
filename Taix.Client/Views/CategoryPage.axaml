@@ -131,25 +131,29 @@
             <Grid.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}" />
-                    <Separator />
-                    <MenuItem Header="{DynamicResource NewCategory}" Command="{Binding EditCommand}" />
                 </ContextMenu>
             </Grid.ContextMenu>
 
-            <StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,5,0,20">
+            <Grid Margin="0,5,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="{DynamicResource SideSort}" FontSize="18" VerticalAlignment="Center" />
-                    <select:TabSwitch Margin="10,0,0,0" VerticalAlignment="Top"
+                    <select:TabSwitch Margin="10,0,0,0" VerticalAlignment="Center"
                                    IsShowIcon="False" SelectedItem="{Binding ShowType,Mode=TwoWay}"
                                    Options="{Binding ShowTypeOptions}" />
                 </StackPanel>
 
-                <Button:Button Icon="CalculatorAddition"
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button:Button Icon="CalculatorAddition"
                                Content="{DynamicResource NewCategory}"
-                               HorizontalAlignment="Right"
-                               Margin="0,0,20,0" Width="150"
+                               Width="150"
                                Command="{Binding EditCommand}" />
-            </StackPanel>
+                </StackPanel>
+            </Grid>
 
             <TabControl
                 SelectedIndex="{Binding ShowType.Id}"
