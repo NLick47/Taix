@@ -264,7 +264,7 @@
                                                         Background="{DynamicResource CategoryCardGlassBgBrush}"
                                                         Margin="8" CornerRadius="{StaticResource RadiusLarge}">
                                                     <Grid>
-                                                        <Border CornerRadius="{StaticResource RadiusLarge},{StaticResource RadiusLarge},0,0"
+                                                        <Border CornerRadius="{StaticResource RadiusLarge}"
                                                                 IsHitTestVisible="False"
                                                                 Height="55"
                                                                 VerticalAlignment="Top"
@@ -453,7 +453,7 @@
                                                         Background="{DynamicResource CategoryCardGlassBgBrush}"
                                                         Margin="8" CornerRadius="{StaticResource RadiusLarge}">
                                                     <Grid>
-                                                        <Border CornerRadius="{StaticResource RadiusLarge},{StaticResource RadiusLarge},0,0"
+                                                        <Border CornerRadius="{StaticResource RadiusLarge}"
                                                                 IsHitTestVisible="False"
                                                                 Height="55"
                                                                 VerticalAlignment="Top"

@@ -1,5 +1,6 @@
-import AppKit
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
 
 actor IconExtractor {
     private let cacheDirectory: URL
@@ -24,13 +25,13 @@ actor IconExtractor {
             return iconURL.path
         }
 
-        let image = NSWorkspace.shared.icon(forFile: executablePath)
+        guard let icnsPath = findIconPath(for: executablePath),
+              let cgImage = loadIcon(from: icnsPath) else {
+            Logger.debug("Failed to extract icon for: \(executablePath)")
+            return nil
+        }
 
-        image.size = NSSize(width: 128, height: 128)
-
-        guard let tiffData = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData),
-              let pngData = bitmap.representation(using: .png, properties: [:]) else {
+        guard let pngData = createPNGData(from: cgImage) else {
             Logger.debug("Failed to encode icon for: \(executablePath)")
             return nil
         }
@@ -43,6 +44,61 @@ actor IconExtractor {
             Logger.error("Icon write failed: \(error)")
             return nil
         }
+    }
+
+    private func findIconPath(for executablePath: String) -> String? {
+        if executablePath.hasSuffix(".app") {
+            let infoPlistPath = (executablePath as NSString).appendingPathComponent("Contents/Info.plist")
+            guard let info = NSDictionary(contentsOf: URL(fileURLWithPath: infoPlistPath)),
+                  let iconFileName = info["CFBundleIconFile"] as? String else {
+                let defaultIconPath = (executablePath as NSString).appendingPathComponent("Contents/Resources/AppIcon.icns")
+                if FileManager.default.fileExists(atPath: defaultIconPath) {
+                    return defaultIconPath
+                }
+                return nil
+            }
+
+            let iconName = iconFileName.hasSuffix(".icns") ? iconFileName : "\(iconFileName).icns"
+            let iconPath = (executablePath as NSString).appendingPathComponent("Contents/Resources/\(iconName)")
+
+            if FileManager.default.fileExists(atPath: iconPath) {
+                return iconPath
+            }
+        }
+
+        return nil
+    }
+
+    private func loadIcon(from path: String) -> CGImage? {
+        let url = URL(fileURLWithPath: path)
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+            return nil
+        }
+
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageIfAbsent: true,
+            kCGImageSourceThumbnailMaxPixelSize: 128,
+            kCGImageSourceCreateThumbnailWithTransform: true
+        ]
+
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    }
+
+    private func createPNGData(from cgImage: CGImage) -> Data? {
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            data,
+            UTType.png.identifier as CFString,
+            1,
+            nil
+        ) else {
+            return nil
+        }
+
+        CGImageDestinationAddImage(destination, cgImage, nil)
+        CGImageDestinationFinalize(destination)
+
+        return data as Data
     }
 
     private func deterministicHash(for string: String) -> String {

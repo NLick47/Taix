@@ -29,11 +29,18 @@ public class ChartsItemTypeCard : TemplatedControl
             o => o.IsLoading,
             (o, v) => o.IsLoading = v);
 
+    public static readonly DirectProperty<ChartsItemTypeCard, double> IconSizeProperty =
+        AvaloniaProperty.RegisterDirect<ChartsItemTypeCard, double>(
+            nameof(IconSize),
+            o => o.IconSize,
+            (o, v) => o.IconSize = v);
+
     private ChartsDataModel _data;
 
     private bool _isLoading;
 
     private double _maxValue;
+    private double _iconSize = 32;
     private Img IconObj;
     private bool IsAddEvent;
     private bool isRendering;
@@ -65,6 +72,12 @@ public class ChartsItemTypeCard : TemplatedControl
         set => SetAndRaise(IsLoadingProperty, ref _isLoading, value);
     }
 
+    public double IconSize
+    {
+        get => _iconSize;
+        set => SetAndRaise(IconSizeProperty, ref _iconSize, value);
+    }
+
 
     protected override Type StyleKeyOverride => typeof(ChartsItemTypeCard);
 
@@ -93,6 +106,12 @@ public class ChartsItemTypeCard : TemplatedControl
         ValueTextObj = e.NameScope.Get<TextBlock>("ValueTextObj");
         ValueBlockObj = e.NameScope.Find("ValueBlockObj") as Ellipse;
         IconObj = e.NameScope.Get<Img>("IconObj");
+
+        // 应用图标大小
+        IconObj.Width = IconSize;
+        IconObj.Height = IconSize;
+        IconObj.DecodeWidth = (int)(IconSize * 2);
+
         if (!IsAddEvent)
         {
             Loaded += ChartsItemTypeCard_Loaded;

@@ -170,7 +170,7 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
                 IsChoosed = item.CategoryID == Category.Data.ID,
                 Value =
                 {
-                    Name = string.IsNullOrEmpty(item.Description) ? item.Name : item.Description,
+                    Name = item.GetDisplayName(),
                     Img = item.IconFile
                 }
             };

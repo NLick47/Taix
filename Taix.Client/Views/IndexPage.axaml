@@ -70,7 +70,7 @@
                                        Margin="5,0,0,0" />
                         </StackPanel>
                     </Border>
-                    <Charts:ListChart IconSize="{x:Static platform:PlatformConstants.FrequentListIconSize}" Margin="0,5,0,0" IsCanScroll="False" Data="{Binding AppFrequentUseData}"
+                    <Charts:ListChart IconSize="{x:Static platform:PlatformConstants.SmallListIconSize}" Margin="0,5,0,0" IsCanScroll="False" Data="{Binding AppFrequentUseData}"
                                      ClickCommand="{Binding ToDetailCommand}"
                                      ItemMenu="{Binding AppContextMenu}" />
                 </StackPanel>
@@ -134,14 +134,17 @@
                 </ContextMenu>
             </TabControl.ContextMenu>
             <TabItem>
-                <Charts:CardChart Data="{Binding AppMoreData}" ItemMenu="{Binding AppContextMenu}"
+                <Charts:CardChart Data="{Binding AppMoreData}"
+                                  ItemMenu="{Binding AppContextMenu}"
                                  ShowLimit="{Binding MoreNum}"
+                                 IconSize="{x:Static platform:PlatformConstants.CardChartIconSize}"
                                  ClickCommand="{Binding ToDetailCommand}" />
             </TabItem>
             <TabItem>
                 <Grid>
                     <Charts:CardChart Data="{Binding WebMoreData}" ClickCommand="{Binding ToDetailCommand}"
                                      ShowLimit="{Binding MoreNum}"
+                                     IconSize="{x:Static platform:PlatformConstants.CardChartIconSize}"
                                      ItemMenu="{Binding WebSiteContextMenu}" />
                 </Grid>
             </TabItem>

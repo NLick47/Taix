@@ -281,7 +281,7 @@ public class DataPageViewModel : DataPageModel
                     });
                 }
 
-                var appName = session.AppModel?.Name ?? "Unknown";
+                var appName = session.AppModel?.GetDisplayName() ?? "Unknown";
                 var categoryName = session.AppModel?.Category?.Name ?? "Unknown";
                 var paletteColor = Colors.GetTimelinePaletteColor(appName, isDark);
                 var categoryColor = session.AppModel?.Category?.Color

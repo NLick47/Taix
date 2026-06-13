@@ -72,7 +72,7 @@ actor TransportClient {
 
     func start() {
         var continuation: AsyncStream<Data>.Continuation!
-        let stream = AsyncStream<Data> { cont in
+        let stream = AsyncStream<Data>(bufferingPolicy: .bufferingNewest(50)) { cont in
             continuation = cont
         }
         self.messageContinuation = continuation

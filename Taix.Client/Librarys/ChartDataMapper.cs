@@ -20,8 +20,7 @@ public static class ChartDataMapper
             var model = new ChartsDataModel
             {
                 Data = item,
-                Name = !string.IsNullOrEmpty(appModel.Alias) ? appModel.Alias
-                    : string.IsNullOrEmpty(appModel.Description) ? appModel.Name : appModel.Description,
+                Name = appModel.GetDisplayName(),
                 Value = item.Time,
                 Tag = Time.ToString(item.Time),
                 PopupText = appModel.File,
@@ -87,8 +86,7 @@ public static class ChartDataMapper
             var model = new ChartsDataModel
             {
                 Data = item,
-                Name = !string.IsNullOrEmpty(item.AppModel.Alias) ? item.AppModel.Alias
-                    : string.IsNullOrEmpty(item.AppModel.Description) ? item.AppModel.Name : item.AppModel.Description,
+                Name = item.AppModel.GetDisplayName(),
                 Value = item.Time,
                 Tag = Time.ToString(item.Time),
                 PopupText = item.AppModel.File,

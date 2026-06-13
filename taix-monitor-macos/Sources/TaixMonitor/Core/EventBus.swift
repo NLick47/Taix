@@ -5,7 +5,7 @@ actor EventBus {
     
     func subscribe() -> AsyncStream<MonitorEvent> {
         let id = UUID()
-        return AsyncStream { continuation in
+        return AsyncStream(bufferingPolicy: .bufferingNewest(100)) { continuation in
             self.continuations[id] = continuation
             continuation.onTermination = { [weak self] _ in
                 Task {

@@ -108,6 +108,11 @@ jobs:
         shell: pwsh
         run: |
           $publishDir = "./output/${{ matrix.cpu }}"
+
+          # 复制安装卸载脚本（绿色版用）
+          Copy-Item "script/install.ps1" -Destination $publishDir -Force
+          Copy-Item "script/uninstall.ps1" -Destination $publishDir -Force
+
           $zipName = "Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}"
           Push-Location $publishDir
           Compress-Archive -Path "*" -DestinationPath "../../$zipName.zip"

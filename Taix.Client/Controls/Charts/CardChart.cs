@@ -33,11 +33,16 @@ public class CardChart : TemplatedControl
         AvaloniaProperty.RegisterDirect<CardChart, ContextMenu>(
             nameof(ItemMenu), o => o.ItemMenu, (o, v) => o.ItemMenu = v);
 
+    public static readonly DirectProperty<CardChart, double> IconSizeProperty =
+        AvaloniaProperty.RegisterDirect<CardChart, double>(
+            nameof(IconSize), o => o.IconSize, (o, v) => o.IconSize = v);
+
     private IEnumerable<ChartsDataModel> _data = [];
     private int _showLimit;
     private double _maxValueLimit;
     private ICommand _clickCommand;
     private ContextMenu _itemMenu;
+    private double _iconSize = 32;
     private WrapPanel _cardContainer;
     private double _maxValue;
 
@@ -71,6 +76,12 @@ public class CardChart : TemplatedControl
     {
         get => _itemMenu;
         set => SetAndRaise(ItemMenuProperty, ref _itemMenu, value);
+    }
+
+    public double IconSize
+    {
+        get => _iconSize;
+        set => SetAndRaise(IconSizeProperty, ref _iconSize, value);
     }
 
     protected override Type StyleKeyOverride => typeof(CardChart);
@@ -119,7 +130,8 @@ public class CardChart : TemplatedControl
             var card = new ChartsItemTypeCard
             {
                 Data = item,
-                MaxValue = _maxValue
+                MaxValue = _maxValue,
+                IconSize = IconSize
             };
             ToolTip.SetTip(card, item.Name);
             card.PointerPressed += OnItemPointerPressed;
