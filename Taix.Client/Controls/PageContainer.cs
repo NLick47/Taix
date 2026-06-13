@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows.Input;
@@ -11,6 +11,7 @@ using Avalonia.LogicalTree;
 using ReactiveUI;
 using Taix.Client.Controls.Models;
 using Taix.Client.Models;
+using Taix.Client.Servicers.Interfaces;
 
 namespace Taix.Client.Controls;
 
@@ -36,6 +37,7 @@ public class PageContainer : TemplatedControl
 
     private readonly List<string> Historys;
     private readonly Dictionary<string, double> ScrollPositions;
+    private readonly Dictionary<string, object?> NavigationDatas;
 
     private static readonly Dictionary<string, Type> PageTypeMap = new()
     {
@@ -60,6 +62,7 @@ public class PageContainer : TemplatedControl
     {
         Historys = new List<string>();
         ScrollPositions = new Dictionary<string, double>();
+        NavigationDatas = new Dictionary<string, object?>();
         BackCommand = ReactiveCommand.Create<object>(OnBackCommand);
     }
 
@@ -161,9 +164,17 @@ public class PageContainer : TemplatedControl
             }
 
             ScrollPositions.Remove(pageUri);
+            NavigationDatas.Remove(pageUri);
             Historys.RemoveRange(preIndex, 1);
 
             IsBack = true;
+
+            if (NavigationDatas.TryGetValue(uri, out var data))
+            {
+                var navService = ServiceLocator.GetService<INavigationDataService>() as MainWindowModel;
+                if (navService != null)
+                    navService.Data = data;
+            }
 
             Uri = uri;
         }
@@ -249,7 +260,11 @@ public class PageContainer : TemplatedControl
                     //处理历史记录
                     if (OldIndex == Index)
                     {
-                        //新开
+                        //新开页面时保存导航数据
+                        var navService = ServiceLocator.GetService<INavigationDataService>() as MainWindowModel;
+                        if (navService?.Data != null)
+                            NavigationDatas[Uri] = navService.Data;
+
                         Historys.Add(Uri);
                         Index++;
                     }
@@ -299,5 +314,6 @@ public class PageContainer : TemplatedControl
     private void ClearCache()
     {
         ScrollPositions.Clear();
+        NavigationDatas.Clear();
     }
 }
