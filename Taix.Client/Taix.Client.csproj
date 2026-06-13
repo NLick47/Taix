@@ -14,6 +14,10 @@
         <NoWarn>$(NoWarn);CS0108;IL2026;IL3050;IL2075;AVLN5001</NoWarn>
     </PropertyGroup>
 
+    <!-- macOS 平台条件编译 -->
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+        <DefineConstants>$(DefineConstants);MACOS</DefineConstants>
+    </PropertyGroup>
 
     <PropertyGroup Condition="'$(PublishAot)' == 'true'">
         <TrimMode>full</TrimMode>
