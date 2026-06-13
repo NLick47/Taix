@@ -50,7 +50,7 @@
     <ItemGroup>
         <AvaloniaResource Include="Resources\Emoji\(*).png" />
 
-        <AvaloniaResource Include="Resources\Fonts\Segoe Fluent Icons.ttf">
+        <AvaloniaResource Include="Resources\Fonts\SegoeFluentIcons-Subset.ttf">
             <CopyToOutputDirectory>Never</CopyToOutputDirectory>
         </AvaloniaResource>
 
