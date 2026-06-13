@@ -7,7 +7,6 @@
         <Border Padding="30" Background="#161616">
             <StackPanel Spacing="8">
                 <controls:NavigationItem Title="首页" Icon="Home" IsSelected="True" />
-                <controls:NavigationItem Title="图表" Icon="Chart" />
                 <controls:NavigationItem Title="日历" Icon="Calendar" />
             </StackPanel>
         </Border>
@@ -30,8 +29,7 @@
 
 
             <Style Selector="controls|NavigationItem[IsSelected=True]">
-                <!-- 文字已移除，纯图标导航 -->
-                <Style Selector="^ /template/ Border#Border">
+                  <Style Selector="^ /template/ Border#Border">
                     <Setter Property="Background" Value="{DynamicResource NavSelectedGlassBrush}" />
                     <Setter Property="BorderBrush" Value="{DynamicResource NavSelectedGlassBorderBrush}" />
                     <Setter Property="Effect">
@@ -64,7 +62,6 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid Margin="4">
-                    <!-- 底部厚度阴影：模拟玻璃体积感 -->
                     <Border x:Name="GlassThickness"
                             CornerRadius="14"
                             IsHitTestVisible="False"
@@ -82,7 +79,6 @@
                         </Border.Transitions>
                     </Border>
 
-                    <!-- 表面高光：模拟光源从左上照射 -->
                     <Border x:Name="GlassHighlight"
                             CornerRadius="14"
                             IsHitTestVisible="False"
@@ -115,9 +111,9 @@
                                        Foreground="{DynamicResource NavUnselectedTextBrush}"
                                        VerticalAlignment="Center"
                                        HorizontalAlignment="Center"
-                                       FontSize="18"
-                                       RenderTransform="scaleX(1) scaleY(1)"
-                                       RenderTransformOrigin="0.5,0.5">
+                                       FontSize="18">
+                                <base:Icon.RenderTransform>scaleX(1) scaleY(1)</base:Icon.RenderTransform>
+                                <base:Icon.RenderTransformOrigin>0.5,0.5</base:Icon.RenderTransformOrigin>
                                 <base:Icon.Transitions>
                                     <Transitions>
                                         <BrushTransition Property="Foreground" Duration="0:0:0.3" />

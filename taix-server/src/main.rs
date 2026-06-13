@@ -154,7 +154,7 @@ fn parse_data_dir(args: &[String], exe_dir: &std::path::Path) -> PathBuf {
     }
     std::env::var("TAIX_DATA_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| exe_dir.join("Data"))
+        .unwrap_or_else(|_| constants::default_data_dir())
 }
 
 fn parse_server_addr() -> anyhow::Result<SocketAddr> {

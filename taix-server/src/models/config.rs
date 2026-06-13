@@ -90,7 +90,7 @@ impl Default for GeneralModel {
             index_page_frequent_use_num: constants::DEFAULT_FREQUENT_USE_NUM,
             index_page_more_num: constants::DEFAULT_MORE_NUM,
             is_web_enabled: false,
-            is_enable_tray: false,
+            is_enable_tray: true,
             sync_url: String::new(),
         }
     }

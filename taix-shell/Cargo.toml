@@ -18,6 +18,8 @@ anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tracing = "0.1"
+
+[target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.62", features = [
     "Win32_Foundation",
     "Win32_Security",
@@ -30,3 +32,11 @@ windows = { version = "0.62", features = [
     "Win32_System_JobObjects",
     "Win32_System_ProcessStatus",
 ] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.26"
+objc = "0.2"
+objc-foundation = "0.1"
+objc_id = "0.1"
+dirs = "6"
+libc = "0.2"

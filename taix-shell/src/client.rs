@@ -1,7 +1,10 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use crate::constants::{CLIENT_EXE_NAME, CLIENT_PIPE_NAME};
+use crate::constants::CLIENT_EXE_NAME;
+
+#[cfg(target_os = "windows")]
+use crate::constants::CLIENT_PIPE_NAME;
 
 static IS_LAUNCHING: AtomicBool = AtomicBool::new(false);
 
@@ -75,23 +78,54 @@ fn try_wake_once() -> bool {
 
 #[cfg(not(target_os = "windows"))]
 fn try_wake_once() -> bool {
-    false
+    use std::io::Write;
+    use std::os::unix::net::UnixStream;
+
+    const SOCKET_PATH: &str = "/tmp/taix-client.sock";
+    const SOCKET_TIMEOUT_MS: u64 = 200;
+
+    // Try to connect to the Unix domain socket
+    let mut stream = match UnixStream::connect(SOCKET_PATH) {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+
+    // Set a timeout to avoid blocking
+    let _ = stream.set_write_timeout(Some(std::time::Duration::from_millis(SOCKET_TIMEOUT_MS)));
+
+    // Send wake command
+    stream.write_all(b"show\n").is_ok()
 }
 
 fn spawn_new_process() -> anyhow::Result<()> {
-    let exe_dir = std::env::current_exe()?
-        .parent()
-        .ok_or_else(|| anyhow::anyhow!("failed to get exe directory"))?
-        .to_path_buf();
-    let client_exe = exe_dir.join(CLIENT_EXE_NAME);
-    if !client_exe.exists() {
-        return Err(anyhow::anyhow!(
-            "client executable not found: {}",
-            client_exe.display()
-        ));
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("/Applications/Taix.app")
+            .spawn()
+            .map_err(|e| anyhow::anyhow!("failed to spawn client: {}", e))?;
     }
-    std::process::Command::new(&client_exe)
-        .spawn()
-        .map_err(|e| anyhow::anyhow!("failed to spawn client: {}", e))?;
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let exe_dir = std::env::current_exe()?
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("failed to get exe directory"))?
+            .to_path_buf();
+
+        let client_exe = exe_dir.join(CLIENT_EXE_NAME);
+
+        if !client_exe.exists() {
+            return Err(anyhow::anyhow!(
+                "client executable not found: {}",
+                client_exe.display()
+            ));
+        }
+
+        std::process::Command::new(&client_exe)
+            .spawn()
+            .map_err(|e| anyhow::anyhow!("failed to spawn client: {}", e))?;
+    }
+
     Ok(())
 }

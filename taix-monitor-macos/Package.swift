@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "TaixMonitor",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v12)],
     products: [
         .executable(name: "taix-monitor", targets: ["TaixMonitor"])
     ],

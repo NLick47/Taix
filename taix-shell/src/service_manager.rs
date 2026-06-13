@@ -4,15 +4,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 #[derive(Clone)]
-pub struct ServiceManager {
-    data_dir: Option<PathBuf>,
-}
+pub struct ServiceManager {}
 
 impl ServiceManager {
     const MAX_MISSING_RETRIES: u32 = 6;
 
-    pub fn new(data_dir: Option<PathBuf>) -> Self {
-        Self { data_dir }
+    pub fn new(_data_dir: Option<PathBuf>) -> Self {
+        Self {}
     }
 
     pub fn run(self, shutdown: std::sync::Arc<AtomicBool>) {
@@ -95,7 +93,7 @@ impl ServiceManager {
                 continue;
             }
 
-            let args = build_args(extra_args, self.data_dir.as_ref());
+            let args = build_args(extra_args);
             let mut child = match spawn_process(&exe_path, &args) {
                 Ok(c) => c,
                 Err(_) => {
@@ -144,14 +142,8 @@ impl ServiceManager {
     }
 }
 
-fn build_args(extra: &[&str], data_dir: Option<&PathBuf>) -> Vec<String> {
-    let mut args: Vec<String> = Vec::with_capacity(4);
-    args.extend(extra.iter().map(|&s| s.to_owned()));
-    if let Some(dir) = data_dir {
-        args.push("--data-dir".to_owned());
-        args.push(dir.to_string_lossy().into_owned());
-    }
-    args
+fn build_args(extra: &[&str]) -> Vec<String> {
+    extra.iter().map(|&s| s.to_owned()).collect()
 }
 
 fn resolve_exe_path(exe_name: &str) -> Option<PathBuf> {
@@ -264,8 +256,22 @@ fn find_existing_process(exe_name: &str) -> Option<u32> {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn find_existing_process(_exe_name: &str) -> Option<u32> {
-    None
+fn find_existing_process(exe_name: &str) -> Option<u32> {
+    use std::process::Command;
+
+    let output = Command::new("pgrep")
+        .args(["-x", exe_name])
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .next()
+            .and_then(|s| s.parse::<u32>().ok())
+    } else {
+        None
+    }
 }
 
 struct Backoff {

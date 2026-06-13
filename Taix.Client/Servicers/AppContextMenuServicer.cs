@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Avalonia;
@@ -15,6 +14,7 @@ using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Window;
 using Taix.Client.Logging;
+using Taix.Client.Platform;
 using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Servicers.Interfaces;
@@ -103,8 +103,14 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         _contextMenu = new ContextMenu();
         CreateMenuItems();
         SetupMenuStructure();
+        ApplyPlatformVisibility();
         AttachEventHandlers();
         UpdateMenuTexts();
+    }
+
+    private void ApplyPlatformVisibility()
+    {
+        _openDirMenuItem.IsVisible = !PlatformHelper.IsMacOS;
     }
 
     private void CreateMenuItems()
@@ -305,7 +311,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         return true;
     }
 
-    private async System.Threading.Tasks.Task UpdateAppAlias(AppModel app, string newAlias)
+    private async Task UpdateAppAlias(AppModel app, string newAlias)
     {
         var appToUpdate = await _appData.GetAppAsync(app.ID);
         if (appToUpdate == null) return;
@@ -485,7 +491,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
     {
         if (File.Exists(app.File))
         {
-            Process.Start("explorer.exe", "/select, " + app.File);
+            PlatformHelper.OpenFileInExplorer(app.File);
         }
         else
         {
@@ -504,7 +510,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
     {
         if (File.Exists(app.File))
         {
-            Process.Start(app.File);
+            PlatformHelper.RunFile(app.File);
             _mainViewModel?.Toast(ResourceStrings.OperationCompleted);
         }
         else

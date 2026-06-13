@@ -8,8 +8,8 @@ mod windows;
 #[cfg(target_os = "windows")]
 pub use windows::*;
 
-#[cfg(not(target_os = "windows"))]
-mod unix;
+#[cfg(target_os = "macos")]
+mod macos;
 
-#[cfg(not(target_os = "windows"))]
-pub use unix::*;
+#[cfg(target_os = "macos")]
+pub use macos::*;
