@@ -61,7 +61,7 @@ actor IdleDetector {
             while !Task.isCancelled {
                 guard let self else { break }
                 await self.check()
-                try? await Task.sleep(for: .seconds(self.checkInterval))
+                try? await Task.sleep(nanoseconds: UInt64(self.checkInterval * 1_000_000_000))
             }
         }
     }

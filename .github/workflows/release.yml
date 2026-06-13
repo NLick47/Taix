@@ -76,12 +76,10 @@ jobs:
         run: |
           $publishDir = "./output/${{ matrix.cpu }}"
 
-          # Copy Rust binaries
           Copy-Item "taix-server/target/x86_64-pc-windows-msvc/release/taix-server.exe"       -Destination $publishDir -Force
           Copy-Item "taix-monitor-windows/target/x86_64-pc-windows-msvc/release/taix-monitor-windows.exe" -Destination $publishDir -Force
           Copy-Item "taix-shell/target/x86_64-pc-windows-msvc/release/taix-shell.exe"         -Destination $publishDir -Force
 
-          # Copy taix-shell resources (tray icon etc.)
           Copy-Item "taix-shell/resources" -Destination $publishDir -Recurse -Force
 
       - name: Remove debug symbol files
@@ -93,7 +91,6 @@ jobs:
             Write-Host "Removed PDB: $($_.FullName)"
           }
 
-      # ========== Installer Build ==========
       - name: Download UPX
         shell: pwsh
         run: |
@@ -129,18 +126,117 @@ jobs:
           name: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}
           path: Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip
 
-      - name: Read release notes from file
-        id: release-notes
-        uses: juliangruber/read-file-action@v1
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
         with:
-          path: release_notes.txt
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          target: aarch64-apple-darwin
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            taix-server
+            taix-shell
+
+      - name: Set APP_VERSION
+        run: |
+          if [[ "${{ github.ref }}" =~ ^refs/tags/v ]]; then
+            echo "APP_VERSION=${{ github.ref_name }}" | sed 's/^v//' >> $GITHUB_ENV
+          else
+            echo "APP_VERSION=0.0.0" >> $GITHUB_ENV
+          fi
+
+      - name: Build taix-server
+        run: cd taix-server && cargo build --release --target aarch64-apple-darwin
+
+      - name: Build taix-shell
+        run: cd taix-shell && cargo build --release --target aarch64-apple-darwin
+
+      - name: Build taix-monitor-macos
+        run: cd taix-monitor-macos && swift build -c release --arch arm64
+
+      - name: Publish .NET Client (AOT)
+        run: |
+          dotnet publish Taix.Client/Taix.Client.csproj \
+            -c Release -r osx-arm64 --self-contained true \
+            -p:PublishAot=true -p:StripSymbols=true \
+            -o ./output/macos
+
+      - name: Strip debug symbols from Swift binary
+        run: |
+          strip taix-monitor-macos/.build/release/taix-monitor
+          echo "Stripped Swift binary: $(ls -lh taix-monitor-macos/.build/release/taix-monitor | awk '{print $5}')"
+
+      - name: Build DMG
+        run: |
+          chmod +x taix-installer/build-dmg.sh
+          ./taix-installer/build-dmg.sh "${{ env.APP_VERSION }}" "taix-installer" "aarch64-apple-darwin"
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Taix-${{ env.APP_VERSION }}-macos-arm64
+          path: taix-installer/Taix-${{ env.APP_VERSION }}-macos-arm64.dmg
+
+  release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set APP_VERSION
+        run: |
+          VERSION="${{ github.ref_name }}"
+          echo "APP_VERSION=${VERSION#v}" >> $GITHUB_ENV
+
+      - name: Download Windows Installer
+        uses: actions/download-artifact@v4
+        with:
+          name: Taix-${{ env.APP_VERSION }}-win-x64-Setup
+          path: ./artifacts
+
+      - name: Download Windows ZIP
+        uses: actions/download-artifact@v4
+        with:
+          name: Taix-${{ env.APP_VERSION }}-win-x64
+          path: ./artifacts
+
+      - name: Download macOS DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: Taix-${{ env.APP_VERSION }}-macos-arm64
+          path: ./artifacts
+
+      - name: Read release notes
+        id: release-notes
+        run: |
+          if [ -f release_notes.txt ]; then
+            echo "content<<EOF" >> $GITHUB_OUTPUT
+            cat release_notes.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "content=Release ${{ env.APP_VERSION }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Release
         uses: ncipollo/release-action@v1
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         with:
           allowUpdates: true
-          artifacts: |
-            ./Taix-${{ env.APP_VERSION }}-Setup.exe
-            ./Taix-${{ env.APP_VERSION }}-win-${{ matrix.cpu }}.zip
+          artifacts: ./artifacts/*
           body: ${{ steps.release-notes.outputs.content }}

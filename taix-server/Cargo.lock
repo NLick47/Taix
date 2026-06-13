@@ -128,7 +128,6 @@ dependencies = [
  "tower",
  "tower-layer",
  "tower-service",
- "tracing",
 ]
 
 [[package]]
@@ -149,7 +148,6 @@ dependencies = [
  "sync_wrapper",
  "tower-layer",
  "tower-service",
- "tracing",
 ]
 
 [[package]]
@@ -2110,6 +2108,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "dirs",
+ "libc",
  "regex",
  "resvg",
  "serde",
@@ -2328,7 +2327,6 @@ dependencies = [
  "tokio",
  "tower-layer",
  "tower-service",
- "tracing",
 ]
 
 [[package]]

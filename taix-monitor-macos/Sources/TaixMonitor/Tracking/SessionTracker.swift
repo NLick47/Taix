@@ -40,7 +40,7 @@ actor SessionTracker {
 
         tickTask = Task { [weak self] in
             while !Task.isCancelled, let self = self {
-                try? await Task.sleep(for: .seconds(self.tickInterval))
+                try? await Task.sleep(nanoseconds: UInt64(self.tickInterval * 1_000_000_000))
                 await self.flushTick()
             }
         }

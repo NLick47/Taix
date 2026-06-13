@@ -5,8 +5,6 @@ namespace Taix.Client.Platform;
 
 public static class PlatformHelper
 {
-    public static double IconScaleFactor => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1.25 : 1.0;
-    public static double NavIconScaleFactor => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1.2 : 1.0;
     public static bool IsMacOS => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
     public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 

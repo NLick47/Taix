@@ -11,7 +11,7 @@ actor Runner {
     private let sessionTracker: SessionTracker
     private let gamepadMonitor: GamepadMonitor
     private var isRunning = false
-    
+
     init(configuration: Configuration) {
         self.configuration = configuration
         self.eventBus = EventBus()
@@ -32,24 +32,24 @@ actor Runner {
             tickInterval: configuration.tickInterval
         )
     }
-    
+
     func start() async {
         Logger.info("TaixMonitor starting...")
-        
+
         await transport.start()
         await appObserver.start()
         await idleDetector.start()
         await gamepadMonitor.start()
         await sessionTracker.start()
-        
+
         Logger.info("TaixMonitor is running")
-        
+
         isRunning = true
         while isRunning && !Task.isCancelled {
-            try? await Task.sleep(for: .seconds(1))
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
         }
     }
-    
+
     func shutdown() async {
         Logger.info("TaixMonitor shutting down...")
         isRunning = false

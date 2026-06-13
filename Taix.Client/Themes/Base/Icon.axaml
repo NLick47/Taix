@@ -6,7 +6,11 @@
                   TargetType="controls:Icon">
         <Setter Property="MinWidth" Value="18" />
         <Setter Property="MinHeight" Value="18" />
-        <Setter Property="FontSize" Value="{OnPlatform '16', macOS='18', x:TypeArguments=x:Double}" />
+        <Setter Property="FontSize">
+            <Setter.Value>
+                <OnPlatform Default="16" macOS="18" x:TypeArguments="x:Double" />
+            </Setter.Value>
+        </Setter>
         <Setter Property="FontFamily" Value="avares://Taix/Resources/Fonts/#Segoe Fluent Icons" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Template">

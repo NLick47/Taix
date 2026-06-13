@@ -7,7 +7,11 @@
 
     <ControlTheme x:Key="{x:Type controls:ListChart}" TargetType="controls:ListChart">
         <Setter Property="FontSize" Value="14" />
-        <Setter Property="IconSize" Value="{OnPlatform '25', macOS='27', x:TypeArguments=x:Double}" />
+        <Setter Property="IconSize">
+            <Setter.Value>
+                <OnPlatform Default="25" macOS="27" x:TypeArguments="x:Double" />
+            </Setter.Value>
+        </Setter>
         <Setter Property="Background" Value="Transparent" />
         <Styles>
             <Style Selector="controls|ListChart[IsSearch=True] /template/ Grid#SearchHeader">

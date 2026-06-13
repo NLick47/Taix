@@ -341,6 +341,12 @@ public class DateSelect : TemplatedControl
 
         if (SelectType == DateSelectType.Date)
         {
+            if (Date.Date == now.Date)
+            {
+                DateStr = Application.Current?.Resources["Today"] as string;
+                return;
+            }
+
             var dayOfWeek = culture.DateTimeFormat.GetShortestDayName(Date.DayOfWeek);
             try
             {

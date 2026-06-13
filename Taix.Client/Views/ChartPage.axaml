@@ -295,7 +295,7 @@
                                     <Border Grid.Row="1" Margin="0,5,0,0"
                                             Background="{DynamicResource SettingPanelBgBrush}"
                                             Padding="20" CornerRadius="10">
-                                        <charts:ListChart IconSize="{OnPlatform '25', macOS='23', x:TypeArguments=x:Double}" ItemMenu="{Binding AppContextMenu}" Data="{Binding TopData}" ClickCommand="{Binding ToDetailCommand}" IsCanScroll="False" />
+                                        <charts:ListChart IconSize="25" ItemMenu="{Binding AppContextMenu}" Data="{Binding TopData}" ClickCommand="{Binding ToDetailCommand}" IsCanScroll="False" />
                                     </Border>
                                 </Grid>
                             </WrapPanel>
