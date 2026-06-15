@@ -1,4 +1,4 @@
-﻿using Taix.Client.Controls.Base;
+using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Window;
 
 namespace Taix.Client.Servicers.Interfaces;

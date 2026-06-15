@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Shared.Models.WebPage;
+namespace Taix.Client.Shared.Models.WebPage;
 
 public class Site
 {

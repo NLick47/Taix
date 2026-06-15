@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Librarys.Api;
+namespace Taix.Client.Librarys.Api;
 
 internal sealed class CreateAppRequest
 {

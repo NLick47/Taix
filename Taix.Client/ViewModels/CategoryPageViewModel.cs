@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -47,6 +47,7 @@ public class CategoryPageViewModel : CategoryPageModel
         Data = new ObservableCollection<CategoryModel>();
         WebCategoryData = new ObservableCollection<WebCategoryModel>();
         EditDirectories = new ObservableCollection<string>();
+        EditUrlPatterns = new ObservableCollection<string>();
 
         GotoListCommand = ReactiveCommand.Create<object>(OnGotoList).DisposeWith(Disposables);
         EditCommand = ReactiveCommand.Create<object>(OnEdit).DisposeWith(Disposables);
@@ -56,6 +57,8 @@ public class CategoryPageViewModel : CategoryPageModel
         RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync).DisposeWith(Disposables);
         AddDirectoryCommand = ReactiveCommand.CreateFromTask<object>(OnAddDirectoryAsync).DisposeWith(Disposables);
         DirectoriesCommand = ReactiveCommand.Create<object>(OnDirectoriesCommand).DisposeWith(Disposables);
+        AddUrlPatternCommand = ReactiveCommand.CreateFromTask<object>(OnAddUrlPatternAsync).DisposeWith(Disposables);
+        UrlPatternsCommand = ReactiveCommand.Create<object>(OnUrlPatternsCommand).DisposeWith(Disposables);
         RestoreSystemCategoryCommand = ReactiveCommand.CreateFromTask<object>(OnRestoreSystemCategoryAsync).DisposeWith(Disposables);
         ApplyDirectoryMatchCommand = ReactiveCommand.CreateFromTask<object>(OnApplyDirectoryMatchAsync).DisposeWith(Disposables);
         WhenPropertyChanged(this, x => x.ShowType, _ => ExecuteAsync(LoadDataCoreAsync)).DisposeWith(Disposables);
@@ -75,6 +78,8 @@ public class CategoryPageViewModel : CategoryPageModel
     public ReactiveCommand<object, Unit> RefreshCommand { get; }
     public ReactiveCommand<object, Unit> AddDirectoryCommand { get; }
     public ReactiveCommand<object, Unit> DirectoriesCommand { get; }
+    public ReactiveCommand<object, Unit> AddUrlPatternCommand { get; }
+    public ReactiveCommand<object, Unit> UrlPatternsCommand { get; }
     public ReactiveCommand<object, Unit> RestoreSystemCategoryCommand { get; }
     public ReactiveCommand<object, Unit> ApplyDirectoryMatchCommand { get; }
 
@@ -153,7 +158,9 @@ public class CategoryPageViewModel : CategoryPageModel
         EditIconFile = "avares://Taix/Resources/Emoji/(1).png";
         EditColor = "#00FFAB";
         EditIsDirectoryMatch = false;
+        EditIsUrlMatch = false;
         EditDirectories.Clear();
+        EditUrlPatterns.Clear();
         IsEditError = false;
         EditErrorText = "";
     }
@@ -255,6 +262,69 @@ public class CategoryPageViewModel : CategoryPageModel
                     break;
                 default:
                     Logger.Warn($"Unknown directory command: {action}");
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex.Message, ex);
+            _toastService.Toast(ResourceStrings.OperationFailedRetry);
+        }
+    }
+
+    private async Task OnAddUrlPatternAsync(object obj)
+    {
+        try
+        {
+            var pattern = await _dialogService.ShowInputModalAsync(ResourceStrings.AddUrlPattern, ResourceStrings.UrlPatternPlaceholder);
+            if (string.IsNullOrEmpty(pattern)) return;
+
+            if (pattern.Length > 256)
+            {
+                _toastService.Toast(ResourceStrings.UrlPatternTooLong, ToastType.Warning);
+                return;
+            }
+
+            if (EditUrlPatterns.Count >= 20)
+            {
+                _toastService.Toast(ResourceStrings.UrlPatternLimitReached, ToastType.Warning);
+                return;
+            }
+
+            if (EditUrlPatterns.Contains(pattern))
+            {
+                _toastService.Toast(ResourceStrings.UrlPatternExists, ToastType.Warning);
+                return;
+            }
+
+            EditUrlPatterns.Add(pattern);
+            _toastService.Success(ResourceStrings.Added);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex.Message, ex);
+        }
+    }
+
+    private void OnUrlPatternsCommand(object obj)
+    {
+        try
+        {
+            var action = obj?.ToString();
+            if (string.IsNullOrEmpty(action) || EditSelectedUrlPattern == null)
+                return;
+
+            switch (action.ToLower())
+            {
+                case "remove":
+                    if (EditUrlPatterns.Contains(EditSelectedUrlPattern))
+                    {
+                        EditUrlPatterns.Remove(EditSelectedUrlPattern);
+                        EditSelectedUrlPattern = null;
+                    }
+                    break;
+                default:
+                    Logger.Warn($"Unknown URL pattern command: {action}");
                     break;
             }
         }
@@ -496,6 +566,8 @@ public class CategoryPageViewModel : CategoryPageModel
         {
             if (!IsEditVerify()) return;
 
+            var urlPatternsStr = JsonSerializer.Serialize(EditUrlPatterns.ToList(), ClientJsonContext.Default.ListString);
+
             if (IsCreate)
             {
                 if (WebCategoryData.Any(m => EditName.Equals(m.Data.Name, StringComparison.OrdinalIgnoreCase)))
@@ -504,17 +576,13 @@ public class CategoryPageViewModel : CategoryPageModel
                     return;
                 }
 
-                if (WebCategoryData.Any(m => EditColor.Equals(m.Data.Color, StringComparison.OrdinalIgnoreCase)))
-                {
-                    _toastService.Toast(ResourceStrings.ColoreExists, ToastType.Error, IconTypes.ImportantBadge12);
-                    return;
-                }
-
                 var category = await _webDataService.CreateWebSiteCategoryAsync(new WebSiteCategoryModel
                 {
                     Color = EditColor,
                     IconFile = EditIconFile,
-                    Name = EditName
+                    Name = EditName,
+                    IsUrlMatch = EditIsUrlMatch,
+                    UrlPatterns = urlPatternsStr
                 });
 
                 if (category == null)
@@ -545,16 +613,11 @@ public class CategoryPageViewModel : CategoryPageModel
                     return;
                 }
 
-                if (WebCategoryData.Any(m => EditColor.Equals(m.Data.Color, StringComparison.OrdinalIgnoreCase) &&
-                                           m.Data.ID != SelectedWebCategoryItem.Data.ID))
-                {
-                    _toastService.Toast(ResourceStrings.ColoreExists, ToastType.Error, IconTypes.ImportantBadge12);
-                    return;
-                }
-
                 if (EditName == SelectedWebCategoryItem.Data.Name &&
                     EditIconFile == SelectedWebCategoryItem.Data.IconFile &&
-                    EditColor == SelectedWebCategoryItem.Data.Color)
+                    EditColor == SelectedWebCategoryItem.Data.Color &&
+                    EditIsUrlMatch == SelectedWebCategoryItem.Data.IsUrlMatch &&
+                    urlPatternsStr == (SelectedWebCategoryItem.Data.UrlPatterns ?? "[]"))
                 {
                     _toastService.Info(ResourceStrings.NoChangesMade);
                     EditVisibility = false;
@@ -566,7 +629,9 @@ public class CategoryPageViewModel : CategoryPageModel
                 {
                     Name = EditName,
                     IconFile = EditIconFile,
-                    Color = EditColor
+                    Color = EditColor,
+                    IsUrlMatch = EditIsUrlMatch,
+                    UrlPatterns = urlPatternsStr
                 };
 
                 await _webDataService.UpdateWebSiteCategoryAsync(category);
@@ -588,6 +653,23 @@ public class CategoryPageViewModel : CategoryPageModel
                 _toastService.Success(ResourceStrings.Updated);
             }
 
+            if (EditIsUrlMatch && EditUrlPatterns.Count > 0)
+            {
+                try
+                {
+                    var matchCount = await _webDataService.ApplyUrlMatchAsync();
+                    if (matchCount > 0)
+                    {
+                        await LoadDataCoreAsync(default);
+                        _toastService.Success(string.Format(ResourceStrings.ApplyUrlMatchSuccess, matchCount));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex.Message, ex);
+                }
+            }
+
             EditVisibility = false;
             SelectedWebCategoryItem = null;
         }
@@ -605,6 +687,8 @@ public class CategoryPageViewModel : CategoryPageModel
         IsSysCategory = false;
         EditDirectories.Clear();
         EditSelectedDirectory = null;
+        EditUrlPatterns.Clear();
+        EditSelectedUrlPattern = null;
 
         if (obj != null)
         {
@@ -641,7 +725,27 @@ public class CategoryPageViewModel : CategoryPageModel
                 EditName = webCategory.Data.Name;
                 EditIconFile = webCategory.Data.IconFile;
                 EditColor = string.IsNullOrWhiteSpace(webCategory.Data.Color) ? "#00FFAB" : webCategory.Data.Color;
-                EditIsDirectoryMatch = false;
+                EditIsUrlMatch = webCategory.Data.IsUrlMatch;
+
+                if (!string.IsNullOrWhiteSpace(webCategory.Data.UrlPatterns))
+                {
+                    try
+                    {
+                        var patterns = JsonSerializer.Deserialize<List<string>>(webCategory.Data.UrlPatterns, ClientJsonContext.Default.ListString);
+                        if (patterns != null)
+                        {
+                            foreach (var pattern in patterns)
+                            {
+                                if (!string.IsNullOrWhiteSpace(pattern))
+                                    EditUrlPatterns.Add(pattern);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Failed to load URL patterns: {ex.Message}", ex);
+                    }
+                }
             }
         }
         else
@@ -650,6 +754,7 @@ public class CategoryPageViewModel : CategoryPageModel
             EditIconFile = "avares://Taix/Resources/Emoji/(1).png";
             EditColor = "#00FFAB";
             EditIsDirectoryMatch = false;
+            EditIsUrlMatch = false;
         }
     }
 

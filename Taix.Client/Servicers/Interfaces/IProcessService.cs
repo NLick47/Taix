@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Servicers.Interfaces;
+namespace Taix.Client.Servicers.Interfaces;
 
 public interface IProcessService
 {

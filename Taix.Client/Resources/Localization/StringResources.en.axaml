@@ -108,6 +108,7 @@
 
     <system:String x:Key="SelectSite">Select Site</system:String>
     <system:String x:Key="Search">Search</system:String>
+    <system:String x:Key="SearchSitePlaceholder">Search sites (supports wildcards *? or regex)</system:String>
     <system:String x:Key="UseRegularExpressions">Use Regular Expressions</system:String>
     <system:String x:Key="Sitelist">Site List</system:String>
 
@@ -140,6 +141,13 @@
     <system:String x:Key="ApplyDirectoryMatch">Apply Directory Match</system:String>
     <system:String x:Key="ApplyDirectoryMatchTip">Batch categorize apps based on directory settings</system:String>
     <system:String x:Key="ApplyDirectoryMatchSuccess">{0} apps categorized</system:String>
+    <system:String x:Key="UrlMatch">Wildcard Match</system:String>
+    <system:String x:Key="AddUrlPattern">Add Wildcard</system:String>
+    <system:String x:Key="UrlPatternPlaceholder">Supports wildcards(* ?) or regex, e.g. *.bilibili.com or ^(www|m)\.google\.com$</system:String>
+    <system:String x:Key="UrlPatternTooLong">URL pattern cannot exceed 256 characters</system:String>
+    <system:String x:Key="UrlPatternLimitReached">Maximum 20 URL patterns per category</system:String>
+    <system:String x:Key="UrlPatternExists">URL pattern already exists</system:String>
+    <system:String x:Key="ApplyUrlMatchSuccess">{0} websites matched</system:String>
     <system:String x:Key="CategoryAppCount">Category App Count</system:String>
     <system:String x:Key="ViewWebsiteList">View Website List</system:String>
 

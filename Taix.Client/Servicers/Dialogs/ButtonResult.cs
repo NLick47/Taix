@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Servicers.Dialogs;
+namespace Taix.Client.Servicers.Dialogs;
 
 public enum ButtonResult
 {

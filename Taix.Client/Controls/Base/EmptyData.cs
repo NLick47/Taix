@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Avalonia.Controls.Primitives;
 
 namespace Taix.Client.Controls.Base;

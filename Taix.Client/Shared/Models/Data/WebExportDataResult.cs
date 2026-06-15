@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Taix.Client.Shared.Models.Db;
 
 namespace Taix.Client.Shared.Models.Data;

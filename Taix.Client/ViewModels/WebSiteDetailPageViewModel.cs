@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
@@ -408,7 +408,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         }
     }
 
-    private async void OnBlockAction()
+    private void OnBlockAction()
     {
         if (WebSite == null) return;
         var config = _appConfig.GetConfig();
@@ -420,8 +420,6 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
         IsIgnore = !IsIgnore;
         _toastService.Success(ResourceStrings.OperationCompleted);
-
-        await _appConfig.SaveAsync();
     }
 
     private async Task ClearSiteCategoryAsync()
@@ -440,21 +438,30 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
     private bool IsUrlRegexIgnore(string url)
     {
         var ignoreUrlList = _appConfig.GetConfig().Behavior.IgnoreUrlList;
-        return ignoreUrlList.Any(item => IsRegexPattern(item) && RegexHelper.IsMatch(url, item));
+        return ignoreUrlList.Any(item => IsRegexPattern(item) && IsRegexMatch(url, item));
     }
 
     private static bool IsUrlMatch(string url, string pattern)
     {
         if (IsRegexPattern(pattern))
-            return RegexHelper.IsMatch(url, pattern);
+            return IsRegexMatch(url, pattern);
+        return url.Contains(pattern);
+    }
 
-        // 精确匹配
-        if (url.Equals(pattern, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        // 域名后缀匹配：pattern 匹配 url 或 url 的子域名
-        // 例如 github.com 匹配 api.github.com，但不匹配 ogithub.com
-        return url.EndsWith("." + pattern, StringComparison.OrdinalIgnoreCase);
+    private static bool IsRegexMatch(string input, string pattern)
+    {
+        try
+        {
+            return Regex.IsMatch(input, pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
     }
 
     private static bool IsRegexPattern(string pattern)

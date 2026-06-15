@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Disposables.Fluent;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -284,24 +283,15 @@ public class DetailPageViewModel : DetailPageModel
     private bool IsProcessRegexIgnore(string name, string? file)
     {
         var ignoreList = _appConfig.GetConfig().Behavior.IgnoreProcessList;
-        return ignoreList.Any(item => IsRegexPattern(item) && IsProcessMatch(name, file, item));
+        return ignoreList.Any(item => IsProcessMatch(name, file, item));
     }
 
     private static bool IsProcessMatch(string name, string? file, string pattern)
     {
         if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(pattern))
             return false;
-        if (IsRegexPattern(pattern))
-            return RegexHelper.IsMatch(name, pattern) || (!string.IsNullOrEmpty(file) && RegexHelper.IsMatch(file, pattern));
-        return name.Equals(pattern, StringComparison.OrdinalIgnoreCase)
-            || (!string.IsNullOrEmpty(file) && file.Equals(pattern, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static bool IsRegexPattern(string pattern)
-    {
-        if (string.IsNullOrEmpty(pattern))
-            return false;
-        return Regex.IsMatch(pattern, @"[\.\*\?\{\\\[\^\|]");
+        return WildcardHelper.IsMatch(name, pattern) ||
+               (!string.IsNullOrEmpty(file) && WildcardHelper.IsMatch(file, pattern));
     }
 
     private void InitializeMenuItems()

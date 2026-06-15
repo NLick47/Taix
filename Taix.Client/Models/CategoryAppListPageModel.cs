@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Taix.Client.Models.CategoryAppList;
 using Taix.Client.Shared.Models;
 using CategoryModel = Taix.Client.Models.Category.CategoryModel;

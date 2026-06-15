@@ -1,4 +1,4 @@
-﻿using Taix.Client.Controls;
+using Taix.Client.Controls;
 using Taix.Client.ViewModels;
 
 namespace Taix.Client.Views;

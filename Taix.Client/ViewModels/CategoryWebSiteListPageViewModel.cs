@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Disposables.Fluent;
-using System.Text.RegularExpressions;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ReactiveUI;
@@ -13,6 +13,7 @@ using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Select;
 using Taix.Client.Controls.Window;
 using Taix.Client.Models;
+using Taix.Client.Shared.Librarys;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Models.Db;
 using Taix.Client.Shared.Servicers.Interfaces;
@@ -27,8 +28,8 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
     private readonly IToastService _toastService;
     private readonly IWebData _webDataService;
 
-    private bool _isRegexSearch;
     private List<OptionModel> _webSiteOptionsTemp = [];
+    private IDisposable? _searchSubscription;
 
     public CategoryWebSiteListPageViewModel(
         INavigationDataService navigationData,
@@ -48,26 +49,18 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
         SearchCommand = ReactiveCommand.Create<object>(OnSearch).DisposeWith(Disposables);
         ChooseCloseCommand = ReactiveCommand.Create<object>(OnChooseClose).DisposeWith(Disposables);
         DelCommand = ReactiveCommand.CreateFromTask<object>(OnDelAsync).DisposeWith(Disposables);
+
+        // 搜索防抖：监听 SearchInput 变化，1秒后执行搜索
+        _searchSubscription = this.WhenAnyValue(x => x.SearchInput)
+            .Throttle(TimeSpan.FromSeconds(1))
+            .Subscribe(DoSearch);
+        _searchSubscription.DisposeWith(Disposables);
     }
 
     public override Task OnNavigatedToAsync()
     {
         _ = ExecuteAsync(LoadDataCoreAsync);
         return Task.CompletedTask;
-    }
-
-    public bool IsRegexSearch
-    {
-        get => _isRegexSearch;
-        set
-        {
-            if (_isRegexSearch != value)
-            {
-                _isRegexSearch = value;
-                OnPropertyChanged();
-                OnSearch(SearchInput);
-            }
-        }
     }
 
     public ReactiveCommand<object, Unit> ShowChooseCommand { get; }
@@ -138,38 +131,23 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
 
     private void OnSearch(object obj)
     {
-        var keyword = obj?.ToString();
+        // 由防抖触发，直接执行搜索
+        DoSearch(SearchInput);
+    }
+
+    private void DoSearch(string? keyword)
+    {
         if (string.IsNullOrEmpty(keyword))
         {
             WebSiteOptionList = new List<OptionModel>(_webSiteOptionsTemp);
             return;
         }
 
-        if (IsRegexSearch)
-        {
-            try
-            {
-                var regex = new Regex(keyword, RegexOptions.IgnoreCase);
-                WebSiteOptionList = _webSiteOptionsTemp
-                    .Where(m =>
-                        (!string.IsNullOrEmpty(m.WebSite.Title) && regex.IsMatch(m.WebSite.Title)) ||
-                        (!string.IsNullOrEmpty(m.WebSite.Domain) && regex.IsMatch(m.WebSite.Domain)))
-                    .ToList();
-            }
-            catch (ArgumentException)
-            {
-                WebSiteOptionList = new List<OptionModel>(_webSiteOptionsTemp);
-            }
-        }
-        else
-        {
-            var lowerKeyword = keyword.ToLower();
-            WebSiteOptionList = _webSiteOptionsTemp
-                .Where(m =>
-                    (!string.IsNullOrEmpty(m.WebSite.Title) && m.WebSite.Title.ToLower().Contains(lowerKeyword)) ||
-                    (!string.IsNullOrEmpty(m.WebSite.Domain) && m.WebSite.Domain.ToLower().Contains(lowerKeyword)))
-                .ToList();
-        }
+        WebSiteOptionList = _webSiteOptionsTemp
+            .Where(m =>
+                (!string.IsNullOrEmpty(m.WebSite.Title) && WildcardHelper.IsMatch(m.WebSite.Title, keyword)) ||
+                (!string.IsNullOrEmpty(m.WebSite.Domain) && WildcardHelper.IsMatch(m.WebSite.Domain, keyword)))
+            .ToList();
     }
 
     private void OnGotoDetail(object obj)

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Models.Config;

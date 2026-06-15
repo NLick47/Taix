@@ -1,4 +1,4 @@
-﻿using Taix.Client.Base.Color;
+using Taix.Client.Base.Color;
 using Taix.Client.Controls.Base;
 using Taix.Client.Models;
 

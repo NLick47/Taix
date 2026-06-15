@@ -297,20 +297,38 @@ impl ConfigService {
     }
 }
 
+/// 将通配符模式转换为正则表达式
+/// * 匹配任意数量字符 -> .*
+/// ? 匹配单个字符 -> .
+/// 其他字符转义为字面量
+#[inline]
+fn wildcard_to_regex(pattern: &str) -> String {
+    let mut result = String::with_capacity(pattern.len() * 2);
+    result.push_str("(?i)^"); // (?i) 启用大小写不敏感
+
+    for c in pattern.chars() {
+        match c {
+            '*' => result.push_str(".*"),
+            '?' => result.push('.'),
+            // 转义正则特殊字符
+            '.' | '^' | '$' | '+' | '[' | ']' | '(' | ')' | '{' | '}' | '\\' | '|' => {
+                result.push('\\');
+                result.push(c);
+            }
+            _ => result.push(c),
+        }
+    }
+
+    result.push('$');
+    result
+}
+
 fn compile_patterns(patterns: &[String]) -> Option<RegexSet> {
     let regex_patterns: Vec<String> = patterns
         .iter()
         .map(|p| p.trim())
         .filter(|p| !p.is_empty())
-        .map(|p| {
-            match regex::Regex::new(p) {
-                Ok(_) => p.to_string(),
-                Err(_) => {
-                    debug!("Pattern '{}' is not a valid regex, treating as literal", p);
-                    regex::escape(p)
-                }
-            }
-        })
+        .map(|p| wildcard_to_regex(p))
         .collect();
 
     if regex_patterns.is_empty() {

@@ -1,4 +1,4 @@
-﻿namespace Taix.Client;
+namespace Taix.Client;
 
 internal static class StateData
 {

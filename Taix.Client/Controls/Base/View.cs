@@ -78,6 +78,11 @@ public class View : ContentControl
             control.SubscribeCollectionChanged(change.NewValue);
             control.Handle();
         }
+        else if (change.Property == ConditionProperty)
+        {
+            var control = change.Sender as View;
+            control.Handle();
+        }
     }
 
     private void SubscribeCollectionChanged(object value)
@@ -148,6 +153,17 @@ public class View : ContentControl
                         _ => string.IsNullOrEmpty(Value.ToString())
                     };
                 }
+                else if (Condition.Equals("True", StringComparison.OrdinalIgnoreCase) || Condition.Equals("False", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (Value is bool boolValue)
+                    {
+                        isShow = boolValue.ToString().Equals(Condition, StringComparison.OrdinalIgnoreCase);
+                    }
+                    else
+                    {
+                        isShow = Condition.Equals(Value?.ToString(), StringComparison.OrdinalIgnoreCase);
+                    }
+                }
                 else
                 {
                     isShow = Condition == (Value != null ? Value.ToString() : "");
@@ -156,13 +172,10 @@ public class View : ContentControl
 
             if (isShow)
             {
-                if (!IsVisible)
-                {
-                    Opacity = 0;
-                    IsVisible = true;
-                }
+                IsVisible = true;
                 Opacity = 1;
                 ZIndex = 1;
+                InvalidateMeasure();
             }
             else
             {

@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Shared.Models.Data;
+namespace Taix.Client.Shared.Models.Data;
 
 public class InfrastructureDataModel
 {

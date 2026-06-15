@@ -111,6 +111,7 @@
 
     <system:String x:Key="SelectSite">选择站点</system:String>
     <system:String x:Key="Search">搜索</system:String>
+    <system:String x:Key="SearchSitePlaceholder">搜索站点（支持通配符*?或正则）</system:String>
     <system:String x:Key="UseRegularExpressions">使用正则表达式</system:String>
     <system:String x:Key="Sitelist">站点列表</system:String>
 
@@ -153,6 +154,13 @@
     <system:String x:Key="ApplyDirectoryMatch">应用目录匹配</system:String>
     <system:String x:Key="ApplyDirectoryMatchTip">根据目录配置批量归类应用</system:String>
     <system:String x:Key="ApplyDirectoryMatchSuccess">已归类 {0} 个应用</system:String>
+    <system:String x:Key="UrlMatch">通配符匹配</system:String>
+    <system:String x:Key="AddUrlPattern">添加通配符</system:String>
+    <system:String x:Key="UrlPatternPlaceholder">支持通配符(* ?)或正则表达式，如 *.bilibili.com 或 ^(www|m)\.google\.com$</system:String>
+    <system:String x:Key="UrlPatternTooLong">URL 规则长度不能超过 256 个字符</system:String>
+    <system:String x:Key="UrlPatternLimitReached">每个分类最多添加 20 条 URL 规则</system:String>
+    <system:String x:Key="UrlPatternExists">该 URL 规则已存在</system:String>
+    <system:String x:Key="ApplyUrlMatchSuccess">已匹配 {0} 个网站</system:String>
     <system:String x:Key="CategoryAppCount">分类应用数量</system:String>
     <system:String x:Key="ViewWebsiteList">查看网站列表</system:String>
     <system:String x:Key="General">常规</system:String>

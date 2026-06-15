@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using Avalonia;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data;
 using Avalonia.Input;
 
 namespace Taix.Client.Controls.Toggle;
@@ -8,10 +9,10 @@ namespace Taix.Client.Controls.Toggle;
 public class Toggle : TemplatedControl
 {
     public static readonly StyledProperty<bool> IsCheckedProperty =
-        AvaloniaProperty.Register<Toggle, bool>(nameof(IsChecked));
+        AvaloniaProperty.Register<Toggle, bool>(nameof(IsChecked), defaultBindingMode: BindingMode.TwoWay);
 
     public static readonly StyledProperty<ToggleTextPosition> TextPositionProperty =
-        AvaloniaProperty.Register<Toggle, ToggleTextPosition>(nameof(IsChecked), ToggleTextPosition.Right);
+        AvaloniaProperty.Register<Toggle, ToggleTextPosition>(nameof(TextPosition), ToggleTextPosition.Right);
 
     public static readonly StyledProperty<string> OnTextProperty =
         AvaloniaProperty.Register<Toggle, string>(nameof(OnText), "On");

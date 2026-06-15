@@ -38,6 +38,14 @@ pub struct WebSiteCategoryModel {
     pub color: Option<String>,
     #[serde(default)]
     #[sqlx(default)]
+    #[sqlx(rename = "IsUrlMatch")]
+    pub is_url_match: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[sqlx(default)]
+    #[sqlx(rename = "UrlPatterns")]
+    pub url_patterns: Option<String>,
+    #[serde(default)]
+    #[sqlx(default)]
     #[sqlx(rename = "IsSystem")]
     pub is_system: bool,
 }

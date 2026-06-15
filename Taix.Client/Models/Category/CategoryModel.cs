@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Models.Category;
+namespace Taix.Client.Models.Category;
 
 public class CategoryModel
 {

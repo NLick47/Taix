@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Taix.Client.Shared.Models.Db;
 

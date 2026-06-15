@@ -24,6 +24,7 @@ use tower_http::trace::TraceLayer;
 use routes::web_sentry::SentryState;
 use services::category::CategoryService;
 use services::config::ConfigService;
+use services::web_data::WebDataService;
 
 #[tokio::main]
 async fn main() {
@@ -111,6 +112,10 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
 
     let app = create_app(pool.clone(), config_service, web_enabled_tx.clone());
 
+    if let Err(e) = WebDataService::warmup_url_match_cache(&pool).await {
+        tracing::warn!("Failed to warmup URL match cache: {}", e);
+    }
+
     let addr: SocketAddr = parse_server_addr()?;
 
     tracing::info!("Server listening on http://{}", addr);
@@ -129,6 +134,7 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
     let startup_pool = pool.clone();
     tokio::spawn(async move {
         tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+
         match CategoryService::apply_directory_match(&startup_pool).await {
             Ok(count) => {
                 if count > 0 {

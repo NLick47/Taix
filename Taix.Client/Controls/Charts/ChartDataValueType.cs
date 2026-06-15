@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Controls.Charts;
+namespace Taix.Client.Controls.Charts;
 
 public enum ChartDataValueType
 {

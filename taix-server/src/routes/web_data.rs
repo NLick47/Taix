@@ -94,6 +94,7 @@ pub fn router() -> Router<SqlitePool> {
         .route("/api/webdata/browse-log-list", get(get_browse_log_list))
         .route("/api/webdata/site-log-list", get(get_web_site_log_list))
         .route("/api/webdata/export", get(get_web_export_data))
+        .route("/api/webdata/apply-url-match", post(apply_url_match))
 }
 
 async fn add_url_browse_time(
@@ -275,6 +276,13 @@ async fn get_web_site_log_list(State(pool): State<SqlitePool>, Extension(config_
 async fn get_web_export_data(State(pool): State<SqlitePool>, Extension(config_service): Extension<Arc<ConfigService>>, Query(q): Query<DateRangeQuery>) -> Json<ApiResponse<crate::models::web::WebExportDataResult>> {
     match WebDataService::get_web_export_data(&pool, q.start, q.end, &q.timezone, &config_service).await {
         Ok(data) => Json(ApiResponse::ok(data)),
+        Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
+    }
+}
+
+async fn apply_url_match(State(pool): State<SqlitePool>) -> Json<ApiResponse<usize>> {
+    match WebDataService::apply_url_match(&pool).await {
+        Ok(count) => Json(ApiResponse::ok(count)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
 }

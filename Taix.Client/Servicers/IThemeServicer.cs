@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Avalonia.Styling;
 using Taix.Client.Views;
 

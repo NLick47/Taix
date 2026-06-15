@@ -1,4 +1,4 @@
-﻿using Taix.Client.Controls.Select;
+using Taix.Client.Controls.Select;
 using Taix.Client.Shared.Models;
 
 namespace Taix.Client.Models.CategoryAppList;

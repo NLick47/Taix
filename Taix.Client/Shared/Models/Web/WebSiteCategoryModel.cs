@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Shared.Models.Db;
+namespace Taix.Client.Shared.Models.Db;
 
 /// <summary>
 /// 网站分类数据库模型
@@ -21,6 +21,16 @@ public record class WebSiteCategoryModel
     /// 颜色
     /// </summary>
     public string? Color { get; init; }
+
+    /// <summary>
+    /// 是否启用 URL 匹配
+    /// </summary>
+    public bool IsUrlMatch { get; init; }
+
+    /// <summary>
+    /// URL 匹配规则（JSON 数组）
+    /// </summary>
+    public string? UrlPatterns { get; init; }
 
     /// <summary>
     /// 是否为系统分类（不可删除）

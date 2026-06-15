@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -76,4 +76,5 @@ public interface ITaixApiClient
     Task<List<WebBrowseLogModel>> GetBrowseLogListAsync(DateTime start, DateTime end, int siteId = 0, CancellationToken cancellationToken = default);
     Task<List<WebSiteModel>> GetWebSiteLogListAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
     Task<WebExportDataResult> GetWebExportDataAsync(DateTime start, DateTime end);
+    Task<int> ApplyUrlMatchAsync();
 }

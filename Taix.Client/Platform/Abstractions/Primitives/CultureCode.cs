@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Platform.Abstractions.Primitives;
+namespace Taix.Client.Platform.Abstractions.Primitives;
 
 public enum CultureCode : sbyte
 {

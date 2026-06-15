@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using Taix.Client.Models.Category;
 using Taix.Client.Shared.Models.Db;
 
@@ -11,8 +11,10 @@ public class CategoryPageModel : ModelBase
     private string _editErrorText = string.Empty;
     private string _editIconFile = string.Empty;
     private bool _editIsDirectoryMatch;
+    private bool _editIsUrlMatch;
     private string _editName = string.Empty;
     private string _editSelectedDirectory = string.Empty;
+    private string _editSelectedUrlPattern = string.Empty;
     private bool _editVisibility;
     private bool _isCreate;
     private bool _isEditError;
@@ -94,7 +96,19 @@ public class CategoryPageModel : ModelBase
         }
     }
 
+    public bool EditIsUrlMatch
+    {
+        get => _editIsUrlMatch;
+        set
+        {
+            _editIsUrlMatch = value;
+            OnPropertyChanged();
+        }
+    }
+
     public ObservableCollection<string> EditDirectories { get; set; } = new();
+
+    public ObservableCollection<string> EditUrlPatterns { get; set; } = new();
 
     public string EditSelectedDirectory
     {
@@ -102,6 +116,27 @@ public class CategoryPageModel : ModelBase
         set
         {
             _editSelectedDirectory = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string EditSelectedUrlPattern
+    {
+        get => _editSelectedUrlPattern;
+        set
+        {
+            _editSelectedUrlPattern = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private string _editNewUrlPattern = string.Empty;
+    public string EditNewUrlPattern
+    {
+        get => _editNewUrlPattern;
+        set
+        {
+            _editNewUrlPattern = value;
             OnPropertyChanged();
         }
     }

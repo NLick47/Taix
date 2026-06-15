@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Controls.DatePickerBar;
+namespace Taix.Client.Controls.DatePickerBar;
 
 public enum DatePickerShowType
 {

@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Shared.Models;
+namespace Taix.Client.Shared.Models;
 
 /// <summary>
 /// 应用信息模型

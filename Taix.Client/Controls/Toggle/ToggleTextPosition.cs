@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Controls.Toggle;
+namespace Taix.Client.Controls.Toggle;
 
 public enum ToggleTextPosition
 {

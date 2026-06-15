@@ -1,4 +1,4 @@
-﻿using Taix.Client.Platform.Abstractions.Primitives;
+using Taix.Client.Platform.Abstractions.Primitives;
 
 namespace Taix.Client.Shared.Models.Config;
 

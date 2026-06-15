@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Shared.Models.Db;
+namespace Taix.Client.Shared.Models.Db;
 
 /// <summary>
 /// 网页站点数据库模型

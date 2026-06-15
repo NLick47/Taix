@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Controls.Charts.Model;
+namespace Taix.Client.Controls.Charts.Model;
 
 public enum ChartBadgeType
 {

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Taix.Client.Platform.Abstractions.Primitives;
 
 namespace Taix.Client.Shared.Models.Config;
@@ -16,22 +16,22 @@ public class BehaviorModel
         Group = "Preference", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
     public bool IsSleepWatch { get; set; } = true;
 
-    [Config(IsCanImportExport = true, Name = "忽略应用", Description = "可以通过进程名称或者正则表达式进行匹配。当使用正则表达式时可以匹配程序路径",
-        Group = "忽略应用", Placeholder = "进程名称，不需要输入.exe。支持正则表达式", CultureCode = CultureCode.ZhCn)]
+    [Config(IsCanImportExport = true, Name = "忽略应用", Description = "可以通过进程名称或者通配符进行匹配。* 匹配任意字符，? 匹配单个字符",
+        Group = "忽略应用", Placeholder = "进程名称，不需要输入.exe。支持通配符", CultureCode = CultureCode.ZhCn)]
     [Config(IsCanImportExport = true, Name = "Ignore Application",
         Description =
-            "Can be matched by process name or regular expression. When using regular expression, it can match the program path",
-        Group = "Ignore Application", Placeholder = "Process name, no need to enter .exe. Supports regular expression",
+            "Can be matched by process name or wildcard. * matches any characters, ? matches single character",
+        Group = "Ignore Application", Placeholder = "Process name, no need to enter .exe. Supports wildcard",
         CultureCode = CultureCode.EnUs)]
- 
+
     public List<string> IgnoreProcessList { get; set; } = new();
 
     [Config(IsCanImportExport = true, Name = "忽略URL", Description = "过滤不需要统计的网站或链接", Group = "忽略URL",
-        Placeholder = "URL 支持正则表达式", CultureCode = CultureCode.ZhCn)]
+        Placeholder = "URL 支持通配符，如 *.bilibili.com", CultureCode = CultureCode.ZhCn)]
     [Config(IsCanImportExport = true, Name = "Ignore URL",
         Description = "Filter websites or links that do not need to be statistics", Group = "Ignore URL",
-        Placeholder = "URL supports regular expression", CultureCode = CultureCode.EnUs)]
-    
+        Placeholder = "URL supports wildcard, e.g. *.bilibili.com", CultureCode = CultureCode.EnUs)]
+
     public List<string> IgnoreUrlList { get; set; } = new();
 
     [Config(Name = "应用白名单", Description = "仅统计白名单内的应用", Group = "应用白名单", CultureCode = CultureCode.ZhCn)]
@@ -40,13 +40,13 @@ public class BehaviorModel
         CultureCode = CultureCode.EnUs)]
     public bool IsWhiteList { get; set; } = false;
 
-    [Config(IsCanImportExport = true, Name = "应用白名单", Description = "可以通过进程名称或者正则表达式进行匹配，当使用正则表达式时可以匹配程序路径",
-        Group = "应用白名单", Placeholder = "进程名称，不需要输入.exe。支持正则表达式", CultureCode = CultureCode.ZhCn)]
+    [Config(IsCanImportExport = true, Name = "应用白名单", Description = "可以通过进程名称或者通配符进行匹配。* 匹配任意字符，? 匹配单个字符",
+        Group = "应用白名单", Placeholder = "进程名称，不需要输入.exe。支持通配符", CultureCode = CultureCode.ZhCn)]
     [Config(IsCanImportExport = true, Name = "Application Whitelist",
         Description =
-            "Can be matched by process name or regular expression. When using regular expression, it can match the program path",
+            "Can be matched by process name or wildcard. * matches any characters, ? matches single character",
         Group = "Application Whitelist",
-        Placeholder = "Process name, no need to enter .exe. Supports regular expression",
+        Placeholder = "Process name, no need to enter .exe. Supports wildcard",
         CultureCode = CultureCode.EnUs)]
     public List<string> ProcessWhiteList { get; set; } = new();
 }

@@ -1,7 +1,9 @@
 use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, Timelike, Utc};
+use regex::RegexSet;
 use sqlx::SqlitePool;
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
@@ -14,13 +16,35 @@ use crate::services::config::ConfigService;
 use crate::utils::{last_day_of_month, parse_timezone, tz_date_to_utc_range, tz_naive_to_utc};
 
 static WEB_CATEGORY_CACHE: std::sync::OnceLock<RwLock<Option<Vec<WebSiteCategoryModel>>>> = std::sync::OnceLock::new();
+static URL_MATCH_CACHE: std::sync::OnceLock<RwLock<Option<Vec<CompiledUrlMatchRule>>>> = std::sync::OnceLock::new();
+static SYSTEM_CATEGORY_ID: std::sync::OnceLock<RwLock<Option<i64>>> = std::sync::OnceLock::new();
 
 fn web_category_cache() -> &'static RwLock<Option<Vec<WebSiteCategoryModel>>> {
     WEB_CATEGORY_CACHE.get_or_init(|| RwLock::new(None))
 }
 
+fn url_match_cache() -> &'static RwLock<Option<Vec<CompiledUrlMatchRule>>> {
+    URL_MATCH_CACHE.get_or_init(|| RwLock::new(None))
+}
+
+fn system_category_id_cache() -> &'static RwLock<Option<i64>> {
+    SYSTEM_CATEGORY_ID.get_or_init(|| RwLock::new(None))
+}
+
+/// 编译后的 URL 匹配规则
+#[derive(Clone)]
+struct CompiledUrlMatchRule {
+    category_id: i64,
+    regex_set: Arc<RegexSet>,
+}
+
 async fn invalidate_web_category_cache() {
     let mut cache = web_category_cache().write().await;
+    *cache = None;
+}
+
+async fn invalidate_url_match_cache() {
+    let mut cache = url_match_cache().write().await;
     *cache = None;
 }
 
@@ -125,13 +149,10 @@ impl WebDataService {
                 let existing: Option<(i64,)> = sqlx::query_as("SELECT ID FROM WebSiteModels WHERE Domain = ?")
                     .bind(&domain).fetch_optional(&mut *tx).await?;
                 if let Some((id,)) = existing { id } else {
-                    let default_category_id: i64 = sqlx::query_scalar(
-                        "SELECT ID FROM WebSiteCategoryModels WHERE IsSystem = 1 LIMIT 1"
-                    )
-                    .fetch_optional(&mut *tx).await?
-                    .unwrap_or(0);
+                    let matched_category_id = match_url_for_new_site(&domain);
+                    let category_id = matched_category_id.unwrap_or_else(get_system_category_id_cached);
                     sqlx::query("INSERT INTO WebSiteModels (Title, Domain, CategoryID) VALUES (?, ?, ?)")
-                        .bind(&site_title).bind(&domain).bind(default_category_id).execute(&mut *tx).await?.last_insert_rowid()
+                        .bind(&site_title).bind(&domain).bind(category_id).execute(&mut *tx).await?.last_insert_rowid()
                 }
             };
 
@@ -249,11 +270,21 @@ impl WebDataService {
 
     pub async fn create_web_site_category(pool: &SqlitePool, data: WebSiteCategoryModel) -> Result<WebSiteCategoryModel, AppError> {
         info!("create_web_site_category: name={}", data.name);
-        let id = sqlx::query("INSERT INTO WebSiteCategoryModels (Name, IconFile, Color) VALUES (?, ?, ?)")
+        let id = sqlx::query("INSERT INTO WebSiteCategoryModels (Name, IconFile, Color, IsUrlMatch, UrlPatterns) VALUES (?, ?, ?, ?, ?)")
             .bind(&data.name).bind(&data.icon_file).bind(&data.color)
+            .bind(data.is_url_match).bind(&data.url_patterns)
             .execute(pool).await?.last_insert_rowid();
         invalidate_web_category_cache().await;
-        Ok(WebSiteCategoryModel { id, name: data.name, icon_file: data.icon_file, color: data.color, is_system: false })
+        invalidate_url_match_cache().await;
+        Ok(WebSiteCategoryModel {
+            id,
+            name: data.name,
+            icon_file: data.icon_file,
+            color: data.color,
+            is_url_match: data.is_url_match,
+            url_patterns: data.url_patterns,
+            is_system: false,
+        })
     }
 
     pub async fn update_web_site_category(pool: &SqlitePool, id: i64, data: WebSiteCategoryModel) -> Result<(), AppError> {
@@ -263,10 +294,12 @@ impl WebDataService {
         if existing.is_none() {
             return Err(AppError::Business("分类不存在".to_string()));
         }
-        sqlx::query("UPDATE WebSiteCategoryModels SET Name = ?, IconFile = ?, Color = ? WHERE ID = ?")
-            .bind(&data.name).bind(&data.icon_file).bind(&data.color).bind(id)
+        sqlx::query("UPDATE WebSiteCategoryModels SET Name = ?, IconFile = ?, Color = ?, IsUrlMatch = ?, UrlPatterns = ? WHERE ID = ?")
+            .bind(&data.name).bind(&data.icon_file).bind(&data.color)
+            .bind(data.is_url_match).bind(&data.url_patterns).bind(id)
             .execute(pool).await?;
         invalidate_web_category_cache().await;
+        invalidate_url_match_cache().await;
         Ok(())
     }
 
@@ -1058,6 +1091,8 @@ impl WebDataService {
                     name,
                     icon_file: None,
                     color: row.wsc_color,
+                    is_url_match: false,
+                    url_patterns: None,
                     is_system: false,
                 }),
             }),
@@ -1071,6 +1106,87 @@ impl WebDataService {
         }
 
         Ok(crate::models::web::WebExportDataResult { logs })
+    }
+
+    pub async fn apply_url_match(pool: &SqlitePool) -> Result<usize, AppError> {
+        let rules = Self::load_url_match_rules(pool).await?;
+        if rules.is_empty() {
+            return Ok(0);
+        }
+
+        let sites: Vec<(i64, String, i64)> = sqlx::query_as(
+            "SELECT ID, Domain, CategoryID FROM WebSiteModels WHERE Domain IS NOT NULL"
+        )
+        .fetch_all(pool)
+        .await?;
+
+        let mut to_update: Vec<(i64, i64)> = Vec::new();
+        let system_category_id: i64 = sqlx::query_scalar(
+            "SELECT ID FROM WebSiteCategoryModels WHERE IsSystem = 1 LIMIT 1"
+        )
+        .fetch_optional(pool)
+        .await?
+        .unwrap_or(0);
+
+        for (site_id, domain, current_cat_id) in &sites {
+            if *current_cat_id == system_category_id {
+                if let Some(cat_id) = match_url_against_rules(&rules, domain) {
+                    to_update.push((*site_id, cat_id));
+                }
+            }
+        }
+
+        if to_update.is_empty() {
+            return Ok(0);
+        }
+
+        let mut tx = pool.begin().await?;
+        let mut updated = 0usize;
+        for (site_id, category_id) in &to_update {
+            let result = sqlx::query(
+                "UPDATE WebSiteModels SET CategoryID = ? WHERE ID = ? AND CategoryID != ?"
+            )
+            .bind(category_id)
+            .bind(site_id)
+            .bind(category_id)
+            .execute(&mut *tx)
+            .await?;
+            if result.rows_affected() > 0 {
+                updated += 1;
+            }
+        }
+        tx.commit().await?;
+
+        if updated > 0 {
+            info!("URL match applied: {} sites re-categorized", updated);
+        }
+
+        Ok(updated)
+    }
+
+    async fn load_url_match_rules(pool: &SqlitePool) -> Result<Vec<CompiledUrlMatchRule>, AppError> {
+        {
+            let cache = url_match_cache().read().await;
+            if let Some(cached) = cache.as_ref() {
+                if !cached.is_empty() {
+                    return Ok(cached.clone());
+                }
+            }
+        }
+
+        let categories = Self::get_web_site_categories(pool).await?;
+        let rules = build_url_match_rules_from_categories(&categories);
+
+        let mut cache = url_match_cache().write().await;
+        *cache = Some(rules.clone());
+
+        Ok(rules)
+    }
+
+    pub async fn warmup_url_match_cache(pool: &SqlitePool) -> Result<usize, AppError> {
+        let rules = Self::load_url_match_rules(pool).await?;
+        let _ = load_system_category_id(pool).await;
+        Ok(rules.len())
     }
 
 }
@@ -1324,4 +1440,146 @@ fn is_browser_internal_page(url: &str, title: Option<&str>) -> bool {
     }
 
     false
+}
+
+fn build_url_match_rules_from_categories(categories: &[WebSiteCategoryModel]) -> Vec<CompiledUrlMatchRule> {
+    const MAX_PATTERN_LEN: usize = 256;
+    const MAX_PATTERNS_PER_CATEGORY: usize = 20;
+
+    categories
+        .iter()
+        .filter(|c| c.is_url_match && !c.is_system)
+        .filter_map(|c| {
+            let patterns: Vec<String> = c.url_patterns.as_ref()
+                .and_then(|p| serde_json::from_str::<Vec<String>>(p).ok())
+                .unwrap_or_default();
+
+            if patterns.is_empty() {
+                return None;
+            }
+
+            let regex_patterns: Vec<String> = patterns
+                .iter()
+                .map(|p| p.trim())
+                .filter(|p| !p.is_empty() && p.len() <= MAX_PATTERN_LEN)
+                .take(MAX_PATTERNS_PER_CATEGORY)
+                .map(|p| pattern_to_regex(p))
+                .collect();
+
+            if regex_patterns.is_empty() {
+                return None;
+            }
+
+            match RegexSet::new(&regex_patterns) {
+                Ok(set) => Some(CompiledUrlMatchRule {
+                    category_id: c.id,
+                    regex_set: Arc::new(set),
+                }),
+                Err(e) => {
+                    warn!("Failed to compile URL regex set for category {}: {}", c.id, e);
+                    None
+                }
+            }
+        })
+        .collect()
+}
+
+/// 判断是否为正则表达式（包含正则特殊元字符）
+fn is_regex_pattern(pattern: &str) -> bool {
+    // 正则元字符：^ $ [] () {} | + \ .
+    // 注意：* 和 ? 在通配符中使用，不作为正则判断依据
+    let regex_chars = ['^', '$', '[', ']', '(', ')', '{', '}', '|', '+', '\\'];
+    pattern.chars().any(|c| regex_chars.contains(&c))
+}
+
+/// 将模式转换为正则表达式
+/// - 包含正则元字符 → 当作正则表达式处理
+/// - 包含 * 或 ? → 当作通配符转换
+/// - 普通字符串 → 精确匹配
+fn pattern_to_regex(pattern: &str) -> String {
+    if is_regex_pattern(pattern) {
+        // 已经是正则表达式，添加大小写不敏感和锚点
+        format!("(?i)^({})$", pattern)
+    } else if pattern.contains('*') || pattern.contains('?') {
+        // 通配符模式，转换
+        wildcard_to_regex(pattern)
+    } else {
+        // 普通字符串，精确匹配
+        format!("(?i)^{}$", regex::escape(pattern))
+    }
+}
+
+fn wildcard_to_regex(pattern: &str) -> String {
+    let mut result = String::with_capacity(pattern.len() * 2);
+    result.push_str("(?i)^");
+
+    for c in pattern.chars() {
+        match c {
+            '*' => result.push_str(".*"),
+            '?' => result.push('.'),
+            '.' | '^' | '$' | '+' | '[' | ']' | '(' | ')' | '{' | '}' | '\\' | '|' => {
+                result.push('\\');
+                result.push(c);
+            }
+            _ => result.push(c),
+        }
+    }
+
+    result.push('$');
+    result
+}
+
+fn match_url_against_rules(rules: &[CompiledUrlMatchRule], domain: &str) -> Option<i64> {
+    const MAX_DOMAIN_LEN: usize = 255;
+
+    if domain.is_empty() || domain.len() > MAX_DOMAIN_LEN {
+        return None;
+    }
+
+    let domain_lower = domain.to_lowercase();
+    for rule in rules {
+        if rule.regex_set.is_match(&domain_lower) {
+            return Some(rule.category_id);
+        }
+    }
+    None
+}
+
+fn match_url_for_new_site(domain: &str) -> Option<i64> {
+    if domain.is_empty() {
+        return None;
+    }
+
+    let cache = url_match_cache().blocking_read();
+    if let Some(rules) = cache.as_ref() {
+        if !rules.is_empty() {
+            return match_url_against_rules(rules, domain);
+        }
+    }
+
+    None
+}
+
+fn get_system_category_id_cached() -> i64 {
+    let cache = system_category_id_cache().blocking_read();
+    cache.as_ref().copied().unwrap_or(0)
+}
+
+async fn load_system_category_id(pool: &SqlitePool) -> Result<i64, AppError> {
+    {
+        let cache = system_category_id_cache().read().await;
+        if let Some(id) = cache.as_ref() {
+            return Ok(*id);
+        }
+    }
+
+    let id: i64 = sqlx::query_scalar("SELECT ID FROM WebSiteCategoryModels WHERE IsSystem = 1 LIMIT 1")
+        .fetch_optional(pool)
+        .await?
+        .unwrap_or(0);
+
+    let mut cache = system_category_id_cache().write().await;
+    *cache = Some(id);
+
+    Ok(id)
 }

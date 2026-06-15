@@ -1,4 +1,4 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using Taix.Client.ViewModels;
 
 namespace Taix.Client.Views;

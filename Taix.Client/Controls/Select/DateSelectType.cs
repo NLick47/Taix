@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Controls.Select;
+namespace Taix.Client.Controls.Select;
 
 public enum DateSelectType
 {

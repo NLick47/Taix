@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS WebSiteCategoryModels (
     Name TEXT NOT NULL,
     IconFile TEXT,
     Color TEXT,
+    IsUrlMatch INTEGER NOT NULL DEFAULT 0,
+    UrlPatterns TEXT,
     IsSystem INTEGER NOT NULL DEFAULT 0
 );
 
@@ -181,7 +183,7 @@ pub async fn init_db(db_path: &str, tz_id: &str) -> anyhow::Result<SqlitePool> {
             let steps = [
                 "baseline", "add_columns", "rename_columns", "data_fixes", "indexes",
                 "utc_hourslog", "utc_webbrowse", "utc_appduration", "utc_daily", "utc_daily_rebuild", "defaults",
-                "perf_indexes", "app_sessions",
+                "perf_indexes", "app_sessions", "web_category_url_match",
             ];
             let mut has_pending = false;
             for step in steps {
@@ -315,6 +317,13 @@ async fn migrate(pool: &SqlitePool, tz_id: &str) -> anyhow::Result<()> {
         .await
         .context("创建 AppSessions 表")?;
         mark_done(&mut tx, "app_sessions").await?;
+    }
+
+    // 网页分类 URL 匹配规则字段
+    if !is_done(&mut tx, "web_category_url_match").await? {
+        add_column_if_missing(&mut tx, "WebSiteCategoryModels", "IsUrlMatch", "INTEGER NOT NULL DEFAULT 0").await?;
+        add_column_if_missing(&mut tx, "WebSiteCategoryModels", "UrlPatterns", "TEXT").await?;
+        mark_done(&mut tx, "web_category_url_match").await?;
     }
 
     tx.commit().await.context("提交迁移事务失败")?;

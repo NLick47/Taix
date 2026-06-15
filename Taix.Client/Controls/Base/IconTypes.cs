@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Controls.Base;
+namespace Taix.Client.Controls.Base;
 
 /// <summary>
 /// 图标类型

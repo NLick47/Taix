@@ -18,6 +18,8 @@ public partial class CategoryPage : TPage
 {
     private readonly IDisposable _editDirectoriesSubscription;
     private readonly IDisposable _editIsDirectoryMatchSubscription;
+    private readonly IDisposable _editIsUrlMatchSubscription;
+    private readonly IDisposable _editUrlPatternsSubscription;
     private CategoryPageViewModel _model;
 
     public CategoryPage()
@@ -33,9 +35,22 @@ public partial class CategoryPage : TPage
         {
             val.CollectionChanged += OnEditDirectoriesCollectionChanged;
         });
+
+        _editIsUrlMatchSubscription = this.WhenAnyValue(x => x._model.EditIsUrlMatch)
+            .Subscribe(HandleEditIsUrlMatchChange);
+
+        _editUrlPatternsSubscription = this.WhenAnyValue(x => x._model.EditUrlPatterns).Subscribe(val =>
+        {
+            val.CollectionChanged += OnEditUrlPatternsCollectionChanged;
+        });
     }
 
     private void OnEditDirectoriesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == NotifyCollectionChangedAction.Add) viewer.ScrollToEnd();
+    }
+
+    private void OnEditUrlPatternsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.Action == NotifyCollectionChangedAction.Add) viewer.ScrollToEnd();
     }
@@ -51,16 +66,35 @@ public partial class CategoryPage : TPage
         base.OnUnloaded(e);
         _editIsDirectoryMatchSubscription.Dispose();
         _editDirectoriesSubscription.Dispose();
+        _editIsUrlMatchSubscription.Dispose();
+        _editUrlPatternsSubscription.Dispose();
         if (_model?.EditDirectories != null)
         {
             _model.EditDirectories.CollectionChanged -= OnEditDirectoriesCollectionChanged;
-            _model = null;
         }
+        if (_model?.EditUrlPatterns != null)
+        {
+            _model.EditUrlPatterns.CollectionChanged -= OnEditUrlPatternsCollectionChanged;
+        }
+        _model = null;
     }
 
     private void HandleEditIsDirectoryMatchChange(bool isDirectoryMatch)
     {
         if (isDirectoryMatch)
+        {
+            viewer.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            viewer.ScrollToEnd();
+        }
+        else
+        {
+            viewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+        }
+    }
+
+    private void HandleEditIsUrlMatchChange(bool isUrlMatch)
+    {
+        if (isUrlMatch)
         {
             viewer.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
             viewer.ScrollToEnd();
@@ -90,7 +124,6 @@ public partial class CategoryPage : TPage
         if (visual is ListBoxItem listBoxItem && listBoxItem.DataContext is CategoryModel category)
         {
             _model.SelectedAppCategoryItem = category;
-
         }
     }
 
@@ -113,7 +146,6 @@ public partial class CategoryPage : TPage
         if (visual is ListBoxItem listBoxItem && listBoxItem.DataContext is CategoryPageModel.WebCategoryModel category)
         {
             _model.SelectedWebCategoryItem = category;
-
         }
     }
 }

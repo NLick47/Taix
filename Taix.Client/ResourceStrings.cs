@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 
 namespace Taix.Client;
@@ -140,6 +140,15 @@ public static class ResourceStrings
     public static string CategoryNameMaxLength => GetStringValue("AliasMaxLengthTip");
     public static string CategoryCreated => GetStringValue("CreationCompleted");
     public static string ApplyDirectoryMatchSuccess => GetStringValue("ApplyDirectoryMatchSuccess");
+
+    // URL 匹配相关
+    public static string UrlMatch => GetStringValue("UrlMatch");
+    public static string AddUrlPattern => GetStringValue("AddUrlPattern");
+    public static string UrlPatternPlaceholder => GetStringValue("UrlPatternPlaceholder");
+    public static string UrlPatternTooLong => GetStringValue("UrlPatternTooLong");
+    public static string UrlPatternLimitReached => GetStringValue("UrlPatternLimitReached");
+    public static string UrlPatternExists => GetStringValue("UrlPatternExists");
+    public static string ApplyUrlMatchSuccess => GetStringValue("ApplyUrlMatchSuccess");
 
     private static string GetStringValue(string key)
     {

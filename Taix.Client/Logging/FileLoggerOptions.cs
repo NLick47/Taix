@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Logging;
+namespace Taix.Client.Logging;
 
 public class FileLoggerOptions
 {

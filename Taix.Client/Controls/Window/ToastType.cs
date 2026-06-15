@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Controls.Window;
+namespace Taix.Client.Controls.Window;
 
 public enum ToastType
 {

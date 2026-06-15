@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Taix.Client.Controls.Select;
 using Taix.Client.Shared.Models.Db;

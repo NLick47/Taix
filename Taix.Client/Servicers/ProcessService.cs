@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using Taix.Client.Platform;
 using Taix.Client.Servicers.Interfaces;

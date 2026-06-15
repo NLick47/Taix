@@ -1,4 +1,4 @@
-﻿namespace Taix.Client.Base.Color;
+namespace Taix.Client.Base.Color;
 
 public enum ColorTypes
 {
