@@ -6,7 +6,7 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid>
-                    <Canvas x:Name="PieCanvas" />
+                    <controls:ChartsItemTypePie x:Name="PieView" />
                     <base:EmptyData x:Name="EmptyDataView" IsVisible="False"
                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Grid>

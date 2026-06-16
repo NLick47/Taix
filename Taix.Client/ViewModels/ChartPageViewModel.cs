@@ -497,10 +497,10 @@ public partial class ChartPageViewModel : ChartPageModel
         var categories = await _webDataService.GetWebSiteCategoriesAsync(cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
-        await Task.WhenAll(
-            LoadCategoriesStatisticsAsync(start, end, categories, cancellationToken),
-            LoadWebSitesTopDataAsync(start, end, cancellationToken),
-            LoadWebBrowseDataStatisticsAsync(start, end, categories, cancellationToken));
+        await LoadCategoriesStatisticsAsync(start, end, categories, cancellationToken);
+        await LoadWebSitesTopDataAsync(start, end, cancellationToken);
+        await LoadWebBrowseDataStatisticsAsync(start, end, categories, cancellationToken);
+
         cancellationToken.ThrowIfCancellationRequested();
         WebTotalTime = await _webDataService.GetBrowseDurationTotalAsync(start, end, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
@@ -547,7 +547,8 @@ public partial class ChartPageViewModel : ChartPageModel
         {
             ID = 0,
             Name = "Unknown",
-            IconFile = ""
+            IconFile = "",
+            Color = "#999999"
         };
 
         string[]? colNames = null;

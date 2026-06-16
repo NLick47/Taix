@@ -4,8 +4,6 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Layout;
-using Avalonia.Media;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
 
@@ -17,7 +15,8 @@ public class PieChart : TemplatedControl
         AvaloniaProperty.RegisterDirect<PieChart, IEnumerable<ChartsDataModel>>(
             nameof(Data), o => o.Data, (o, v) => o.Data = v);
 
-    private EmptyData _emptyDataView;
+    private EmptyData? _emptyDataView;
+    private ChartsItemTypePie? _pieView;
     private IEnumerable<ChartsDataModel> _data = [];
 
     public IEnumerable<ChartsDataModel> Data
@@ -31,10 +30,9 @@ public class PieChart : TemplatedControl
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
-        var canvas = e.NameScope.Get<Canvas>("PieCanvas");
         _emptyDataView = e.NameScope.Find<EmptyData>("EmptyDataView");
-        canvas.SizeChanged += (_, _) => Render(canvas);
-        Render(canvas);
+        _pieView = e.NameScope.Find<ChartsItemTypePie>("PieView");
+        Update();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -42,32 +40,21 @@ public class PieChart : TemplatedControl
         base.OnPropertyChanged(change);
         if (change.Property == DataProperty)
         {
-            var canvas = this.FindControl<Canvas>("PieCanvas");
-            if (canvas != null) Render(canvas);
+            Update();
         }
     }
 
-    private void Render(Canvas canvas)
+    private void Update()
     {
-        canvas.Children.Clear();
         var list = Data?.ToList();
-        if (list == null || list.Count == 0)
+        var hasData = list != null && list.Count > 0 && list.Sum(d => d.Value) > 0;
+
+        if (_emptyDataView != null)
+            _emptyDataView.IsVisible = !hasData;
+
+        if (_pieView != null)
         {
-            if (_emptyDataView != null) _emptyDataView.IsVisible = true;
-            return;
+            _pieView.Data = hasData ? list!.OrderBy(m => m.Value).ToList() : null;
         }
-        if (_emptyDataView != null) _emptyDataView.IsVisible = false;
-
-        if (canvas.Bounds.Width <= 0 || canvas.Bounds.Height <= 0) return;
-
-        var item = new ChartsItemTypePie
-        {
-            Width = canvas.Bounds.Width,
-            Height = canvas.Bounds.Height,
-            HorizontalAlignment = HorizontalAlignment.Left,
-            VerticalAlignment = VerticalAlignment.Top,
-            Data = list.OrderBy(m => m.Value).ToList()
-        };
-        canvas.Children.Add(item);
     }
 }

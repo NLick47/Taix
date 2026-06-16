@@ -1,45 +1,32 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Taix.Client.Controls.Charts.Model;
-using Colors = Taix.Client.Base.Color.Colors;
 
 namespace Taix.Client.Controls.Charts;
 
-public class ChartsItemTypePie : Canvas
+public class ChartsItemTypePie : Control
 {
     public static readonly DirectProperty<ChartsItemTypePie, List<ChartsDataModel>?> DataProperty =
         AvaloniaProperty.RegisterDirect<ChartsItemTypePie, List<ChartsDataModel>?>(
-            nameof(Data),
-            o => o.Data,
-            (o, v) => o.Data = v);
+            nameof(Data), o => o.Data, (o, v) => o.Data = v);
 
- 
-    public static readonly DirectProperty<ChartsItemTypePie, double> MaxValueProperty =
-        AvaloniaProperty.RegisterDirect<ChartsItemTypePie, double>(
-            nameof(MaxValue),
-            o => o.MaxValue,
-            (o, v) => o.MaxValue = v);
+    public static readonly StyledProperty<double> InnerRadiusRatioProperty =
+        AvaloniaProperty.Register<ChartsItemTypePie, double>(nameof(InnerRadiusRatio), 0.6);
 
-
-    public static readonly StyledProperty<double> InnerRadiusProperty =
-        AvaloniaProperty.Register<ChartsItemTypePie, double>(nameof(InnerRadius), 60);
-
-
-    public static readonly StyledProperty<double> OuterRadiusProperty =
-        AvaloniaProperty.Register<ChartsItemTypePie, double>(nameof(OuterRadius), 80);
-
-    private readonly List<Path> _paths = new();
-    private List<ChartsDataModel>? _data = new();
-    private double _lastAngle = -Math.PI / 2;
+    private List<ChartsDataModel>? _data = [];
     private double _maxValue;
-  
+    private int _hoveredIndex = -1;
+    private bool _isDarkTheme;
 
     public List<ChartsDataModel>? Data
     {
@@ -47,156 +34,273 @@ public class ChartsItemTypePie : Canvas
         set => SetAndRaise(DataProperty, ref _data, value);
     }
 
-    public double MaxValue
+    public double InnerRadiusRatio
     {
-        get => _maxValue;
-        set => SetAndRaise(MaxValueProperty, ref _maxValue, value);
+        get => GetValue(InnerRadiusRatioProperty);
+        set => SetValue(InnerRadiusRatioProperty, value);
     }
 
-    public double InnerRadius
+    public ChartsItemTypePie()
     {
-        get => GetValue(InnerRadiusProperty);
-        set => SetValue(InnerRadiusProperty, value);
+        AffectsRender<ChartsItemTypePie>(DataProperty, InnerRadiusRatioProperty);
     }
-
-    public double OuterRadius
-    {
-        get => GetValue(OuterRadiusProperty);
-        set => SetValue(OuterRadiusProperty, value);
-    }
-
-    protected override Type StyleKeyOverride => typeof(ChartsItemTypePie);
 
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        Render();
-    }
+        _isDarkTheme = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
 
-    protected override void OnSizeChanged(SizeChangedEventArgs e)
-    {
-        base.OnSizeChanged(e);
-        Render();
+        if (Application.Current != null)
+        {
+            Application.Current.ActualThemeVariantChanged += OnThemeChanged;
+        }
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        foreach (var item in _paths)
+        if (Application.Current != null)
         {
-            item.PointerEntered -= Path_PointerEntered;
-            item.PointerExited -= Path_PointerExited;
-        }
-
-        foreach (var item in Children)
-        {
-            item.PointerEntered -= Path_PointerEntered;
-            item.PointerExited -= Path_PointerExited;
+            Application.Current.ActualThemeVariantChanged -= OnThemeChanged;
         }
     }
 
-    private void Render()
+    private void OnThemeChanged(object? sender, EventArgs e)
     {
-        _paths.Clear();
-        Children.Clear();
-        
+        _isDarkTheme = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+        InvalidateVisual();
+    }
+
+    public override void Render(DrawingContext context)
+    {
+        base.Render(context);
+
+        var width = Bounds.Width;
+        var height = Bounds.Height;
+
+        if (width <= 0 || height <= 0) return;
+
         if (Data == null || Data.Count == 0)
+        {
+            DrawEmptyState(context, width, height);
             return;
-        
-        if (Bounds.Width > 0 && Bounds.Height > 0)
-        {
-            double size = Math.Min(Bounds.Width, Bounds.Height);
-            if (GetValue(OuterRadiusProperty) == 80)
-                OuterRadius = size * 0.35;
-            if (GetValue(InnerRadiusProperty) == 60)
-                InnerRadius = size * 0.25;
         }
-        
-        MaxValue = Data.Sum(m => m.Value);
-        _lastAngle = -Math.PI / 2;
 
-        foreach (var item in Data)
+        _maxValue = Data.Sum(m => m.Value);
+        if (_maxValue <= 0)
         {
-            var angle = item.Value / MaxValue * 360;
-            var path = CreatePath(angle, Client.Base.Color.Colors.GetFromString(item.Color));
-            path.PointerEntered += Path_PointerEntered;
-            path.PointerExited += Path_PointerExited;
-            _paths.Add(path);
-            Children.Add(path);
+            DrawEmptyState(context, width, height);
+            return;
+        }
+
+        var outerRadius = Math.Min(width, height) * 0.38;
+        var innerRadius = outerRadius * Math.Clamp(InnerRadiusRatio, 0, 0.95);
+        var center = new Point(width / 2, height / 2);
+
+        // 绘制扇形
+        var currentAngle = -Math.PI / 2;
+        for (var i = 0; i < Data.Count; i++)
+        {
+            var item = Data[i];
+            if (item.Value <= 0) continue;
+
+            var sweepAngle = item.Value / _maxValue * 2 * Math.PI;
+            var isHovered = _hoveredIndex == i;
+
+            DrawSlice(context, center, innerRadius, outerRadius, currentAngle, sweepAngle, item.Color, isHovered);
+
+            currentAngle += sweepAngle;
+        }
+
+        // 绘制中心圆
+        DrawCenterCircle(context, center, innerRadius);
+
+        // 绘制悬浮提示
+        if (_hoveredIndex >= 0 && Data != null && _hoveredIndex < Data.Count)
+        {
+            DrawTooltip(context, center, innerRadius, outerRadius, Data[_hoveredIndex]);
         }
     }
 
-    private void Path_PointerExited(object? sender, PointerEventArgs e)
+    private void DrawEmptyState(DrawingContext context, double width, double height)
     {
-        foreach (var p in _paths) 
-            p.Opacity = 1;
+        var center = new Point(width / 2, height / 2);
+        var radius = Math.Min(width, height) * 0.15;
+
+        var bgColor = _isDarkTheme ? Color.Parse("#3A3A42") : Color.Parse("#E8E8EC");
+        context.DrawEllipse(new SolidColorBrush(bgColor), null, center, radius, radius);
     }
 
-    private void Path_PointerEntered(object? sender, PointerEventArgs e)
+    private void DrawSlice(DrawingContext context, Point center, double innerRadius, double outerRadius, double startAngle, double sweepAngle, string colorString, bool isHovered)
     {
-        var path = sender as Path;
-        foreach (var p in _paths)
-            if (p != path)
-                p.Opacity = .2;
+        var baseColor = TryParseColor(colorString);
+        var fillColor = isHovered ? LightenColor(baseColor, 0.15f) : baseColor;
+        var effectiveOuterRadius = isHovered ? outerRadius + 4 : outerRadius;
+        var effectiveInnerRadius = isHovered ? innerRadius - 2 : innerRadius;
+
+        var geometry = CreateSliceGeometry(center, effectiveInnerRadius, effectiveOuterRadius, startAngle, sweepAngle);
+
+        context.DrawGeometry(new SolidColorBrush(fillColor), null, geometry);
     }
 
-    private Path CreatePath(double angle, SolidColorBrush color)
+    private StreamGeometry CreateSliceGeometry(Point center, double innerRadius, double outerRadius, double startAngle, double sweepAngle)
     {
-        var path = new Path();
-        var pathGeometry = new PathGeometry();
+        var geometry = new StreamGeometry();
 
-        double centerX = Bounds.Width / 2;
-        double centerY = Bounds.Height / 2;
-        
-        double innerRadius = InnerRadius;
-        double outerRadius = OuterRadius;
-        
-        double startAngle = _lastAngle;
-        double sweepAngle = angle * Math.PI / 180;
-        double endAngle = startAngle + sweepAngle;
-        
-        double startInnerX = centerX + innerRadius * Math.Cos(startAngle);
-        double startInnerY = centerY + innerRadius * Math.Sin(startAngle);
-        double startOuterX = centerX + outerRadius * Math.Cos(startAngle);
-        double startOuterY = centerY + outerRadius * Math.Sin(startAngle);
-        
-        double endOuterX = centerX + outerRadius * Math.Cos(endAngle);
-        double endOuterY = centerY + outerRadius * Math.Sin(endAngle);
-        double endInnerX = centerX + innerRadius * Math.Cos(endAngle);
-        double endInnerY = centerY + innerRadius * Math.Sin(endAngle);
-        
-        var fig = new PathFigure
+        using (var ctx = geometry.Open())
         {
-            StartPoint = new Point(startInnerX, startInnerY),
-            Segments = new PathSegments
+            var startRad = startAngle;
+            var endRad = startAngle + sweepAngle;
+
+            var startInner = new Point(center.X + innerRadius * Math.Cos(startRad), center.Y + innerRadius * Math.Sin(startRad));
+            var startOuter = new Point(center.X + outerRadius * Math.Cos(startRad), center.Y + outerRadius * Math.Sin(startRad));
+            var endOuter = new Point(center.X + outerRadius * Math.Cos(endRad), center.Y + outerRadius * Math.Sin(endRad));
+            var endInner = new Point(center.X + innerRadius * Math.Cos(endRad), center.Y + innerRadius * Math.Sin(endRad));
+
+            var angleDegrees = sweepAngle * 180 / Math.PI;
+
+            ctx.BeginFigure(startInner, true);
+            ctx.LineTo(startOuter);
+            ctx.ArcTo(endOuter, new Size(outerRadius, outerRadius), 0, angleDegrees > 180, SweepDirection.Clockwise);
+            ctx.LineTo(endInner);
+            if (innerRadius > 0)
             {
-                new LineSegment(){Point = new Point(startOuterX, startOuterY)},
-                new ArcSegment
-                {
-                    Point = new Point(endOuterX, endOuterY),
-                    Size = new Size(outerRadius, outerRadius),
-                    SweepDirection = SweepDirection.Clockwise,
-                    IsLargeArc = angle > 180
-                },
-                new LineSegment(){Point = new Point(endInnerX, endInnerY)},
-                new ArcSegment
-                {
-                    Point = new Point(startInnerX, startInnerY),
-                    Size = new Size(innerRadius, innerRadius),
-                    SweepDirection = SweepDirection.CounterClockwise,
-                    IsLargeArc = angle > 180
-                }
-            },
-            IsClosed = true
-        };
-        
-        pathGeometry.Figures!.Add(fig);
-        path.Data = pathGeometry;
-        path.Fill = color;
-        path.Stroke = Brushes.Transparent; 
-        
-        _lastAngle = endAngle;
-        
-        return path;
+                ctx.ArcTo(startInner, new Size(innerRadius, innerRadius), 0, angleDegrees > 180, SweepDirection.CounterClockwise);
+            }
+            ctx.EndFigure(true);
+        }
+
+        return geometry;
+    }
+
+    private void DrawCenterCircle(DrawingContext context, Point center, double innerRadius)
+    {
+        var bgColor = _isDarkTheme ? Color.Parse("#2A2A30") : Color.Parse("#FFFFFF");
+        var borderColor = _isDarkTheme ? Color.Parse("#3A3A42") : Color.Parse("#E8E8EC");
+
+        context.DrawEllipse(new SolidColorBrush(bgColor), new Pen(new SolidColorBrush(borderColor), 1), center, innerRadius, innerRadius);
+    }
+
+    private void DrawTooltip(DrawingContext context, Point center, double innerRadius, double outerRadius, ChartsDataModel item)
+    {
+        var percentage = item.Value / _maxValue * 100;
+        var nameText = item.Name;
+        var percentText = $"{percentage:F1}%";
+
+        // 背景色
+        var bgColor = _isDarkTheme ? Color.Parse("#404048") : Color.Parse("#FFFFFF");
+        var nameColor = _isDarkTheme ? Color.Parse("#A0A0A8") : Color.Parse("#888888");
+        var percentColor = _isDarkTheme ? Color.Parse("#F0F0F0") : Color.Parse("#333333");
+
+        var typeface = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Medium);
+        var boldTypeface = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
+
+        // 计算文字尺寸
+        var nameFormatted = new FormattedText(nameText, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, 12, new SolidColorBrush(nameColor));
+        var percentFormatted = new FormattedText(percentText, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, boldTypeface, 16, new SolidColorBrush(percentColor));
+
+        var maxWidth = Math.Max(nameFormatted.Width, percentFormatted.Width);
+        var totalHeight = nameFormatted.Height + percentFormatted.Height + 4;
+        var padding = 10;
+
+        var tooltipWidth = maxWidth + padding * 2;
+        var tooltipHeight = totalHeight + padding * 2 - 4;
+
+        // 居中显示
+        var tooltipX = center.X - tooltipWidth / 2;
+        var tooltipY = center.Y - tooltipHeight / 2;
+
+        // 绘制背景
+        var tooltipRect = new Rect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
+        context.DrawRectangle(new SolidColorBrush(bgColor), null, tooltipRect, 6, 6);
+
+        // 绘制文字
+        var nameX = center.X - nameFormatted.Width / 2;
+        var nameY = tooltipY + padding - 2;
+        context.DrawText(nameFormatted, new Point(nameX, nameY));
+
+        var percentX = center.X - percentFormatted.Width / 2;
+        var percentY = nameY + nameFormatted.Height + 2;
+        context.DrawText(percentFormatted, new Point(percentX, percentY));
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+
+        var position = e.GetPosition(this);
+        var newHoveredIndex = GetSliceAtPosition(position);
+
+        if (newHoveredIndex != _hoveredIndex)
+        {
+            _hoveredIndex = newHoveredIndex;
+            InvalidateVisual();
+        }
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        if (_hoveredIndex != -1)
+        {
+            _hoveredIndex = -1;
+            InvalidateVisual();
+        }
+    }
+
+    private int GetSliceAtPosition(Point position)
+    {
+        var width = Bounds.Width;
+        var height = Bounds.Height;
+        var center = new Point(width / 2, height / 2);
+        var outerRadius = Math.Min(width, height) * 0.38;
+        var innerRadius = outerRadius * InnerRadiusRatio;
+
+        var dx = position.X - center.X;
+        var dy = position.Y - center.Y;
+        var distance = Math.Sqrt(dx * dx + dy * dy);
+
+        if (distance < innerRadius || distance > outerRadius + 5) return -1;
+
+        var angle = Math.Atan2(dy, dx) * 180 / Math.PI;
+        angle = (angle + 90 + 360) % 360;
+
+        if (Data == null || Data.Count == 0) return -1;
+
+        var currentAngle = 0.0;
+        for (var i = 0; i < Data.Count; i++)
+        {
+            if (Data[i].Value <= 0) continue;
+
+            var sweepAngle = Data[i].Value / _maxValue * 360;
+            if (angle >= currentAngle && angle < currentAngle + sweepAngle)
+                return i;
+
+            currentAngle += sweepAngle;
+        }
+
+        return -1;
+    }
+
+    private static Color LightenColor(Color color, float amount)
+    {
+        var r = (byte)Math.Min(255, color.R + (255 - color.R) * amount);
+        var g = (byte)Math.Min(255, color.G + (255 - color.G) * amount);
+        var b = (byte)Math.Min(255, color.B + (255 - color.B) * amount);
+        return Color.FromRgb(r, g, b);
+    }
+
+    private static Color TryParseColor(string? colorString)
+    {
+        if (string.IsNullOrEmpty(colorString)) return Color.Parse("#78909C");
+        try { return Color.Parse(colorString); }
+        catch { return Color.Parse("#78909C"); }
+    }
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        var w = double.IsInfinity(availableSize.Width) ? 200 : availableSize.Width;
+        var h = double.IsInfinity(availableSize.Height) ? 200 : availableSize.Height;
+        return new Size(w, h);
     }
 }
