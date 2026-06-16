@@ -31,6 +31,7 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
     private readonly CompositeDisposable _disposables = new();
     private readonly CancellationTokenSource _connectionCts = new();
     private bool _isConnectionMonitoringStarted;
+    private bool _isNavigatingBack;
 
     public MainViewModel(
         IServiceProvider serviceProvider,
@@ -197,13 +198,30 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
 
     public void NavigateTo(string pageName, object? data = null)
     {
+        System.Diagnostics.Debug.WriteLine($"[MainViewModel] NavigateTo: {pageName}, setting IsNavigatingBack = false");
+        _isNavigatingBack = false; // 新导航重置返回状态
         Data = data;
         Uri = pageName;
     }
 
     public void GoBack()
     {
+        System.Diagnostics.Debug.WriteLine($"[MainViewModel] GoBack called, setting IsNavigatingBack = true");
+        _isNavigatingBack = true; // 设置返回导航标记
         PageContainer?.Back();
+    }
+
+    /// <summary>
+    /// 当前是否为返回导航
+    /// </summary>
+    public bool IsNavigatingBack => _isNavigatingBack;
+
+    /// <summary>
+    /// 重置导航状态
+    /// </summary>
+    public void ResetNavigationState()
+    {
+        _isNavigatingBack = false;
     }
 
     private bool _isStartupInitCompleted;

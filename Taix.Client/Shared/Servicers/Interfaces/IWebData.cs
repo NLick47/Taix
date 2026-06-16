@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Taix.Client.Shared.Models.Data;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 using Taix.Client.Shared.Models.WebPage;
 
 namespace Taix.Client.Shared.Servicers.Interfaces;

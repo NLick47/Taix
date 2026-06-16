@@ -313,7 +313,13 @@ public class PageContainer : TemplatedControl
 
     private void ClearCache()
     {
+        System.Diagnostics.Debug.WriteLine("[PageContainer] ClearCache called - clearing all state cache");
         ScrollPositions.Clear();
         NavigationDatas.Clear();
+
+        // 清除状态服务中的所有缓存
+        var stateService = ServiceLocator.GetService<IStateService>();
+        stateService?.Clear();
+        System.Diagnostics.Debug.WriteLine("[PageContainer] StateService cleared");
     }
 }

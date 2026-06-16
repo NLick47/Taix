@@ -1,10 +1,13 @@
 using System.Collections.ObjectModel;
+using Taix.Client.Controls.Select;
 using Taix.Client.Models.Category;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.PageState;
+using Taix.Client.Shared.Models.Web;
 
 namespace Taix.Client.Models;
 
-public class CategoryPageModel : ModelBase
+[GeneratePageState]
+public partial class CategoryPageModel : ModelBase
 {
     private ObservableCollection<CategoryModel> _data = new();
     private string _editColor = string.Empty;
@@ -22,6 +25,13 @@ public class CategoryPageModel : ModelBase
     private CategoryModel? _selectedAppCategoryItem;
     private WebCategoryModel? _selectedWebCategoryItem;
     private ObservableCollection<WebCategoryModel> _webCategoryData = new();
+
+    [PageState(LookupFrom = nameof(ShowTypeOptions))]
+    public new SelectItemModel ShowType
+    {
+        get => base.ShowType;
+        set => base.ShowType = value;
+    }
 
     public ObservableCollection<CategoryModel> Data
     {

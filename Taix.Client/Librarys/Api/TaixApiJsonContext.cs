@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Models.Config;
 using Taix.Client.Shared.Models.Data;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 
 namespace Taix.Client.Librarys.Api;
 

@@ -105,5 +105,9 @@
       <AdditionalFiles Include="Resources\Localization\StringResources.en.axaml" />
     </ItemGroup>
 
+    <!-- 源代码生成器项目引用 -->
+    <ItemGroup>
+        <ProjectReference Include="..\Taix.PageState.Generator\Taix.PageState.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
 
 </Project>

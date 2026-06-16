@@ -6,10 +6,12 @@ using Avalonia.Controls;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Controls.Timeline;
+using Taix.Client.PageState;
 
 namespace Taix.Client.Models;
 
-public class DataPageModel : ModelBase
+[GeneratePageState]
+public partial class DataPageModel : ModelBase
 {
     private ContextMenu _appContextMenu;
 
@@ -30,9 +32,19 @@ public class DataPageModel : ModelBase
     private List<ChartsDataModel> _weekData;
     private DateTime _weekDate;
 
+    public List<SelectItemModel> PeriodOptions { get; set; } = [];
+
+    [PageState(LookupFrom = nameof(ShowTypeOptions))]
+    public new SelectItemModel ShowType
+    {
+        get => base.ShowType;
+        set => base.ShowType = value;
+    }
+
     #region 时间轴
 
     private List<TimelineUsageItem> _timelineUsageItems = [];
+    [PageState(DataCache = true)]
     public List<TimelineUsageItem> TimelineUsageItems
     {
         get => _timelineUsageItems;
@@ -40,6 +52,7 @@ public class DataPageModel : ModelBase
     }
 
     private List<MultiTrackTimelineItem> _multiTrackItems = [];
+    [PageState(DataCache = true)]
     public List<MultiTrackTimelineItem> MultiTrackItems
     {
         get => _multiTrackItems;
@@ -47,6 +60,7 @@ public class DataPageModel : ModelBase
     }
 
     private double _timelineStartHour;
+    [PageState]
     public double TimelineStartHour
     {
         get => _timelineStartHour;
@@ -59,6 +73,7 @@ public class DataPageModel : ModelBase
     }
 
     private double _timelineEndHour = 24.0;
+    [PageState]
     public double TimelineEndHour
     {
         get => _timelineEndHour;
@@ -71,6 +86,7 @@ public class DataPageModel : ModelBase
     }
 
     private bool _useCategoryColor;
+    [PageState]
     public bool UseCategoryColor
     {
         get => _useCategoryColor;
@@ -78,6 +94,7 @@ public class DataPageModel : ModelBase
     }
 
     private SelectItemModel _selectedColorMode;
+    [PageState(LookupFrom = nameof(ColorModeOptions))]
     public SelectItemModel SelectedColorMode
     {
         get => _selectedColorMode;
@@ -96,6 +113,7 @@ public class DataPageModel : ModelBase
     ];
 
     private string _multiTrackTotalDurationText = "";
+    [PageState]
     public string MultiTrackTotalDurationText
     {
         get => _multiTrackTotalDurationText;
@@ -137,6 +155,7 @@ public class DataPageModel : ModelBase
     /// <summary>
     /// tabbar selected item index
     /// </summary>
+    [PageState]
     public int TabbarSelectedIndex
     {
         get => _tabbarSelectedIndex;
@@ -147,6 +166,7 @@ public class DataPageModel : ModelBase
         }
     }
 
+    [PageState(LookupFrom = nameof(PeriodOptions))]
     public SelectItemModel? SelectedPeriod
     {
         get => _selectedPeriod;
@@ -160,6 +180,7 @@ public class DataPageModel : ModelBase
     /// <summary>
     /// data
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> Data
     {
         get => _data;
@@ -173,6 +194,7 @@ public class DataPageModel : ModelBase
     /// <summary>
     /// MonthData
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> MonthData
     {
         get => _monthData;
@@ -186,6 +208,7 @@ public class DataPageModel : ModelBase
     /// <summary>
     /// YearData
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> YearData
     {
         get => _yearData;
@@ -196,6 +219,7 @@ public class DataPageModel : ModelBase
         }
     }
 
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> WeekData
     {
         get => _weekData;
@@ -206,6 +230,7 @@ public class DataPageModel : ModelBase
         }
     }
 
+    [PageState]
     public DateTime WeekDate
     {
         get => _weekDate;
@@ -219,6 +244,7 @@ public class DataPageModel : ModelBase
     /// <summary>
     /// date
     /// </summary>
+    [PageState]
     public DateTime DayDate
     {
         get => _dayDate;
@@ -232,6 +258,7 @@ public class DataPageModel : ModelBase
     /// <summary>
     /// date
     /// </summary>
+    [PageState]
     public DateTime MonthDate
     {
         get => _monthDate;
@@ -245,6 +272,7 @@ public class DataPageModel : ModelBase
     /// <summary>
     /// date
     /// </summary>
+    [PageState]
     public DateTime YearDate
     {
         get => _yearDate;

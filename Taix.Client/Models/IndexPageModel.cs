@@ -2,10 +2,12 @@ using System.Collections.Generic;
 using Avalonia.Controls;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
+using Taix.Client.PageState;
 
 namespace Taix.Client.Models;
 
-public class IndexPageModel : ModelBase
+[GeneratePageState]
+public partial class IndexPageModel : ModelBase
 {
     private ContextMenu _appContextMenu;
 
@@ -45,6 +47,7 @@ public class IndexPageModel : ModelBase
     /// <summary>
     /// 选中的周期
     /// </summary>
+    [PageState(LookupFrom = nameof(PeriodOptions))]
     public SelectItemModel SelectedPeriod
     {
         get => _selectedPeriod;
@@ -60,6 +63,7 @@ public class IndexPageModel : ModelBase
     /// <summary>
     /// tabbar selected item index (内部使用)
     /// </summary>
+    [PageState]
     public int TabbarSelectedIndex
     {
         get => _tabbarSelectedIndex;
@@ -73,6 +77,7 @@ public class IndexPageModel : ModelBase
     /// <summary>
     /// week data
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> WeekData
     {
         get => _weekData;
@@ -122,6 +127,7 @@ public class IndexPageModel : ModelBase
     /// <summary>
     /// 网页最为频繁数据
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> WebFrequentUseData
     {
         get => _webFrequentUseData;
@@ -135,6 +141,7 @@ public class IndexPageModel : ModelBase
     /// <summary>
     /// 更多展示数据类型（0=应用/1=网页）
     /// </summary>
+    [PageState(LookupFrom = nameof(MoreTypeOptions))]
     public SelectItemModel MoreType
     {
         get => _moreType;
@@ -148,6 +155,7 @@ public class IndexPageModel : ModelBase
     /// <summary>
     /// 应用最为频繁数据
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> AppFrequentUseData
     {
         get => _appFrequentUseData;
@@ -161,6 +169,7 @@ public class IndexPageModel : ModelBase
     /// <summary>
     /// 应用更多数据
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> AppMoreData
     {
         get => _appMoreData;
@@ -174,6 +183,7 @@ public class IndexPageModel : ModelBase
     /// <summary>
     /// 网页更多数据
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> WebMoreData
     {
         get => _webMoreData;
@@ -196,4 +206,9 @@ public class IndexPageModel : ModelBase
             OnPropertyChanged();
         }
     }
+
+    /// <summary>
+    /// 更多展示数据类型选项（应用/网页）
+    /// </summary>
+    public List<SelectItemModel> MoreTypeOptions { get; set; } = [];
 }

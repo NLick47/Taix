@@ -13,19 +13,20 @@ using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Librarys;
 using Taix.Client.Models;
+using Taix.Client.Models.Navigation;
 using Taix.Client.Servicers;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Models.Config;
 using Taix.Client.Shared.Models.Data;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.Views;
 
 namespace Taix.Client.ViewModels;
 
-public class ChartPageViewModel : ChartPageModel
+public partial class ChartPageViewModel : ChartPageModel
 {
     private readonly ConfigModel _config;
     private readonly IData _dataService;
@@ -34,6 +35,7 @@ public class ChartPageViewModel : ChartPageModel
     private readonly IAppContextMenuServicer _appContextMenuService;
     private readonly ICategorys _categoryService;
     private readonly INavigationService _navigationService;
+    private readonly IStateService _stateService;
     private int _appCount;
     private double _totalTime;
 
@@ -44,7 +46,8 @@ public class ChartPageViewModel : ChartPageModel
         IWebData webData,
         IWebSiteContextMenuServicer webSiteContextMenu,
         IAppContextMenuServicer appContextMenu,
-        IAppConfig appConfig)
+        IAppConfig appConfig,
+        IStateService stateService)
     {
         _dataService = data;
         _categoryService = categories;
@@ -52,6 +55,7 @@ public class ChartPageViewModel : ChartPageModel
         _appContextMenuService = appContextMenu;
         _webDataService = webData;
         _webSiteContextMenuService = webSiteContextMenu;
+        _stateService = stateService;
         _config = appConfig.GetConfig();
 
         ToDetailCommand = ReactiveCommand.Create<object>(OnToDetail);
@@ -65,17 +69,17 @@ public class ChartPageViewModel : ChartPageModel
     public ReactiveCommand<object, Unit> ToDetailCommand { get; }
     public ReactiveCommand<object, Unit> RefreshCommand { get; }
 
-    public List<SelectItemModel> PeriodOptions { get; } =
-    [
-        new() { Id = 0, Name = ResourceStrings.Daily },
-        new() { Id = 1, Name = ResourceStrings.Weekly },
-        new() { Id = 2, Name = ResourceStrings.Monthly },
-        new() { Id = 3, Name = ResourceStrings.Yearly }
-    ];
-
     private void Initialize()
     {
         TabbarData = [ResourceStrings.Daily, ResourceStrings.Weekly, ResourceStrings.Monthly, ResourceStrings.Yearly];
+
+        PeriodOptions =
+        [
+            new() { Id = 0, Name = ResourceStrings.Daily },
+            new() { Id = 1, Name = ResourceStrings.Weekly },
+            new() { Id = 2, Name = ResourceStrings.Monthly },
+            new() { Id = 3, Name = ResourceStrings.Yearly }
+        ];
 
         ShowType = ShowTypeOptions[0];
         SelectedPeriod = PeriodOptions[0];
@@ -116,8 +120,18 @@ public class ChartPageViewModel : ChartPageModel
 
     public override Task OnNavigatedToAsync()
     {
-        _ = ExecuteAsync(LoadDataAsync);
+        var restored = TryRestoreState(_navigationService, _stateService);
+        if (!restored)
+        {
+            _ = ExecuteAsync(LoadDataAsync);
+        }
         return Task.CompletedTask;
+    }
+
+    public override void OnNavigatedFrom()
+    {
+        SaveState(_stateService);
+        base.OnNavigatedFrom();
     }
 
     private Task OnDateChangedAsync() => ExecuteAsync(LoadDayDataAsync);
@@ -156,18 +170,14 @@ public class ChartPageViewModel : ChartPageModel
     {
         if (obj is not ChartsDataModel chartData) return;
 
+        var date = TabbarSelectedIndex switch { 0 => Date, 1 => WeekDate, 2 => MonthDate, 3 => YearDate, _ => DateTime.Now };
+
         if (chartData.Data is WebSiteModel webSite)
-        {
-            _navigationService.NavigateTo(nameof(WebSiteDetailPage), webSite);
-        }
+            _navigationService.NavigateTo(nameof(WebSiteDetailPage), WebSiteDetailNavigationContext.Create(webSite, TabbarSelectedIndex, date));
         else if (chartData.Data is DailyLogModel { AppModel: not null } daily)
-        {
-            _navigationService.NavigateTo(nameof(DetailPage), daily.AppModel);
-        }
+            _navigationService.NavigateTo(nameof(DetailPage), DetailNavigationContext.Create(daily.AppModel, TabbarSelectedIndex, date));
         else if (chartData.Data is HoursLogModel { AppModel: not null } hours)
-        {
-            _navigationService.NavigateTo(nameof(DetailPage), hours.AppModel);
-        }
+            _navigationService.NavigateTo(nameof(DetailPage), DetailNavigationContext.Create(hours.AppModel, 0, Date));
     }
 
     private async Task LoadDataAsync(CancellationToken cancellationToken)

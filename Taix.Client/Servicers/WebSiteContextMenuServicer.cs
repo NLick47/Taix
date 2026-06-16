@@ -11,7 +11,7 @@ using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Window;
 using Taix.Client.Logging;
 using Taix.Client.Shared.Helpers;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.ViewModels;
 

@@ -15,7 +15,7 @@ using Taix.Client.Controls.Window;
 using Taix.Client.Models;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Servicers.Interfaces;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.Views;
 

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using MiniExcelLibs;
 using Taix.Client.Librarys.Api;
 using Taix.Client.Shared.Models.Data;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 using Taix.Client.Shared.Models.WebPage;
 using Taix.Client.Shared.Servicers.Interfaces;
 

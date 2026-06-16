@@ -31,6 +31,7 @@ namespace Taix.Client;
 [Singleton(typeof(IMainServicer), typeof(MainServicer))]
 [Singleton(typeof(IWebSiteContextMenuServicer), typeof(WebSiteContextMenuServicer))]
 [Singleton(typeof(IShutdownService), typeof(ShutdownService))]
+[Singleton(typeof(IStateService), typeof(StateService))]
 [Singleton(typeof(MainViewModel))]
 [Singleton(typeof(INavigationService), Factory = nameof(CreateNavigationService))]
 [Singleton(typeof(INavigationDataService), Factory = nameof(CreateNavigationDataService))]

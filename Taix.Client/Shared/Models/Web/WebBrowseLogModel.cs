@@ -1,6 +1,6 @@
 using System;
 
-namespace Taix.Client.Shared.Models.Db;
+namespace Taix.Client.Shared.Models.Web;
 
 /// <summary>
 /// 网页浏览记录

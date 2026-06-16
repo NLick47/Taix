@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Taix.Client.Controls.Select;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 
 namespace Taix.Client.Models;
 

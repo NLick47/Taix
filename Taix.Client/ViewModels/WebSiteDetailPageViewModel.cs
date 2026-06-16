@@ -14,10 +14,11 @@ using ReactiveUI;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Models;
+using Taix.Client.Models.Navigation;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Librarys;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 using Taix.Client.Shared.Servicers.Interfaces;
 
 namespace Taix.Client.ViewModels;
@@ -65,14 +66,6 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
     private void Initialize()
     {
-        if (_navigationData.Data is not WebSiteModel webSite)
-        {
-            _toastService.Error(ResourceStrings.InvalidParameter);
-            return;
-        }
-
-        WebSite = webSite;
-
         TabbarData = [ResourceStrings.Daily, ResourceStrings.Weekly, ResourceStrings.Monthly, ResourceStrings.Yearly];
         PeriodOptions =
         [
@@ -81,13 +74,6 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
             new SelectItemModel { Id = 2, Name = ResourceStrings.Monthly },
             new SelectItemModel { Id = 3, Name = ResourceStrings.Yearly }
         ];
-
-        ChartDate = DateTime.Now;
-        WeekDate = DateTime.Now;
-        SelectedPeriod = PeriodOptions[0];
-        MonthDate = DateTime.Now;
-        YearDate = DateTime.Now;
-        TabbarSelectedIndex = 0;
 
         _languageSubscription = _appConfig.WhenLanguageChanged(UpdateMenuTexts);
 
@@ -115,10 +101,40 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         PageCommand.DisposeWith(Disposables);
     }
 
-    public override Task OnNavigatedToAsync()
+    public override async Task OnNavigatedToAsync()
     {
-        _ = ExecuteAsync(LoadDataCoreAsync);
-        return Task.CompletedTask;
+        WebSiteModel? webSite = null;
+        int periodType = 0;
+        DateTime date = DateTime.Now;
+
+        if (_navigationData.Data is WebSiteDetailNavigationContext context)
+        {
+            webSite = context.WebSite;
+            periodType = context.PeriodType;
+            date = context.Date;
+        }
+        else if (_navigationData.Data is WebSiteModel model)
+        {
+            webSite = model;
+        }
+
+        if (webSite == null)
+        {
+            _toastService.Error(ResourceStrings.InvalidParameter);
+            return;
+        }
+
+        IsRestoringState = true;
+        WebSite = webSite;
+        ChartDate = date;
+        WeekDate = date;
+        MonthDate = date;
+        YearDate = date;
+        TabbarSelectedIndex = periodType;
+        SelectedPeriod = PeriodOptions[periodType];
+        IsRestoringState = false;
+
+        await ExecuteAsync(LoadDataCoreAsync);
     }
 
     private Task LoadDataAsync() => ExecuteAsync(LoadDataCoreAsync);

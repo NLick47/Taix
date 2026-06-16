@@ -14,6 +14,7 @@ using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Librarys;
 using Taix.Client.Models;
+using Taix.Client.Models.Navigation;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Librarys;
@@ -84,14 +85,6 @@ public class DetailPageViewModel : DetailPageModel
 
     private void Initialize()
     {
-        if (_navigationData.Data is not AppModel app)
-        {
-            _toastService.Error(ResourceStrings.InvalidParameter);
-            return;
-        }
-
-        App = app;
-
         TabbarData = [ResourceStrings.Daily, ResourceStrings.Weekly, ResourceStrings.Monthly, ResourceStrings.Yearly];
         PeriodOptions =
         [
@@ -100,14 +93,6 @@ public class DetailPageViewModel : DetailPageModel
             new SelectItemModel { Id = 2, Name = ResourceStrings.Monthly },
             new SelectItemModel { Id = 3, Name = ResourceStrings.Yearly }
         ];
-
-        Date = DateTime.Now;
-        ChartDate = DateTime.Now;
-        WeekDate = DateTime.Now;
-        SelectedPeriod = PeriodOptions[0];
-        MonthDate = DateTime.Now;
-        YearDate = DateTime.Now;
-        TabbarSelectedIndex = 0;
 
         _languageSubscription = _appConfig.WhenLanguageChanged(UpdateMenuTexts);
 
@@ -130,6 +115,38 @@ public class DetailPageViewModel : DetailPageModel
 
     public override async Task OnNavigatedToAsync()
     {
+        AppModel? app = null;
+        int periodType = 0;
+        DateTime date = DateTime.Now;
+
+        if (_navigationData.Data is DetailNavigationContext context)
+        {
+            app = context.App;
+            periodType = context.PeriodType;
+            date = context.Date;
+        }
+        else if (_navigationData.Data is AppModel appModel)
+        {
+            app = appModel;
+        }
+
+        if (app == null)
+        {
+            _toastService.Error(ResourceStrings.InvalidParameter);
+            return;
+        }
+
+        IsRestoringState = true;
+        App = app;
+        Date = DateTime.Now;
+        ChartDate = date;
+        WeekDate = date;
+        MonthDate = date;
+        YearDate = date;
+        TabbarSelectedIndex = periodType;
+        SelectedPeriod = PeriodOptions[periodType];
+        IsRestoringState = false;
+
         await ExecuteAsync(LoadDataCoreAsync);
         await LoadChartDataAsync();
         await ExecuteAsync(LoadInfoAsync);

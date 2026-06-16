@@ -14,7 +14,7 @@ using Taix.Client.Controls.Window;
 using Taix.Client.Logging;
 using Taix.Client.Models;
 using Taix.Client.Servicers.Interfaces;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.Views;
 using CategoryModel = Taix.Client.Models.Category.CategoryModel;
@@ -29,6 +29,7 @@ public class CategoryPageViewModel : CategoryPageModel
     private readonly ICategorys _categoryService;
     private readonly IToastService _toastService;
     private readonly INavigationService _navigationService;
+    private readonly IStateService _stateService;
 
     public CategoryPageViewModel(
         ICategorys categorys,
@@ -36,7 +37,8 @@ public class CategoryPageViewModel : CategoryPageModel
         IAppData appData,
         IWebData webData,
         IDialogService dialogService,
-        IToastService toastService)
+        IToastService toastService,
+        IStateService stateService)
     {
         _categoryService = categorys;
         _navigationService = navigationService;
@@ -44,6 +46,7 @@ public class CategoryPageViewModel : CategoryPageModel
         _webDataService = webData;
         _dialogService = dialogService;
         _toastService = toastService;
+        _stateService = stateService;
         Data = new ObservableCollection<CategoryModel>();
         WebCategoryData = new ObservableCollection<WebCategoryModel>();
         EditDirectories = new ObservableCollection<string>();
@@ -66,8 +69,15 @@ public class CategoryPageViewModel : CategoryPageModel
 
     public override Task OnNavigatedToAsync()
     {
+        TryRestoreState(_navigationService, _stateService);
         _ = ExecuteAsync(LoadDataCoreAsync);
         return Task.CompletedTask;
+    }
+
+    public override void OnNavigatedFrom()
+    {
+        SaveState(_stateService);
+        base.OnNavigatedFrom();
     }
 
     public ReactiveCommand<object, Unit> GotoListCommand { get; }

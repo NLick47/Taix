@@ -4,11 +4,13 @@ using System.Collections.ObjectModel;
 using Avalonia.Controls;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
+using Taix.Client.PageState;
 using Taix.Client.Shared.Models;
 
 namespace Taix.Client.Models;
 
-public class ChartPageModel : ModelBase
+[GeneratePageState]
+public partial class ChartPageModel : ModelBase
 {
     private ContextMenu _appContextMenu;
     private string _appCount;
@@ -54,11 +56,6 @@ public class ChartPageModel : ModelBase
 
     private List<ChartsDataModel> _webBrowseStatisticsData;
 
-    //private SelectItemModel ShowType_;
-    /// <summary>
-    /// 展示数据类型（0=应用/1=网页）
-    /// </summary>
-    //public SelectItemModel ShowType { get { return ShowType_; } set { ShowType_ = value; OnPropertyChanged(); } }
     private List<ChartsDataModel> _webCategoriesPieData;
 
     private int _webColSelectedIndex = -1;
@@ -80,7 +77,17 @@ public class ChartPageModel : ModelBase
 
     private DateTime _yearDate;
 
+    public List<SelectItemModel> PeriodOptions { get; set; } = [];
 
+    [PageState(LookupFrom = nameof(ShowTypeOptions))]
+    public new SelectItemModel ShowType
+    {
+        get => base.ShowType;
+        set => base.ShowType = value;
+    }
+
+
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> Data
     {
         get => _data;
@@ -107,6 +114,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// tabbar selected item index
     /// </summary>
+    [PageState]
     public int TabbarSelectedIndex
     {
         get => _tabbarSelectedIndex;
@@ -118,12 +126,14 @@ public class ChartPageModel : ModelBase
     }
 
     private SelectItemModel? _selectedPeriod;
+    [PageState(LookupFrom = nameof(PeriodOptions))]
     public SelectItemModel? SelectedPeriod
     {
         get => _selectedPeriod;
         set { _selectedPeriod = value; OnPropertyChanged(); }
     }
 
+    [PageState]
     public string WeekDateStr
     {
         get => _weekDateStr;
@@ -134,6 +144,7 @@ public class ChartPageModel : ModelBase
         }
     }
 
+    [PageState]
     public DateTime Date
     {
         get => _date;
@@ -146,6 +157,7 @@ public class ChartPageModel : ModelBase
 
 
 
+    [PageState]
     public DateTime WeekDate
     {
         get => _weekDate;
@@ -156,6 +168,7 @@ public class ChartPageModel : ModelBase
         }
     }
 
+    [PageState]
     public DateTime MonthDate
     {
         get => _monthDate;
@@ -166,6 +179,7 @@ public class ChartPageModel : ModelBase
         }
     }
 
+    [PageState]
     public DateTime YearDate
     {
         get => _yearDate;
@@ -176,6 +190,7 @@ public class ChartPageModel : ModelBase
         }
     }
 
+    [PageState]
     public int NameIndexStart
     {
         get => _nameIndexStart;
@@ -186,6 +201,7 @@ public class ChartPageModel : ModelBase
         }
     }
 
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> TopData
     {
         get => _topData;
@@ -196,6 +212,7 @@ public class ChartPageModel : ModelBase
         }
     }
 
+    [PageState]
     public double DataMaximum
     {
         get => _dataMaximum;
@@ -216,6 +233,7 @@ public class ChartPageModel : ModelBase
         }
     }
 
+    [PageState]
     public string TotalHours
     {
         get => _totalHours;
@@ -226,6 +244,7 @@ public class ChartPageModel : ModelBase
         }
     }
 
+    [PageState]
     public string TopHours
     {
         get => _topHours;
@@ -236,6 +255,7 @@ public class ChartPageModel : ModelBase
         }
     }
 
+    [PageState]
     public string AppCount
     {
         get => _appCount;
@@ -249,6 +269,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 柱状图选中列索引
     /// </summary>
+    [PageState]
     public int ColumnSelectedIndex
     {
         get => _columnSelectedIndex;
@@ -262,6 +283,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 指定时段app数据
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> DayHoursData
     {
         get => _dayHoursData;
@@ -275,6 +297,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 选中时段
     /// </summary>
+    [PageState]
     public string DayHoursSelectedTime
     {
         get => _dayHoursSelectedTime;
@@ -288,6 +311,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 是否允许选择
     /// </summary>
+    [PageState]
     public bool IsCanColumnSelect
     {
         get => _isCanColumnSelect;
@@ -301,6 +325,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 雷达图数据
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> RadarData
     {
         get => _radarData;
@@ -314,6 +339,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 使用时间最长的应用
     /// </summary>
+    [PageState]
     public AppModel Top1App
     {
         get => _top1App;
@@ -327,6 +353,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 时长对比上一周期变化（0无变化，1增加，-1减少）
     /// </summary>
+    [PageState]
     public string DiffTotalTimeType
     {
         get => _diffTotalTimeType;
@@ -340,6 +367,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 应用量对比上一周期变化（0无变化，1增加，-1减少）
     /// </summary>
+    [PageState]
     public string DiffAppCountType
     {
         get => _diffAppCountType;
@@ -353,6 +381,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 时长差异值
     /// </summary>
+    [PageState]
     public string DiffTotalTimeValue
     {
         get => _diffTotalTimeValue;
@@ -366,6 +395,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 应用量差异值
     /// </summary>
+    [PageState]
     public string DiffAppCountValue
     {
         get => _diffAppCountValue;
@@ -379,6 +409,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 网页分类统计饼图数据
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> WebCategoriesPieData
     {
         get => _webCategoriesPieData;
@@ -392,6 +423,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 网页浏览时长统计数据（柱状图）
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> WebBrowseStatisticsData
     {
         get => _webBrowseStatisticsData;
@@ -405,6 +437,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 网页浏览总时长
     /// </summary>
+    [PageState]
     public string WebTotalTimeText
     {
         get => _webTotalTimeText;
@@ -418,6 +451,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 网页浏览总时长
     /// </summary>
+    [PageState]
     public double WebTotalTime
     {
         get => _webTotalTime;
@@ -431,6 +465,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 站点浏览数量
     /// </summary>
+    [PageState]
     public double WebSiteCount
     {
         get => _webSiteCount;
@@ -444,6 +479,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 网页浏览数量
     /// </summary>
+    [PageState]
     public double WebPageCount
     {
         get => _webPageCount;
@@ -457,6 +493,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 上一个周期网页浏览总时长
     /// </summary>
+    [PageState]
     public double LastWebTotalTime
     {
         get => _lastWebTotalTime;
@@ -470,6 +507,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 上一个周期站点浏览数量
     /// </summary>
+    [PageState]
     public double LastWebSiteCount
     {
         get => _lastWebSiteCount;
@@ -483,6 +521,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 上一个周期网页浏览数量
     /// </summary>
+    [PageState]
     public double LastWebPageCount
     {
         get => _lastWebPageCount;
@@ -496,6 +535,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 网页站点最为频繁
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> WebSitesTopData
     {
         get => _webSitesTopData;
@@ -509,6 +549,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 网页浏览数据柱状图选中列索引
     /// </summary>
+    [PageState]
     public int WebColSelectedIndex
     {
         get => _webColSelectedIndex;
@@ -522,6 +563,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 网页浏览数据柱状图选中列数据
     /// </summary>
+    [PageState(DataCache = true)]
     public List<ChartsDataModel> WebSitesColSelectedData
     {
         get => _webSitesColSelectedData;
@@ -535,6 +577,7 @@ public class ChartPageModel : ModelBase
     /// <summary>
     /// 网页浏览数据柱状图选择列时间
     /// </summary>
+    [PageState]
     public string WebSitesColSelectedTimeText
     {
         get => _webSitesColSelectedTimeText;

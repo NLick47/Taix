@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using Avalonia.Controls;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 
 namespace Taix.Client.Models;
 

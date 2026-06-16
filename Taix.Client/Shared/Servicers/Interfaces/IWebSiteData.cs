@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 
 namespace Taix.Client.Shared.Servicers.Interfaces;
 

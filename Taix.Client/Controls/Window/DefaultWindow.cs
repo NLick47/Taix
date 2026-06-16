@@ -15,6 +15,7 @@ using ReactiveUI;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Input;
 using Taix.Client.Models;
+using Taix.Client.Servicers.Interfaces;
 
 namespace Taix.Client.Controls.Window;
 
@@ -117,10 +118,21 @@ public class DefaultWindow : Avalonia.Controls.Window
 
         BackCommand = ReactiveCommand.Create(() =>
         {
-            if (PageContainer != null)
+            // 使用 INavigationService.GoBack() 以正确设置 IsNavigatingBack 标记
+            var navigationService = ServiceLocator.GetService<INavigationService>();
+            if (navigationService != null)
             {
-                PageContainer.Back();
-                if (PageContainer.Index == 0) IsCanBack = false;
+                navigationService.GoBack();
+                if (PageContainer != null && PageContainer.Index == 0) IsCanBack = false;
+            }
+            else
+            {
+                // 兜底：直接调用 PageContainer.Back()
+                if (PageContainer != null)
+                {
+                    PageContainer.Back();
+                    if (PageContainer.Index == 0) IsCanBack = false;
+                }
             }
         });
     }

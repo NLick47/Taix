@@ -18,12 +18,22 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
     private SelectItemModel _showType;
     private bool _isLoading;
     private int _loadingCount;
+    private bool _isRestoringState;
     protected readonly CompositeDisposable Disposables = new();
     private CancellationTokenSource _loadCts = new();
 
     public ModelBase()
     {
         ShowType = ShowTypeOptions[0];
+    }
+
+    /// <summary>
+    /// 是否正在恢复状态（状态恢复期间属性变化不触发副作用）
+    /// </summary>
+    public bool IsRestoringState
+    {
+        get => _isRestoringState;
+        set => _isRestoringState = value;
     }
 
     public bool IsLoading
@@ -113,6 +123,9 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
             .Do(_ => source.CancelAndResetLoadToken())
             .Select(value => Observable.FromAsync(async _ =>
             {
+                // 状态恢复期间不执行副作用
+                if (source.IsRestoringState) return;
+
                 var cts = source._loadCts;
                 try
                 {

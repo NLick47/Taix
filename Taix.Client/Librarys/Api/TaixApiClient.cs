@@ -10,7 +10,7 @@ using System.Web;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Models.Data;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 
 namespace Taix.Client.Librarys.Api;
 

@@ -4,7 +4,7 @@ using System.Linq;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Shared.Models;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 
 namespace Taix.Client.Librarys;
 

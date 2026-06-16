@@ -12,20 +12,21 @@ using Avalonia.Threading;
 using ReactiveUI;
 using Taix.Client.Base.Color;
 using Taix.Client.Controls.Charts.Model;
-using Taix.Client.Controls.Select;
 using Taix.Client.Controls.Timeline;
 using Taix.Client.Librarys;
 using Taix.Client.Models;
+using Taix.Client.Models.Navigation;
 using Taix.Client.Servicers;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Models;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.Views;
+using AppModel = Taix.Client.Shared.Models.AppModel;
 
 namespace Taix.Client.ViewModels;
 
-public class DataPageViewModel : DataPageModel
+public partial class DataPageViewModel : DataPageModel
 {
     private readonly IWebData _webDataService;
     private readonly IWebSiteContextMenuServicer _webSiteContextMenuService;
@@ -33,6 +34,7 @@ public class DataPageViewModel : DataPageModel
     private readonly IAppContextMenuServicer _appContextMenuService;
     private readonly IData _dataService;
     private readonly INavigationService _navigationService;
+    private readonly IStateService _stateService;
 
 
     private List<AppSessionModel> _daySessions = [];
@@ -45,7 +47,8 @@ public class DataPageViewModel : DataPageModel
         IWebSiteContextMenuServicer webSiteContextMenu,
         IAppContextMenuServicer contextMenu,
         IWebData webData,
-        INavigationService navigationService)
+        INavigationService navigationService,
+        IStateService stateService)
     {
         _dataService = data;
         _appConfig = appConfig;
@@ -53,6 +56,7 @@ public class DataPageViewModel : DataPageModel
         _webSiteContextMenuService = webSiteContextMenu;
         _webDataService = webData;
         _navigationService = navigationService;
+        _stateService = stateService;
 
         ToDetailCommand = ReactiveCommand.Create<object>(OnToDetail);
         RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync);
@@ -62,14 +66,6 @@ public class DataPageViewModel : DataPageModel
 
     public ICommand ToDetailCommand { get; }
     public ReactiveCommand<object, Unit> RefreshCommand { get; }
-
-    public List<SelectItemModel> PeriodOptions { get; } =
-    [
-        new() { Id = 0, Name = ResourceStrings.Daily },
-        new() { Id = 1, Name = ResourceStrings.Weekly },
-        new() { Id = 2, Name = ResourceStrings.Monthly },
-        new() { Id = 3, Name = ResourceStrings.Yearly }
-    ];
 
     public override void Dispose()
     {
@@ -81,6 +77,14 @@ public class DataPageViewModel : DataPageModel
     {
         TabbarData = [ResourceStrings.Daily, ResourceStrings.Weekly, ResourceStrings.Monthly, ResourceStrings.Yearly];
         AppContextMenu = _appContextMenuService.GetContextMenu();
+
+        PeriodOptions =
+        [
+            new() { Id = 0, Name = ResourceStrings.Daily },
+            new() { Id = 1, Name = ResourceStrings.Weekly },
+            new() { Id = 2, Name = ResourceStrings.Monthly },
+            new() { Id = 3, Name = ResourceStrings.Yearly }
+        ];
 
         DayDate = DateTime.Now.Date;
         WeekDate = DateTime.Now.Date;
@@ -153,8 +157,18 @@ public class DataPageViewModel : DataPageModel
 
     public override Task OnNavigatedToAsync()
     {
-        _ = LoadDataAsync(DayDate, 0);
+        var restored = TryRestoreState(_navigationService, _stateService);
+        if (!restored)
+        {
+            _ = LoadDataAsync(DayDate, 0);
+        }
         return Task.CompletedTask;
+    }
+
+    public override void OnNavigatedFrom()
+    {
+        SaveState(_stateService);
+        base.OnNavigatedFrom();
     }
 
     private Task OnDateChangedAsync(DateTime date, int dataType)
@@ -177,21 +191,19 @@ public class DataPageViewModel : DataPageModel
 
     private void OnToDetail(object obj)
     {
-        if (obj is MultiTrackTimelineItem { AppModel: not null } mtItem)
-        {
-            _navigationService.NavigateTo(nameof(DetailPage), mtItem.AppModel);
-            return;
-        }
+        var date = TabbarSelectedIndex switch { 0 => DayDate, 1 => WeekDate, 2 => MonthDate, 3 => YearDate, _ => DateTime.Now };
 
-        if (obj is not ChartsDataModel chartData) return;
-
-        if (chartData.Data is DailyLogModel { AppModel: not null } model)
+        switch (obj)
         {
-            _navigationService.NavigateTo(nameof(DetailPage), model.AppModel);
-        }
-        else if (chartData.Data is WebSiteModel webSite)
-        {
-            _navigationService.NavigateTo(nameof(WebSiteDetailPage), webSite);
+            case MultiTrackTimelineItem { AppModel: AppModel app }:
+                _navigationService.NavigateTo(nameof(DetailPage), DetailNavigationContext.Create(app, TabbarSelectedIndex, date));
+                break;
+            case ChartsDataModel { Data: DailyLogModel { AppModel: not null } model }:
+                _navigationService.NavigateTo(nameof(DetailPage), DetailNavigationContext.Create(model.AppModel, TabbarSelectedIndex, date));
+                break;
+            case ChartsDataModel { Data: WebSiteModel webSite }:
+                _navigationService.NavigateTo(nameof(WebSiteDetailPage), WebSiteDetailNavigationContext.Create(webSite, TabbarSelectedIndex, date));
+                break;
         }
     }
 

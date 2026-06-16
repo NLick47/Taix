@@ -11,17 +11,18 @@ using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Librarys;
 using Taix.Client.Models;
+using Taix.Client.Models.Navigation;
 using Taix.Client.Servicers;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Shared.Models;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.Views;
 
 namespace Taix.Client.ViewModels;
 
-public class IndexPageViewModel : IndexPageModel
+public partial class IndexPageViewModel : IndexPageModel
 {
     private readonly IData _dataService;
     private readonly IWebData _webDataService;
@@ -29,6 +30,7 @@ public class IndexPageViewModel : IndexPageModel
     private readonly IAppContextMenuServicer _appContextMenuService;
     private readonly INavigationService _navigationService;
     private readonly IAppConfig _appConfig;
+    private readonly IStateService _stateService;
 
     public IndexPageViewModel(
         IData data,
@@ -36,7 +38,8 @@ public class IndexPageViewModel : IndexPageModel
         IWebSiteContextMenuServicer webSiteContextMenu,
         IAppContextMenuServicer appContextMenu,
         INavigationService navigationService,
-        IAppConfig appConfig)
+        IAppConfig appConfig,
+        IStateService stateService)
     {
         _dataService = data;
         _webDataService = webData;
@@ -44,6 +47,7 @@ public class IndexPageViewModel : IndexPageModel
         _appContextMenuService = appContextMenu;
         _navigationService = navigationService;
         _appConfig = appConfig;
+        _stateService = stateService;
 
         ToDetailCommand = ReactiveCommand.Create<object>(OnToDetail);
         RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync);
@@ -53,8 +57,6 @@ public class IndexPageViewModel : IndexPageModel
 
     public ReactiveCommand<object, Unit> ToDetailCommand { get; }
     public ReactiveCommand<object, Unit> RefreshCommand { get; }
-
-    public List<SelectItemModel> MoreTypeOptions { get; private set; } = [];
 
 
     private void InitializeStaticData()
@@ -105,13 +107,20 @@ public class IndexPageViewModel : IndexPageModel
         MoreType = MoreTypeOptions[0];
     }
 
-    /// <summary>
-    /// 页面导航到达时执行数据加载。
-    /// </summary>
     public override Task OnNavigatedToAsync()
     {
-        _ = LoadDataAsync();
+        var restored = TryRestoreState(_navigationService, _stateService);
+        if (!restored)
+        {
+            _ = LoadDataAsync();
+        }
         return Task.CompletedTask;
+    }
+
+    public override void OnNavigatedFrom()
+    {
+        SaveState(_stateService);
+        base.OnNavigatedFrom();
     }
 
     private Task OnRefreshAsync(object _) => LoadDataAsync();
@@ -184,15 +193,12 @@ public class IndexPageViewModel : IndexPageModel
     private void OnToDetail(object obj)
     {
         if (obj is not ChartsDataModel chartData) return;
+        var date = DateTime.Now.Date;
 
         if (chartData.Data is DailyLogModel { AppModel: not null } dailyModel)
-        {
-            _navigationService.NavigateTo(nameof(DetailPage), dailyModel.AppModel);
-        }
+            _navigationService.NavigateTo(nameof(DetailPage), DetailNavigationContext.Create(dailyModel.AppModel, TabbarSelectedIndex, date));
         else if (chartData.Data is WebSiteModel webSiteModel)
-        {
-            _navigationService.NavigateTo(nameof(WebSiteDetailPage), webSiteModel);
-        }
+            _navigationService.NavigateTo(nameof(WebSiteDetailPage), WebSiteDetailNavigationContext.Create(webSiteModel, TabbarSelectedIndex, date));
     }
 
     public override void Dispose()

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Taix.Client.Shared.Models.Db;
+using Taix.Client.Shared.Models.Web;
 
 namespace Taix.Client.Shared.Models.Data;
 
