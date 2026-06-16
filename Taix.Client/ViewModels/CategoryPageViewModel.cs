@@ -31,6 +31,9 @@ public class CategoryPageViewModel : CategoryPageModel
     private readonly INavigationService _navigationService;
     private readonly IStateService _stateService;
 
+    private List<string> _originalDirectories = new();
+    private List<string> _originalUrlPatterns = new();
+
     public CategoryPageViewModel(
         ICategorys categorys,
         INavigationService navigationService,
@@ -64,6 +67,7 @@ public class CategoryPageViewModel : CategoryPageModel
         UrlPatternsCommand = ReactiveCommand.Create<object>(OnUrlPatternsCommand).DisposeWith(Disposables);
         RestoreSystemCategoryCommand = ReactiveCommand.CreateFromTask<object>(OnRestoreSystemCategoryAsync).DisposeWith(Disposables);
         ApplyDirectoryMatchCommand = ReactiveCommand.CreateFromTask<object>(OnApplyDirectoryMatchAsync).DisposeWith(Disposables);
+        ApplyUrlMatchCommand = ReactiveCommand.CreateFromTask<object>(OnApplyUrlMatchAsync).DisposeWith(Disposables);
         WhenPropertyChanged(this, x => x.ShowType, _ => ExecuteAsync(LoadDataCoreAsync)).DisposeWith(Disposables);
     }
 
@@ -92,6 +96,7 @@ public class CategoryPageViewModel : CategoryPageModel
     public ReactiveCommand<object, Unit> UrlPatternsCommand { get; }
     public ReactiveCommand<object, Unit> RestoreSystemCategoryCommand { get; }
     public ReactiveCommand<object, Unit> ApplyDirectoryMatchCommand { get; }
+    public ReactiveCommand<object, Unit> ApplyUrlMatchCommand { get; }
 
 
     private bool _hasDirectoryMatchCategory;
@@ -113,6 +118,21 @@ public class CategoryPageViewModel : CategoryPageModel
         {
             var count = await _categoryService.ApplyDirectoryMatchAsync();
             _toastService.Success(string.Format(ResourceStrings.ApplyDirectoryMatchSuccess, count));
+            await LoadDataCoreAsync(default);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex.Message, ex);
+            _toastService.Error(ResourceStrings.OperationFailedRetry);
+        }
+    }
+
+    private async Task OnApplyUrlMatchAsync(object _)
+    {
+        try
+        {
+            var count = await _webDataService.ApplyUrlMatchAsync();
+            _toastService.Success(string.Format(ResourceStrings.ApplyUrlMatchSuccess, count));
             await LoadDataCoreAsync(default);
         }
         catch (Exception ex)
@@ -495,11 +515,17 @@ public class CategoryPageViewModel : CategoryPageModel
             {
                 try
                 {
-                    var matchCount = await _categoryService.ApplyDirectoryMatchAsync();
-                    if (matchCount > 0)
+                    var newDirectories = EditDirectories
+                        .Where(d => !_originalDirectories.Contains(d))
+                        .ToArray();
+                    if (newDirectories.Length > 0)
                     {
-                        await LoadDataCoreAsync(default);
-                        _toastService.Success(string.Format(ResourceStrings.ApplyDirectoryMatchSuccess, matchCount));
+                        var matchCount = await _categoryService.ApplyDirectoryMatchAsync(newDirectories);
+                        if (matchCount > 0)
+                        {
+                            await LoadDataCoreAsync(default);
+                            _toastService.Success(string.Format(ResourceStrings.ApplyDirectoryMatchSuccess, matchCount));
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -623,17 +649,9 @@ public class CategoryPageViewModel : CategoryPageModel
                     return;
                 }
 
-                if (EditName == SelectedWebCategoryItem.Data.Name &&
-                    EditIconFile == SelectedWebCategoryItem.Data.IconFile &&
-                    EditColor == SelectedWebCategoryItem.Data.Color &&
-                    EditIsUrlMatch == SelectedWebCategoryItem.Data.IsUrlMatch &&
-                    urlPatternsStr == (SelectedWebCategoryItem.Data.UrlPatterns ?? "[]"))
-                {
-                    _toastService.Info(ResourceStrings.NoChangesMade);
-                    EditVisibility = false;
-                    SelectedWebCategoryItem = null;
-                    return;
-                }
+                var existingIconFile = SelectedWebCategoryItem.Data.IconFile ?? "";
+                var existingColor = string.IsNullOrWhiteSpace(SelectedWebCategoryItem.Data.Color) ? "#00FFAB" : SelectedWebCategoryItem.Data.Color;
+                var existingUrlPatterns = SelectedWebCategoryItem.Data.UrlPatterns ?? "[]";
 
                 var category = SelectedWebCategoryItem.Data with
                 {
@@ -667,11 +685,17 @@ public class CategoryPageViewModel : CategoryPageModel
             {
                 try
                 {
-                    var matchCount = await _webDataService.ApplyUrlMatchAsync();
-                    if (matchCount > 0)
+                    var newPatterns = EditUrlPatterns
+                        .Where(p => !_originalUrlPatterns.Contains(p))
+                        .ToArray();
+                    if (newPatterns.Length > 0)
                     {
-                        await LoadDataCoreAsync(default);
-                        _toastService.Success(string.Format(ResourceStrings.ApplyUrlMatchSuccess, matchCount));
+                        var matchCount = await _webDataService.ApplyUrlMatchAsync(newPatterns);
+                        if (matchCount > 0)
+                        {
+                            await LoadDataCoreAsync(default);
+                            _toastService.Success(string.Format(ResourceStrings.ApplyUrlMatchSuccess, matchCount));
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -699,6 +723,8 @@ public class CategoryPageViewModel : CategoryPageModel
         EditSelectedDirectory = null;
         EditUrlPatterns.Clear();
         EditSelectedUrlPattern = null;
+        _originalDirectories.Clear();
+        _originalUrlPatterns.Clear();
 
         if (obj != null)
         {
@@ -720,7 +746,10 @@ public class CategoryPageViewModel : CategoryPageModel
                             foreach (var dir in directories)
                             {
                                 if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+                                {
                                     EditDirectories.Add(dir);
+                                    _originalDirectories.Add(dir);
+                                }
                             }
                         }
                     }
@@ -732,6 +761,7 @@ public class CategoryPageViewModel : CategoryPageModel
             }
             else if (ShowType.Id == 1 && obj is WebCategoryModel webCategory && webCategory.Data != null)
             {
+                IsSysCategory = webCategory.Data.IsSystem;
                 EditName = webCategory.Data.Name;
                 EditIconFile = webCategory.Data.IconFile;
                 EditColor = string.IsNullOrWhiteSpace(webCategory.Data.Color) ? "#00FFAB" : webCategory.Data.Color;
@@ -747,7 +777,10 @@ public class CategoryPageViewModel : CategoryPageModel
                             foreach (var pattern in patterns)
                             {
                                 if (!string.IsNullOrWhiteSpace(pattern))
+                                {
                                     EditUrlPatterns.Add(pattern);
+                                    _originalUrlPatterns.Add(pattern);
+                                }
                             }
                         }
                     }

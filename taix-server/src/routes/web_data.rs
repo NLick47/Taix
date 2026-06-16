@@ -9,7 +9,7 @@ use sqlx::SqlitePool;
 use std::sync::Arc;
 
 use crate::models::log::ColumnDataModel;
-use crate::models::request::{AddUrlBrowseTimeRequest, UpdateSitesCategoryRequest};
+use crate::models::request::{AddUrlBrowseTimeRequest, ApplyMatchRequest, UpdateSitesCategoryRequest};
 use crate::models::log::InfrastructureDataModel;
 use crate::models::web::{WebBrowseLogModel, WebSiteCategoryModel, WebSiteModel};
 use crate::response::ApiResponse;
@@ -280,8 +280,11 @@ async fn get_web_export_data(State(pool): State<SqlitePool>, Extension(config_se
     }
 }
 
-async fn apply_url_match(State(pool): State<SqlitePool>) -> Json<ApiResponse<usize>> {
-    match WebDataService::apply_url_match(&pool).await {
+async fn apply_url_match(
+    State(pool): State<SqlitePool>,
+    Json(req): Json<ApplyMatchRequest>,
+) -> Json<ApiResponse<usize>> {
+    match WebDataService::apply_url_match(&pool, req.patterns).await {
         Ok(count) => Json(ApiResponse::ok(count)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }

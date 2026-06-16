@@ -89,4 +89,10 @@ pub struct UpdateSitesCategoryRequest {
     pub category_id: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApplyMatchRequest {
+    pub patterns: Option<Vec<String>>,
+}
+
 

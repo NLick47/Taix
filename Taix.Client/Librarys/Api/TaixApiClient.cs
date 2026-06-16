@@ -220,8 +220,10 @@ public class TaixApiClient : ITaixApiClient
 
     public Task DeleteCategoryAsync(int id) => DeleteAsync($"api/category/{id}");
 
-    public Task<int> ApplyDirectoryMatchAsync() =>
-        PostEmptyAsync<int>("api/category/apply-directory-match");
+    public Task<int> ApplyDirectoryMatchAsync(string[]? patterns = null)
+    {
+        return PostAsync<int, ApplyMatchRequest>("api/category/apply-directory-match", new ApplyMatchRequest { Patterns = patterns });
+    }
 
     // Data
     private static string TzQuery(string url)
@@ -368,7 +370,9 @@ public class TaixApiClient : ITaixApiClient
     public Task<WebExportDataResult> GetWebExportDataAsync(DateTime start, DateTime end) =>
         GetAsync<WebExportDataResult>(TzQuery($"api/webdata/export?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}"));
 
-    public Task<int> ApplyUrlMatchAsync() =>
-        PostEmptyAsync<int>("api/webdata/apply-url-match");
+    public Task<int> ApplyUrlMatchAsync(string[]? patterns = null)
+    {
+        return PostAsync<int, ApplyMatchRequest>("api/webdata/apply-url-match", new ApplyMatchRequest { Patterns = patterns });
+    }
 
 }

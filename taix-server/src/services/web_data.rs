@@ -149,8 +149,8 @@ impl WebDataService {
                 let existing: Option<(i64,)> = sqlx::query_as("SELECT ID FROM WebSiteModels WHERE Domain = ?")
                     .bind(&domain).fetch_optional(&mut *tx).await?;
                 if let Some((id,)) = existing { id } else {
-                    let matched_category_id = match_url_for_new_site(&domain);
-                    let category_id = matched_category_id.unwrap_or_else(get_system_category_id_cached);
+                    let matched_category_id = match_url_for_new_site(&domain).await;
+                    let category_id = matched_category_id.unwrap_or(get_system_category_id_cached().await);
                     sqlx::query("INSERT INTO WebSiteModels (Title, Domain, CategoryID) VALUES (?, ?, ?)")
                         .bind(&site_title).bind(&domain).bind(category_id).execute(&mut *tx).await?.last_insert_rowid()
                 }
@@ -1108,8 +1108,17 @@ impl WebDataService {
         Ok(crate::models::web::WebExportDataResult { logs })
     }
 
-    pub async fn apply_url_match(pool: &SqlitePool) -> Result<usize, AppError> {
-        let rules = Self::load_url_match_rules(pool).await?;
+    pub async fn apply_url_match(pool: &SqlitePool, patterns: Option<Vec<String>>) -> Result<usize, AppError> {
+        let rules = if let Some(ref p) = patterns {
+            if p.is_empty() {
+                return Ok(0);
+            }
+            let categories = Self::get_web_site_categories(pool).await?;
+            build_url_match_rules_from_categories_with_patterns(&categories, p)
+        } else {
+            Self::load_url_match_rules(pool).await?
+        };
+
         if rules.is_empty() {
             return Ok(0);
         }
@@ -1484,6 +1493,55 @@ fn build_url_match_rules_from_categories(categories: &[WebSiteCategoryModel]) ->
         .collect()
 }
 
+fn build_url_match_rules_from_categories_with_patterns(
+    categories: &[WebSiteCategoryModel],
+    filter_patterns: &[String],
+) -> Vec<CompiledUrlMatchRule> {
+    const MAX_PATTERN_LEN: usize = 256;
+
+    let filter_set: std::collections::HashSet<String> = filter_patterns
+        .iter()
+        .map(|p| p.trim().to_lowercase())
+        .collect();
+
+    categories
+        .iter()
+        .filter(|c| c.is_url_match && !c.is_system)
+        .filter_map(|c| {
+            let all_patterns: Vec<String> = c.url_patterns.as_ref()
+                .and_then(|p| serde_json::from_str::<Vec<String>>(p).ok())
+                .unwrap_or_default();
+
+            let matched_patterns: Vec<String> = all_patterns
+                .into_iter()
+                .map(|p| p.trim().to_string())
+                .filter(|p| !p.is_empty() && p.len() <= MAX_PATTERN_LEN)
+                .filter(|p| filter_set.contains(&p.to_lowercase()))
+                .collect();
+
+            if matched_patterns.is_empty() {
+                return None;
+            }
+
+            let regex_patterns: Vec<String> = matched_patterns
+                .iter()
+                .map(|p| pattern_to_regex(p))
+                .collect();
+
+            match RegexSet::new(&regex_patterns) {
+                Ok(set) => Some(CompiledUrlMatchRule {
+                    category_id: c.id,
+                    regex_set: Arc::new(set),
+                }),
+                Err(e) => {
+                    warn!("Failed to compile URL regex set for category {}: {}", c.id, e);
+                    None
+                }
+            }
+        })
+        .collect()
+}
+
 /// 判断是否为正则表达式（包含正则特殊元字符）
 fn is_regex_pattern(pattern: &str) -> bool {
     // 正则元字符：^ $ [] () {} | + \ .
@@ -1545,12 +1603,12 @@ fn match_url_against_rules(rules: &[CompiledUrlMatchRule], domain: &str) -> Opti
     None
 }
 
-fn match_url_for_new_site(domain: &str) -> Option<i64> {
+async fn match_url_for_new_site(domain: &str) -> Option<i64> {
     if domain.is_empty() {
         return None;
     }
 
-    let cache = url_match_cache().blocking_read();
+    let cache = url_match_cache().read().await;
     if let Some(rules) = cache.as_ref() {
         if !rules.is_empty() {
             return match_url_against_rules(rules, domain);
@@ -1560,8 +1618,8 @@ fn match_url_for_new_site(domain: &str) -> Option<i64> {
     None
 }
 
-fn get_system_category_id_cached() -> i64 {
-    let cache = system_category_id_cache().blocking_read();
+async fn get_system_category_id_cached() -> i64 {
+    let cache = system_category_id_cache().read().await;
     cache.as_ref().copied().unwrap_or(0)
 }
 

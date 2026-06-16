@@ -235,6 +235,9 @@
                                               IsVisible="{Binding !SelectedAppCategoryItem.Data.IsSystem}"
                                               CommandParameter="{Binding SelectedAppCategoryItem}" />
 
+                                    <MenuItem Header="{DynamicResource ReApplyDirectoryMatch}"
+                                              Command="{Binding ApplyDirectoryMatchCommand}"
+                                              IsVisible="{Binding SelectedAppCategoryItem.Data.IsDirectoryMatch, FallbackValue=False}" />
                                     <MenuItem Header="{DynamicResource RestoreSystemCategory}"
                                               Command="{Binding RestoreSystemCategoryCommand}"
                                               IsVisible="{Binding SelectedAppCategoryItem.Data.IsSystem}"
@@ -426,6 +429,9 @@
                                               CommandParameter="{Binding SelectedWebCategoryItem}" />
                                     <MenuItem Header="{DynamicResource Edit}" Command="{Binding EditCommand}"
                                               CommandParameter="{Binding SelectedWebCategoryItem}" />
+                                    <MenuItem Header="{DynamicResource ReApplyUrlMatch}"
+                                              Command="{Binding ApplyUrlMatchCommand}"
+                                              IsVisible="{Binding SelectedWebCategoryItem.Data.IsUrlMatch, FallbackValue=False}" />
                                     <MenuItem Header="{DynamicResource DeleteCategory}" Command="{Binding DelCommand}"
                                               IsVisible="{Binding !SelectedWebCategoryItem.Data.IsSystem}"
                                               CommandParameter="{Binding SelectedWebCategoryItem}" />

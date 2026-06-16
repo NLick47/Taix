@@ -204,8 +204,8 @@ public class ApiWebData : IWebData
         return await _webSiteData.UpdateWebSiteAsync(website);
     }
 
-    public async Task<int> ApplyUrlMatchAsync()
+    public async Task<int> ApplyUrlMatchAsync(string[]? patterns = null)
     {
-        return await _apiClient.ApplyUrlMatchAsync();
+        return await _apiClient.ApplyUrlMatchAsync(patterns);
     }
 }

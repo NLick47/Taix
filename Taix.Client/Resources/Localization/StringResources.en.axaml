@@ -148,6 +148,8 @@
     <system:String x:Key="UrlPatternLimitReached">Maximum 20 URL patterns per category</system:String>
     <system:String x:Key="UrlPatternExists">URL pattern already exists</system:String>
     <system:String x:Key="ApplyUrlMatchSuccess">{0} websites matched</system:String>
+    <system:String x:Key="ReApplyDirectoryMatch">Re-match Directories</system:String>
+    <system:String x:Key="ReApplyUrlMatch">Re-match Websites</system:String>
     <system:String x:Key="CategoryAppCount">Category App Count</system:String>
     <system:String x:Key="ViewWebsiteList">View Website List</system:String>
 

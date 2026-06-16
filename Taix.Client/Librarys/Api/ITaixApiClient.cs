@@ -28,7 +28,7 @@ public interface ITaixApiClient
     Task UpdateCategoryAsync(CategoryModel category);
     Task<CategoryModel> RestoreSystemCategoryAsync(int id);
     Task DeleteCategoryAsync(int id);
-    Task<int> ApplyDirectoryMatchAsync();
+    Task<int> ApplyDirectoryMatchAsync(string[]? patterns = null);
 
     // Data
     Task<List<DailyLogModel>> GetDateRangeLogListAsync(DateTime start, DateTime end, int take = -1, int skip = -1, CancellationToken cancellationToken = default);
@@ -76,5 +76,5 @@ public interface ITaixApiClient
     Task<List<WebBrowseLogModel>> GetBrowseLogListAsync(DateTime start, DateTime end, int siteId = 0, CancellationToken cancellationToken = default);
     Task<List<WebSiteModel>> GetWebSiteLogListAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
     Task<WebExportDataResult> GetWebExportDataAsync(DateTime start, DateTime end);
-    Task<int> ApplyUrlMatchAsync();
+    Task<int> ApplyUrlMatchAsync(string[]? patterns = null);
 }

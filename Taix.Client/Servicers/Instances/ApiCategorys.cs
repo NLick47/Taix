@@ -63,8 +63,8 @@ public class ApiCategorys : ICategorys
         RefreshCache();
     }
 
-    public async Task<int> ApplyDirectoryMatchAsync()
+    public async Task<int> ApplyDirectoryMatchAsync(string[]? patterns = null)
     {
-        return await _apiClient.ApplyDirectoryMatchAsync();
+        return await _apiClient.ApplyDirectoryMatchAsync(patterns);
     }
 }

@@ -70,4 +70,5 @@ namespace Taix.Client.Librarys.Api;
 [JsonSerializable(typeof(BehaviorModel))]
 [JsonSerializable(typeof(BehaviorModel))]
 [JsonSerializable(typeof(List<string>))]
+[JsonSerializable(typeof(ApplyMatchRequest))]
 internal partial class TaixApiJsonContext : JsonSerializerContext { }

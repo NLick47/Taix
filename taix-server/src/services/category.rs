@@ -296,10 +296,42 @@ impl CategoryService {
     }
 
    
-    pub async fn apply_directory_match(pool: &SqlitePool) -> Result<usize, AppError> {
-        let categories = Self::get_categories(pool).await?;
+    pub async fn apply_directory_match(pool: &SqlitePool, patterns: Option<Vec<String>>) -> Result<usize, AppError> {
+        let rules = if let Some(ref p) = patterns {
+            if p.is_empty() {
+                return Ok(0);
+            }
+            let categories = Self::get_categories(pool).await?;
+            let category_map: std::collections::HashMap<i64, &CategoryModel> = categories
+                .iter()
+                .filter(|c| c.is_directory_match && !c.is_system)
+                .map(|c| (c.id, c))
+                .collect();
 
-        let rules = build_match_rules(&categories);
+            let mut result: Vec<(i64, Vec<String>)> = Vec::new();
+            for cat_id in category_map.keys() {
+                if let Some(cat) = category_map.get(cat_id) {
+                    if let Some(dirs_str) = &cat.directories {
+                        if let Ok(dirs) = serde_json::from_str::<Vec<String>>(dirs_str) {
+                            let matched: Vec<String> = dirs
+                                .into_iter()
+                                .map(|d| d.trim().trim_end_matches(['/', '\\']).to_lowercase())
+                                .filter(|d| !d.is_empty())
+                                .filter(|d| p.iter().any(|p| d == &p.to_lowercase()))
+                                .collect();
+                            if !matched.is_empty() {
+                                result.push((*cat_id, matched));
+                            }
+                        }
+                    }
+                }
+            }
+            result
+        } else {
+            let categories = Self::get_categories(pool).await?;
+            build_match_rules(&categories)
+        };
+
         if rules.is_empty() {
             return Ok(0);
         }
@@ -310,7 +342,6 @@ impl CategoryService {
         .fetch_all(pool)
         .await?;
 
-        // Hot path: pure in-memory matching — zero allocations per iteration beyond the vec
         let mut to_update: Vec<(i64, i64)> = Vec::new();
         for (app_id, file) in &apps {
             if let Some(path) = file {

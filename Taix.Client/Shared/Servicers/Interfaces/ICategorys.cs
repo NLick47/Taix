@@ -19,7 +19,7 @@ public interface ICategorys
 
     Task DeleteAsync(CategoryModel category);
 
-    Task<int> ApplyDirectoryMatchAsync();
+    Task<int> ApplyDirectoryMatchAsync(string[]? patterns = null);
 
     void RefreshCache();
 }

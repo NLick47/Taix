@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
-using System.Reactive.Disposables;
 using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ReactiveUI;
+using ReactiveUI.Avalonia;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Select;
 using Taix.Client.Controls.Window;
@@ -46,13 +46,12 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
         ShowChooseCommand = ReactiveCommand.CreateFromTask<object>(OnShowChooseAsync).DisposeWith(Disposables);
         ChoosedCommand = ReactiveCommand.Create<object>(OnChoosed).DisposeWith(Disposables);
         GotoDetailCommand = ReactiveCommand.Create<object>(OnGotoDetail).DisposeWith(Disposables);
-        SearchCommand = ReactiveCommand.Create<object>(OnSearch).DisposeWith(Disposables);
         ChooseCloseCommand = ReactiveCommand.Create<object>(OnChooseClose).DisposeWith(Disposables);
         DelCommand = ReactiveCommand.CreateFromTask<object>(OnDelAsync).DisposeWith(Disposables);
 
-        // 搜索防抖：监听 SearchInput 变化，1秒后执行搜索
         _searchSubscription = this.WhenAnyValue(x => x.SearchInput)
-            .Throttle(TimeSpan.FromSeconds(1))
+            .Throttle(TimeSpan.FromMilliseconds(500))
+            .ObserveOn(AvaloniaScheduler.Instance)
             .Subscribe(DoSearch);
         _searchSubscription.DisposeWith(Disposables);
     }
@@ -66,7 +65,6 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
     public ReactiveCommand<object, Unit> ShowChooseCommand { get; }
     public ReactiveCommand<object, Unit> ChoosedCommand { get; }
     public ReactiveCommand<object, Unit> GotoDetailCommand { get; }
-    public ReactiveCommand<object, Unit> SearchCommand { get; }
     public ReactiveCommand<object, Unit> ChooseCloseCommand { get; }
     public ReactiveCommand<object, Unit> DelCommand { get; }
 
@@ -106,8 +104,11 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
                 WebSite = site
             });
         }
-        WebSiteOptionList = optionList;
-        _webSiteOptionsTemp = new List<OptionModel>(WebSiteOptionList);
+        _webSiteOptionsTemp = optionList;
+
+        WebSiteOptionList.Clear();
+        foreach (var item in _webSiteOptionsTemp)
+            WebSiteOptionList.Add(item);
     }
 
     private async Task OnDelAsync(object obj)
@@ -126,28 +127,44 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
     {
         ChooseVisibility = false;
         SearchInput = "";
-        WebSiteOptionList = new List<OptionModel>(_webSiteOptionsTemp);
-    }
-
-    private void OnSearch(object obj)
-    {
-        // 由防抖触发，直接执行搜索
-        DoSearch(SearchInput);
     }
 
     private void DoSearch(string? keyword)
     {
         if (string.IsNullOrEmpty(keyword))
         {
-            WebSiteOptionList = new List<OptionModel>(_webSiteOptionsTemp);
+            SyncToList(_webSiteOptionsTemp);
             return;
         }
 
-        WebSiteOptionList = _webSiteOptionsTemp
+        var filtered = _webSiteOptionsTemp
             .Where(m =>
                 (!string.IsNullOrEmpty(m.WebSite.Title) && WildcardHelper.IsMatch(m.WebSite.Title, keyword)) ||
                 (!string.IsNullOrEmpty(m.WebSite.Domain) && WildcardHelper.IsMatch(m.WebSite.Domain, keyword)))
             .ToList();
+        SyncToList(filtered);
+    }
+
+    private void SyncToList(List<OptionModel> targetList)
+    {
+        var currentSet = new HashSet<OptionModel>(WebSiteOptionList);
+        var targetSet = new HashSet<OptionModel>(targetList);
+
+        var toRemove = currentSet.Except(targetSet).ToList();
+        var toAdd = targetSet.Except(currentSet).ToList();
+
+        foreach (var item in toRemove)
+            WebSiteOptionList.Remove(item);
+
+        var insertIndex = 0;
+        foreach (var item in targetList)
+        {
+            if (toAdd.Contains(item))
+            {
+                WebSiteOptionList.Insert(insertIndex, item);
+            }
+            insertIndex++;
+        }
     }
 
     private void OnGotoDetail(object obj)
@@ -167,32 +184,37 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
 
     private async Task UpdateCategoryAsync()
     {
-        var removeSiteList = _webSiteOptionsTemp
-            .Where(m => !m.IsChecked && CategoryWebSiteList.Any(s => s.ID == m.WebSite.ID))
+        var userCheckedIds = _webSiteOptionsTemp
+            .Where(m => m.IsChecked)
             .Select(m => m.WebSite.ID)
             .ToList();
-        var addSiteList = _webSiteOptionsTemp
-            .Where(m => m.IsChecked && !CategoryWebSiteList.Any(s => s.ID == m.WebSite.ID))
-            .Select(m => m.WebSite)
+
+        var toRemove = CategoryWebSiteList
+            .Where(m => !userCheckedIds.Contains(m.ID))
+            .Select(m => m.ID)
+            .ToList();
+        var toAdd = userCheckedIds
+            .Where(id => !CategoryWebSiteList.Any(s => s.ID == id))
             .ToList();
 
-        foreach (var id in removeSiteList)
+        foreach (var id in toRemove)
         {
             var item = CategoryWebSiteList.FirstOrDefault(m => m.ID == id);
             if (item != null) CategoryWebSiteList.Remove(item);
         }
 
-        if (CategoryWebSiteList.Count == 0)
-            CategoryWebSiteList = new ObservableCollection<WebSiteModel>(addSiteList);
-        else
-            foreach (var item in addSiteList)
-                CategoryWebSiteList.Add(item);
+        var addSites = _webSiteOptionsTemp
+            .Where(m => toAdd.Contains(m.WebSite.ID))
+            .Select(m => m.WebSite)
+            .ToList();
+        foreach (var item in addSites)
+            CategoryWebSiteList.Add(item);
 
-        if (removeSiteList.Count > 0)
-            await _webDataService.UpdateWebSitesCategoryAsync(removeSiteList.ToArray(), 0);
+        if (toRemove.Count > 0)
+            await _webDataService.UpdateWebSitesCategoryAsync(toRemove.ToArray(), 0);
 
-        if (addSiteList.Count > 0)
-            await _webDataService.UpdateWebSitesCategoryAsync(addSiteList.Select(m => m.ID).ToArray(), Category.ID);
+        if (toAdd.Count > 0)
+            await _webDataService.UpdateWebSitesCategoryAsync(toAdd.ToArray(), Category.ID);
     }
 
     private async Task OnShowChooseAsync(object obj)

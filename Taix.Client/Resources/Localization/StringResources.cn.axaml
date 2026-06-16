@@ -161,6 +161,8 @@
     <system:String x:Key="UrlPatternLimitReached">每个分类最多添加 20 条 URL 规则</system:String>
     <system:String x:Key="UrlPatternExists">该 URL 规则已存在</system:String>
     <system:String x:Key="ApplyUrlMatchSuccess">已匹配 {0} 个网站</system:String>
+    <system:String x:Key="ReApplyDirectoryMatch">重新匹配目录</system:String>
+    <system:String x:Key="ReApplyUrlMatch">重新匹配网站</system:String>
     <system:String x:Key="CategoryAppCount">分类应用数量</system:String>
     <system:String x:Key="ViewWebsiteList">查看网站列表</system:String>
     <system:String x:Key="General">常规</system:String>

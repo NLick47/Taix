@@ -20,7 +20,8 @@ public static class WildcardHelper
 
         if (pattern.Contains('*') || pattern.Contains('?'))
         {
-            return WildcardMatch(input, pattern, ignoreCase);
+
+            return WildcardRegexMatch(input, pattern, ignoreCase);
         }
 
         return ContainsMatch(input, pattern, ignoreCase);
@@ -58,56 +59,53 @@ public static class WildcardHelper
     }
 
 
-    private static bool WildcardMatch(string input, string pattern, bool ignoreCase)
+    private static bool WildcardRegexMatch(string input, string pattern, bool ignoreCase)
     {
-        var inputIndex = 0;
-        var patternIndex = 0;
-        var starIndex = -1;
-        var matchIndex = 0;
-
-        while (inputIndex < input.Length)
+        try
         {
-            if (patternIndex < pattern.Length)
-            {
-                var patternChar = pattern[patternIndex];
-
-                if (patternChar == '*')
-                {
-                    starIndex = patternIndex;
-                    matchIndex = inputIndex;
-                    patternIndex++;
-                    continue;
-                }
-
-                var inputChar = input[inputIndex];
-                var charsMatch = ignoreCase
-                    ? char.ToLowerInvariant(patternChar) == char.ToLowerInvariant(inputChar)
-                    : patternChar == inputChar;
-
-                if (patternChar == '?' || charsMatch)
-                {
-                    patternIndex++;
-                    inputIndex++;
-                    continue;
-                }
-            }
-
-            if (starIndex != -1)
-            {
-                patternIndex = starIndex + 1;
-                matchIndex++;
-                inputIndex = matchIndex;
-                continue;
-            }
-
+            var regexPattern = WildcardToRegex(pattern, ignoreCase);
+            return Regex.IsMatch(input, regexPattern, RegexOptions.None, TimeSpan.FromSeconds(1));
+        }
+        catch (ArgumentException)
+        {
+            return ContainsMatch(input, pattern, ignoreCase);
+        }
+        catch (RegexMatchTimeoutException)
+        {
             return false;
         }
+    }
 
-        while (patternIndex < pattern.Length && pattern[patternIndex] == '*')
+    private static string WildcardToRegex(string pattern, bool ignoreCase)
+    {
+        var result = new System.Text.StringBuilder(pattern.Length * 2);
+
+        if (ignoreCase)
+            result.Append("(?i)^");
+        else
+            result.Append("^");
+
+        foreach (var c in pattern)
         {
-            patternIndex++;
+            switch (c)
+            {
+                case '*':
+                    result.Append(".*");
+                    break;
+                case '?':
+                    result.Append('.');
+                    break;
+                case '.' or '^' or '$' or '+' or '[' or ']' or '(' or ')' or '{' or '}' or '\\' or '|':
+                    result.Append('\\');
+                    result.Append(c);
+                    break;
+                default:
+                    result.Append(c);
+                    break;
+            }
         }
 
-        return patternIndex == pattern.Length;
+        result.Append('$');
+        return result.ToString();
     }
 }

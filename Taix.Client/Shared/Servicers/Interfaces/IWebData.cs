@@ -155,5 +155,5 @@ public interface IWebData
     /// 应用 URL 匹配规则到网站
     /// </summary>
     /// <returns>匹配并更新的网站数量</returns>
-    Task<int> ApplyUrlMatchAsync();
+    Task<int> ApplyUrlMatchAsync(string[]? patterns = null);
 }

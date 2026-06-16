@@ -12,7 +12,7 @@ public class CategoryWebSiteListPageModel : ModelBase
     private bool _chooseVisibility;
     private string _searchInput = string.Empty;
     private WebSiteModel? _selectedItem;
-    private List<OptionModel> _webSiteOptionList = [];
+    private ObservableCollection<OptionModel> _webSiteOptionList = new();
 
     public bool ChooseVisibility
     {
@@ -64,7 +64,7 @@ public class CategoryWebSiteListPageModel : ModelBase
         }
     }
 
-    public List<OptionModel> WebSiteOptionList
+    public ObservableCollection<OptionModel> WebSiteOptionList
     {
         get => _webSiteOptionList;
         set

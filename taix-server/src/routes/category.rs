@@ -6,7 +6,7 @@ use axum::{
 use sqlx::SqlitePool;
 
 use crate::models::category::CategoryModel;
-use crate::models::request::{CreateCategoryRequest, UpdateCategoryRequest};
+use crate::models::request::{ApplyMatchRequest, CreateCategoryRequest, UpdateCategoryRequest};
 use crate::response::ApiResponse;
 use crate::services::category::CategoryService;
 use axum::routing::post;
@@ -120,8 +120,9 @@ async fn delete_category(
 
 async fn apply_directory_match(
     State(pool): State<SqlitePool>,
+    Json(req): Json<ApplyMatchRequest>,
 ) -> Json<ApiResponse<usize>> {
-    match CategoryService::apply_directory_match(&pool).await {
+    match CategoryService::apply_directory_match(&pool, req.patterns).await {
         Ok(count) => Json(ApiResponse::ok(count)),
         Err(e) => Json(ApiResponse {
             code: 500,

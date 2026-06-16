@@ -39,14 +39,7 @@
                     <Border Grid.Row="1">
                         <Grid ColumnDefinitions="*,Auto">
                             <input:InputBox Placeholder="{DynamicResource SearchSitePlaceholder}" Margin="10" x:Name="SearchBox"
-                                            Text="{Binding SearchInput,Mode=TwoWay}">
-                                <Interaction.Behaviors>
-                                    <EventTriggerBehavior EventName="KeyUp">
-                                        <InvokeCommandAction Command="{Binding SearchCommand}"
-                                                             CommandParameter="{Binding #SearchBox.Text}" />
-                                    </EventTriggerBehavior>
-                                </Interaction.Behaviors>
-                            </input:InputBox>
+                                            Text="{Binding SearchInput,Mode=TwoWay}" />
                         </Grid>
                     </Border>
                     <ListBox ItemsSource="{Binding WebSiteOptionList}"
