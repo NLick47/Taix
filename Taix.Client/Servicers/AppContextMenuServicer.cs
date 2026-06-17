@@ -420,11 +420,13 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         if (app == null) return;
 
         var existingNames = existingCategories.Select(c => c.Name);
+        var existingColors = existingCategories.Select(c => c.Color);
 
         var result = await _uiServicer.ShowCreateCategoryDialogAsync(
             ResourceStrings.NewCategory,
             null,
-            existingNames);
+            existingNames,
+            existingColors);
 
         if (result == null) return;
 

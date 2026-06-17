@@ -43,9 +43,11 @@ public interface IUIServicer
     /// <param name="title">对话框标题</param>
     /// <param name="defaultName">默认分类名称</param>
     /// <param name="existingNames">已存在的分类名称列表（用于验证唯一性）</param>
+    /// <param name="existingColors">已存在的颜色列表（用于验证唯一性）</param>
     /// <returns>分类结果，取消返回 null</returns>
     Task<CategoryResult?> ShowCreateCategoryDialogAsync(
         string title,
         string defaultName = null,
-        IEnumerable<string>? existingNames = null);
+        IEnumerable<string>? existingNames = null,
+        IEnumerable<string>? existingColors = null);
 }

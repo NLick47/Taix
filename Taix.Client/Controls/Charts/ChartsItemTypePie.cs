@@ -111,10 +111,8 @@ public class ChartsItemTypePie : Control
             currentAngle += sweepAngle;
         }
 
-        // 绘制中心圆
         DrawCenterCircle(context, center, innerRadius);
 
-        // 绘制悬浮提示
         if (_hoveredIndex >= 0 && Data != null && _hoveredIndex < Data.Count)
         {
             DrawTooltip(context, center, innerRadius, outerRadius, Data[_hoveredIndex], totalValue);
@@ -149,37 +147,27 @@ public class ChartsItemTypePie : Control
         using (var ctx = geometry.Open())
         {
             const double fullCircle = 2 * Math.PI;
+
             if (sweepAngle >= fullCircle - 0.0001)
             {
+                var epsilon = 0.0001;
+                var actualSweep = fullCircle - epsilon;
+
                 var startRad = startAngle;
-                var midRad = startAngle + Math.PI;
-                var endRad = startAngle + fullCircle;
+                var endRad = startAngle + actualSweep;
 
-                var startOuter1 = new Point(center.X + outerRadius * Math.Cos(startRad), center.Y + outerRadius * Math.Sin(startRad));
-                var midOuter = new Point(center.X + outerRadius * Math.Cos(midRad), center.Y + outerRadius * Math.Sin(midRad));
-                var midInner = new Point(center.X + innerRadius * Math.Cos(midRad), center.Y + innerRadius * Math.Sin(midRad));
-                var startInner1 = new Point(center.X + innerRadius * Math.Cos(startRad), center.Y + innerRadius * Math.Sin(startRad));
-
-                ctx.BeginFigure(startInner1, true);
-                ctx.LineTo(startOuter1);
-                ctx.ArcTo(midOuter, new Size(outerRadius, outerRadius), 0, false, SweepDirection.Clockwise);
-                ctx.LineTo(midInner);
-                if (innerRadius > 0)
-                {
-                    ctx.ArcTo(startInner1, new Size(innerRadius, innerRadius), 0, false, SweepDirection.CounterClockwise);
-                }
-                ctx.EndFigure(true);
-
+                var startInner = new Point(center.X + innerRadius * Math.Cos(startRad), center.Y + innerRadius * Math.Sin(startRad));
+                var startOuter = new Point(center.X + outerRadius * Math.Cos(startRad), center.Y + outerRadius * Math.Sin(startRad));
                 var endOuter = new Point(center.X + outerRadius * Math.Cos(endRad), center.Y + outerRadius * Math.Sin(endRad));
                 var endInner = new Point(center.X + innerRadius * Math.Cos(endRad), center.Y + innerRadius * Math.Sin(endRad));
 
-                ctx.BeginFigure(midInner, true);
-                ctx.LineTo(midOuter);
-                ctx.ArcTo(endOuter, new Size(outerRadius, outerRadius), 0, false, SweepDirection.Clockwise);
+                ctx.BeginFigure(startInner, true);
+                ctx.LineTo(startOuter);
+                ctx.ArcTo(endOuter, new Size(outerRadius, outerRadius), 0, true, SweepDirection.Clockwise);
                 ctx.LineTo(endInner);
                 if (innerRadius > 0)
                 {
-                    ctx.ArcTo(midInner, new Size(innerRadius, innerRadius), 0, false, SweepDirection.CounterClockwise);
+                    ctx.ArcTo(startInner, new Size(innerRadius, innerRadius), 0, true, SweepDirection.CounterClockwise);
                 }
                 ctx.EndFigure(true);
             }
@@ -212,10 +200,8 @@ public class ChartsItemTypePie : Control
 
     private void DrawCenterCircle(DrawingContext context, Point center, double innerRadius)
     {
-        var bgColor = _isDarkTheme ? Color.Parse("#2A2A30") : Color.Parse("#FFFFFF");
         var borderColor = _isDarkTheme ? Color.Parse("#3A3A42") : Color.Parse("#E8E8EC");
-
-        context.DrawEllipse(new SolidColorBrush(bgColor), new Pen(new SolidColorBrush(borderColor), 1), center, innerRadius, innerRadius);
+        context.DrawEllipse(null, new Pen(new SolidColorBrush(borderColor), 1), center, innerRadius, innerRadius);
     }
 
     private void DrawTooltip(DrawingContext context, Point center, double innerRadius, double outerRadius, ChartsDataModel item, double totalValue)
@@ -224,7 +210,6 @@ public class ChartsItemTypePie : Control
         var nameText = item.Name;
         var percentText = $"{percentage:F1}%";
 
-        // 背景色
         var bgColor = _isDarkTheme ? Color.Parse("#404048") : Color.Parse("#FFFFFF");
         var nameColor = _isDarkTheme ? Color.Parse("#A0A0A8") : Color.Parse("#888888");
         var percentColor = _isDarkTheme ? Color.Parse("#F0F0F0") : Color.Parse("#333333");
@@ -232,7 +217,6 @@ public class ChartsItemTypePie : Control
         var typeface = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Medium);
         var boldTypeface = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
 
-        // 计算文字尺寸
         var nameFormatted = new FormattedText(nameText, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, 12, new SolidColorBrush(nameColor));
         var percentFormatted = new FormattedText(percentText, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, boldTypeface, 16, new SolidColorBrush(percentColor));
 

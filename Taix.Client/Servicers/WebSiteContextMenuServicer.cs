@@ -318,20 +318,15 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         if (data?.Data is not WebSiteModel site) return;
 
         var existingNames = existingCategories.Select(c => c.Name);
+        var existingColors = existingCategories.Select(c => c.Color);
 
         var result = await _uIServicer.ShowCreateCategoryDialogAsync(
             ResourceStrings.NewCategory,
             null,
-            existingNames);
+            existingNames,
+            existingColors);
 
         if (result == null) return;
-
-        // 检查颜色是否已存在（网站分类需要唯一颜色）
-        if (existingCategories.Any(c => c.Color?.Equals(result.Color, StringComparison.OrdinalIgnoreCase) == true))
-        {
-            _mainViewModel?.Error(ResourceStrings.ColoreExists);
-            return;
-        }
 
         // 创建新分类
         var newCategory = await _webData.CreateWebSiteCategoryAsync(new WebSiteCategoryModel
