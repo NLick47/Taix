@@ -24,7 +24,6 @@ public class ChartsItemTypePie : Control
         AvaloniaProperty.Register<ChartsItemTypePie, double>(nameof(InnerRadiusRatio), 0.6);
 
     private List<ChartsDataModel>? _data = [];
-    private double _maxValue;
     private int _hoveredIndex = -1;
     private bool _isDarkTheme;
 
@@ -86,8 +85,8 @@ public class ChartsItemTypePie : Control
             return;
         }
 
-        _maxValue = Data.Sum(m => m.Value);
-        if (_maxValue <= 0)
+        var totalValue = Data.Sum(m => m.Value);
+        if (totalValue <= 0)
         {
             DrawEmptyState(context, width, height);
             return;
@@ -104,7 +103,7 @@ public class ChartsItemTypePie : Control
             var item = Data[i];
             if (item.Value <= 0) continue;
 
-            var sweepAngle = item.Value / _maxValue * 2 * Math.PI;
+            var sweepAngle = item.Value / totalValue * 2 * Math.PI;
             var isHovered = _hoveredIndex == i;
 
             DrawSlice(context, center, innerRadius, outerRadius, currentAngle, sweepAngle, item.Color, isHovered);
@@ -118,7 +117,7 @@ public class ChartsItemTypePie : Control
         // 绘制悬浮提示
         if (_hoveredIndex >= 0 && Data != null && _hoveredIndex < Data.Count)
         {
-            DrawTooltip(context, center, innerRadius, outerRadius, Data[_hoveredIndex]);
+            DrawTooltip(context, center, innerRadius, outerRadius, Data[_hoveredIndex], totalValue);
         }
     }
 
@@ -149,25 +148,63 @@ public class ChartsItemTypePie : Control
 
         using (var ctx = geometry.Open())
         {
-            var startRad = startAngle;
-            var endRad = startAngle + sweepAngle;
-
-            var startInner = new Point(center.X + innerRadius * Math.Cos(startRad), center.Y + innerRadius * Math.Sin(startRad));
-            var startOuter = new Point(center.X + outerRadius * Math.Cos(startRad), center.Y + outerRadius * Math.Sin(startRad));
-            var endOuter = new Point(center.X + outerRadius * Math.Cos(endRad), center.Y + outerRadius * Math.Sin(endRad));
-            var endInner = new Point(center.X + innerRadius * Math.Cos(endRad), center.Y + innerRadius * Math.Sin(endRad));
-
-            var angleDegrees = sweepAngle * 180 / Math.PI;
-
-            ctx.BeginFigure(startInner, true);
-            ctx.LineTo(startOuter);
-            ctx.ArcTo(endOuter, new Size(outerRadius, outerRadius), 0, angleDegrees > 180, SweepDirection.Clockwise);
-            ctx.LineTo(endInner);
-            if (innerRadius > 0)
+            const double fullCircle = 2 * Math.PI;
+            if (sweepAngle >= fullCircle - 0.0001)
             {
-                ctx.ArcTo(startInner, new Size(innerRadius, innerRadius), 0, angleDegrees > 180, SweepDirection.CounterClockwise);
+                var startRad = startAngle;
+                var midRad = startAngle + Math.PI;
+                var endRad = startAngle + fullCircle;
+
+                var startOuter1 = new Point(center.X + outerRadius * Math.Cos(startRad), center.Y + outerRadius * Math.Sin(startRad));
+                var midOuter = new Point(center.X + outerRadius * Math.Cos(midRad), center.Y + outerRadius * Math.Sin(midRad));
+                var midInner = new Point(center.X + innerRadius * Math.Cos(midRad), center.Y + innerRadius * Math.Sin(midRad));
+                var startInner1 = new Point(center.X + innerRadius * Math.Cos(startRad), center.Y + innerRadius * Math.Sin(startRad));
+
+                ctx.BeginFigure(startInner1, true);
+                ctx.LineTo(startOuter1);
+                ctx.ArcTo(midOuter, new Size(outerRadius, outerRadius), 0, false, SweepDirection.Clockwise);
+                ctx.LineTo(midInner);
+                if (innerRadius > 0)
+                {
+                    ctx.ArcTo(startInner1, new Size(innerRadius, innerRadius), 0, false, SweepDirection.CounterClockwise);
+                }
+                ctx.EndFigure(true);
+
+                var endOuter = new Point(center.X + outerRadius * Math.Cos(endRad), center.Y + outerRadius * Math.Sin(endRad));
+                var endInner = new Point(center.X + innerRadius * Math.Cos(endRad), center.Y + innerRadius * Math.Sin(endRad));
+
+                ctx.BeginFigure(midInner, true);
+                ctx.LineTo(midOuter);
+                ctx.ArcTo(endOuter, new Size(outerRadius, outerRadius), 0, false, SweepDirection.Clockwise);
+                ctx.LineTo(endInner);
+                if (innerRadius > 0)
+                {
+                    ctx.ArcTo(midInner, new Size(innerRadius, innerRadius), 0, false, SweepDirection.CounterClockwise);
+                }
+                ctx.EndFigure(true);
             }
-            ctx.EndFigure(true);
+            else
+            {
+                var startRad = startAngle;
+                var endRad = startAngle + sweepAngle;
+
+                var startInner = new Point(center.X + innerRadius * Math.Cos(startRad), center.Y + innerRadius * Math.Sin(startRad));
+                var startOuter = new Point(center.X + outerRadius * Math.Cos(startRad), center.Y + outerRadius * Math.Sin(startRad));
+                var endOuter = new Point(center.X + outerRadius * Math.Cos(endRad), center.Y + outerRadius * Math.Sin(endRad));
+                var endInner = new Point(center.X + innerRadius * Math.Cos(endRad), center.Y + innerRadius * Math.Sin(endRad));
+
+                var angleDegrees = sweepAngle * 180 / Math.PI;
+
+                ctx.BeginFigure(startInner, true);
+                ctx.LineTo(startOuter);
+                ctx.ArcTo(endOuter, new Size(outerRadius, outerRadius), 0, angleDegrees > 180, SweepDirection.Clockwise);
+                ctx.LineTo(endInner);
+                if (innerRadius > 0)
+                {
+                    ctx.ArcTo(startInner, new Size(innerRadius, innerRadius), 0, angleDegrees > 180, SweepDirection.CounterClockwise);
+                }
+                ctx.EndFigure(true);
+            }
         }
 
         return geometry;
@@ -181,9 +218,9 @@ public class ChartsItemTypePie : Control
         context.DrawEllipse(new SolidColorBrush(bgColor), new Pen(new SolidColorBrush(borderColor), 1), center, innerRadius, innerRadius);
     }
 
-    private void DrawTooltip(DrawingContext context, Point center, double innerRadius, double outerRadius, ChartsDataModel item)
+    private void DrawTooltip(DrawingContext context, Point center, double innerRadius, double outerRadius, ChartsDataModel item, double totalValue)
     {
-        var percentage = item.Value / _maxValue * 100;
+        var percentage = item.Value / totalValue * 100;
         var nameText = item.Name;
         var percentText = $"{percentage:F1}%";
 
@@ -250,6 +287,11 @@ public class ChartsItemTypePie : Control
 
     private int GetSliceAtPosition(Point position)
     {
+        if (Data == null || Data.Count == 0) return -1;
+
+        var totalValue = Data.Sum(d => d.Value);
+        if (totalValue <= 0) return -1;
+
         var width = Bounds.Width;
         var height = Bounds.Height;
         var center = new Point(width / 2, height / 2);
@@ -265,14 +307,12 @@ public class ChartsItemTypePie : Control
         var angle = Math.Atan2(dy, dx) * 180 / Math.PI;
         angle = (angle + 90 + 360) % 360;
 
-        if (Data == null || Data.Count == 0) return -1;
-
         var currentAngle = 0.0;
         for (var i = 0; i < Data.Count; i++)
         {
             if (Data[i].Value <= 0) continue;
 
-            var sweepAngle = Data[i].Value / _maxValue * 360;
+            var sweepAngle = Data[i].Value / totalValue * 360;
             if (angle >= currentAngle && angle < currentAngle + sweepAngle)
                 return i;
 
