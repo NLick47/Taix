@@ -86,8 +86,7 @@
             <!--设置面板-->
             <Color x:Key="SettingPanelBgColor">#2A2A30</Color>
             <SolidColorBrush x:Key="SettingPanelBgBrush" Color="{StaticResource SettingPanelBgColor}" />
-            <Color x:Key="SettingPanelBorderColor">#1E1E24</Color>
-            <SolidColorBrush x:Key="SettingPanelBorderBrush" Color="{StaticResource SettingPanelBorderColor}" />
+            <SolidColorBrush x:Key="SettingPanelBorderBrush" Color="#FFFFFF" Opacity="0.05" />
             <Color x:Key="SettingPanelSpliteLineColor">#45454D</Color>
             <SolidColorBrush x:Key="SettingPanelSpliteLineBrush" Color="{StaticResource SettingPanelSpliteLineColor}" />
 
@@ -350,8 +349,7 @@
             <!--设置面板-->
             <Color x:Key="SettingPanelBgColor">#ffffff</Color>
             <SolidColorBrush x:Key="SettingPanelBgBrush" Color="{StaticResource SettingPanelBgColor}" />
-            <Color x:Key="SettingPanelBorderColor">#ededed</Color>
-            <SolidColorBrush x:Key="SettingPanelBorderBrush" Color="{StaticResource SettingPanelBorderColor}" />
+            <SolidColorBrush x:Key="SettingPanelBorderBrush" Color="#000000" Opacity="0.06" />
             <Color x:Key="SettingPanelSpliteLineColor">#ededed</Color>
             <SolidColorBrush x:Key="SettingPanelSpliteLineBrush" Color="{StaticResource SettingPanelSpliteLineColor}" />
 

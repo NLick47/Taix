@@ -33,6 +33,12 @@ export interface BrowserAPI {
     onAlarm: { addListener: (callback: (alarm: Alarm) => void) => void };
   };
 
+  idle: {
+    setDetectionInterval?: (intervalSeconds: number) => void;
+    queryState?: (detectionIntervalSeconds: number) => Promise<'active' | 'idle' | 'locked'>;
+    onStateChanged: { addListener: (callback: (state: 'active' | 'idle' | 'locked') => void) => void } | null;
+  };
+
   runtime: {
     onSuspend: { addListener: (callback: () => void) => void };
   };

@@ -25,6 +25,11 @@ declare const browser: {
     create: (name: string, alarmInfo: { periodInMinutes?: number }) => void;
     onAlarm: { addListener: (cb: (alarm: { name: string }) => void) => void };
   };
+  idle?: {
+    setDetectionInterval?: (intervalSeconds: number) => void;
+    queryState?: (detectionIntervalSeconds: number) => Promise<'active' | 'idle' | 'locked'>;
+    onStateChanged?: { addListener: (cb: (state: string) => void) => void };
+  };
   runtime: {
     onSuspend: { addListener: (cb: () => void) => void };
   };
@@ -98,6 +103,20 @@ export const FirefoxBrowser: BrowserAPI = {
     onAlarm: {
       addListener: (cb) => browser.alarms.onAlarm.addListener(cb),
     },
+  },
+
+  idle: {
+    setDetectionInterval: browser.idle?.setDetectionInterval
+      ? (s) => browser.idle!.setDetectionInterval!(s)
+      : undefined,
+    queryState: browser.idle?.queryState
+      ? (s) => browser.idle!.queryState!(s)
+      : undefined,
+    onStateChanged: browser.idle?.onStateChanged
+      ? {
+          addListener: (cb) => browser.idle!.onStateChanged!.addListener((state) => cb(state as 'active' | 'idle' | 'locked')),
+        }
+      : null,
   },
 
   runtime: {

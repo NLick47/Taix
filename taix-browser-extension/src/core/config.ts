@@ -6,4 +6,8 @@ export const CONFIG = {
   RECONNECT_FAIL_SLEEP: 5,
   URL_CHANGE_DEBOUNCE_MS: 300,
   MAX_FAIL_QUEUE_SIZE: 100,
+  // 单次保存时长上限，超过就丢弃，避免休眠/SW 冻结后灌入巨值
+  MAX_SAVE_STEP_SECS: 90,
+  // chrome.idle 检测阈值，最小 15s
+  IDLE_DETECTION_SECS: 60,
 };

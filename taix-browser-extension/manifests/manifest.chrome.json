@@ -8,7 +8,8 @@
     "activeTab",
     "webNavigation",
     "storage",
-    "alarms"
+    "alarms",
+    "idle"
   ],
   "host_permissions": [
     "http://*/*",

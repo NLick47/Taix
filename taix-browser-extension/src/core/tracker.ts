@@ -35,7 +35,11 @@ export class Tracker {
   private currentTabId: number = -1;
   private urlChangeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private isPageVisible: boolean = true;
+  private isWindowFocused: boolean = true;
+  private isUserIdle: boolean = false;
+  private idleEventReceived: boolean = false;
   private lastSavedTime: number = 0;
+  private started: boolean = false;
 
   constructor(browser: BrowserAPI) {
     this.browser = browser;
@@ -51,8 +55,18 @@ export class Tracker {
   }
 
   async start(): Promise<void> {
+    if (this.started) return;
+    this.started = true;
+
     await this.state.load();
     this.queue.setAll(this.state.notifyFailList);
+
+    // SW 重启后非持久化态重置，等首次事件自纠
+    // isWindowFocused/isPageVisible 默认 true，idle 兜底防误算
+    this.isPageVisible = true;
+    this.isWindowFocused = true;
+    this.isUserIdle = false;
+    this.idleEventReceived = false;
 
     try {
       const win = await this.browser.windows.getCurrent();
@@ -77,7 +91,64 @@ export class Tracker {
 
     this.browser.runtime.onSuspend.addListener(() => this.handleSuspend());
 
+    this.setupIdleListener();
     this.setupMessageListener();
+
+    // SW 冷启动时主动探测一次焦点和 idle，否则没事件进来 doPeriodicSave 会持续累加
+    await this.probeInitialState();
+  }
+
+  private async probeInitialState(): Promise<void> {
+    // queryState 不会触发 onStateChanged，要主动取一次
+    // await 期间若已收到真实事件，idleEventReceived 守卫防 stale 结果覆盖
+    if (this.browser.idle?.queryState) {
+      try {
+        const idleState = await this.browser.idle.queryState(CONFIG.IDLE_DETECTION_SECS);
+        if (!this.idleEventReceived) {
+          this.isUserIdle = idleState !== 'active';
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  private setupIdleListener(): void {
+    if (!this.browser.idle?.onStateChanged) return;
+
+    if (this.browser.idle.setDetectionInterval) {
+      try {
+        this.browser.idle.setDetectionInterval(CONFIG.IDLE_DETECTION_SECS);
+      } catch {
+        // ignore
+      }
+    }
+
+    this.browser.idle.onStateChanged.addListener((state) => {
+      this.idleEventReceived = true;
+      this.handleIdleStateChanged(state);
+    });
+  }
+
+  private handleIdleStateChanged(state: 'active' | 'idle' | 'locked'): void {
+    if (state === 'active') {
+      if (this.isUserIdle) {
+        this.isUserIdle = false;
+        // 空闲恢复，离开期间不算时长，startTime 拉回 now 重新计
+        if (this.state.activePage?.url) {
+          this.state.activePage.startTime = Date.now();
+          this.lastSavedTime = 0;
+          this.state.save();
+        }
+      }
+    } else {
+      // idle / locked
+      if (!this.isUserIdle) {
+        // 进入空闲前先把累计时长落库
+        this.saveActivePageDuration();
+        this.isUserIdle = true;
+      }
+    }
   }
 
   private setupMessageListener(): void {
@@ -125,13 +196,29 @@ export class Tracker {
     }
   }
 
+  /** 计算 startTime 到 now 的可信时长，超过 MAX_SAVE_STEP 视为休眠/冻结，整段丢弃 */
+  private computeTrustedDuration(startTime: number, now: number): number {
+    const raw = Math.floor((now - startTime) / 1000);
+    if (raw <= 0) return 0;
+    if (raw > CONFIG.MAX_SAVE_STEP_SECS) {
+      console.warn('[Taix] 时间跨度异常，丢弃本段', {
+        rawSecs: raw,
+        cap: CONFIG.MAX_SAVE_STEP_SECS,
+      });
+      return 0;
+    }
+    return raw;
+  }
+
   private saveActivePageDuration(): void {
     if (!this.state.activePage?.url) return;
 
     const now = Date.now();
+    // 1s 节流，防 visibility/idle/focus 连环触发
+    // 节流时 return 不前推 startTime，未上报时长留到下次一并算
     if (now - this.lastSavedTime < 1000) return;
 
-    const duration = Math.floor((now - this.state.activePage.startTime) / 1000);
+    const duration = this.computeTrustedDuration(this.state.activePage.startTime, now);
     if (duration > 0) {
       this.lastSavedTime = now;
       const activeTime = Math.floor(this.state.activePage.startTime / 1000);
@@ -184,13 +271,12 @@ export class Tracker {
   private handleSleep(): void {
     this.state.isSleep = true;
     this.saveActivePage();
-    this.state.save();
   }
 
   private handleWake(): void {
     this.state.isSleep = false;
-    this.validateActivePage();
     this.state.save();
+    this.validateActivePage();
   }
 
   private handleSuspend(): void {
@@ -231,23 +317,29 @@ export class Tracker {
   private doPeriodicSave(): void {
     if (!this.state.activePage?.url) return;
     if (!this.isPageVisible) return;
+    if (!this.isWindowFocused) return;
+    if (this.isUserIdle) return;
 
     const now = Date.now();
-    const duration = Math.floor((now - this.state.activePage.startTime) / 1000);
-    if (duration <= 0) return;
-
+    const startTime = this.state.activePage.startTime;
+    const duration = this.computeTrustedDuration(startTime, now);
+    // 始终前推 startTime，本段被丢弃也别让下一轮再算同样的巨值
+    this.state.activePage.startTime = now;
     this.lastSavedTime = now;
-    const activeTime = Math.floor(this.state.activePage.startTime / 1000);
+
+    if (duration <= 0) {
+      this.state.save();
+      return;
+    }
 
     this.notifyTai({
       Url: this.state.activePage.url,
       Title: this.state.activePage.title,
       Icon: this.state.activePage.icon,
       Duration: duration,
-      ActiveTime: activeTime,
+      ActiveTime: Math.floor(startTime / 1000),
     });
 
-    this.state.activePage.startTime = now;
     this.state.save();
   }
 
@@ -257,23 +349,41 @@ export class Tracker {
 
   private async handleWindowFocusChanged(windowId: number): Promise<void> {
     if (windowId === this.browser.windows.WINDOW_ID_NONE) {
-      if (this.currentWindowId !== -1) {
-        this.currentWindowId = -1;
-        this.currentTabId = -1;
-        this.isPageVisible = true;
+      // 浏览器整体失焦，停止计时并把累计时长落库
+      // currentWindowId 不重置，回切时 onFocusChanged 能识别同一窗口
+      if (this.isWindowFocused) {
+        this.isWindowFocused = false;
+        this.saveActivePageDuration();
+      }
+      return;
+    }
+
+    try {
+      const win = await this.browser.windows.get(windowId);
+      if (!win || (win.type !== 'normal' && win.type !== 'popup')) return;
+
+      const isSwitchingWindow = this.currentWindowId !== windowId;
+      const isResumingFocus = !this.isWindowFocused && !isSwitchingWindow;
+
+      if (isSwitchingWindow) {
+        // 切到另一个浏览器窗口，先把旧窗口当前页累计时长落库再切
         this.saveActivePage();
-      }
-    } else {
-      try {
-        const win = await this.browser.windows.get(windowId);
-        if (win && (win.type === 'normal' || win.type === 'popup')) {
-          this.currentWindowId = windowId;
-          this.isPageVisible = true;
-          this.validateActivePage();
+      } else if (isResumingFocus) {
+        // 失焦后聚焦回同一窗口，离开期间不计，startTime 拉回 now
+        if (this.state.activePage?.url) {
+          this.state.activePage.startTime = Date.now();
+          this.lastSavedTime = 0;
+          this.state.save();
         }
-      } catch {
-        // ignore
       }
+
+      this.currentWindowId = windowId;
+      this.isWindowFocused = true;
+      // 新窗口 active tab 默认可见，避免上一窗口遗留的 false 卡住计时
+      this.isPageVisible = true;
+      this.validateActivePage();
+    } catch {
+      // ignore
     }
   }
 
@@ -376,17 +486,18 @@ export class Tracker {
   private saveActivePage(): void {
     if (!this.state.activePage?.url) return;
 
-    const duration = Math.floor((Date.now() - this.state.activePage.startTime) / 1000);
-    if (duration <= 0) return;
+    const now = Date.now();
+    const startTime = this.state.activePage.startTime;
+    const duration = this.computeTrustedDuration(startTime, now);
 
-    const activeTime = Math.floor(this.state.activePage.startTime / 1000);
     const { url: Url, title: Title, icon: Icon } = this.state.activePage;
-
     this.state.activePage = null;
     this.lastSavedTime = 0;
     this.state.save();
 
-    this.notifyTai({ Url, Title, Icon, Duration: duration, ActiveTime: activeTime });
+    if (duration <= 0) return;
+
+    this.notifyTai({ Url, Title, Icon, Duration: duration, ActiveTime: Math.floor(startTime / 1000) });
   }
 
   private notifyTai(data: BrowseData): void {

@@ -55,76 +55,98 @@
                     <Setter Property="RenderTransform" Value="scaleX(1.12) scaleY(1.12)" />
                 </Style>
 
+                <Style Selector="^ /template/ Border#Accent">
+                    <Setter Property="Opacity" Value="1" />
+                    <Setter Property="Height" Value="22" />
+                </Style>
             </Style>
 
 
         </Styles>
         <Setter Property="Template">
             <ControlTemplate>
-                <Grid Margin="4">
-                    <Border x:Name="GlassThickness"
-                            CornerRadius="14"
-                            IsHitTestVisible="False"
-                            Opacity="0">
-                        <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                                <GradientStop Color="Transparent" Offset="0" />
-                                <GradientStop Color="#000000" Offset="1" />
-                            </LinearGradientBrush>
-                        </Border.Background>
+                <Grid>
+                    <Border x:Name="Accent"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Width="3" Height="0"
+                            CornerRadius="0,2,2,0"
+                            Background="{DynamicResource ThemeBrush}"
+                            Opacity="0"
+                            IsHitTestVisible="False">
                         <Border.Transitions>
                             <Transitions>
-                                <DoubleTransition Property="Opacity" Duration="0:0:0.4" />
+                                <DoubleTransition Property="Opacity" Duration="0:0:0.25" />
+                                <DoubleTransition Property="Height" Duration="0:0:0.3" Easing="CubicEaseOut" />
                             </Transitions>
                         </Border.Transitions>
                     </Border>
 
-                    <Border x:Name="GlassHighlight"
-                            CornerRadius="14"
-                            IsHitTestVisible="False"
-                            Opacity="0">
-                        <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                <GradientStop Color="#FFFFFF" Offset="0" />
-                                <GradientStop Color="#FFFFFF" Offset="0.35" />
-                                <GradientStop Color="Transparent" Offset="0.75" />
-                            </LinearGradientBrush>
-                        </Border.Background>
-                        <Border.Transitions>
-                            <Transitions>
-                                <DoubleTransition Property="Opacity" Duration="0:0:0.4" />
-                            </Transitions>
-                        </Border.Transitions>
-                    </Border>
+                    <Grid Margin="4">
+                        <Border x:Name="GlassThickness"
+                                CornerRadius="14"
+                                IsHitTestVisible="False"
+                                Opacity="0">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                    <GradientStop Color="Transparent" Offset="0" />
+                                    <GradientStop Color="#000000" Offset="1" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border.Transitions>
+                                <Transitions>
+                                    <DoubleTransition Property="Opacity" Duration="0:0:0.4" />
+                                </Transitions>
+                            </Border.Transitions>
+                        </Border>
 
-                    <Border Background="Transparent" CornerRadius="14"
-                            x:Name="Border" BorderThickness="0.5" BorderBrush="Transparent">
-                        <Border.Transitions>
-                            <Transitions>
-                                <BrushTransition Property="Background" Duration="0:0:0.45" />
-                                <BrushTransition Property="BorderBrush" Duration="0:0:0.45" />
-                            </Transitions>
-                        </Border.Transitions>
+                        <Border x:Name="GlassHighlight"
+                                CornerRadius="14"
+                                IsHitTestVisible="False"
+                                Opacity="0">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                    <GradientStop Color="#FFFFFF" Offset="0" />
+                                    <GradientStop Color="#FFFFFF" Offset="0.35" />
+                                    <GradientStop Color="Transparent" Offset="0.75" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border.Transitions>
+                                <Transitions>
+                                    <DoubleTransition Property="Opacity" Duration="0:0:0.4" />
+                                </Transitions>
+                            </Border.Transitions>
+                        </Border>
 
-                        <Grid x:Name="Content">
-                            <base:Icon x:Name="Icon" IconType="{TemplateBinding Icon}"
-                                       Foreground="{DynamicResource NavUnselectedTextBrush}"
-                                       VerticalAlignment="Center"
-                                       HorizontalAlignment="Center"
-                                       FontSize="18">
-                                <base:Icon.RenderTransform>scaleX(1) scaleY(1)</base:Icon.RenderTransform>
-                                <base:Icon.RenderTransformOrigin>0.5,0.5</base:Icon.RenderTransformOrigin>
-                                <base:Icon.Transitions>
-                                    <Transitions>
-                                        <BrushTransition Property="Foreground" Duration="0:0:0.3" />
-                                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.35" Easing="BackEaseOut" />
-                                    </Transitions>
-                                </base:Icon.Transitions>
-                            </base:Icon>
-                        </Grid>
-                </Border>
-            </Grid>
-        </ControlTemplate>
+                        <Border Background="Transparent" CornerRadius="14"
+                                x:Name="Border" BorderThickness="0.5" BorderBrush="Transparent">
+                            <Border.Transitions>
+                                <Transitions>
+                                    <BrushTransition Property="Background" Duration="0:0:0.45" />
+                                    <BrushTransition Property="BorderBrush" Duration="0:0:0.45" />
+                                </Transitions>
+                            </Border.Transitions>
+
+                            <Grid x:Name="Content">
+                                <base:Icon x:Name="Icon" IconType="{TemplateBinding Icon}"
+                                           Foreground="{DynamicResource NavUnselectedTextBrush}"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Center"
+                                           FontSize="18">
+                                    <base:Icon.RenderTransform>scaleX(1) scaleY(1)</base:Icon.RenderTransform>
+                                    <base:Icon.RenderTransformOrigin>0.5,0.5</base:Icon.RenderTransformOrigin>
+                                    <base:Icon.Transitions>
+                                        <Transitions>
+                                            <BrushTransition Property="Foreground" Duration="0:0:0.3" />
+                                            <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.35" Easing="BackEaseOut" />
+                                        </Transitions>
+                                    </base:Icon.Transitions>
+                                </base:Icon>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </ControlTemplate>
         </Setter>
     </ControlTheme>
 </ResourceDictionary>
