@@ -46,7 +46,7 @@
 | Windows 安装器 | `Taix-{version}-Setup.exe` | 推荐普通用户使用，跟随cli指引安装 |
 | Windows 绿色版 | `Taix-{version}-win-x64.zip` | 便携使用，需手动执行脚本注册开机自启（任务计划）服务 |
 | macOS | `Taix-{version}-macos-arm64.dmg` | Apple Silicon 设备，macOS 12.0+ |
-| 浏览器扩展 | `Taix-Web-Sentry-{version}-chrome.zip` | Chrome / Edge 等 Chromium 浏览器，配合客户端使用以记录浏览数据 |
+| 浏览器扩展 | `Taix-Web-Sentry-{ext_version}-chrome.zip` | Chrome / Edge 等 Chromium 浏览器，配合客户端使用以记录浏览数据 |
 
 ### Windows 安装器（推荐）
 

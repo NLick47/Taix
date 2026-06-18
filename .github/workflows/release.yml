@@ -154,7 +154,8 @@ jobs:
       - name: Set APP_VERSION
         run: |
           if [[ "${{ github.ref }}" =~ ^refs/tags/v ]]; then
-            echo "APP_VERSION=${{ github.ref_name }}" | sed 's/^v//' >> $GITHUB_ENV
+            VERSION="${{ github.ref_name }}"
+            echo "APP_VERSION=${VERSION#v}" >> $GITHUB_ENV
           else
             echo "APP_VERSION=0.0.0" >> $GITHUB_ENV
           fi
@@ -289,7 +290,9 @@ jobs:
         run: |
           if [ -f release_notes.txt ]; then
             echo "content<<EOF" >> $GITHUB_OUTPUT
-            cat release_notes.txt >> $GITHUB_OUTPUT
+            sed -e "s/{version}/${{ env.APP_VERSION }}/g" \
+                -e "s/{ext_version}/${{ env.EXT_VERSION }}/g" \
+                release_notes.txt >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "content=Release ${{ env.APP_VERSION }}" >> $GITHUB_OUTPUT
