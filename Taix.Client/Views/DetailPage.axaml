@@ -25,114 +25,109 @@
 
         <Grid ColumnDefinitions="Auto,*" Margin="0,5,0,20">
             <TextBlock Grid.Column="0" Text="{DynamicResource App}"
-                       FontSize="18" VerticalAlignment="Center" />
+                       FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
         </Grid>
 
-        <!--应用基本信息卡片-->
+        <!--基本信息-->
         <Border
             Background="{DynamicResource SettingPanelBgBrush}"
             ContextMenu="{Binding AppContextMenu}"
             CornerRadius="{StaticResource RadiusMedium}"
-            Padding="20">
+            Padding="24,20">
 
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto">
 
-                <!-- 图标容器 -->
-                <Border Width="48" Height="48" CornerRadius="14" Margin="0,0,15,0"
-                        Background="{DynamicResource ControlBackgroundBrush}">
-                    <base:Img URL="{Binding App.IconFile}" Width="28" Height="28"
-                              DecodeWidth="28"
+                <Border Grid.Column="0" Width="56" Height="56"
+                        CornerRadius="14" Margin="0,0,18,0"
+                        Background="{DynamicResource ListItemIconBgBrush}"
+                        VerticalAlignment="Center">
+                    <base:Img URL="{Binding App.IconFile}" Width="32" Height="32"
+                              DecodeWidth="32"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Center" />
                 </Border>
 
-                <StackPanel Grid.Column="1"
-                            VerticalAlignment="Center">
-                    <base:View Condition="=False"
-                               Value="{Binding IsRegexIgnore}">
-                        <Border Background="{DynamicResource DangerBrush}" Padding="10,5" CornerRadius="{StaticResource RadiusSmall}" Margin="0,0,0,5"
-                                VerticalAlignment="Center"
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+
+                    <base:View Condition="=False" Value="{Binding IsRegexIgnore}">
+                        <Border Background="{DynamicResource DangerBrush}" Padding="8,3" CornerRadius="{StaticResource RadiusSmall}"
+                                Margin="0,0,0,6"
                                 HorizontalAlignment="Left" IsVisible="{Binding CancelBlockBtnVisibility}"
                                 ToolTip.Tip="{DynamicResource LongerTip}">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <base:Icon IconType="StatusCircleBlock" FontSize="12"
+                                <base:Icon IconType="StatusCircleBlock" FontSize="11"
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource OnAccentBrush}" />
                                 <TextBlock Text="{DynamicResource IgnoredText}"
+                                           FontSize="11"
                                            Foreground="{DynamicResource OnAccentBrush}"
                                            VerticalAlignment="Center"
-                                           Margin="5,0,0,0" />
+                                           Margin="4,0,0,0" />
                             </StackPanel>
                         </Border>
                     </base:View>
                     <base:View Value="{Binding IsRegexIgnore}">
-                        <Border Background="{DynamicResource DangerBrush}" Padding="10,5" CornerRadius="{StaticResource RadiusSmall}"
-                                Margin="0,0,0,5" VerticalAlignment="Center"
-                                HorizontalAlignment="Left"
+                        <Border Background="{DynamicResource DangerBrush}" Padding="8,3" CornerRadius="{StaticResource RadiusSmall}"
+                                Margin="0,0,0,6" HorizontalAlignment="Left"
                                 ToolTip.Tip="{DynamicResource LongerTip}">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <base:Icon IconType="StatusCircleBlock" FontSize="12" VerticalAlignment="Center"
+                                <base:Icon IconType="StatusCircleBlock" FontSize="11" VerticalAlignment="Center"
                                            Foreground="{DynamicResource OnAccentBrush}" />
-                                <TextBlock Text="{DynamicResource MatchREIgnoredText}" Foreground="{DynamicResource OnAccentBrush}"
-                                           VerticalAlignment="Center" Margin="5,0,0,0" />
+                                <TextBlock Text="{DynamicResource MatchREIgnoredText}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource OnAccentBrush}"
+                                           VerticalAlignment="Center" Margin="4,0,0,0" />
                             </StackPanel>
                         </Border>
                     </base:View>
 
                     <base:View Value="{Binding App.Alias}" Condition="not empty">
-                        <StackPanel>
-                            <TextBlock ToolTip.Tip="{DynamicResource ApplicationAlias}"
-                                       Text="{Binding App.Alias}"
-                                       FontSize="18" VerticalAlignment="Center" TextWrapping="WrapWithOverflow">
-                                <TextBlock ToolTip.Tip="{DynamicResource ApplicationPName}">
-                                    <Run Text="{Binding App.Name}" />
-                                </TextBlock>
-                                <Run Text="(" />
-                                <TextBlock ToolTip.Tip="{DynamicResource ApplicationDescription}">
-                                    <Run Text="{Binding App.Description}" />
-                                </TextBlock>
-                                <Run Text=")" />
-                            </TextBlock>
-                        </StackPanel>
+                        <TextBlock ToolTip.Tip="{DynamicResource ApplicationAlias}"
+                                   Text="{Binding App.Alias}"
+                                   FontSize="20" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" />
                     </base:View>
                     <base:View Value="{Binding App.Alias}" Condition="empty">
-                        <StackPanel>
-                            <TextBlock ToolTip.Tip="{DynamicResource ApplicationPName}"
-                                       Text="{Binding App.Description}"
-                                       FontSize="18"
-                                       VerticalAlignment="Center"
-                                       TextWrapping="WrapWithOverflow" />
+                        <TextBlock ToolTip.Tip="{DynamicResource ApplicationPName}"
+                                   Text="{Binding App.Description}"
+                                   FontSize="20" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" />
+                    </base:View>
 
-                            <TextBlock
-                                ToolTip.Tip="{DynamicResource ApplicationDescription}"
-                                Text="{Binding App.Name}" FontSize="12"
-                                Foreground="{DynamicResource SubTextBrush}"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Left"
-                                Margin="0,5,0,0" />
-                        </StackPanel>
+                    <base:View Value="{Binding App.Alias}" Condition="not empty">
+                        <TextBlock FontSize="12"
+                                   Foreground="{DynamicResource SubTextBrush}"
+                                   Margin="0,3,0,0"
+                                   TextTrimming="CharacterEllipsis">
+                            <Run Text="{Binding App.Name}" />
+                            <Run Text=" · " />
+                            <Run Text="{Binding App.Description}" />
+                        </TextBlock>
+                    </base:View>
+                    <base:View Value="{Binding App.Alias}" Condition="empty">
+                        <TextBlock ToolTip.Tip="{DynamicResource ApplicationDescription}"
+                                   Text="{Binding App.Name}" FontSize="12"
+                                   Foreground="{DynamicResource SubTextBrush}"
+                                   Margin="0,3,0,0" />
                     </base:View>
 
                     <TextBlock ToolTip.Tip="{DynamicResource ApplicationFilePath}"
                                Foreground="{DynamicResource SubTextBrush}"
+                               FontSize="11"
                                Text="{Binding App.File}"
-                               Margin="0,5,0,0"
-                               TextWrapping="WrapWithOverflow" />
+                               Margin="0,3,0,0"
+                               TextTrimming="CharacterEllipsis" />
 
-                    <!--分类-->
-                    <s:Select Margin="0,10,0,0" ToolTip.Tip="{DynamicResource Classification}"
+                    <s:Select Margin="0,12,0,0"
+                              HorizontalAlignment="Left"
+                              ToolTip.Tip="{DynamicResource Classification}"
                               SelectedItem="{Binding Category,Mode=TwoWay}"
                               Options="{Binding Categorys}"
                               Padding="10,0"
                               Height="30" />
                 </StackPanel>
 
-                <Grid Grid.Column="2">
+                <StackPanel Grid.Column="2" VerticalAlignment="Top" Margin="16,0,0,0">
                     <base:View Condition="=False" Value="{Binding IsRegexIgnore}" HorizontalAlignment="Right">
                         <StackPanel>
                             <btn:Button Command="{Binding BlockActionCommand}"
@@ -145,168 +140,138 @@
                                 CommandParameter="unblock" Width="120"
                                 IsVisible="{Binding CancelBlockBtnVisibility}"
                                 Icon="Remove" Content="{DynamicResource Unignore}" />
-
                         </StackPanel>
                     </base:View>
-
-
-                </Grid>
+                </StackPanel>
             </Grid>
         </Border>
 
-        <WrapPanel Margin="-10">
-            <StackPanel Margin="10,10,0,0">
-                <Grid  Margin="0,10,0,0">
-                    <TextBlock Text="{DynamicResource DurationStatistics}" Foreground="{DynamicResource SubTextBrush}" FontSize="14"
-                               Margin="0,20,0,0" VerticalAlignment="Center" />
+        <StackPanel Margin="0,12,0,0" Spacing="16">
 
-                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                        <!-- 日期选择 -->
-                        <Grid VerticalAlignment="Center">
-                            <!--按天-->
-                            <base:View Condition="0" Value="{Binding TabbarSelectedIndex}">
-                                <s:DateSelect Date="{Binding ChartDate,Mode=TwoWay}" />
-                            </base:View>
-                            <!--按周-->
-                            <base:View Condition="1" Value="{Binding TabbarSelectedIndex}">
-                                <s:DateSelect Date="{Binding WeekDate,Mode=TwoWay}" SelectType="Week" />
-                            </base:View>
-                            <!--按月-->
-                            <base:View Condition="2" Value="{Binding TabbarSelectedIndex}">
-                                <s:DateSelect Date="{Binding MonthDate,Mode=TwoWay}" SelectType="Month" />
-                            </base:View>
-                            <!--按年-->
-                            <base:View Condition="3" Value="{Binding TabbarSelectedIndex}">
-                                <s:DateSelect Date="{Binding YearDate,Mode=TwoWay}" SelectType="Year" />
-                            </base:View>
-                        </Grid>
+            <!--统计图表-->
+            <Border Background="{DynamicResource SettingPanelBgBrush}"
+                    CornerRadius="{StaticResource RadiusMedium}">
+                <StackPanel>
+                    <Grid Margin="20,16,20,12" ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="{DynamicResource DurationStatistics}"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <Grid VerticalAlignment="Center">
+                                <base:View Condition="0" Value="{Binding TabbarSelectedIndex}">
+                                    <s:DateSelect Date="{Binding ChartDate,Mode=TwoWay}" />
+                                </base:View>
+                                <base:View Condition="1" Value="{Binding TabbarSelectedIndex}">
+                                    <s:DateSelect Date="{Binding WeekDate,Mode=TwoWay}" SelectType="Week" />
+                                </base:View>
+                                <base:View Condition="2" Value="{Binding TabbarSelectedIndex}">
+                                    <s:DateSelect Date="{Binding MonthDate,Mode=TwoWay}" SelectType="Month" />
+                                </base:View>
+                                <base:View Condition="3" Value="{Binding TabbarSelectedIndex}">
+                                    <s:DateSelect Date="{Binding YearDate,Mode=TwoWay}" SelectType="Year" />
+                                </base:View>
+                            </Grid>
+                            <s:TabSwitch IsShowIcon="False"
+                                         SelectedItem="{Binding SelectedPeriod,Mode=TwoWay}"
+                                         Options="{Binding PeriodOptions}" />
+                        </StackPanel>
+                    </Grid>
 
-                        <!-- 周期切换 -->
-                        <s:TabSwitch IsShowIcon="False"
-                                     SelectedItem="{Binding SelectedPeriod,Mode=TwoWay}"
-                                     Options="{Binding PeriodOptions}" />
-                    </StackPanel>
-                </Grid>
+                    <Border Height="1" Background="{DynamicResource SettingPanelSpliteLineBrush}" Opacity="0.5" />
 
-                <Border Margin="0,10,0,0" Width="680"
-                        HorizontalAlignment="Left"
-                        Background="{DynamicResource SettingPanelBgBrush}"
-                        Padding="20"
-                        CornerRadius="{StaticResource RadiusMedium}">
+                    <Charts:ColumnChart IsShowCategory="False"
+                                        DataMaximum="{Binding DataMaximum}"
+                                        Height="300"
+                                        NameIndexStart="{Binding NameIndexStart}"
+                                        Data="{Binding ChartData}"
+                                        Margin="20,16,20,20" />
+                </StackPanel>
+            </Border>
 
-                    <StackPanel>
-                        <Charts:ColumnChart IsShowCategory="False"
-                                           DataMaximum="{Binding DataMaximum}"
-                                           Height="305"
-                                           NameIndexStart="{Binding NameIndexStart}"
-                                           Data="{Binding ChartData}"
-                                           Margin="0,20,0,0" />
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+            <!--月度概览-->
+            <Border Background="{DynamicResource SettingPanelBgBrush}"
+                    CornerRadius="{StaticResource RadiusMedium}">
+                <StackPanel>
+                    <Grid Margin="20,16,20,12" ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="{DynamicResource MonthlyOverview}"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                        <btn:Button Grid.Column="1"
+                                    ToolTip.Tip="{DynamicResource ClearAppTheMonth}"
+                                    Background="{DynamicResource DangerBrush}"
+                                    Foreground="{DynamicResource OnAccentBrush}"
+                                    Width="120" Margin="0"
+                                    Icon="Delete"
+                                    Command="{Binding ClearSelectMonthDataCommand}"
+                                    Content="{DynamicResource ClearTheMonth}" />
+                    </Grid>
 
-            <StackPanel Margin="10,0,0,0" VerticalAlignment="Bottom" Width="680">
-                <TextBlock Text="{DynamicResource MonthlyOverview}" Foreground="{DynamicResource SubTextBrush}" FontSize="14"
-                           Margin="0,20,0,0" />
+                    <Border Height="1" Background="{DynamicResource SettingPanelSpliteLineBrush}" Opacity="0.5" />
 
-                <Border
-                    Background="{DynamicResource SettingPanelBgBrush}"
-                    CornerRadius="{StaticResource RadiusMedium}"
-                    Padding="20,20"
-                    Margin="0,10,0,0">
+                    <StackPanel Margin="20,16,20,20">
+                        <DatePickerBar:DatePickerBar
+                            ShowType="Month"
+                            HorizontalAlignment="Left"
+                            SelectedDate="{Binding Date,Mode=TwoWay}" />
 
-                    <StackPanel>
-                        <Grid>
-                            <DatePickerBar:DatePickerBar
-                                ShowType="Month"
-                                HorizontalAlignment="Left"
-                                SelectedDate="{Binding Date,Mode=TwoWay}" />
+                        <Grid Margin="0,16,0,0" ColumnDefinitions="Auto,*">
+                            <Charts:MonthChart Grid.Column="0" Data="{Binding Data}" HorizontalAlignment="Left" />
 
-                            <btn:Button ToolTip.Tip="{DynamicResource ClearAppTheMonth}"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Top" Background="{DynamicResource DangerBrush}"
-                                        Foreground="{DynamicResource OnAccentBrush}" Width="120" Margin="0"
-                                        Icon="Delete"
-                                        Command="{Binding ClearSelectMonthDataCommand}"
-                                        Content="{DynamicResource ClearTheMonth}" />
-
-                        </Grid>
-
-                        <Grid Margin="0,20,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="256" />
-                                <ColumnDefinition Width="9*" />
-                            </Grid.ColumnDefinitions>
-
-                            <Charts:MonthChart Data="{Binding Data}" HorizontalAlignment="Left" />
-
-                            <StackPanel Grid.Column="1">
-                                <Border Padding="15" CornerRadius="{StaticResource RadiusMedium}" BorderThickness="0">
+                            <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                                <Border Padding="14,12" CornerRadius="{StaticResource RadiusSmall}">
                                     <Border.Background>
-                                        <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".08" />
+                                        <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".10" />
                                     </Border.Background>
-                                    <Border.BorderBrush>
-                                        <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".5" />
-                                    </Border.BorderBrush>
-                                    <Grid>
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="auto" />
-                                                <RowDefinition Height="auto" />
-                                            </Grid.RowDefinitions>
-                                            <TextBlock FontSize="14">
-                                                <Run Text="{DynamicResource AccumulatedUsageDuringTheMonth}"
-                                                     Foreground="{DynamicResource SubTextBrush}" />
-                                                <Run Foreground="{DynamicResource DefaultTextBrush}"
-                                                     FontSize="16"
-                                                     Text="{Binding Total}" />
-                                            </TextBlock>
-                                            <TextBlock Grid.Row="1" Margin="0,5,0,0" FontSize="14">
-                                                <Run Text="{Binding LongDay}" />
-                                            </TextBlock>
-                                        </Grid>
-                                        <base:Icon IconType="DateTimeMirrored" HorizontalAlignment="Right"
-                                                   VerticalAlignment="Bottom" FontSize="30"
-                                                   Foreground="{DynamicResource ThemeBrush}" Opacity=".5" />
-                                    </Grid>
-                                </Border>
-                                <Border Margin="0,10,0,0" Padding="15" CornerRadius="{StaticResource RadiusMedium}"
-                                        BorderThickness="0">
-                                    <Border.Background>
-                                        <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".08" />
-                                    </Border.Background>
-                                    <Border.BorderBrush>
-                                        <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".5" />
-                                    </Border.BorderBrush>
-                                    <Grid>
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="auto" />
-                                                <RowDefinition Height="auto" />
-                                            </Grid.RowDefinitions>
-                                            <TextBlock Foreground="{DynamicResource SubTextBrush}"
-                                                       Text="{DynamicResource ProportionDurationInTheMonth}"
-                                                       FontSize="14" />
-
-                                            <TextBlock Foreground="{DynamicResource DefaultTextBrush}"
-                                                       Grid.Row="1" Margin="0,10,0,0" FontSize="24">
-                                                <Run Text="{Binding Ratio}" />
-                                            </TextBlock>
-                                        </Grid>
-                                        <base:Icon IconType="ReportDocument"
-                                                   HorizontalAlignment="Right"
-                                                   VerticalAlignment="Bottom" FontSize="30"
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{DynamicResource AccumulatedUsageDuringTheMonth}"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SubTextBrush}" />
+                                            <TextBlock Margin="0,4,0,0" FontSize="20" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource DefaultTextBrush}"
+                                                       Text="{Binding Total}" />
+                                            <TextBlock Margin="0,3,0,0" FontSize="11"
+                                                       Foreground="{DynamicResource SubTextBrush}"
+                                                       Text="{Binding LongDay}" />
+                                        </StackPanel>
+                                        <base:Icon Grid.Column="1"
+                                                   IconType="DateTimeMirrored"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="28"
                                                    Foreground="{DynamicResource ThemeBrush}"
-                                                   Opacity=".5" />
+                                                   Opacity=".55" />
                                     </Grid>
                                 </Border>
 
+                                <Border Margin="0,10,0,0" Padding="14,12" CornerRadius="{StaticResource RadiusSmall}">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".10" />
+                                    </Border.Background>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{DynamicResource ProportionDurationInTheMonth}"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SubTextBrush}" />
+                                            <TextBlock Margin="0,4,0,0" FontSize="20" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource DefaultTextBrush}"
+                                                       Text="{Binding Ratio}" />
+                                        </StackPanel>
+                                        <base:Icon Grid.Column="1"
+                                                   IconType="ReportDocument"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="28"
+                                                   Foreground="{DynamicResource ThemeBrush}"
+                                                   Opacity=".55" />
+                                    </Grid>
+                                </Border>
                             </StackPanel>
                         </Grid>
                     </StackPanel>
-                </Border>
-            </StackPanel>
-        </WrapPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
 
     </StackPanel>
 </UserControl>

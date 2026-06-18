@@ -107,6 +107,13 @@
             <SolidColorBrush x:Key="BaseListItemBgBrush" Color="{StaticResource BaseListItemBgColor}" />
             <Color x:Key="BaseListItemHoverBgColor">#424248</Color>
 
+            <!--列表项交互-->
+            <SolidColorBrush x:Key="ListItemHoverBrush" Color="{DynamicResource ThemeColor}" Opacity="0.10" />
+            <SolidColorBrush x:Key="ListItemPressedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.22" />
+            <SolidColorBrush x:Key="ListItemSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.16" />
+            <SolidColorBrush x:Key="ListItemSelectedHoverBrush" Color="{DynamicResource ThemeColor}" Opacity="0.24" />
+            <SolidColorBrush x:Key="ListItemAccentBrush" Color="{DynamicResource ThemeColor}" Opacity="0.85" />
+
             <!--日期选择控件-->
             <Color x:Key="DatePickerItemBgColor">#484850</Color>
             <SolidColorBrush x:Key="DatePickerItemBgBrush" Color="{StaticResource DatePickerItemBgColor}" />
@@ -363,6 +370,13 @@
             <Color x:Key="BaseListItemBgColor">#f3f3f3</Color>
             <SolidColorBrush x:Key="BaseListItemBgBrush" Color="{StaticResource BaseListItemBgColor}" />
             <Color x:Key="BaseListItemHoverBgColor">#eaeaea</Color>
+
+            <!--列表项交互-->
+            <SolidColorBrush x:Key="ListItemHoverBrush" Color="{DynamicResource ThemeColor}" Opacity="0.06" />
+            <SolidColorBrush x:Key="ListItemPressedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.16" />
+            <SolidColorBrush x:Key="ListItemSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.10" />
+            <SolidColorBrush x:Key="ListItemSelectedHoverBrush" Color="{DynamicResource ThemeColor}" Opacity="0.16" />
+            <SolidColorBrush x:Key="ListItemAccentBrush" Color="{DynamicResource ThemeColor}" Opacity="0.90" />
 
             <!--日期选择控件-->
             <Color x:Key="DatePickerItemBgColor">#F9F9F9</Color>
