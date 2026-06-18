@@ -64,28 +64,6 @@
                                 <RectangleGeometry Rect="0,0,150,150" />
                             </Border.Clip>
                             <Grid>
-                                <!-- 背景微渐变层 -->
-                                <Border CornerRadius="18" IsHitTestVisible="False">
-                                    <Border.Background>
-                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                            <GradientStop Offset="0" Color="#0fffffff" />
-                                            <GradientStop Offset="0.55" Color="#06ffffff" />
-                                            <GradientStop Offset="1" Color="#03ffffff" />
-                                        </LinearGradientBrush>
-                                    </Border.Background>
-                                </Border>
-
-                                <!-- 顶部高光条 -->
-                                <Border Height="1.5" VerticalAlignment="Top" Margin="14,0,14,0" IsHitTestVisible="False" CornerRadius="0.75">
-                                    <Border.Background>
-                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                                            <GradientStop Offset="0" Color="#00ffffff" />
-                                            <GradientStop Offset="0.5" Color="#55ffffff" />
-                                            <GradientStop Offset="1" Color="#00ffffff" />
-                                        </LinearGradientBrush>
-                                    </Border.Background>
-                                </Border>
-
                                 <base:Img x:Name="IconObj" Width="32" Height="32" HorizontalAlignment="Center"
                                                  DecodeWidth="64"
                                                  URL="{Binding Data.Icon,RelativeSource={RelativeSource AncestorType={x:Type controls:ChartsItemTypeCard}}}"

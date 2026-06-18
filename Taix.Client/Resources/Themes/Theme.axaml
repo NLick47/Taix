@@ -92,7 +92,7 @@
             <SolidColorBrush x:Key="SettingPanelSpliteLineBrush" Color="{StaticResource SettingPanelSpliteLineColor}" />
 
             <!--白色背景文字颜色-->
-            <Color x:Key="WhiteBgTextColor">#B8B8C0</Color>
+            <Color x:Key="WhiteBgTextColor">#C8C8D0</Color>
             <SolidColorBrush x:Key="WhiteBgTextBrush" Color="{StaticResource WhiteBgTextColor}" />
 
             <!--默认基础文字颜色-->
@@ -148,13 +148,13 @@
             <SolidColorBrush x:Key="CategoryCardHoverBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.50" />
 
             <!--Chart 卡片玻璃效果-->
-            <SolidColorBrush x:Key="ChartCardGlassBgBrush" Color="#ffffff" Opacity="0.05" />
+            <SolidColorBrush x:Key="ChartCardGlassBgBrush" Color="#ffffff" Opacity="0.04" />
             <SolidColorBrush x:Key="ChartCardGlassBorderBrush" Color="#ffffff" Opacity="0.10" />
-            <SolidColorBrush x:Key="ChartCardHoverGlassBgBrush" Color="#ffffff" Opacity="0.08" />
+            <SolidColorBrush x:Key="ChartCardHoverGlassBgBrush" Color="#ffffff" Opacity="0.07" />
             <SolidColorBrush x:Key="ChartCardHoverBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.45" />
 
             <!--Chart 卡片药丸标签-->
-            <SolidColorBrush x:Key="ChartCardPillBgBrush" Color="{DynamicResource ThemeColor}" Opacity="0.28" />
+            <SolidColorBrush x:Key="ChartCardPillBgBrush" Color="{DynamicResource ThemeColor}" Opacity="0.20" />
             <SolidColorBrush x:Key="ChartCardPillTextBrush" Color="#ffffff" />
 
             <!--输入框-->
