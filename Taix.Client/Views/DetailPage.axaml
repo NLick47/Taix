@@ -46,7 +46,7 @@
                 <Border Width="48" Height="48" CornerRadius="14" Margin="0,0,15,0"
                         Background="{DynamicResource ControlBackgroundBrush}">
                     <base:Img URL="{Binding App.IconFile}" Width="28" Height="28"
-                              DecodeWidth="64"
+                              DecodeWidth="28"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Center" />
                 </Border>

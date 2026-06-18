@@ -39,7 +39,7 @@
                     </Grid.ColumnDefinitions>
 
                     <base:Img URL="{Binding WebSite.IconFile}"
-                              DecodeWidth="64"
+                              DecodeWidth="25"
                               Width="25" Height="25"
                               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20,0" />
 
@@ -231,7 +231,7 @@
                                                 <ColumnDefinition Width="auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <base:Img Width="16" Height="16" DecodeWidth="64" URL="{Binding Url.IconFile}" />
+                                            <base:Img Width="16" Height="16" DecodeWidth="16" URL="{Binding Url.IconFile}" />
 
                                             <Grid Margin="10,0,0,0" Grid.Column="1">
                                                 <StackPanel>

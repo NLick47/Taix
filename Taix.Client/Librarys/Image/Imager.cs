@@ -159,9 +159,13 @@ public class Imager
 
     private static string? TryResolveFullPath(string filePath)
     {
-        var fullPath = Path.IsPathRooted(filePath)
-            ? filePath
-            : Path.Combine(FileHelper.GetRootDirectory(), filePath);
+        var normalizedPath = filePath
+            .Replace('\\', Path.DirectorySeparatorChar)
+            .Replace('/', Path.DirectorySeparatorChar);
+
+        var fullPath = Path.IsPathRooted(normalizedPath)
+            ? normalizedPath
+            : Path.Combine(FileHelper.GetRootDirectory(), normalizedPath);
 
         return File.Exists(fullPath) ? fullPath : null;
     }

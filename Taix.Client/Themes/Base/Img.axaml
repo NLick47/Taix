@@ -14,12 +14,12 @@
             <ControlTemplate>
                 <Border Width="{TemplateBinding Width}"
                         Height="{TemplateBinding Height}"
-                        CornerRadius="{TemplateBinding Radius}">
-                    <Border.Background>
-                        <ImageBrush Stretch="Fill"
-
-                                    Source="{Binding Resource,RelativeSource={RelativeSource TemplatedParent}}" />
-                    </Border.Background>
+                        CornerRadius="{TemplateBinding Radius}"
+                        ClipToBounds="True">
+                    <Image Stretch="Fill"
+                           Width="{TemplateBinding Width}"
+                           Height="{TemplateBinding Height}"
+                           Source="{Binding Resource,RelativeSource={RelativeSource TemplatedParent}}" />
                 </Border>
             </ControlTemplate>
         </Setter>

@@ -25,7 +25,7 @@
                                 IsVisible="{Binding $parent[select:TabOption].IsShowIcon}">
                             <base:Img
                                 URL="{Binding $parent[select:TabOption].Value.Img}"
-                                DecodeWidth="64"
+                                DecodeWidth="14"
                                 Width="14"
                                 Height="14"
                                 VerticalAlignment="Center" />

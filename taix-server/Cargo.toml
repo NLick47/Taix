@@ -20,6 +20,7 @@ dirs = "5"
 attohttpc = { version = "0.28", default-features = false, features = ["tls-native"] }
 resvg = { version = "0.47", default-features = false }
 regex = "1"
+url = "2"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

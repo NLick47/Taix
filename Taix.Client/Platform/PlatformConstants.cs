@@ -5,7 +5,7 @@ public static class PlatformConstants
 #if MACOS
     public const double IconFontSize = 18;
     public const double ListChartIconSize = 27;
-    public const double SmallListIconSize = 27;
+    public const double SmallListIconSize = 22;
     public const double InputBoxIconSize = 18;
     public const double CardChartIconSize = 40;
 #else

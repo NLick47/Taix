@@ -221,11 +221,28 @@ impl WebDataService {
 
         tx.commit().await?;
 
-        if let (Some(icon_url), Some(dir)) = (current_req.icon_url.clone(), favicons_dir) {
+        // 尝试保存图标
+        if let Some(dir) = favicons_dir {
+            let icon_url = current_req.icon_url.clone();
+            let url_str = current_req.url.clone();
             let pool = pool.clone();
             let dir = dir.to_path_buf();
             tokio::spawn(async move {
-                let _ = save_icon(&icon_url, &dir, result_site_id, result_url_id, &pool).await;
+                // 如果有图标URL，直接下载
+                if let Some(ref icon_url) = icon_url {
+                    if !icon_url.is_empty() && (icon_url.starts_with("http://") || icon_url.starts_with("https://")) {
+                        let _ = save_icon(icon_url, &dir, result_site_id, result_url_id, &pool).await;
+                        return;
+                    }
+                }
+                // 否则尝试从域名获取默认favicon
+                if let Ok(url) = url::Url::parse(&url_str) {
+                    if let Some(domain) = url.host_str() {
+                        let scheme = url.scheme();
+                        let default_icon_url = format!("{}://{}/favicon.ico", scheme, domain);
+                        let _ = save_icon(&default_icon_url, &dir, result_site_id, result_url_id, &pool).await;
+                    }
+                }
             });
         }
 
@@ -1251,7 +1268,7 @@ async fn save_icon(icon_url: &str, favicons_dir: &Path, site_id: i64, url_id: i6
         .unwrap_or("ico");
 
     let mut filename = format!("site_{}.{}", site_id, ext);
-    let mut relative_path = format!("WebFavicons\\{}", filename);
+    let mut relative_path = format!("WebFavicons/{}", filename);
     let mut filepath = favicons_dir.join(&filename);
 
     tokio::fs::create_dir_all(favicons_dir).await?;
@@ -1283,7 +1300,7 @@ async fn save_icon(icon_url: &str, favicons_dir: &Path, site_id: i64, url_id: i6
         match tokio::task::spawn_blocking(move || convert_svg_to_png(&bytes)).await {
             Ok(Ok(png_bytes)) => {
                 filename = format!("site_{}.png", site_id);
-                relative_path = format!("WebFavicons\\{}", filename);
+                relative_path = format!("WebFavicons/{}", filename);
                 filepath = favicons_dir.join(&filename);
                 png_bytes
             }

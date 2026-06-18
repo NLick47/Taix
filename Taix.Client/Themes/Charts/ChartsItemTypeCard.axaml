@@ -65,7 +65,7 @@
                             </Border.Clip>
                             <Grid>
                                 <base:Img x:Name="IconObj" Width="32" Height="32" HorizontalAlignment="Center"
-                                                 DecodeWidth="64"
+                                                 DecodeWidth="32"
                                                  URL="{Binding Data.Icon,RelativeSource={RelativeSource AncestorType={x:Type controls:ChartsItemTypeCard}}}"
                                                  VerticalAlignment="Center" />
 

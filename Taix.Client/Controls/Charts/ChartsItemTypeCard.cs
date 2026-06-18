@@ -110,7 +110,7 @@ public class ChartsItemTypeCard : TemplatedControl
         // 应用图标大小
         IconObj.Width = IconSize;
         IconObj.Height = IconSize;
-        IconObj.DecodeWidth = (int)(IconSize * 2);
+        IconObj.DecodeWidth = (int)IconSize;
 
         if (!IsAddEvent)
         {

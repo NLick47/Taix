@@ -124,7 +124,7 @@
                                                     <base:Img URL="{Binding Icon}"
                                                               Width="30"
                                                               Height="30"
-                                                              DecodeWidth="64"
+                                                              DecodeWidth="30"
                                                               HorizontalAlignment="Center"
                                                               VerticalAlignment="Center" />
                                                 </Border>

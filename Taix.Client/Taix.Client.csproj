@@ -107,7 +107,10 @@
 
     <!-- 源代码生成器项目引用 -->
     <ItemGroup>
-        <ProjectReference Include="..\Taix.PageState.Generator\Taix.PageState.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\Taix.PageState.Generator\Taix.PageState.Generator.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false"
+                          SkipAotCompileCheck="true" />
     </ItemGroup>
 
 </Project>

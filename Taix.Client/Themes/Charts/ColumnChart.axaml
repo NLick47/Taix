@@ -173,7 +173,7 @@
                                                        Fill="{Binding Color,Converter={StaticResource HextoColorConverter}}" />
                                             <base:View Condition="not empty" Value="{Binding Icon}">
                                                 <base:Img Margin="5,0,0,0" Width="16" Height="16"
-                                                          DecodeWidth="64" URL="{Binding Icon}" />
+                                                          DecodeWidth="16" URL="{Binding Icon}" />
                                             </base:View>
                                             <TextBlock Margin="5,0,0,0"
                                                        Foreground="{DynamicResource DefaultTextBrush}"

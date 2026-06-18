@@ -2,9 +2,11 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Taix.Client.Librarys.Image;
 using Taix.Client.Logging;
 
@@ -94,6 +96,15 @@ public class Img : TemplatedControl
         Resource = Imager.GetDefaultBitmap();
     }
 
+    private double GetDpiScale()
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null) return 2.0;
+
+        var renderScaling = topLevel.RenderScaling;
+        return renderScaling > 0 ? renderScaling : 2.0;
+    }
+
     private void ReloadFromUrl()
     {
         var path = URL;
@@ -109,8 +120,9 @@ public class Img : TemplatedControl
             return;
         }
 
-        var decodeWidth = DecodeWidth;
-        var decodeHeight = DecodeHeight;
+        var dpiScale = GetDpiScale();
+        var decodeWidth = DecodeWidth > 0 ? (int)(DecodeWidth * dpiScale) : 0;
+        var decodeHeight = DecodeHeight > 0 ? (int)(DecodeHeight * dpiScale) : 0;
 
         if (Imager.TryGetFromCache(path, out var cached, decodeWidth, decodeHeight))
         {

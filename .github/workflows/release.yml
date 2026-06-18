@@ -69,7 +69,7 @@ jobs:
       - name: Build and Publish .NET Client
         run: |
           Write-Host "Publishing with AOT enabled"
-          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
+          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false -p:AssemblyTitle=Taix -p:Product=Taix Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
 
       - name: Copy Rust binaries
         shell: pwsh
@@ -179,6 +179,7 @@ jobs:
           dotnet publish Taix.Client/Taix.Client.csproj \
             -c Release -r osx-arm64 --self-contained true \
             -p:PublishAot=true -p:StripSymbols=true \
+            -p:AssemblyTitle=Taix -p:Product=Taix \
             -o ./output/macos
 
       - name: Strip debug symbols from Swift binary

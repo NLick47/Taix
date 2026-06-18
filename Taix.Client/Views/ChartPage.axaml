@@ -214,7 +214,7 @@
                                             <Border CornerRadius="6" VerticalAlignment="Bottom">
                                                 <base:View Value="{Binding Top1App}" Condition="not null">
                                                     <base:Img URL="{Binding Top1App.IconFile}"
-                                                              DecodeWidth="64"
+                                                              DecodeWidth="16"
                                                               VerticalAlignment="Center"
                                                               HorizontalAlignment="Center"
                                                               Width="16" Height="16" />

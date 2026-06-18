@@ -6,6 +6,11 @@ VERSION="${1:-1.0.10}"
 OUTPUT_DIR="${2:-.}"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
+# 确保 OUTPUT_DIR 是绝对路径
+if [[ "$OUTPUT_DIR" != /* ]]; then
+    OUTPUT_DIR="$ROOT_DIR/$OUTPUT_DIR"
+fi
+
 APP_NAME="Taix"
 TEMP_DIR="/tmp/taix-dmg-build-$VERSION"
 
@@ -47,6 +52,8 @@ echo "[4/5] Publishing Taix.Client (AOT)..."
 cd "$ROOT_DIR/Taix.Client"
 dotnet publish -c Release -r osx-arm64 --self-contained true \
   -p:PublishAot=true -p:StripSymbols=true \
+  -p:AssemblyTitle="$APP_NAME" \
+  -p:Product="$APP_NAME" \
   -o "$TEMP_DIR/client-publish" 2>&1 | tail -5
 
 echo "[5/5] Creating .app bundle..."
@@ -225,6 +232,7 @@ mv "$TOOLS_DIR" "$DMG_TEMP/"
 ln -s /Applications "$DMG_TEMP/Applications"
 
 DMG_OUTPUT="$OUTPUT_DIR/$DMG_NAME"
+mkdir -p "$OUTPUT_DIR"
 hdiutil create -volname "$APP_NAME" -srcfolder "$DMG_TEMP" -ov -format UDZO "$DMG_OUTPUT"
 
 DMG_SIZE=$(ls -lh "$DMG_OUTPUT" | awk '{print $5}')
