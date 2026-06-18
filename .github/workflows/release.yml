@@ -197,8 +197,58 @@ jobs:
           name: Taix-${{ env.APP_VERSION }}-macos-arm64
           path: taix-installer/Taix-${{ env.APP_VERSION }}-macos-arm64.dmg
 
+  build-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: taix-browser-extension/package-lock.json
+
+      - name: Read extension version
+        id: ext-version
+        working-directory: taix-browser-extension
+        run: |
+          EXT_VERSION=$(node -p "require('./package.json').version")
+          echo "EXT_VERSION=$EXT_VERSION" >> $GITHUB_ENV
+          echo "Extension version: $EXT_VERSION"
+
+      - name: Install dependencies
+        working-directory: taix-browser-extension
+        run: npm ci
+
+      - name: Sync manifest version
+        working-directory: taix-browser-extension
+        run: |
+          for f in manifests/manifest.*.json; do
+            node -e "const fs=require('fs');const p='$f';const j=JSON.parse(fs.readFileSync(p,'utf8'));j.version=process.env.EXT_VERSION;fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n');"
+          done
+
+      - name: Build Chrome extension
+        working-directory: taix-browser-extension
+        run: npm run build:chrome
+
+      - name: Create Chrome extension ZIP
+        run: |
+          ZIP_NAME="Taix-Web-Sentry-${{ env.EXT_VERSION }}-chrome.zip"
+          cd taix-browser-extension/dist/chrome
+          zip -r "../../../$ZIP_NAME" .
+          cd -
+          ls -lh "$ZIP_NAME"
+
+      - name: Upload Chrome extension ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Taix-Web-Sentry-${{ env.EXT_VERSION }}-chrome
+          path: Taix-Web-Sentry-${{ env.EXT_VERSION }}-chrome.zip
+
   release:
-    needs: [build-windows, build-macos]
+    needs: [build-windows, build-macos, build-extension]
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') }}
     steps:
@@ -209,6 +259,11 @@ jobs:
         run: |
           VERSION="${{ github.ref_name }}"
           echo "APP_VERSION=${VERSION#v}" >> $GITHUB_ENV
+
+      - name: Read extension version
+        run: |
+          EXT_VERSION=$(node -p "require('./taix-browser-extension/package.json').version")
+          echo "EXT_VERSION=$EXT_VERSION" >> $GITHUB_ENV
 
       - name: Download Windows Installer
         uses: actions/download-artifact@v4
@@ -226,6 +281,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Taix-${{ env.APP_VERSION }}-macos-arm64
+          path: ./artifacts
+
+      - name: Download Chrome extension ZIP
+        uses: actions/download-artifact@v4
+        with:
+          name: Taix-Web-Sentry-${{ env.EXT_VERSION }}-chrome
           path: ./artifacts
 
       - name: Read release notes

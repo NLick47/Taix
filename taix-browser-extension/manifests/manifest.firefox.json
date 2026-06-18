@@ -3,6 +3,12 @@
   "name": "Taix Web Sentry",
   "version": "2.0.0",
   "description": "Taix 网页浏览时长统计插件",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "taix-web-sentry@taix.app",
+      "strict_min_version": "115.0"
+    }
+  },
   "permissions": [
     "tabs",
     "activeTab",
@@ -26,9 +32,9 @@
   ],
   "action": {
     "default_icon": {
-      "16": "icons/socket-inactive.svg",
-      "48": "icons/socket-inactive.svg",
-      "128": "icons/socket-inactive.svg"
+      "16": "icons/socket-inactive.png",
+      "48": "icons/socket-inactive.png",
+      "128": "icons/socket-inactive.png"
     }
   },
   "icons": {

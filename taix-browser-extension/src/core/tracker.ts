@@ -421,10 +421,8 @@ export class Tracker {
   }
 
   private setIcon(state: 'active' | 'inactive'): void {
-    const path = state === 'active'
-      ? { 16: 'icons/socket-active.svg', 48: 'icons/socket-active.svg', 128: 'icons/socket-active.svg' }
-      : { 16: 'icons/socket-inactive.svg', 48: 'icons/socket-inactive.svg', 128: 'icons/socket-inactive.svg' };
-    this.browser.action.setIcon({ path }).catch(() => {});
+    const file = state === 'active' ? 'icons/socket-active.png' : 'icons/socket-inactive.png';
+    this.browser.action.setIcon({ path: { 16: file, 48: file, 128: file } }).catch(() => {});
   }
 
   private isInternalPage(url: string, title?: string): boolean {

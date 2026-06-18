@@ -17,8 +17,7 @@
     "https://*/*"
   ],
   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
+    "scripts": ["background.js"]
   },
   "content_scripts": [
     {
@@ -29,9 +28,9 @@
   ],
   "action": {
     "default_icon": {
-      "16": "icons/socket-inactive.svg",
-      "48": "icons/socket-inactive.svg",
-      "128": "icons/socket-inactive.svg"
+      "16": "icons/socket-inactive.png",
+      "48": "icons/socket-inactive.png",
+      "128": "icons/socket-inactive.png"
     }
   },
   "icons": {
