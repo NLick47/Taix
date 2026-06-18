@@ -289,7 +289,11 @@ public class Timeline : Control
             || change.Property == VisibleEndHourProperty
             || change.Property == UseCategoryColorProperty)
         {
-            if (change.Property == UsageItemsProperty) FitToData();
+            if (change.Property == UsageItemsProperty)
+            {
+                ResetSelection();
+                FitToData();
+            }
             if ((change.Property == VisibleStartHourProperty
                 || change.Property == VisibleEndHourProperty)
                 && !_suppressFitToRange)

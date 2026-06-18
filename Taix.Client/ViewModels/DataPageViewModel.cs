@@ -40,6 +40,7 @@ public partial class DataPageViewModel : DataPageModel
     private List<AppSessionModel> _daySessions = [];
     private List<ChartsDataModel> _dayAppRawData = [];
     private CancellationTokenSource? _updateFilterCts;
+    private bool _suppressTimelineFilterUpdate;
 
     public DataPageViewModel(
         IData data,
@@ -146,8 +147,16 @@ public partial class DataPageViewModel : DataPageModel
                 : _webSiteContextMenuService.GetContextMenu();
         });
 
-        WhenPropertyChanged(this, x => x.TimelineStartHour, async _ => await DebounceUpdateFilteredDataAsync());
-        WhenPropertyChanged(this, x => x.TimelineEndHour, async _ => await DebounceUpdateFilteredDataAsync());
+        WhenPropertyChanged(this, x => x.TimelineStartHour, async _ =>
+        {
+            if (!_suppressTimelineFilterUpdate)
+                await DebounceUpdateFilteredDataAsync();
+        });
+        WhenPropertyChanged(this, x => x.TimelineEndHour, async _ =>
+        {
+            if (!_suppressTimelineFilterUpdate)
+                await DebounceUpdateFilteredDataAsync();
+        });
 
         SelectedPeriod = PeriodOptions[0];
         SelectedColorMode = ColorModeOptions[0];
@@ -340,19 +349,6 @@ public partial class DataPageViewModel : DataPageModel
         }, ct);
 
         TimelineUsageItems = items;
-
-        if (TimelineStartHour == 0.0 && TimelineEndHour == 24.0)
-        {
-            var active = items.Where(i => !TimelineHelpers.IsIdleItem(i)).ToList();
-            if (active.Count > 0)
-            {
-                var dataStart = active.Min(i => i.Start.TimeOfDay.TotalHours);
-                var dataEnd = active.Max(i => i.End.TimeOfDay.TotalHours);
-                var pad = 0.5;
-                TimelineStartHour = Math.Max(0, Math.Floor((dataStart - pad) * 12) / 12);
-                TimelineEndHour = Math.Min(24, Math.Ceiling((dataEnd + pad) * 12) / 12);
-            }
-        }
     }
 
     private async Task DebounceUpdateFilteredDataAsync()
@@ -375,26 +371,45 @@ public partial class DataPageViewModel : DataPageModel
 
     private async Task UpdateFilteredDataAsync()
     {
-        // 仅应用模式支持按时间轴范围过滤
         if (ShowType.Id != 0)
         {
-            MultiTrackItems = [];
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                MultiTrackItems = [];
+                MultiTrackTotalDurationText = "";
+            });
             return;
         }
 
         if (_daySessions.Count == 0)
         {
-            Data = _dayAppRawData;
-            MultiTrackItems = [];
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                Data = _dayAppRawData;
+                MultiTrackItems = [];
+                MultiTrackTotalDurationText = "";
+            });
             return;
         }
 
+        var timelineItems = TimelineUsageItems;
+        if (timelineItems == null || timelineItems.Count == 0)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                Data = _dayAppRawData;
+                MultiTrackItems = [];
+                MultiTrackTotalDurationText = "";
+            });
+            return;
+        }
+
+        var referenceDate = timelineItems.FirstOrDefault()?.Start.Date ?? DayDate.Date;
         var startHour = Math.Min(TimelineStartHour, TimelineEndHour);
         var endHour = Math.Max(TimelineStartHour, TimelineEndHour);
-        var startTime = DayDate.Date.AddHours(startHour);
-        var endTime = DayDate.Date.AddHours(endHour);
+        var startTime = referenceDate.AddHours(startHour);
+        var endTime = referenceDate.AddHours(endHour);
 
-        var timelineItems = TimelineUsageItems;
         var daySessions = _daySessions;
 
         var result = await Task.Run(() =>
@@ -438,7 +453,6 @@ public partial class DataPageViewModel : DataPageModel
     private static (List<MultiTrackTimelineItem> Items, string TotalDurationText) BuildMultiTrackItemsInternal(
         IEnumerable<TimelineUsageItem>? timelineItems, DateTime startTime, DateTime endTime)
     {
-        // 非空闲 session 计入总时长
         var allItems = timelineItems?
             .Where(i => !TimelineHelpers.IsIdleItem(i) && i.End > startTime && i.Start < endTime)
             .ToList();
@@ -448,12 +462,18 @@ public partial class DataPageViewModel : DataPageModel
             return ([], "");
         }
 
-        double totalDurationSec = allItems.Sum(i => i.Duration);
-        var totalDurationText = FormatDuration(totalDurationSec);
-
-        // 动态阈值：<1h 显示 >10s，>=1h 显示 >60s
         var rangeSec = (endTime - startTime).TotalSeconds;
         var thresholdSec = rangeSec < 3600 ? 10 : 60;
+
+        double totalDurationSec = 0;
+        foreach (var item in allItems)
+        {
+            var segStart = item.Start < startTime ? startTime : item.Start;
+            var segEnd = item.End > endTime ? endTime : item.End;
+            totalDurationSec += (segEnd - segStart).TotalSeconds;
+        }
+        var totalDurationText = FormatDuration(totalDurationSec);
+
         var longItems = allItems.Where(i => i.Duration > thresholdSec).ToList();
 
         var result = longItems
@@ -461,15 +481,20 @@ public partial class DataPageViewModel : DataPageModel
             .Select(g =>
             {
                 var first = g.First();
-                var segments = g.Select(seg => new MultiTrackSegment
+                var segments = g.Select(seg =>
                 {
-                    Start = seg.Start < startTime ? startTime : seg.Start,
-                    End = seg.End > endTime ? endTime : seg.End,
-                    Color = seg.Color,
-                    CategoryColor = seg.CategoryColor
+                    var segStart = seg.Start < startTime ? startTime : seg.Start;
+                    var segEnd = seg.End > endTime ? endTime : seg.End;
+                    return new MultiTrackSegment
+                    {
+                        Start = segStart,
+                        End = segEnd,
+                        Color = seg.Color,
+                        CategoryColor = seg.CategoryColor
+                    };
                 }).ToList();
 
-                var appDurationSec = g.Sum(seg => seg.Duration);
+                var appDurationSec = segments.Sum(s => (s.End - s.Start).TotalSeconds);
                 var appModel = (first.Data as AppSessionModel)?.AppModel;
                 var percentage = totalDurationSec > 0 ? appDurationSec / totalDurationSec * 100 : 0;
 
