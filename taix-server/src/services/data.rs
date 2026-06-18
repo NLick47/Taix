@@ -1102,14 +1102,32 @@ impl DataService {
         let sessions: Vec<AppSessionModel> = sqlx::query_as(
             r#"
             SELECT s.* FROM AppSessions s
-            WHERE s.StartTime >= ? AND s.StartTime < ?
+            WHERE s.StartTime >= ? AND s.StartTime < ? AND s.EndTime > ?
             ORDER BY s.StartTime ASC
             "#,
         )
-        .bind(utc_start)
+        .bind(utc_start - chrono::Duration::days(1))
         .bind(utc_end)
+        .bind(utc_start)
         .fetch_all(pool)
         .await?;
+
+        let sessions: Vec<AppSessionModel> = sessions
+            .into_iter()
+            .map(|mut s| {
+                if s.start_time < utc_start {
+                    s.start_time = utc_start;
+                }
+                if s.end_time > utc_end {
+                    s.end_time = utc_end;
+                }
+                s.duration = s
+                    .end_time
+                    .signed_duration_since(s.start_time)
+                    .num_seconds();
+                s
+            })
+            .collect();
 
         let apps: Vec<AppModelRow> = sqlx::query_as("SELECT * FROM AppModels")
             .fetch_all(pool)
@@ -1191,7 +1209,10 @@ fn merge_and_filter_sessions(sessions: Vec<AppSessionModel>) -> Vec<AppSessionMo
                 if next.end_time > current.end_time {
                     current.end_time = next.end_time;
                 }
-                current.duration += next.duration;
+                current.duration = current
+                    .end_time
+                    .signed_duration_since(current.start_time)
+                    .num_seconds();
             } else {
                 merged.push(current);
                 current = next;

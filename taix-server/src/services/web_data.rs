@@ -13,7 +13,7 @@ use crate::models::request::{AddUrlBrowseTimeRequest, UpdateSitesCategoryRequest
 use crate::models::log::{ColumnDataModel, InfrastructureDataModel};
 use crate::models::web::{WebBrowseLogModel, WebSiteCategoryModel, WebSiteModel, WebUrlModel};
 use crate::services::config::ConfigService;
-use crate::utils::{last_day_of_month, parse_timezone, tz_date_to_utc_range, tz_naive_to_utc};
+use crate::utils::{parse_timezone, tz_naive_to_utc};
 
 static WEB_CATEGORY_CACHE: std::sync::OnceLock<RwLock<Option<Vec<WebSiteCategoryModel>>>> = std::sync::OnceLock::new();
 static URL_MATCH_CACHE: std::sync::OnceLock<RwLock<Option<Vec<CompiledUrlMatchRule>>>> = std::sync::OnceLock::new();
@@ -53,6 +53,8 @@ async fn get_excluded_site_ids(
     pool: &SqlitePool,
     config_service: &ConfigService,
 ) -> Vec<i64> {
+    const MAX_EXCLUDED_IDS: usize = 900;
+
     let sites: Vec<(i64, String)> = sqlx::query_as("SELECT ID, Domain FROM WebSiteModels")
         .fetch_all(pool)
         .await
@@ -63,10 +65,19 @@ async fn get_excluded_site_ids(
     let domains: Vec<&str> = sites.iter().map(|(_, d)| d.as_str()).collect();
     let excluded_domains = config_service.get_excluded_domains(&domains).await;
     let excluded_set: std::collections::HashSet<String> = excluded_domains.into_iter().collect();
-    sites.into_iter()
+    let mut ids: Vec<i64> = sites.into_iter()
         .filter(|(_, d)| excluded_set.contains(d))
         .map(|(id, _)| id)
-        .collect()
+        .collect();
+    if ids.len() > MAX_EXCLUDED_IDS {
+        tracing::warn!(
+            "排除站点 ID 数量 {} 超过 SQLite 参数上限保护值 {}，已截断；超出的站点将不会被过滤",
+            ids.len(),
+            MAX_EXCLUDED_IDS
+        );
+        ids.truncate(MAX_EXCLUDED_IDS);
+    }
+    ids
 }
 
 pub struct WebDataService;
@@ -628,34 +639,46 @@ impl WebDataService {
 
         let mut result = Vec::new();
         if start_date.date() == end_date.date() {
-            for i in 0..24 {
-                let value = data.iter()
-                    .filter(|(t, _)| {
-                        let h = t.with_timezone(&tz).hour();
-                        h as i64 == i
-                    })
-                    .map(|(_, v)| *v)
-                    .sum();
-                result.push(InfrastructureDataModel { id: i, name: i.to_string(), value });
+            let mut buckets = [0i64; 24];
+            for (t, v) in &data {
+                let h = t.with_timezone(&tz).hour() as usize;
+                if h < 24 {
+                    buckets[h] += *v;
+                }
+            }
+            for (i, value) in buckets.iter().enumerate() {
+                result.push(InfrastructureDataModel { id: i as i64, name: i.to_string(), value: *value });
             }
         } else {
             let days = (end_date.date() - start_date.date()).num_days() + 1;
             if days <= constants::DAY_VIEW_THRESHOLD {
-                for i in 0..days {
-                    let date = start_date.date() + Duration::days(i);
-                    let (day_start, day_end) = tz_date_to_utc_range(date, &tz);
-                    let value: i64 = data.iter().filter(|(t, _)| *t >= day_start && *t <= day_end).map(|(_, v)| v).sum();
-                    result.push(InfrastructureDataModel { id: i, name: i.to_string(), value });
+                let days_usize = days as usize;
+                let mut buckets = vec![0i64; days_usize];
+                let start_local_date = start_date.date();
+                for (t, v) in &data {
+                    let local_date = t.with_timezone(&tz).date_naive();
+                    let offset = (local_date - start_local_date).num_days();
+                    if offset >= 0 && (offset as usize) < days_usize {
+                        buckets[offset as usize] += *v;
+                    }
+                }
+                for (i, value) in buckets.iter().enumerate() {
+                    result.push(InfrastructureDataModel { id: i as i64, name: i.to_string(), value: *value });
                 }
             } else {
-                for i in 0..12 {
-                    let month_start = NaiveDateTime::new(NaiveDate::from_ymd_opt(start_date.year(), (i+1) as u32, 1).unwrap(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
-                    let month_end_day = last_day_of_month(start_date.year(), (i+1) as u32);
-                    let month_end = NaiveDateTime::new(NaiveDate::from_ymd_opt(start_date.year(), (i+1) as u32, month_end_day).unwrap(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-                    let utc_month_start = tz_naive_to_utc(month_start, &tz);
-                    let utc_month_end = tz_naive_to_utc(month_end, &tz);
-                    let value: i64 = data.iter().filter(|(t, _)| *t >= utc_month_start && *t <= utc_month_end).map(|(_, v)| v).sum();
-                    result.push(InfrastructureDataModel { id: i as i64, name: i.to_string(), value });
+                let mut buckets = [0i64; 12];
+                let target_year = start_date.year();
+                for (t, v) in &data {
+                    let local = t.with_timezone(&tz);
+                    if local.year() == target_year {
+                        let m = (local.month() - 1) as usize;
+                        if m < 12 {
+                            buckets[m] += *v;
+                        }
+                    }
+                }
+                for (i, value) in buckets.iter().enumerate() {
+                    result.push(InfrastructureDataModel { id: i as i64, name: i.to_string(), value: *value });
                 }
             }
         }
@@ -733,17 +756,11 @@ impl WebDataService {
                     result_map.insert(cid, item);
                 }
             }
-            for i in 0..24 {
-                for (cat_id, _) in &categories {
-                    let duration: i64 = data.iter()
-                        .filter(|(cid, t, _)| {
-                            let h = t.with_timezone(&tz).hour();
-                            *cid == *cat_id && h as i64 == i
-                        })
-                        .map(|(_, _, d)| d)
-                        .sum();
-                    if let Some(item) = result_map.get_mut(cat_id) {
-                        item.values[i as usize] = duration as f64;
+            for (cid, t, d) in &data {
+                if let Some(item) = result_map.get_mut(cid) {
+                    let h = t.with_timezone(&tz).hour() as usize;
+                    if h < 24 {
+                        item.values[h] += *d as f64;
                     }
                 }
             }
@@ -758,13 +775,13 @@ impl WebDataService {
                         result_map.insert(cid, item);
                     }
                 }
-                for i in 0..days {
-                    let date = start + Duration::days(i);
-                    let (day_start, day_end) = tz_date_to_utc_range(date, &tz);
-                    for (cat_id, _) in &categories {
-                        let duration: i64 = data.iter().filter(|(cid, t, _)| *cid == *cat_id && *t >= day_start && *t <= day_end).map(|(_, _, d)| d).sum();
-                        if let Some(item) = result_map.get_mut(cat_id) {
-                            item.values[i as usize] = duration as f64;
+                let days_usize = days as usize;
+                for (cid, t, d) in &data {
+                    if let Some(item) = result_map.get_mut(cid) {
+                        let local_date = t.with_timezone(&tz).date_naive();
+                        let offset = (local_date - start).num_days();
+                        if offset >= 0 && (offset as usize) < days_usize {
+                            item.values[offset as usize] += *d as f64;
                         }
                     }
                 }
@@ -777,16 +794,15 @@ impl WebDataService {
                         result_map.insert(cid, item);
                     }
                 }
-                for i in 0..12 {
-                    let month_start = NaiveDateTime::new(NaiveDate::from_ymd_opt(start.year(), (i+1) as u32, 1).unwrap(), chrono::NaiveTime::from_hms_opt(0,0,0).unwrap());
-                    let month_end_day = last_day_of_month(start.year(), (i+1) as u32);
-                    let month_end = NaiveDateTime::new(NaiveDate::from_ymd_opt(start.year(), (i+1) as u32, month_end_day).unwrap(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
-                    let utc_month_start = tz_naive_to_utc(month_start, &tz);
-                    let utc_month_end = tz_naive_to_utc(month_end, &tz);
-                    for (cat_id, _) in &categories {
-                        let duration: i64 = data.iter().filter(|(cid, t, _)| *cid == *cat_id && *t >= utc_month_start && *t <= utc_month_end).map(|(_, _, d)| d).sum();
-                        if let Some(item) = result_map.get_mut(cat_id) {
-                            item.values[i as usize] = duration as f64;
+                let target_year = start.year();
+                for (cid, t, d) in &data {
+                    if let Some(item) = result_map.get_mut(cid) {
+                        let local = t.with_timezone(&tz);
+                        if local.year() == target_year {
+                            let m = (local.month() - 1) as usize;
+                            if m < 12 {
+                                item.values[m] += *d as f64;
+                            }
                         }
                     }
                 }

@@ -125,6 +125,8 @@ impl ConfigService {
 
     /// 从数据库查询 AppModels 并计算应排除的应用 ID 集合（带 5 秒缓存）
     pub async fn get_excluded_app_id_set(&self, pool: &SqlitePool) -> HashSet<i64> {
+        const MAX_EXCLUDED_IDS: usize = 900;
+
         {
             let cache = self.excluded_apps_cache.read().await;
             if let Some((set, timestamp)) = cache.as_ref() {
@@ -146,7 +148,15 @@ impl ConfigService {
             .map(|(id, name, file)| (*id, name.as_deref().unwrap_or(""), file.as_deref()))
             .collect();
 
-        let excluded_ids = self.get_excluded_app_ids(&app_refs).await;
+        let mut excluded_ids = self.get_excluded_app_ids(&app_refs).await;
+        if excluded_ids.len() > MAX_EXCLUDED_IDS {
+            warn!(
+                "排除应用 ID 数量 {} 超过 SQLite 参数上限保护值 {}，已截断；超出的应用将不会被过滤",
+                excluded_ids.len(),
+                MAX_EXCLUDED_IDS
+            );
+            excluded_ids.truncate(MAX_EXCLUDED_IDS);
+        }
         let set: HashSet<i64> = excluded_ids.into_iter().collect();
 
         let mut cache = self.excluded_apps_cache.write().await;
