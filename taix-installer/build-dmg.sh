@@ -4,6 +4,7 @@ set -e
 
 VERSION="${1:-1.0.10}"
 OUTPUT_DIR="${2:-.}"
+TARGET_DIR="${3:-}"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 # 确保 OUTPUT_DIR 是绝对路径
@@ -22,8 +23,6 @@ if [ -n "$TARGET_DIR" ]; then
 else
     DMG_NAME="Taix-$VERSION-macos.dmg"
 fi
-
-TARGET_DIR="${3:-}"
 
 echo "ROOT_DIR:   $ROOT_DIR"
 echo "VERSION:    $VERSION"

@@ -92,14 +92,6 @@ jobs:
             Write-Host "Removed PDB: $($_.FullName)"
           }
 
-      - name: Download UPX
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-win64.zip" -OutFile "upx.zip"
-          Expand-Archive -Path "upx.zip" -DestinationPath "." -Force
-          New-Item -ItemType Directory -Path "taix-installer/tools" -Force | Out-Null
-          Move-Item -Path "upx-4.2.4-win64/upx.exe" -Destination "taix-installer/tools/upx.exe" -Force
-
       - name: Build Installer
         shell: bash
         run: |
