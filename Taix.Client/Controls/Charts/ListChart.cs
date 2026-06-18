@@ -68,6 +68,7 @@ public class ListChart : TemplatedControl
     private EmptyData _emptyDataView;
     private DispatcherTimer _searchTimer;
     private bool _templateApplied;
+    private bool _handlersAttached;
 
     public event EventHandler? OnItemClick;
 
@@ -125,19 +126,19 @@ public class ListChart : TemplatedControl
     {
         base.OnApplyTemplate(e);
 
+        DetachHandlers();
+
         _listView = e.NameScope.Get<ListBox>("ListView");
         _searchBox = e.NameScope.Get<TextBox>("SearchBox");
         _countText = e.NameScope.Get<Run>("CountText");
         _emptyDataView = e.NameScope.Find<EmptyData>("EmptyDataView");
 
-        _listView.PointerReleased += OnListViewPointerReleased;
-        _listView.SelectionChanged += OnListSelectionChanged;
-        _searchBox!.TextChanged += OnSearchTextChanged;
-
         UpdateScrollability();
         RefreshDisplayData();
 
         _templateApplied = true;
+
+        if (IsLoaded) AttachHandlers();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -151,11 +152,40 @@ public class ListChart : TemplatedControl
             UpdateScrollability();
     }
 
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        AttachHandlers();
+    }
+
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
 
         StopSearchTimer();
+        DetachHandlers();
+    }
+
+    private void AttachHandlers()
+    {
+        if (_handlersAttached) return;
+        if (_listView == null && _searchBox == null) return;
+
+        if (_listView != null)
+        {
+            _listView.PointerReleased += OnListViewPointerReleased;
+            _listView.SelectionChanged += OnListSelectionChanged;
+        }
+
+        if (_searchBox != null)
+            _searchBox.TextChanged += OnSearchTextChanged;
+
+        _handlersAttached = true;
+    }
+
+    private void DetachHandlers()
+    {
+        if (!_handlersAttached) return;
 
         if (_listView != null)
         {
@@ -165,6 +195,8 @@ public class ListChart : TemplatedControl
 
         if (_searchBox != null)
             _searchBox.TextChanged -= OnSearchTextChanged;
+
+        _handlersAttached = false;
     }
 
 
