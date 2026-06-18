@@ -10,7 +10,7 @@
 
         <Styles>
             <Style Selector="controls|BaseListItem[IsSelected=True]">
-                <Setter Property="Foreground" Value="White" />
+                <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
                 <Style Selector="^ /template/ Border#BoxBorder">
                     <Setter Property="Background" Value="{DynamicResource ThemeBrush}" />
                 </Style>
@@ -19,7 +19,7 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid Background="{TemplateBinding Background}">
-                    <Border BorderBrush="#f3f3f3" BorderThickness="0" Width="{TemplateBinding Width}"
+                    <Border BorderThickness="0" Width="{TemplateBinding Width}"
                             Height="{TemplateBinding Height}" x:Name="BoxBorder" CornerRadius="4"
                             Background="{DynamicResource BaseListItemBgBrush}">
                         <Grid VerticalAlignment="Center" Margin="10,0">
@@ -29,21 +29,6 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{TemplateBinding Text}" />
                         </Grid>
-                    </Border>
-
-                    <Border x:Name="Shadow"
-                            BorderBrush="{Binding ElementName=BoxBorder,Path=BorderBrush}"
-                            BorderThickness="{Binding ElementName=BoxBorder,Path=BorderThickness}"
-                            ZIndex="-1" Width="{Binding ElementName=BoxBorder,Path=Bounds.Width}"
-                            Height="{Binding ElementName=BoxBorder,Path=Bounds.Height}"
-                            CornerRadius="{Binding ElementName=BoxBorder,Path=CornerRadius}"
-                            Background="{Binding ElementName=BoxBorder,Path=Background}">
-                        <Border.Effect>
-                            <DropShadowDirectionEffect BlurRadius="5"
-                                                       ShadowDepth="2"
-                                                       Direction="315" Color="#ccc"
-                                                       Opacity=".05" />
-                        </Border.Effect>
                     </Border>
                 </Grid>
             </ControlTemplate>

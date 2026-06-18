@@ -27,7 +27,7 @@
                 </Style>
 
                 <Style Selector="^ /template/ TextBlock#Text">
-                    <Setter Property="Foreground" Value="#ccc" />
+                    <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}" />
                 </Style>
             </Style>
         </Styles>

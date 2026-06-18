@@ -32,7 +32,7 @@
                     <Grid>
                         <TextBlock Text="{DynamicResource SelectiveApplication}" VerticalAlignment="Center"
                                    Margin="10,0,0,0" />
-                        <Button:IconButton Foreground="#ccc" Icon="ChromeClose"
+                        <Button:IconButton Foreground="{DynamicResource SubTextBrush}" Icon="ChromeClose"
                                            HorizontalAlignment="Right" FontSize="12" Margin="0,0,10,0"
                                            Command="{Binding ChooseCloseCommand}" />
                     </Grid>
@@ -125,7 +125,7 @@
 
             <StackPanel Orientation="Horizontal" Margin="0,5,0,20">
                 <TextBlock FontSize="18" Text="{DynamicResource AppClassification}" />
-                <base:Icon IconType="ChevronRightMed" Margin="10,0" FontSize="12" Foreground="#ccc" />
+                <base:Icon IconType="ChevronRightMed" Margin="10,0" FontSize="12" Foreground="{DynamicResource SubTextBrush}" />
                 <TextBlock FontSize="18" Text="{Binding Category.Data.Name}" />
 
             </StackPanel>
@@ -204,18 +204,6 @@
                         <Setter Property="Template">
                             <ControlTemplate>
                                 <Grid>
-                                    <Border BorderBrush="{Binding ElementName=Border,Path=BorderBrush}"
-                                            BorderThickness="{Binding ElementName=Border,Path=BorderThickness}"
-                                            Background="{Binding ElementName=Border,Path=Background}"
-                                            Margin="{Binding ElementName=Border,Path=Margin}"
-                                            CornerRadius="{Binding ElementName=Border,Path=CornerRadius}">
-                                        <Border.Effect>
-                                            <DropShadowDirectionEffect Color="#f3f3f3" BlurRadius="1"
-                                                                       Direction="300" ShadowDepth="4"
-                                                                       Opacity="0.15" />
-                                        </Border.Effect>
-                                    </Border>
-
                                     <Border BorderBrush="Transparent" BorderThickness="2"
                                             x:Name="Border" Background="{DynamicResource StandardBackgroundBrush2}"
                                             Margin="0,0,0,10" Padding="15" CornerRadius="{StaticResource RadiusMedium}">

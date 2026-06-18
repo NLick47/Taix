@@ -20,7 +20,7 @@
 
                 <Style Selector="^ /template/ Border#Mark">
                     <Setter Property="RenderTransform" Value="translateX(28px)" />
-                    <Setter Property="Background" Value="White" />
+                    <Setter Property="Background" Value="{DynamicResource OnAccentBrush}" />
                 </Style>
 
                 <Style Selector="^ /template/ Border#Button">
@@ -58,13 +58,13 @@
                             <ColumnDefinition Width="auto" />
                         </Grid.ColumnDefinitions>
 
-                        <Border x:Name="Button" Grid.Column="1" Background="#f5f5f5" CornerRadius="10" Padding="5">
+                        <Border x:Name="Button" Grid.Column="1" Background="{DynamicResource BaseListItemBgBrush}" CornerRadius="10" Padding="5">
                             <Border.Transitions>
                                 <Transitions>
                                     <BrushTransition Property="Background" Duration="0.2" />
                                 </Transitions>
                             </Border.Transitions>
-                            <Border x:Name="Mark" Width="12" Height="12" CornerRadius="15" Background="#5d5d5d"
+                            <Border x:Name="Mark" Width="12" Height="12" CornerRadius="15" Background="{DynamicResource SubTextBrush}"
                                     VerticalAlignment="Center" HorizontalAlignment="Left">
                                 <Border.RenderTransform>
                                     <TranslateTransform X="0" />

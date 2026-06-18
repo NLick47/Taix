@@ -275,7 +275,7 @@
                                         <RowDefinition Height="auto" />
                                         <RowDefinition Height="*" />
                                     </Grid.RowDefinitions>
-                                    <TextBlock Text="{DynamicResource Classification}" Foreground="#5c5c5c" FontSize="15"
+                                    <TextBlock Text="{DynamicResource Classification}" Foreground="{DynamicResource SubTextBrush}" FontSize="15"
                                                Margin="0,20,0,5" />
                                     <Border Margin="0,5,0,0" Grid.Row="1"
                                             Background="{DynamicResource SettingPanelBgBrush}"
@@ -290,7 +290,7 @@
                                         <RowDefinition Height="auto" />
                                         <RowDefinition Height="*" />
                                     </Grid.RowDefinitions>
-                                    <TextBlock Text="{DynamicResource MostFrequent}" Foreground="#5c5c5c" FontSize="15"
+                                    <TextBlock Text="{DynamicResource MostFrequent}" Foreground="{DynamicResource SubTextBrush}" FontSize="15"
                                                Margin="0,20,0,5" />
                                     <Border Grid.Row="1" Margin="0,5,0,0"
                                             Background="{DynamicResource SettingPanelBgBrush}"

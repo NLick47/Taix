@@ -63,30 +63,30 @@
 
                 <Style Selector="^[ToastType=Success]">
                     <Style Selector="^ /template/ Border#ToastBorder">
-                        <Setter Property="Background" Value="#24bf5f" />
+                        <Setter Property="Background" Value="{DynamicResource SuccessBrush}" />
                     </Style>
 
                     <Style Selector="^ /template/ base|Icon#ToastIcon">
-                        <Setter Property="Foreground" Value="#fff" />
+                        <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
                     </Style>
 
                     <Style Selector="^ /template/ TextBlock#ToastText">
-                        <Setter Property="Foreground" Value="#fff" />
+                        <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
                     </Style>
                 </Style>
 
 
                 <Style Selector="^[ToastType=Error]">
                     <Style Selector="^ /template/ Border#ToastBorder">
-                        <Setter Property="Background" Value="#f54f4e" />
+                        <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
                     </Style>
 
                     <Style Selector="^ /template/ base|Icon#ToastIcon">
-                        <Setter Property="Foreground" Value="#fff" />
+                        <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
                     </Style>
 
                     <Style Selector="^ /template/ TextBlock#ToastText">
-                        <Setter Property="Foreground" Value="#fff" />
+                        <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
                     </Style>
                 </Style>
             </Style>

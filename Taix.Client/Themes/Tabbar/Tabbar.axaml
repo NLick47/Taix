@@ -22,7 +22,7 @@
                     </Transitions>
                 </Setter>
 
-                <Setter Property="Foreground" Value="#CCCCCC" />
+                <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
             </Style>
         </Styles>
         <Setter Property="MinWidth" Value="44" />

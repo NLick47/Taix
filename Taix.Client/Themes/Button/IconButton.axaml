@@ -11,7 +11,7 @@
         <Setter Property="Background" Value="Transparent" />
         <Styles>
             <Style Selector="controls|IconButton:pointerover /template/ Border">
-                <Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}" />
+                <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
             </Style>
         </Styles>
         <Setter Property="Template">

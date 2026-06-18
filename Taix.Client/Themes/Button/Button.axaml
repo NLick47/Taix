@@ -21,49 +21,31 @@
                     </Transitions>
                 </Setter>
 
-                <Setter Property="Background" Value="{DynamicResource HoverBackgroundColor}" />
+                <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
             </Style>
         </Styles>
         <Setter Property="Background" Value="{DynamicResource StandardBackgroundBrush}" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Grid>
-                    <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" Width="{TemplateBinding Width}"
-                            Height="{TemplateBinding Height}"
-                            x:Name="BoxBorder"
-                            CornerRadius="4"
-                            Background="{TemplateBinding Background}">
-                        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="auto" />
-                                <ColumnDefinition Width="auto" />
-                            </Grid.ColumnDefinitions>
-                            <base:Icon x:Name="Icon" Margin="0,0,5,0" IconType="{TemplateBinding Icon}"
-                                       VerticalAlignment="Center" FontSize="12" />
-                            <ContentPresenter
-                                Content="{TemplateBinding Content}"
-                                Grid.Column="1"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center" />
-                        </Grid>
-                    </Border>
-
-                    <Border x:Name="Shadow"
-                            Background="{Binding ElementName=BoxBorder,Path=Background}"
-                            BorderBrush="{Binding ElementName=BoxBorder,Path=BorderBrush}"
-                            BorderThickness="{Binding ElementName=BoxBorder,Path=BorderThickness}"
-                            ZIndex="-1" Width="{Binding ElementName=BoxBorder,Path=Bounds.Width}"
-                            Height="{Binding ElementName=BoxBorder,Path=Bounds.Height}"
-                            CornerRadius="{Binding ElementName=BoxBorder,Path=CornerRadius}">
-                        <Border.Effect>
-                            <DropShadowDirectionEffect BlurRadius="5" ShadowDepth="2"
-                                                       Direction="315"
-                                                       Color="Gray"
-                                                       Opacity=".1" />
-                        </Border.Effect>
-                    </Border>
-                </Grid>
-
+                <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" Width="{TemplateBinding Width}"
+                        Height="{TemplateBinding Height}"
+                        x:Name="BoxBorder"
+                        CornerRadius="4"
+                        Background="{TemplateBinding Background}">
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto" />
+                            <ColumnDefinition Width="auto" />
+                        </Grid.ColumnDefinitions>
+                        <base:Icon x:Name="Icon" Margin="0,0,5,0" IconType="{TemplateBinding Icon}"
+                                   VerticalAlignment="Center" FontSize="12" />
+                        <ContentPresenter
+                            Content="{TemplateBinding Content}"
+                            Grid.Column="1"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
             </ControlTemplate>
         </Setter>
     </ControlTheme>

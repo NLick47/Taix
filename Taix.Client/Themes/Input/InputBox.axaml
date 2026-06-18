@@ -7,8 +7,8 @@
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Height" Value="37" />
         <Setter Property="IconMargin" Value="5,0,0,0" />
-        <Setter Property="IconColor" Value="#333" />
-        <Setter Property="TitleColor" Value="#333" />
+        <Setter Property="IconColor" Value="{DynamicResource SubTextBrush}" />
+        <Setter Property="TitleColor" Value="{DynamicResource SubTextBrush}" />
         <Setter Property="IconSize" Value="16" />
         <Setter Property="TitleSize" Value="12" />
         <Setter Property="TitleMargin" Value="0,0,0,5" />
@@ -132,15 +132,15 @@
                                     Placement="Bottom"
                                     PlacementTarget="{Binding ElementName=BoxBorder}">
                                     <Border
-                                        Background="Red"
+                                        Background="{DynamicResource DangerBrush}"
                                         CornerRadius="12"
                                         Padding="10"
                                         Margin="10">
                                         <Border.Effect>
                                             <DropShadowEffect
                                                 BlurRadius="10"
-                                                Color="Gray"
-                                                Opacity="0.2" />
+                                                Color="{DynamicResource DangerColor}"
+                                                Opacity="0.25" />
                                         </Border.Effect>
 
                                         <Grid>
@@ -149,13 +149,13 @@
                                                 Width="15"
                                                 Height="15"
                                                 Data="M 0 15 L 7.5 7.5 L 15 15"
-                                                Fill="Red"
-                                                Stroke="Red"
+                                                Fill="{DynamicResource DangerBrush}"
+                                                Stroke="{DynamicResource DangerBrush}"
                                                 StrokeThickness="1"
                                                 VerticalAlignment="Top"
                                                 HorizontalAlignment="Left"
                                                 Margin="0,-25,0,0" />
-                                            <TextBlock Foreground="White" Text="{TemplateBinding Error}" />
+                                            <TextBlock Foreground="{DynamicResource OnAccentBrush}" Text="{TemplateBinding Error}" />
                                         </Grid>
 
                                     </Border>
@@ -170,11 +170,11 @@
         </Setter>
 
         <Style Selector="^:pointerover /template/ Border#BoxBorder">
-            <Setter Property="Background" Value="{DynamicResource InputBoxHoverColor}" />
+            <Setter Property="Background" Value="{DynamicResource InputBoxHoverBrush}" />
         </Style>
         <Style Selector="^:focus /template/ Border#BoxBorder">
-            <Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
-            <Setter Property="Background" Value="{DynamicResource InputBoxFocusedBgColor}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush}" />
+            <Setter Property="Background" Value="{DynamicResource InputBoxFocusedBgBrush}" />
         </Style>
 
         <Style Selector="^[Icon=None] /template/ base|Icon#Icon">
@@ -182,14 +182,11 @@
         </Style>
 
         <Style Selector="^:focus /template/ base|Icon#Icon">
-            <Setter Property="Foreground" Value="{DynamicResource ThemeColor}" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeBrush}" />
         </Style>
 
         <Style Selector="^:error /template/ Border#BoxBorder">
             <Setter Property="BorderBrush" Value="{DynamicResource ErrorBrush}" />
-        </Style>
-        <Style Selector="^ /template/ Border#BoxBorder">
-            <Setter Property="Background" Value="red" />
         </Style>
 
         <Style Selector="^ /template/ DockPanel">
