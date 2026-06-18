@@ -338,11 +338,16 @@
     <system:String x:Key="CustomColor">自定义颜色</system:String>
     <system:String x:Key="SelectIcon">选择图标</system:String>
     <system:String x:Key="CustomPicture">自定义图片</system:String>
+    <system:String x:Key="Custom">自定义</system:String>
 
 
     <system:String x:Key="Open">打开</system:String>
     <system:String x:Key="Exit">退出</system:String>
 
+    <system:String x:Key="DataRetentionDays">时间轴数据保存天数</system:String>
+    <system:String x:Key="DataRetentionDaysDesc">超期的时间轴数据将自动清理，不影响汇总统计</system:String>
+    <system:String x:Key="Days">天</system:String>
+    <system:String x:Key="DaysFormat">{0}天</system:String>
     <system:String x:Key="TimelineHint">滚轮缩放 · Shift+拖拽选择 · 双击重置</system:String>
     <system:String x:Key="TimelineTotalDuration">轨道总时长</system:String>
     <system:String x:Key="TimelineAppColor">应用</system:String>

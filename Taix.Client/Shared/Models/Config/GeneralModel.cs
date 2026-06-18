@@ -71,6 +71,8 @@ public class GeneralModel
     [Config(Name = "Save Window Size", Description = "Restore the last window size when restarting", Group = "Interface", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
     public bool IsSaveWindowSize { get; set; } = false;
 
+    public int DataRetentionDays { get; set; } = 31;
+
     public double WindowWidth { get; set; }
 
     public double WindowHeight { get; set; }

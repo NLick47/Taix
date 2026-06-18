@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reactive;
 using System.Reactive.Disposables;
@@ -6,6 +7,7 @@ using System.Reactive.Disposables.Fluent;
 using System.Threading.Tasks;
 using ReactiveUI;
 using Taix.Client.Controls.Base;
+using Taix.Client.Controls.Select;
 using Taix.Client.Controls.Window;
 using Taix.Client.Logging;
 using Taix.Client.Models;
@@ -86,6 +88,91 @@ public class SettingPageViewModel : SettingPageModel
         }
     }
 
+    private int _dataRetentionDays;
+    public int DataRetentionDays
+    {
+        get => _dataRetentionDays;
+        set
+        {
+            if (_dataRetentionDays != value)
+            {
+                _dataRetentionDays = value;
+                _config.General.DataRetentionDays = value;
+                _ = _appConfig.SaveAsync();
+                OnPropertyChanged();
+                UpdateSelectedRetentionOption();
+            }
+        }
+    }
+
+    private List<SelectItemModel> _retentionOptions;
+    public List<SelectItemModel> RetentionOptions
+    {
+        get => _retentionOptions;
+        set
+        {
+            _retentionOptions = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private SelectItemModel _selectedRetentionOption;
+    public SelectItemModel SelectedRetentionOption
+    {
+        get => _selectedRetentionOption;
+        set
+        {
+            if (_selectedRetentionOption != value && value != null)
+            {
+                _selectedRetentionOption = value;
+                OnPropertyChanged();
+
+                if (value.Data is int days)
+                {
+                    if (days == -1)
+                    {
+                        // 自定义选项，显示输入框
+                        IsCustomRetention = true;
+                    }
+                    else
+                    {
+                        IsCustomRetention = false;
+                        DataRetentionDays = days;
+                    }
+                }
+            }
+        }
+    }
+
+    private bool _isCustomRetention;
+    public bool IsCustomRetention
+    {
+        get => _isCustomRetention;
+        set
+        {
+            _isCustomRetention = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private void UpdateSelectedRetentionOption()
+    {
+        if (_retentionOptions == null) return;
+
+        var matchingOption = _retentionOptions.Find(o => o.Data is int d && d == _dataRetentionDays);
+        if (matchingOption != null)
+        {
+            IsCustomRetention = false;
+            _selectedRetentionOption = matchingOption;
+        }
+        else
+        {
+            IsCustomRetention = true;
+            _selectedRetentionOption = _retentionOptions.Find(o => o.Data is int d && d == -1);
+        }
+        OnPropertyChanged(nameof(SelectedRetentionOption));
+    }
+
     public ReactiveCommand<object, Unit> OpenURL { get; }
     public ReactiveCommand<Unit, Unit> CheckUpdate { get; }
     public ReactiveCommand<object, Unit> DelDataCommand { get; }
@@ -112,11 +199,19 @@ public class SettingPageViewModel : SettingPageModel
         DelDataEndMonthDate = DateTime.Now;
         ExportDataStartMonthDate = DateTime.Now;
         ExportDataEndMonthDate = DateTime.Now;
+        _dataRetentionDays = _config.General.DataRetentionDays;
 
-        WhenPropertyChanged(this, x => x.TabbarSelectedIndex, async _ =>
-        {
-            await Task.CompletedTask;
-        });
+        var days = ResourceStrings.Days;
+        RetentionOptions =
+        [
+            new SelectItemModel { Name = $"30{days}", Data = 30 },
+            new SelectItemModel { Name = $"60{days}", Data = 60 },
+            new SelectItemModel { Name = $"90{days}", Data = 90 },
+            new SelectItemModel { Name = $"180{days}", Data = 180 },
+            new SelectItemModel { Name = $"365{days}", Data = 365 },
+            new SelectItemModel { Name = ResourceStrings.Custom, Data = -1 }
+        ];
+        UpdateSelectedRetentionOption();
     }
 
     private async Task OnDelDataAsync(object obj)

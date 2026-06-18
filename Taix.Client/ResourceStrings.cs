@@ -150,6 +150,10 @@ public static class ResourceStrings
     public static string UrlPatternExists => GetStringValue("UrlPatternExists");
     public static string ApplyUrlMatchSuccess => GetStringValue("ApplyUrlMatchSuccess");
 
+    // 数据保留天数
+    public static string Days => GetStringValue("Days");
+    public static string Custom => GetStringValue("Custom");
+
     private static string GetStringValue(string key)
     {
         if (Application.Current == null) return string.Empty;

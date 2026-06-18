@@ -110,7 +110,7 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
         semaphore: Arc::new(tokio::sync::Semaphore::new(constants::MAX_CONCURRENT_PIPE_CLIENTS)),
     });
 
-    let app = create_app(pool.clone(), config_service, web_enabled_tx.clone());
+    let app = create_app(pool.clone(), config_service.clone(), web_enabled_tx.clone());
 
     if let Err(e) = WebDataService::warmup_url_match_cache(&pool).await {
         tracing::warn!("Failed to warmup URL match cache: {}", e);
@@ -129,6 +129,7 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
 
     tokio::spawn(services::app_timer::AppTimerService::run_cleanup_task(
         pool.clone(),
+        config_service.clone(),
     ));
 
     let startup_pool = pool.clone();

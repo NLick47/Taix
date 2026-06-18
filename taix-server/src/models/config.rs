@@ -1,7 +1,7 @@
 use crate::constants;
 use serde::{Deserialize, Serialize};
 
-pub const CURRENT_CONFIG_VERSION: u32 = 2;
+pub const CURRENT_CONFIG_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -36,6 +36,10 @@ impl ConfigModel {
                 return Err("同步地址(SyncUrl)必须以 http:// 或 https:// 开头".to_string());
             }
 
+        if self.general.data_retention_days < 1 || self.general.data_retention_days > 9999 {
+            return Err("数据保存天数必须在 1 到 9999 之间".to_string());
+        }
+
         Ok(())
     }
 
@@ -44,10 +48,8 @@ impl ConfigModel {
             return;
         }
 
-        for process in ["Taix", "Tai"] {
-            if !self.behavior.ignore_process_list.contains(&process.to_string()) {
-                self.behavior.ignore_process_list.push(process.to_string());
-            }
+        if self.version < 3 {
+            self.general.data_retention_days = 31;
         }
 
         self.version = CURRENT_CONFIG_VERSION;
@@ -77,6 +79,8 @@ pub struct GeneralModel {
     pub is_enable_tray: bool,
     #[serde(rename = "SyncUrl")]
     pub sync_url: String,
+    #[serde(rename = "DataRetentionDays")]
+    pub data_retention_days: i32,
 }
 
 impl Default for GeneralModel {
@@ -92,6 +96,7 @@ impl Default for GeneralModel {
             is_web_enabled: false,
             is_enable_tray: true,
             sync_url: String::new(),
+            data_retention_days: 31,
         }
     }
 }
@@ -115,7 +120,7 @@ impl Default for BehaviorModel {
     fn default() -> Self {
         Self {
             is_sleep_watch: true,
-            ignore_process_list: Vec::new(),
+            ignore_process_list: vec!["Taix".to_string(), "Tai".to_string()],
             ignore_url_list: Vec::new(),
             is_white_list: false,
             process_white_list: Vec::new(),

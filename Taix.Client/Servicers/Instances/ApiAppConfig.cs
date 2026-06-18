@@ -299,6 +299,8 @@ public class ApiAppConfig : IAppConfig
             changes.Add("General.IsEnableTray");
         if (old.General.IsSaveWindowSize != next.General.IsSaveWindowSize)
             changes.Add("General.IsSaveWindowSize");
+        if (old.General.DataRetentionDays != next.General.DataRetentionDays)
+            changes.Add("General.DataRetentionDays");
 
         return changes;
     }

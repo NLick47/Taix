@@ -1,6 +1,7 @@
 use chrono::{DateTime, Datelike, Duration, TimeZone, Timelike, Utc};
 use sqlx::SqlitePool;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration as StdDuration;
 use tracing::{debug, info};
 
@@ -8,10 +9,10 @@ use crate::constants;
 use crate::error::AppError;
 use crate::models::request::UpdateAppDurationRequest;
 use crate::services::category::CategoryService;
-
+use crate::services::config::ConfigService;
 
 const DEDUP_RETENTION_DAYS: i64 = 7;
-const SESSION_RETENTION_DAYS: i64 = 36;
+const DEFAULT_SESSION_RETENTION_DAYS: i64 = 31;
 
 const CLEANUP_INTERVAL: StdDuration = StdDuration::from_secs(constants::SECS_PER_DAY as u64);
 
@@ -253,14 +254,19 @@ impl AppTimerService {
         Ok(result.rows_affected())
     }
 
-    async fn cleanup_expired_sessions(pool: &SqlitePool) -> Result<u64, sqlx::Error> {
+    async fn cleanup_expired_sessions(pool: &SqlitePool, config_service: &ConfigService) -> Result<u64, sqlx::Error> {
+        let days = match config_service.get_or_load().await {
+            Ok(config) => config.general.data_retention_days.max(1) as i64,
+            Err(_) => DEFAULT_SESSION_RETENTION_DAYS,
+        };
+
         let result = sqlx::query(
             r#"
             DELETE FROM AppSessions
             WHERE StartTime < datetime('now', '-' || ? || ' days')
             "#,
         )
-        .bind(SESSION_RETENTION_DAYS)
+        .bind(days)
         .execute(pool)
         .await?;
 
@@ -268,7 +274,7 @@ impl AppTimerService {
     }
 
     // 首次 tick 立即触发，启动时先清一轮；Skip 避免休眠后连续补偿。
-    pub async fn run_cleanup_task(pool: SqlitePool) {
+    pub async fn run_cleanup_task(pool: SqlitePool, config_service: Arc<ConfigService>) {
         let mut interval = tokio::time::interval(CLEANUP_INTERVAL);
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
@@ -287,7 +293,7 @@ impl AppTimerService {
                 }
             }
 
-            match Self::cleanup_expired_sessions(&pool).await {
+            match Self::cleanup_expired_sessions(&pool, &config_service).await {
                 Ok(0) => {
                     tracing::debug!("no expired AppSessions records to clean up");
                 }
