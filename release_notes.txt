@@ -67,10 +67,9 @@
 
 DMG 内含 `Taix.app`（客户端）和 `TaixTools/`（后台服务 + 安装脚本），两者都需要部署
 
-1. 将 `Taix.app` 拖入 `Applications`
-2. 将 `TaixTools` 拖入 `/Applications`
-3. 终端运行 `/Applications/TaixTools/install-launchagent.sh` 注册后台服务
-4. 启动 `Taix.app`
+1. 将 `Taix.app` 和 `TaixTools` 一起拖入 `Applications`
+2. 终端运行 `/Applications/TaixTools/install-launchagent.sh` 注册后台服务
+3. 启动 `Taix.app`
 
 卸载运行 `/Applications/TaixTools/uninstall.sh`，Gatekeeper 拦截可在「系统设置 → 隐私与安全性」放行
 
