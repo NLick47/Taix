@@ -96,6 +96,12 @@ export const SafariBrowser: BrowserAPI = {
     },
   },
 
+  idle: {
+    setDetectionInterval: undefined,
+    queryState: undefined,
+    onStateChanged: null,
+  },
+
   runtime: {
     onSuspend: {
       addListener: (cb) => browser.runtime.onSuspend.addListener(cb),

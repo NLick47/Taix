@@ -93,6 +93,20 @@ export const ChromeBrowser: BrowserAPI = {
     },
   },
 
+  idle: {
+    setDetectionInterval: chrome.idle?.setDetectionInterval
+      ? (s) => chrome.idle.setDetectionInterval(s)
+      : undefined,
+    queryState: chrome.idle?.queryState
+      ? (s) => new Promise((resolve) => chrome.idle.queryState(s, (state) => resolve(state)))
+      : undefined,
+    onStateChanged: chrome.idle?.onStateChanged
+      ? {
+          addListener: (cb) => chrome.idle.onStateChanged.addListener((state) => cb(state as 'active' | 'idle' | 'locked')),
+        }
+      : null,
+  },
+
   runtime: {
     onSuspend: {
       addListener: (cb) => chrome.runtime.onSuspend.addListener(cb),

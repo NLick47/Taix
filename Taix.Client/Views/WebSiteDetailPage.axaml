@@ -26,6 +26,8 @@
         <!--基本信息-->
         <Border
             Background="{DynamicResource SettingPanelBgBrush}"
+            BorderBrush="{DynamicResource SettingPanelBorderBrush}"
+            BorderThickness="1"
             CornerRadius="{StaticResource RadiusMedium}"
             Padding="24,20"
             ContextMenu="{Binding WebSiteContextMenu}">
@@ -103,6 +105,8 @@
 
             <!--统计图表-->
             <Border Background="{DynamicResource SettingPanelBgBrush}"
+                    BorderBrush="{DynamicResource SettingPanelBorderBrush}"
+                    BorderThickness="1"
                     CornerRadius="{StaticResource RadiusMedium}">
                 <StackPanel>
                     <Grid Margin="20,16,20,12" ColumnDefinitions="*,Auto">
@@ -143,6 +147,8 @@
 
             <!--浏览记录-->
             <Border Background="{DynamicResource SettingPanelBgBrush}"
+                    BorderBrush="{DynamicResource SettingPanelBorderBrush}"
+                    BorderThickness="1"
                     CornerRadius="{StaticResource RadiusMedium}">
                 <StackPanel>
                     <Grid Margin="20,16,20,12" ColumnDefinitions="*,Auto">

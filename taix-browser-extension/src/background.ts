@@ -7,5 +7,9 @@ const tracker = new Tracker(browser);
   browser.alarms.onAlarm.addListener((alarm) => {
     tracker.handleAlarm(alarm.name);
   });
-  await tracker.start();
+  try {
+    await tracker.start();
+  } catch (e) {
+    console.error('[Taix] tracker.start() 失败:', e);
+  }
 })();
