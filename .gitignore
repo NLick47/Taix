@@ -22,4 +22,3 @@
 # Browser extension build artifacts
 taix-browser-extension/dist/
 taix-browser-extension/node_modules/
-taix-browser-extension/package-lock.json

@@ -69,7 +69,7 @@ async fn main() {
 async fn run(exe_dir: &Path) -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().collect();
 
-    let data_dir = parse_data_dir(&args, exe_dir);
+    let data_dir = parse_data_dir(&args);
 
     let _single_instance = single_instance::try_acquire("Global\\TaixServerSingleInstance")
         .ok_or_else(|| anyhow::anyhow!("Another instance of taix-server is already running"))?;
@@ -153,7 +153,7 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn parse_data_dir(args: &[String], exe_dir: &std::path::Path) -> PathBuf {
+fn parse_data_dir(args: &[String]) -> PathBuf {
     for i in 0..args.len() {
         if args[i] == "--data-dir" && i + 1 < args.len() {
             return PathBuf::from(&args[i + 1]);
