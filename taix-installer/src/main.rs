@@ -19,7 +19,7 @@ struct Args {
     #[arg(short, long)]
     update: bool,
 
-    #[arg(short, long)]
+    #[arg(short = 'U', long)]
     uninstall: bool,
 
     #[arg(short, long)]

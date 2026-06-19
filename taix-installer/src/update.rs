@@ -60,6 +60,9 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
         }
     }
 
+    // 停掉计划任务看门狗，防止重新注册前的时间窗口内它再次拉起旧版 shell
+    <() as Platform>::stop_scheduled_task(TASK_NAME);
+
     // 备份当前版本
     step += 1;
     cli::show_step(step, total_steps, "备份当前版本...");

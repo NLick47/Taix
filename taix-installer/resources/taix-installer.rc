@@ -1,0 +1,4 @@
+#include <winuser.h>
+
+// 嵌入 UAC 提权清单，使安装器双击运行时以管理员身份启动
+1 24 "taix-installer.exe.manifest"

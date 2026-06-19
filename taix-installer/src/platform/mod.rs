@@ -85,6 +85,10 @@ pub trait Platform {
 
     fn unregister_startup(name: &str) -> anyhow::Result<()>;
 
+    /// 停止计划任务/启动项的看门狗，避免在重新注册期间它再次拉起进程。
+    /// 不删除任务定义（删除由 unregister_startup 负责）。
+    fn stop_scheduled_task(name: &str);
+
     fn stop_process(name: &str) -> anyhow::Result<bool>;
 
     fn start_process(exe_path: &std::path::Path) -> anyhow::Result<()>;

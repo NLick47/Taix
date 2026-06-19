@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity
+    type="win32"
+    name="Taix.Installer"
+    version="1.0.0.0" />
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <!-- 安装需写入 Program Files、注册提权计划任务、添加 Defender 排除，
+             这些操作都要求管理员权限。双击运行时由 UAC 提权，避免子操作静默降级 -->
+        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <!-- 声明支持 Win10/11，避免被当成旧系统降级行为 -->
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}" />
+      <supportedOS Id="{1f676c76-80e1-4239-95bb-83d0f6d0da78}" />
+    </application>
+  </compatibility>
+</assembly>

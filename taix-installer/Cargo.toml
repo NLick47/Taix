@@ -12,6 +12,9 @@ dialoguer = "0.11"
 indicatif = "0.17"
 dirs = "5"
 
+[target.'cfg(windows)'.build-dependencies]
+embed-resource = "3"
+
 [profile.release]
 opt-level = "z"
 lto = true

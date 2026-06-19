@@ -16,38 +16,23 @@ impl Platform for () {
         Ok(())
     }
 
-    fn register_startup(exe_path: &Path, name: &str) -> anyhow::Result<()> {
+    fn register_startup(exe_path: &Path, _name: &str) -> anyhow::Result<()> {
         let exe_str = exe_path.to_str().context("Invalid exe path")?;
 
+        // 委托给 taix-shell install 注册提权计划任务（含看门狗/崩溃自愈等完整能力）。
+        // 不再做 /RL LIMITED 的 fallback：fallback 会静默降级（失去提权、丢掉看门狗），
+        // 制造与主路径能力严重不一致的隐性状态。安装器现已 requireAdministrator 提权运行，
+        // taix-shell install 应能成功；失败则直接报错，让用户感知而非静默降级。
         let shell_output = std::process::Command::new(exe_str)
             .arg("install")
             .output()
             .context("Failed to run taix-shell install")?;
 
         if !shell_output.status.success() {
-            let cmd = format!("\"{}\"", exe_str);
-            let output = std::process::Command::new("schtasks")
-                .args([
-                    "/CREATE",
-                    "/SC",
-                    "ONLOGON",
-                    "/TN",
-                    name,
-                    "/TR",
-                    &cmd,
-                    "/F",
-                    "/RL",
-                    "LIMITED",
-                ])
-                .output()
-                .context("Failed to run schtasks")?;
-
-            if !output.status.success() {
-                bail!(
-                    "Failed to register startup: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                );
-            }
+            bail!(
+                "Failed to register startup (taix-shell install): {}",
+                String::from_utf8_lossy(&shell_output.stderr)
+            );
         }
         Ok(())
     }
@@ -73,6 +58,12 @@ impl Platform for () {
             .output();
 
         Ok(())
+    }
+
+    fn stop_scheduled_task(name: &str) {
+        let _ = std::process::Command::new("schtasks")
+            .args(["/END", "/TN", name])
+            .output();
     }
 
     fn stop_process(name: &str) -> Result<bool> {
