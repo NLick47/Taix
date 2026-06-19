@@ -14,7 +14,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     GetWindowLongPtrW, PeekMessageW, PostQuitMessage, RegisterClassW, RegisterWindowMessageW,
     SetWindowLongPtrW, TranslateMessage, CREATESTRUCTW, CW_USEDEFAULT, GWLP_USERDATA, HICON,
     IMAGE_ICON, LR_DEFAULTSIZE, LR_LOADFROMFILE, LoadImageW, MSG, PM_REMOVE, WM_DESTROY,
-    WM_LBUTTONUP, WM_NCCREATE, WM_USER, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE,
+    WM_LBUTTONDOWN, WM_NCCREATE, WM_USER, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE,
     WS_EX_TOOLWINDOW, WS_EX_TRANSPARENT, WS_OVERLAPPED,
 };
 
@@ -78,9 +78,9 @@ unsafe extern "system" fn tray_wnd_proc(
     // 处理托盘图标回调消息
     if userdata != 0 && msg == WM_TRAYICON {
         let event = lparam.0 as u32;
-        if event == WM_LBUTTONUP {
+        if event == WM_LBUTTONDOWN {
             let data = &*(userdata as *const TrayUserData);
-            let _ = data.cmd_tx.send(TrayCmd::LaunchClient);
+            let _ = data.cmd_tx.try_send(TrayCmd::LaunchClient);
         }
         return LRESULT(0);
     }

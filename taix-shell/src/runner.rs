@@ -12,6 +12,8 @@ pub fn run(_data_dir: Option<PathBuf>) -> anyhow::Result<()> {
     let _single_instance = try_acquire_single_instance(SHELL_MUTEX_NAME)
         .ok_or_else(|| anyhow::anyhow!("another instance of taix-shell is already running"))?;
 
+    crate::client::warm_client_exe_path();
+
     let (cmd_tx, cmd_rx) = std::sync::mpsc::sync_channel::<TrayCmd>(8);
 
     let data_dir = default_data_dir();
@@ -58,6 +60,8 @@ pub fn run(_data_dir: Option<PathBuf>) -> anyhow::Result<()> {
 pub fn run(_data_dir: Option<PathBuf>) -> anyhow::Result<()> {
     let _single_instance = try_acquire_single_instance(SHELL_MUTEX_NAME)
         .ok_or_else(|| anyhow::anyhow!("another instance of taix-shell is already running"))?;
+
+    crate::client::warm_client_exe_path();
 
     let (cmd_tx, cmd_rx) = std::sync::mpsc::sync_channel::<TrayCmd>(8);
 

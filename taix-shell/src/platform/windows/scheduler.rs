@@ -28,7 +28,7 @@ fn build_task_xml(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) 
 
     format!(
         r#"<?xml version="1.0" encoding="UTF-16"?>
-<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+<Task version="1.3" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
     <Description>{} - auto-launch task</Description>
   </RegistrationInfo>
@@ -37,10 +37,19 @@ fn build_task_xml(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) 
       <Enabled>true</Enabled>
       <Delay>PT30S</Delay>
     </LogonTrigger>
+    <TimeTrigger>
+      <Repetition>
+        <Interval>PT5M</Interval>
+        <StopAtDurationEnd>false</StopAtDurationEnd>
+      </Repetition>
+      <StartBoundary>2020-01-01T00:00:00</StartBoundary>
+      <Enabled>true</Enabled>
+    </TimeTrigger>
   </Triggers>
   <Principals>
     <Principal id="Author">
       <RunLevel>HighestAvailable</RunLevel>
+      <LogonType>InteractiveToken</LogonType>
     </Principal>
   </Principals>
   <Settings>
@@ -60,6 +69,8 @@ fn build_task_xml(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) 
     <RunOnlyIfIdle>false</RunOnlyIfIdle>
     <WakeToRun>false</WakeToRun>
     <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <Priority>7</Priority>
+    <UseUnifiedSchedulingEngine>true</UseUnifiedSchedulingEngine>
     <RestartOnFailure>
       <Interval>PT1M</Interval>
       <Count>999</Count>
@@ -96,6 +107,7 @@ pub fn install(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) -> 
     let output = Command::new(SCHTASKS)
         .args(&[
             "/CREATE",
+            "/F",
             "/XML",
             temp_xml.to_str().ok_or("Invalid temp path")?,
             "/TN",
@@ -111,12 +123,6 @@ pub fn install(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) -> 
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let stdout = String::from_utf8_lossy(&output.stdout);
-        if stderr.contains("already exists") || stdout.contains("already exists") {
-            return Err(format!(
-                "Task '{}' already exists. Run 'uninstall' first if you want to reconfigure.",
-                task_name
-            ));
-        }
         Err(format!(
             "schtasks.exe failed for '{}'. stdout: {}, stderr: {}",
             task_name,
@@ -127,6 +133,10 @@ pub fn install(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) -> 
 }
 
 pub fn uninstall(task_name: &str) -> Result<(), String> {
+    let _ = Command::new(SCHTASKS)
+        .args(&["/END", "/TN", task_name])
+        .output();
+
     let output = Command::new(SCHTASKS)
         .args(&["/DELETE", "/F", "/TN", task_name])
         .output()
