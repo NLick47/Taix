@@ -12,6 +12,7 @@ declare const browser: {
   windows: {
     getCurrent: () => Promise<{ id: number; type: string }>;
     get: (windowId: number) => Promise<{ id: number; type: string }>;
+    getLastFocused: () => Promise<{ id: number; type: string; focused: boolean }>;
     onFocusChanged: { addListener: (cb: (windowId: number) => void) => void };
     WINDOW_ID_NONE: number;
   };
@@ -80,6 +81,7 @@ export const FirefoxBrowser: BrowserAPI = {
   windows: {
     getCurrent: () => browser.windows.getCurrent(),
     get: (windowId) => browser.windows.get(windowId),
+    getLastFocused: () => browser.windows.getLastFocused().then((win) => ({ id: win.id, type: win.type, focused: !!win.focused })),
     onFocusChanged: {
       addListener: (cb) => browser.windows.onFocusChanged.addListener(cb),
     },

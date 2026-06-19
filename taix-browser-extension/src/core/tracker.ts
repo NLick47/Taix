@@ -111,6 +111,24 @@ export class Tracker {
         // ignore
       }
     }
+
+    // isWindowFocused / isPageVisible 不持久化，SW 重启后默认 true
+    // 重启那一刻浏览器若在后台，没有焦点变化事件来纠正，doPeriodicSave 会一直累加时长
+    // 用最近焦点窗口的真实 focused 校准，后台时把 startTime 拉回 now，等真实焦点事件再起算
+    try {
+      const win = await this.browser.windows.getLastFocused();
+      if (win) {
+        this.currentWindowId = win.id;
+        this.isWindowFocused = !!win.focused;
+        if (!this.isWindowFocused && this.state.activePage?.url) {
+          this.state.activePage.startTime = Date.now();
+          this.lastSavedTime = 0;
+          this.state.save();
+        }
+      }
+    } catch {
+      // ignore
+    }
   }
 
   private setupIdleListener(): void {

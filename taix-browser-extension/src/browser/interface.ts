@@ -16,6 +16,9 @@ export interface BrowserAPI {
   windows: {
     getCurrent: () => Promise<{ id: number; type: string }>;
     get: (windowId: number) => Promise<{ id: number; type: string }>;
+    // 最近焦点窗口，focused 表示浏览器是否真在前台
+    // SW 重启后据此校准 isWindowFocused，防止后台时持续累加时长
+    getLastFocused: () => Promise<{ id: number; type: string; focused: boolean }>;
     onFocusChanged: { addListener: (callback: (windowId: number) => void) => void };
     WINDOW_ID_NONE: number;
   };

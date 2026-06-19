@@ -61,6 +61,11 @@ export const ChromeBrowser: BrowserAPI = {
         resolve({ id: win!.id!, type: win!.type! });
       });
     }),
+    getLastFocused: () => new Promise((resolve) => {
+      chrome.windows.getLastFocused((win) => {
+        resolve({ id: win!.id!, type: win!.type!, focused: !!win!.focused });
+      });
+    }),
     onFocusChanged: {
       addListener: (cb) => chrome.windows.onFocusChanged.addListener(cb),
     },
