@@ -2,7 +2,7 @@ use anyhow::{bail, Context, Result};
 use std::path::PathBuf;
 use std::time::Duration;
 
-use crate::platform::{Platform, PROCESSES, save_install_location};
+use crate::platform::{Platform, PROCESSES, TASK_NAME, save_install_location};
 use crate::sfx;
 use crate::ui::cli;
 
@@ -24,7 +24,7 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
         );
     }
 
-    let total_steps = 5;
+    let total_steps = 6;
     let mut step = 0;
 
     if !silent {
@@ -100,6 +100,11 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
         restore_backup(&backup_dir, &install_dir)?;
         bail!("Update failed: taix-shell.exe not found after extraction");
     }
+
+    // 重新注册开机启动
+    step += 1;
+    cli::show_step(step, total_steps, "更新开机启动配置...");
+    <() as Platform>::register_startup(&shell_exe, TASK_NAME)?;
 
     // 重启服务
     step += 1;
