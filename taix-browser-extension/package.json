@@ -1,6 +1,6 @@
 {
   "name": "taix-browser-extension",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Taix 网页浏览时长统计插件 - 多浏览器支持",
   "scripts": {
     "build": "npm run build:chrome && npm run build:firefox && npm run build:safari",
