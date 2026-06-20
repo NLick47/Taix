@@ -1,0 +1,296 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+             xmlns:vm="using:Taix.Client.ViewModels"
+             xmlns:base="using:Taix.Client.Controls.Base"
+             xmlns:s="using:Taix.Client.Controls.Select"
+             xmlns:conv="using:Taix.Client.Controls.Converters"
+             xmlns:charts="using:Taix.Client.Controls.Charts"
+             Foreground="{DynamicResource StandardTextBrush}"
+             Background="Transparent"
+             x:DataType="vm:CategorySummaryPageViewModel"
+             x:Class="Taix.Client.Views.CategorySummaryPage">
+
+    <UserControl.Styles>
+        <Style Selector="Button.cat-chip">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SettingPanelSpliteLineBrush}" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="MinHeight" Value="30" />
+        </Style>
+        <Style Selector="Button.cat-chip /template/ ContentPresenter">
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.cat-chip TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
+        </Style>
+        <Style Selector="Button.cat-chip:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+        </Style>
+        <Style Selector="Button.cat-chip.active /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DefaultTextBrush}" />
+        </Style>
+        <Style Selector="Button.cat-chip.active">
+            <Setter Property="BorderBrush" Value="{DynamicResource DefaultTextBrush}" />
+        </Style>
+        <Style Selector="Button.cat-chip.active TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource Background}" />
+        </Style>
+
+        <Style Selector="Border.diff-pill">
+            <Setter Property="Padding" Value="7,2" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Margin="20">
+
+        <!-- 标题 + 应用/网站切换 -->
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,5,0,20">
+            <TextBlock Grid.Column="0"
+                       Text="{DynamicResource CategorySummary}"
+                       FontSize="18" FontWeight="SemiBold"
+                       VerticalAlignment="Center" />
+            <s:TabSwitch Grid.Column="2"
+                         IsShowIcon="False"
+                         VerticalAlignment="Center"
+                         SelectedItem="{Binding SelectedKind, Mode=TwoWay}"
+                         Options="{Binding KindOptions}" />
+        </Grid>
+
+        <!-- 分类切换标签行 -->
+        <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled"
+                      Margin="0,0,0,16">
+            <ItemsControl ItemsSource="{Binding CurrentCategories}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:CategoryChip">
+                        <Button Classes="cat-chip"
+                                Classes.active="{Binding IsActive}"
+                                Command="{Binding $parent[UserControl].((vm:CategorySummaryPageViewModel)DataContext).SwitchCategoryCommand}"
+                                CommandParameter="{Binding}">
+                            <TextBlock Text="{Binding Name}"
+                                       FontSize="13"
+                                       VerticalAlignment="Center" />
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <StackPanel Spacing="16">
+
+            <!-- 周期概览 -->
+            <Border Background="{DynamicResource SettingPanelBgBrush}"
+                    BorderBrush="{DynamicResource SettingPanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource RadiusMedium}">
+                <StackPanel>
+                    <Grid Margin="20,16,20,12" ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="{DynamicResource CategoryOverview}"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+
+                    <Border Height="1" Background="{DynamicResource SettingPanelSpliteLineBrush}" Opacity="0.5" />
+
+                    <Grid Margin="20,18,20,20"
+                          ColumnDefinitions="*,1,*,1,*,1,*">
+
+                        <!-- 总使用时长 -->
+                        <StackPanel Grid.Column="0" Spacing="5" Margin="0,0,18,0">
+                            <TextBlock Text="{DynamicResource CategoryTotalUsage}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource SubTextBrush}" />
+                            <TextBlock FontSize="22" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource DefaultTextBrush}"
+                                       Text="{Binding TotalText}" />
+                            <!-- 环比色丸：主题色淡底，箭头区分涨/跌/平 -->
+                            <Border Classes="diff-pill"
+                                    IsVisible="{Binding IsDiffVisible}">
+                                <Border.Background>
+                                    <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".08" />
+                                </Border.Background>
+                                <StackPanel Orientation="Horizontal" Spacing="3"
+                                            VerticalAlignment="Center">
+                                    <base:Icon IconType="ArrowUp8" FontSize="10"
+                                               Foreground="{DynamicResource SuccessBrush}"
+                                               IsVisible="{Binding DiffUp}" />
+                                    <base:Icon IconType="ArrowDown8" FontSize="10"
+                                               Foreground="{DynamicResource DangerBrush}"
+                                               IsVisible="{Binding DiffDown}" />
+                                    <base:Icon IconType="SubtractBold" FontSize="10"
+                                               Foreground="{DynamicResource SubTextBrush}"
+                                               IsVisible="{Binding DiffFlat}" />
+                                    <TextBlock FontSize="11"
+                                               Foreground="{DynamicResource SubTextBrush}"
+                                               VerticalAlignment="Center">
+                                        <Run Text="{Binding VsLabel}" />
+                                        <Run Text=" " />
+                                        <Run Text="{Binding DiffText}" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                            <!-- 无环比时占位 -->
+                            <Border Classes="diff-pill" Height="15"
+                                    IsVisible="{Binding !IsDiffVisible}" />
+                        </StackPanel>
+
+                        <Border Grid.Column="1" Background="{DynamicResource SettingPanelSpliteLineBrush}" Opacity="0.5" />
+
+                        <!-- 活跃天数 -->
+                        <StackPanel Grid.Column="2" Spacing="5" Margin="18,0">
+                            <TextBlock Text="{DynamicResource CategoryActiveDays}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource SubTextBrush}" />
+                            <StackPanel Orientation="Horizontal" Spacing="3"
+                                        VerticalAlignment="Bottom">
+                                <TextBlock FontSize="22" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource DefaultTextBrush}"
+                                           Text="{Binding ActiveDays}" />
+                                <TextBlock FontSize="11" Margin="0,0,0,4"
+                                           Foreground="{DynamicResource SubTextBrush}"
+                                           Text="{DynamicResource CategoryActiveDaysUnit}" />
+                            </StackPanel>
+                            <TextBlock FontSize="11" Height="15"
+                                       Foreground="{DynamicResource SubTextBrush}"
+                                       Text="{Binding RangeLabel}" />
+                        </StackPanel>
+
+                        <Border Grid.Column="3" Background="{DynamicResource SettingPanelSpliteLineBrush}" Opacity="0.5" />
+
+                        <!-- 日均使用 -->
+                        <StackPanel Grid.Column="4" Spacing="5" Margin="18,0">
+                            <TextBlock Text="{DynamicResource CategoryAverageDaily}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource SubTextBrush}" />
+                            <TextBlock FontSize="22" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource DefaultTextBrush}"
+                                       Text="{Binding AverageDailyText}" />
+                            <TextBlock FontSize="11" Height="15"
+                                       Foreground="{DynamicResource SubTextBrush}"
+                                       Text=" " />
+                        </StackPanel>
+
+                        <Border Grid.Column="5" Background="{DynamicResource SettingPanelSpliteLineBrush}" Opacity="0.5" />
+
+                        <!-- 单日峰值 -->
+                        <StackPanel Grid.Column="6" Spacing="5" Margin="18,0,0,0">
+                            <TextBlock Text="{DynamicResource CategoryPeakDay}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource SubTextBrush}" />
+                            <TextBlock FontSize="22" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource DefaultTextBrush}"
+                                       Text="{Binding PeakText}" />
+                            <TextBlock FontSize="11" Height="15"
+                                       Foreground="{DynamicResource SubTextBrush}"
+                                       Text="{Binding PeakMetaText}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 使用趋势 -->
+            <Border Background="{DynamicResource SettingPanelBgBrush}"
+                    BorderBrush="{DynamicResource SettingPanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource RadiusMedium}">
+                <StackPanel>
+                    <Grid Margin="20,16,20,12" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="{DynamicResource CategoryTrend}"
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource DefaultTextBrush}" />
+                            <TextBlock Text="{DynamicResource CategoryColumnHint}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource SubTextBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <s:DateSelect Date="{Binding SelectedDate, Mode=TwoWay}"
+                                          SelectType="{Binding CurrentSelectType}" />
+                            <s:TabSwitch IsShowIcon="False"
+                                         VerticalAlignment="Center"
+                                         SelectedItem="{Binding SelectedRange, Mode=TwoWay}"
+                                         Options="{Binding RangeOptions}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Height="1" Background="{DynamicResource SettingPanelSpliteLineBrush}" Opacity="0.5" />
+
+                    <Grid Margin="20,16,20,20">
+                        <!-- 空态 -->
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="8"
+                                    IsVisible="{Binding !HasData}">
+                            <TextBlock Text="{DynamicResource CategoryNoData}"
+                                       FontSize="11"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource SubTextBrush}" />
+                        </StackPanel>
+
+                        <!-- 柱状图 + 点击列展开成员 -->
+                        <Grid IsVisible="{Binding HasData}"
+                              RowDefinitions="Auto,*">
+
+                            <charts:ColumnChart Grid.Row="0"
+                                                Margin="0,0,0,12"
+                                                IsStack="False"
+                                                Height="260"
+                                                IsShowTotal="False"
+                                                IsShowCategory="False"
+                                                IsCanColumnSelect="{Binding IsCanColumnSelect}"
+                                                ColumnSelectedIndex="{Binding ColumnSelectedIndex, Mode=TwoWay}"
+                                                Data="{Binding ColumnChartData}" />
+
+                            <StackPanel Grid.Row="1">
+                                <!-- 时间标签条：全选时显示周期名，点列时显示该列标签 -->
+                                <Border Margin="0,5,0,0" HorizontalAlignment="Left" Padding="10"
+                                        CornerRadius="10">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity=".05" />
+                                    </Border.Background>
+                                    <StackPanel Orientation="Horizontal">
+                                        <base:Icon IconType="Calendar"
+                                                   Foreground="{DynamicResource SubTextBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding SelectedColumnLabel}"
+                                                   Foreground="{DynamicResource SubTextBrush}"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="13" Margin="5,0,0,0" />
+                                    </StackPanel>
+                                </Border>
+
+                                <base:View Value="{Binding SelectedMembers}" Condition="not empty">
+                                    <charts:ListChart IsSearch="True"
+                                                      Margin="0,5,0,0"
+                                                      Height="300"
+                                                      IsShowBadge="True"
+                                                      Data="{Binding SelectedMembers}" />
+                                </base:View>
+                                <base:View Value="{Binding SelectedMembers}" Condition="empty">
+                                    <base:EmptyData />
+                                </base:View>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

@@ -41,19 +41,19 @@ public class ApiAppConfig : IAppConfig
 
         if (cachedConfig != null)
         {
-            // 有缓存：立即应用缓存配置，窗口可以秒开；然后后台刷新远程配置
-            // 此分支完全同步，直接返回 Task.CompletedTask，避免 async 状态机开销
+            // 有缓存时直接应用，后台刷新远程配置
             ApplyConfig(cachedConfig);
             _serverSnapshot = CloneConfig(cachedConfig);
             _ = RefreshFromServerAsync();
             return Task.CompletedTask;
         }
 
-        // 无缓存：立即应用默认配置避免阻塞启动，后台异步加载远程配置
+        // 无缓存时应用默认配置，后台加载远程配置
         var fallback = new ConfigModel
         {
             General = new GeneralModel(),
-            Behavior = new BehaviorModel()
+            Behavior = new BehaviorModel(),
+            Shortcut = new ShortcutModel()
         };
         ApplyConfig(fallback);
         _ = LoadFromRemoteAndApplyAsync();
@@ -173,6 +173,9 @@ public class ApiAppConfig : IAppConfig
 
     private void ApplyConfig(ConfigModel config)
     {
+        // 老服务端/老缓存可能缺 Shortcut 字段，归一化后再 apply，避免到处 ?? 兜底
+        NormalizeShortcut(config);
+
         var previousConfig = _config;
         _config = config;
 
@@ -183,7 +186,8 @@ public class ApiAppConfig : IAppConfig
             var emptyConfig = new ConfigModel
             {
                 General = new GeneralModel(),
-                Behavior = new BehaviorModel()
+                Behavior = new BehaviorModel(),
+                Shortcut = new ShortcutModel()
             };
             var changes = DetectChanges(emptyConfig, config);
             args = new ConfigChangedEventArgs(emptyConfig, config, changes);
@@ -216,7 +220,8 @@ public class ApiAppConfig : IAppConfig
             return new ConfigModel
             {
                 General = new GeneralModel(),
-                Behavior = new BehaviorModel()
+                Behavior = new BehaviorModel(),
+                Shortcut = new ShortcutModel()
             };
         }
 
@@ -277,6 +282,16 @@ public class ApiAppConfig : IAppConfig
         }
     }
 
+    // null 视为缺失（补默认值），空字符串视为用户显式禁用，不覆盖
+    private static void NormalizeShortcut(ConfigModel config)
+    {
+        config.Shortcut ??= new ShortcutModel();
+        var defaults = new ShortcutModel();
+        if (config.Shortcut.Refresh is null) config.Shortcut.Refresh = defaults.Refresh;
+        if (config.Shortcut.Search is null) config.Shortcut.Search = defaults.Search;
+        if (config.Shortcut.NavigateBack is null) config.Shortcut.NavigateBack = defaults.NavigateBack;
+    }
+
     private static IReadOnlyList<string> DetectChanges(ConfigModel old, ConfigModel next)
     {
         var changes = new List<string>();
@@ -301,6 +316,16 @@ public class ApiAppConfig : IAppConfig
             changes.Add("General.IsSaveWindowSize");
         if (old.General.DataRetentionDays != next.General.DataRetentionDays)
             changes.Add("General.DataRetentionDays");
+
+        // 兼容老版本缓存：Shortcut 字段可能为 null
+        var oldShortcut = old.Shortcut ?? new ShortcutModel();
+        var nextShortcut = next.Shortcut ?? new ShortcutModel();
+        if (oldShortcut.Refresh != nextShortcut.Refresh)
+            changes.Add("Shortcut.Refresh");
+        if (oldShortcut.Search != nextShortcut.Search)
+            changes.Add("Shortcut.Search");
+        if (oldShortcut.NavigateBack != nextShortcut.NavigateBack)
+            changes.Add("Shortcut.NavigateBack");
 
         return changes;
     }

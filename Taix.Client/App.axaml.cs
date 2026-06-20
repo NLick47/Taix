@@ -117,7 +117,7 @@ public class App : Application
                 }
                 catch (OperationCanceledException)
                 {
-                    // ignored
+                    // ignore
                 }
                 catch (Exception ex)
                 {
@@ -147,7 +147,7 @@ public class App : Application
         }
         catch (OperationCanceledException)
         {
-            // ignored
+            // ignore
         }
         catch (Exception ex)
         {
@@ -169,7 +169,7 @@ public class App : Application
         }
         catch (OperationCanceledException)
         {
-            // ignored
+            // ignore
         }
         catch (Exception ex)
         {
@@ -228,6 +228,7 @@ public class App : Application
             Logger.Error("[Program crash]" + exception?.Message, exception);
             Logger.Flush();
         };
+
         ServiceLocator.Initialize(new AppServiceProvider());
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)

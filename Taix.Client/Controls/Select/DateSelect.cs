@@ -87,11 +87,16 @@ public class DateSelect : TemplatedControl
         _year = _date.Year;
         _month = _date.Month;
         UpdateCanGoNext();
-        
-        this.GetObservable(SelectTypeProperty).Subscribe(_ => UpdateDays());
+
+        // SelectType 变化时同步刷新日期文案：DateStr 依赖 SelectType（日/周/月/年格式不同）
+        this.GetObservable(SelectTypeProperty).Subscribe(_ =>
+        {
+            UpdateDays();
+            UpdateDateStr();
+        });
     }
 
- 
+
 
     protected override Type StyleKeyOverride => typeof(DateSelect);
 
@@ -114,8 +119,8 @@ public class DateSelect : TemplatedControl
             }
         }
     }
-    
-    
+
+
     private void OnDone(object obj)
     {
         var day = string.IsNullOrEmpty(DateStr) ? DateStr : "1";
@@ -159,8 +164,8 @@ public class DateSelect : TemplatedControl
         get => _days;
         set => SetAndRaise(DaysProperty, ref _days, value);
     }
-    
-    
+
+
 
     public bool IsOpen
     {
@@ -174,7 +179,7 @@ public class DateSelect : TemplatedControl
     public ICommand SelectDayCommand { get; }
     public ICommand GoPreviousCommand { get; }
     public ICommand GoNextCommand { get; }
-    
+
     public ICommand DoneCommand { get; set; }
 
     public bool CanGoNext
@@ -229,7 +234,7 @@ public class DateSelect : TemplatedControl
     private void OnSelectDay(DayModel? dayModel)
     {
         if (dayModel == null || dayModel.IsDisabled) return;
-        
+
         Date = dayModel.Day;
         IsOpen = false;
     }
@@ -276,7 +281,7 @@ public class DateSelect : TemplatedControl
         };
         Date = next;
     }
-    
+
     private void UpdateDays()
     {
         switch (SelectType)
@@ -295,8 +300,8 @@ public class DateSelect : TemplatedControl
                 break;
         }
     }
-    
-    
+
+
 
     private void UpdateDateDays()
     {
@@ -306,7 +311,7 @@ public class DateSelect : TemplatedControl
         var startWeekNum = (int)startDay.DayOfWeek;
         startWeekNum = startWeekNum == 0 ? 7 : startWeekNum;
         startWeekNum -= 1;
-        
+
         var days = DateTime.DaysInMonth(Year, Month);
 
         var preAppendDays = new List<DayModel>();
@@ -321,7 +326,7 @@ public class DateSelect : TemplatedControl
         }
 
         list.AddRange(preAppendDays);
-        
+
         var now = DateTime.Now.Date;
         for (var i = 1; i < days + 1; i++) list.Add(new DayModel
         {
@@ -400,8 +405,8 @@ public class DateSelect : TemplatedControl
 
         DateStr = Date.ToString("yyyy", culture);
     }
-    
-    
+
+
     private void UpdateMonthDays()
     {
         var list = new List<DayModel>();
@@ -413,7 +418,7 @@ public class DateSelect : TemplatedControl
             var monthDate = new DateTime(currentYear, month, 1);
             var isSelectedMonth = month == Date.Month && currentYear == Date.Year;
             bool isDisabled = false;
-            
+
             if (currentYear == now.Year)
             {
                 isDisabled = month > now.Month;
@@ -433,18 +438,18 @@ public class DateSelect : TemplatedControl
 
         Days = list;
     }
-    
+
     private void UpdateYearDays()
     {
         var list = new List<DayModel>();
         var startYear = 2020; // 最近20年
         var endYear = DateTime.Now.Year;
-        
+
         for (int year = startYear; year <= endYear; year++)
         {
             var yearDate = new DateTime(year, 1, 1);
             var isSelectedYear = year == Date.Year;
-            
+
             list.Add(new DayModel
             {
                 Day = yearDate,

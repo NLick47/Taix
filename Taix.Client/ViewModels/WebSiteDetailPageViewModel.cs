@@ -139,6 +139,8 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
     private Task LoadDataAsync() => ExecuteAsync(LoadDataCoreAsync);
 
+    public override Task RefreshAsync() => LoadDataAsync();
+
     private async Task LoadDataCoreAsync(CancellationToken cancellationToken)
     {
         if (WebSite == null) return;

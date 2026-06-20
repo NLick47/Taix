@@ -88,6 +88,46 @@ public class SettingPageViewModel : SettingPageModel
         }
     }
 
+    public string RefreshShortcut
+    {
+        get => _config.Shortcut?.Refresh ?? string.Empty;
+        set
+        {
+            _config.Shortcut ??= new ShortcutModel();
+            if (_config.Shortcut.Refresh == value) return;
+            _config.Shortcut.Refresh = value ?? string.Empty;
+            _ = _appConfig.SaveAsync();
+            OnPropertyChanged();
+        }
+    }
+
+    public string SearchShortcut
+    {
+        get => _config.Shortcut?.Search ?? string.Empty;
+        set
+        {
+            _config.Shortcut ??= new ShortcutModel();
+            if (_config.Shortcut.Search == value) return;
+            _config.Shortcut.Search = value ?? string.Empty;
+            _ = _appConfig.SaveAsync();
+            OnPropertyChanged();
+        }
+    }
+
+    // 鼠标后退键始终可用，与此配置无关
+    public string NavigateBackShortcut
+    {
+        get => _config.Shortcut?.NavigateBack ?? string.Empty;
+        set
+        {
+            _config.Shortcut ??= new ShortcutModel();
+            if (_config.Shortcut.NavigateBack == value) return;
+            _config.Shortcut.NavigateBack = value ?? string.Empty;
+            _ = _appConfig.SaveAsync();
+            OnPropertyChanged();
+        }
+    }
+
     private int _dataRetentionDays;
     public int DataRetentionDays
     {
@@ -185,15 +225,24 @@ public class SettingPageViewModel : SettingPageModel
             if (TabbarData.Count > 0) TabbarData[0] = ResourceStrings.General;
             if (TabbarData.Count > 1) TabbarData[1] = ResourceStrings.Behavior;
             if (TabbarData.Count > 2) TabbarData[2] = ResourceStrings.Data;
-            if (TabbarData.Count > 3) TabbarData[3] = ResourceStrings.About;
+            if (TabbarData.Count > 3) TabbarData[3] = ResourceStrings.Shortcuts;
+            if (TabbarData.Count > 4) TabbarData[4] = ResourceStrings.About;
             OnPropertyChanged(nameof(TabbarData));
+        }
+
+        // 别处编辑了 Shortcut 也同步刷新本地输入框
+        if (e.HasAnyChange("Shortcut.Refresh", "Shortcut.Search", "Shortcut.NavigateBack"))
+        {
+            OnPropertyChanged(nameof(RefreshShortcut));
+            OnPropertyChanged(nameof(SearchShortcut));
+            OnPropertyChanged(nameof(NavigateBackShortcut));
         }
     }
 
     private void Initialize()
     {
         Data = _config.General;
-        TabbarData = [ResourceStrings.General, ResourceStrings.Behavior, ResourceStrings.Data, ResourceStrings.About];
+        TabbarData = [ResourceStrings.General, ResourceStrings.Behavior, ResourceStrings.Data, ResourceStrings.Shortcuts, ResourceStrings.About];
         Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? string.Empty;
         DelDataStartMonthDate = DateTime.Now;
         DelDataEndMonthDate = DateTime.Now;

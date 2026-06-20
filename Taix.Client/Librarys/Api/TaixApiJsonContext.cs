@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Taix.Client.Shared.Models;
+using Taix.Client.Shared.Models.Category;
 using Taix.Client.Shared.Models.Config;
 using Taix.Client.Shared.Models.Data;
 using Taix.Client.Shared.Models.Web;
@@ -13,6 +14,8 @@ namespace Taix.Client.Librarys.Api;
 [JsonSerializable(typeof(ApiResponse<List<AppModel>>))]
 [JsonSerializable(typeof(ApiResponse<CategoryModel>))]
 [JsonSerializable(typeof(ApiResponse<List<CategoryModel>>))]
+[JsonSerializable(typeof(ApiResponse<CategorySummaryModel>))]
+[JsonSerializable(typeof(ApiResponse<List<CategoryMemberModel>>))]
 [JsonSerializable(typeof(ApiResponse<DailyLogModel>))]
 [JsonSerializable(typeof(ApiResponse<List<DailyLogModel>>))]
 [JsonSerializable(typeof(ApiResponse<HoursLogModel>))]
@@ -38,6 +41,11 @@ namespace Taix.Client.Librarys.Api;
 [JsonSerializable(typeof(List<AppModel>))]
 [JsonSerializable(typeof(CategoryModel))]
 [JsonSerializable(typeof(List<CategoryModel>))]
+[JsonSerializable(typeof(CategorySummaryModel))]
+[JsonSerializable(typeof(DailyPointModel))]
+[JsonSerializable(typeof(List<DailyPointModel>))]
+[JsonSerializable(typeof(CategoryMemberModel))]
+[JsonSerializable(typeof(List<CategoryMemberModel>))]
 [JsonSerializable(typeof(DailyLogModel))]
 [JsonSerializable(typeof(List<DailyLogModel>))]
 [JsonSerializable(typeof(HoursLogModel))]
@@ -68,7 +76,7 @@ namespace Taix.Client.Librarys.Api;
 [JsonSerializable(typeof(ConfigModel))]
 [JsonSerializable(typeof(GeneralModel))]
 [JsonSerializable(typeof(BehaviorModel))]
-[JsonSerializable(typeof(BehaviorModel))]
+[JsonSerializable(typeof(ShortcutModel))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(ApplyMatchRequest))]
 internal partial class TaixApiJsonContext : JsonSerializerContext { }

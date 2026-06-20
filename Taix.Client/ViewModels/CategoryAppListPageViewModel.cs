@@ -156,6 +156,21 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         MainSearchInput = string.Empty;
     }
 
+    public override async Task RefreshAsync()
+    {
+        if (Category?.Data == null) return;
+        MainPageOriginalData = (await _appDataService.GetAppsByCategoryIDAsync(Category.Data.ID)).ToList();
+        // 保留当前搜索关键字：setter 会触发 FilterMainData，重新筛选保留过滤状态
+        if (string.IsNullOrEmpty(MainSearchInput))
+        {
+            Data = MainPageOriginalData;
+        }
+        else
+        {
+            FilterMainData();
+        }
+    }
+
     private async Task LoadAppsAsync()
     {
         _appList = [];

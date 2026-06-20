@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +18,8 @@ public class ApiCategorys : ICategorys
         _apiClient = apiClient;
     }
 
+    public event Action? CategoriesChanged;
+
     public async Task<List<CategoryModel>> GetCategoriesAsync(CancellationToken cancellationToken = default)
     {
         if (_cachedCategories != null)
@@ -29,6 +32,8 @@ public class ApiCategorys : ICategorys
     public void RefreshCache()
     {
         _cachedCategories = null;
+        // 通知下游分类已变更
+        CategoriesChanged?.Invoke();
     }
 
     public async Task<CategoryModel?> GetCategoryAsync(int id, CancellationToken cancellationToken = default)

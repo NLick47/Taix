@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Taix.Client.Shared.Models;
+using Taix.Client.Shared.Models.Category;
 using Taix.Client.Shared.Models.Data;
 using Taix.Client.Shared.Models.Web;
 
@@ -29,6 +30,12 @@ public interface ITaixApiClient
     Task<CategoryModel> RestoreSystemCategoryAsync(int id);
     Task DeleteCategoryAsync(int id);
     Task<int> ApplyDirectoryMatchAsync(string[]? patterns = null);
+
+    // CategorySummary
+    Task<CategorySummaryModel> GetAppCategorySummaryAsync(int categoryId, DateTime start, DateTime end, DateTime? prevStart = null, DateTime? prevEnd = null, CancellationToken cancellationToken = default);
+    Task<CategorySummaryModel> GetWebCategorySummaryAsync(int categoryId, DateTime start, DateTime end, DateTime? prevStart = null, DateTime? prevEnd = null, CancellationToken cancellationToken = default);
+    Task<List<CategoryMemberModel>> GetAppCategoryMembersAsync(int categoryId, DateTime start, DateTime end, CancellationToken cancellationToken = default);
+    Task<List<CategoryMemberModel>> GetWebCategoryMembersAsync(int categoryId, DateTime start, DateTime end, CancellationToken cancellationToken = default);
 
     // Data
     Task<List<DailyLogModel>> GetDateRangeLogListAsync(DateTime start, DateTime end, int take = -1, int skip = -1, CancellationToken cancellationToken = default);

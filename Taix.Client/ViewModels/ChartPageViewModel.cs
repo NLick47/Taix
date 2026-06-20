@@ -164,6 +164,8 @@ public partial class ChartPageViewModel : ChartPageModel
 
     private Task OnRefreshAsync(object _) => ExecuteAsync(LoadDataAsync);
 
+    public override Task RefreshAsync() => ExecuteAsync(LoadDataAsync);
+
 
 
     private void OnToDetail(object obj)

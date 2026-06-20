@@ -127,6 +127,28 @@
     <system:String x:Key="Yearly">Yearly</system:String>
     <system:String x:Key="LastWeek">Last Week</system:String>
     <system:String x:Key="ThisWeek">This Week</system:String>
+    <system:String x:Key="ThisMonth">This Month</system:String>
+    <system:String x:Key="ThisYear">This Year</system:String>
+
+    <!-- Category Summary -->
+    <system:String x:Key="CategorySummary">Category Summary</system:String>
+    <system:String x:Key="CategoryComposition">Composition</system:String>
+    <system:String x:Key="CategoryTrend">Usage Trend</system:String>
+    <system:String x:Key="CategoryHourly">Usage Hours</system:String>
+    <system:String x:Key="CategoryTotalUsage">Total Usage</system:String>
+    <system:String x:Key="CategoryActiveDays">Active Days</system:String>
+    <system:String x:Key="CategoryAverageDaily">Daily Average</system:String>
+    <system:String x:Key="CategoryActiveDaysUnit">days</system:String>
+    <system:String x:Key="CategoryNoData">No usage data in this category for the selected period</system:String>
+    <system:String x:Key="CategoryVsYesterday">vs yesterday</system:String>
+    <system:String x:Key="CategoryVsLastWeek">vs last week</system:String>
+    <system:String x:Key="CategoryVsLastMonth">vs same period last month</system:String>
+    <system:String x:Key="CategoryVsLastYear">vs same period last year</system:String>
+    <system:String x:Key="CategoryPeakDay">Peak day</system:String>
+    <system:String x:Key="CategoryColumnHint">Click a column for that period, click again for all</system:String>
+    <system:String x:Key="CategoryOverview">Period Overview</system:String>
+    <system:String x:Key="SearchTypeCategoryApp">App Category</system:String>
+    <system:String x:Key="SearchTypeCategoryWeb">Web Category</system:String>
     <system:String x:Key="DefaultView">Default View</system:String>
     <system:String x:Key="SummaryView">Summary View</system:String>
     <system:String x:Key="CategoryView">Category View</system:String>
@@ -157,6 +179,33 @@
     <system:String x:Key="Behavior">Behave</system:String>
     <system:String x:Key="Data">Data</system:String>
     <system:String x:Key="About">About</system:String>
+
+    <!-- Global shortcuts -->
+    <system:String x:Key="Shortcuts">Shortcuts</system:String>
+    <system:String x:Key="RefreshShortcut">Refresh current page</system:String>
+    <system:String x:Key="RefreshShortcutDesc">Reload data of the page you are on</system:String>
+    <system:String x:Key="SearchShortcut">Global search</system:String>
+    <system:String x:Key="SearchShortcutDesc">Search apps and websites, jump to the detail page</system:String>
+    <system:String x:Key="NavigateBackShortcut">Go back</system:String>
+    <system:String x:Key="NavigateBackShortcutDesc">Return to the previous page; mouse back button also works</system:String>
+    <system:String x:Key="PressKeysHint">Press the keys...</system:String>
+    <system:String x:Key="Reset">Reset</system:String>
+    <system:String x:Key="Clear">Clear</system:String>
+
+    <!-- Search palette -->
+    <system:String x:Key="SearchPlaceholder">Search apps or websites, supports *? and regex</system:String>
+    <system:String x:Key="SearchEmptyHint">No matches</system:String>
+    <system:String x:Key="SearchTypeApp">App</system:String>
+    <system:String x:Key="SearchTypeWeb">Site</system:String>
+    <system:String x:Key="SearchDefaultHint">Quick access</system:String>
+    <system:String x:Key="SearchSectionToday">Today's activity</system:String>
+    <system:String x:Key="SearchSectionCategories">Browse categories</system:String>
+    <system:String x:Key="SearchResults">Results</system:String>
+    <system:String x:Key="SearchResultCount">{0} items</system:String>
+    <system:String x:Key="SearchTipEnter">Enter to open</system:String>
+    <system:String x:Key="SearchTipNav">↑↓ to navigate</system:String>
+    <system:String x:Key="SearchTipExpand">expand/collapse</system:String>
+    <system:String x:Key="SearchTipClose">Esc to close</system:String>
 
     <system:String x:Key="TimeRangeSelectionError">Time range selection error</system:String>
     <system:String x:Key="DeleteConfirmation">Delete Confirmation</system:String>

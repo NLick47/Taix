@@ -125,6 +125,8 @@ public partial class IndexPageViewModel : IndexPageModel
 
     private Task OnRefreshAsync(object _) => LoadDataAsync();
 
+    public override Task RefreshAsync() => LoadDataAsync();
+
     private Task LoadDataAsync()
     {
         return ExecuteAsync(async ct =>

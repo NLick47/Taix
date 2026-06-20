@@ -112,6 +112,8 @@ public class CategoryPageViewModel : CategoryPageModel
 
     private Task OnRefreshAsync(object _) => ExecuteAsync(LoadDataCoreAsync);
 
+    public override Task RefreshAsync() => ExecuteAsync(LoadDataCoreAsync);
+
     private async Task OnApplyDirectoryMatchAsync(object _)
     {
         try
