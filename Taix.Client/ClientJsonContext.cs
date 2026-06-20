@@ -11,6 +11,7 @@ namespace Taix.Client;
 [JsonSerializable(typeof(ConfigModel))]
 [JsonSerializable(typeof(GeneralModel))]
 [JsonSerializable(typeof(BehaviorModel))]
+[JsonSerializable(typeof(ShortcutModel))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(ObservableCollection<string>))]
 [JsonSerializable(typeof(GithubRelease.GithubModel))]

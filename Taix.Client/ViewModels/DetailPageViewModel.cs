@@ -218,6 +218,8 @@ public class DetailPageViewModel : DetailPageModel
 
     private Task OnRefreshAsync(object _) => LoadChartDataAsync();
 
+    public override Task RefreshAsync() => LoadChartDataAsync();
+
     private async Task LoadCategorys(int categoryId)
     {
         var list = new List<SelectItemModel>();

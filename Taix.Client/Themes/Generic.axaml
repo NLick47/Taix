@@ -37,6 +37,7 @@
 
         <ResourceInclude Source="/Themes/Input/InputBox.axaml" />
         <ResourceInclude Source="/Themes/Input/NumericUpDown.axaml" />
+        <ResourceInclude Source="/Themes/Input/KeyGestureCapture.axaml" />
 
         <ResourceInclude Source="/Themes/List/BaseList.axaml" />
         <ResourceInclude Source="/Themes/List/BaseListItem.axaml" />

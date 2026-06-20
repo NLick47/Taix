@@ -1,0 +1,139 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:input="using:Taix.Client.Controls.Input"
+                    xmlns:base="using:Taix.Client.Controls.Base">
+    <ControlTheme x:Key="{x:Type input:KeyGestureCapture}"
+                  TargetType="input:KeyGestureCapture">
+        <Setter Property="MinWidth" Value="200" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border x:Name="PART_Border"
+                        BorderBrush="{DynamicResource SettingPanelBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Background="{DynamicResource HoverBackgroundBrush}"
+                        Padding="10,5">
+                    <Border.Transitions>
+                        <Transitions>
+                            <BrushTransition Property="BorderBrush" Duration="0.18" />
+                            <BrushTransition Property="Background" Duration="0.18" />
+                        </Transitions>
+                    </Border.Transitions>
+                    <Border.Styles>
+                        <!-- 链接按钮 -->
+                        <Style Selector="Button.kgc-link">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="MinWidth" Value="0" />
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="Cursor" Value="Hand" />
+                        </Style>
+                        <Style Selector="Button.kgc-link /template/ ContentPresenter">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="Padding" Value="0" />
+                        </Style>
+                        <Style Selector="Button.kgc-link TextBlock">
+                            <Setter Property="FontSize" Value="11" />
+                            <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
+                        </Style>
+                        <Style Selector="Button.kgc-link:pointerover TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource ThemeBrush}" />
+                        </Style>
+                    </Border.Styles>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <!-- 已设置：键帽序列 -->
+                        <ItemsControl Grid.Column="0"
+                                      x:Name="PartsList"
+                                      ItemsSource="{TemplateBinding KeyParts}"
+                                      VerticalAlignment="Center"
+                                      IsVisible="{TemplateBinding HasValue}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource Background}"
+                                            BorderBrush="{DynamicResource SettingPanelBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            MinWidth="26"
+                                            Padding="6,2">
+                                        <TextBlock Text="{Binding}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource DefaultTextBrush}"
+                                                   HorizontalAlignment="Center" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- 占位文本：未设置或捕获中 -->
+                        <TextBlock Grid.Column="0"
+                                   x:Name="PlaceholderText"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource SubTextBrush}"
+                                   Text="{TemplateBinding Placeholder}"
+                                   IsVisible="{TemplateBinding HasValue, Converter={x:Static BoolConverters.Not}}" />
+
+                        <!-- 右侧操作链接（默认隐藏，hover 控件时才浮现） -->
+                        <StackPanel Grid.Column="1"
+                                    x:Name="ActionsPanel"
+                                    Orientation="Horizontal"
+                                    Spacing="10"
+                                    VerticalAlignment="Center"
+                                    Margin="10,0,0,0"
+                                    Opacity="0">
+                            <StackPanel.Transitions>
+                                <Transitions>
+                                    <DoubleTransition Property="Opacity" Duration="0.15" />
+                                </Transitions>
+                            </StackPanel.Transitions>
+                            <Button x:Name="PART_ResetButton"
+                                    Classes="kgc-link"
+                                    Command="{Binding ResetCommand, RelativeSource={RelativeSource TemplatedParent}}"
+                                    ToolTip.Tip="{DynamicResource Reset}">
+                                <TextBlock Text="{DynamicResource Reset}" />
+                            </Button>
+                            <Button x:Name="PART_ClearButton"
+                                    Classes="kgc-link"
+                                    IsVisible="{TemplateBinding HasValue}"
+                                    Command="{Binding ClearCommand, RelativeSource={RelativeSource TemplatedParent}}"
+                                    ToolTip.Tip="{DynamicResource Clear}">
+                                <TextBlock Text="{DynamicResource Clear}" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- 悬停 capture 时浮现操作链接 -->
+        <Style Selector="^:pointerover /template/ StackPanel#ActionsPanel">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="^:focus /template/ StackPanel#ActionsPanel">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+
+        <!-- 悬停态 -->
+        <Style Selector="^:pointerover /template/ Border#PART_Border">
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush}" />
+        </Style>
+        <!-- 聚焦/捕获中：主题色高亮边框 + 闪烁占位 -->
+        <Style Selector="^:focus /template/ Border#PART_Border">
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush}" />
+            <Setter Property="BorderThickness" Value="1.5" />
+        </Style>
+        <Style Selector="^:focus /template/ TextBlock#PlaceholderText">
+            <Setter Property="Foreground" Value="{DynamicResource ThemeBrush}" />
+            <Setter Property="FontStyle" Value="Italic" />
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>

@@ -28,7 +28,7 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
     }
 
     /// <summary>
-    /// 是否正在恢复状态（状态恢复期间属性变化不触发副作用）
+    /// 状态恢复期间属性变化不触发副作用
     /// </summary>
     public bool IsRestoringState
     {
@@ -48,7 +48,7 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
 
     /// <summary>
     /// 展示类型
-    /// /// </summary>
+    /// </summary>
     public SelectItemModel ShowType
     {
         get => _showType;
@@ -96,7 +96,7 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
         }
         catch (OperationCanceledException)
         {
-            // 忽略所有取消异常，这是预期的行为（如用户快速切换Tab）
+            // 取消异常是预期行为，忽略
         }
         catch (Exception ex)
         {
@@ -123,7 +123,7 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
             .Do(_ => source.CancelAndResetLoadToken())
             .Select(value => Observable.FromAsync(async _ =>
             {
-                // 状态恢复期间不执行副作用
+                // 状态恢复期间跳过执行
                 if (source.IsRestoringState) return;
 
                 var cts = source._loadCts;
@@ -133,7 +133,7 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
                 }
                 catch (OperationCanceledException)
                 {
-                    // 忽略所有取消异常，这是预期的行为（如用户快速切换Tab）
+                    // 取消异常是预期行为，忽略
                 }
                 catch (Exception ex)
                 {
@@ -151,6 +151,12 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
     }
 
     public virtual Task OnNavigatedToAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    // 全局快捷键触发的"刷新当前页"，默认空实现，子类按需重写
+    public virtual Task RefreshAsync()
     {
         return Task.CompletedTask;
     }

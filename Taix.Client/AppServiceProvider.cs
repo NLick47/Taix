@@ -20,6 +20,7 @@ namespace Taix.Client;
 [Singleton(typeof(IAppData), typeof(ApiAppData))]
 [Singleton(typeof(IWebSiteData), typeof(ApiWebSiteData))]
 [Singleton(typeof(ICategorys), typeof(ApiCategorys))]
+[Singleton(typeof(ICategorySummaryData), typeof(ApiCategorySummaryData))]
 [Singleton(typeof(IAppConfig), typeof(ApiAppConfig))]
 [Singleton(typeof(IWindowStateService), typeof(WindowStateService))]
 [Singleton(typeof(IUIServicer), typeof(UIServicer))]
@@ -32,6 +33,8 @@ namespace Taix.Client;
 [Singleton(typeof(IWebSiteContextMenuServicer), typeof(WebSiteContextMenuServicer))]
 [Singleton(typeof(IShutdownService), typeof(ShutdownService))]
 [Singleton(typeof(IStateService), typeof(StateService))]
+[Singleton(typeof(ISearchService), typeof(SearchService))]
+[Singleton(typeof(IShortcutService), typeof(ShortcutService))]
 [Singleton(typeof(MainViewModel))]
 [Singleton(typeof(INavigationService), Factory = nameof(CreateNavigationService))]
 [Singleton(typeof(INavigationDataService), Factory = nameof(CreateNavigationDataService))]
@@ -55,6 +58,9 @@ namespace Taix.Client;
 [Transient(typeof(ChartPageViewModel))]
 [Transient(typeof(WebSiteDetailPage))]
 [Transient(typeof(WebSiteDetailPageViewModel))]
+[Transient(typeof(CategorySummaryPage))]
+[Transient(typeof(CategorySummaryPageViewModel))]
+[Transient(typeof(SearchPaletteViewModel))]
 internal partial class AppServiceProvider
 {
     public HttpClient CreateHttpClient()

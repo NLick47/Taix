@@ -46,10 +46,13 @@ public class MainServicer : IMainServicer
     {
         _shutdownService.AddHandler(OnShuttingDown);
 
-        await Task.WhenAll(
-            _windowStateService.LoadAsync(),
-            _config.LoadAsync()
-        );
+        // 缓存命中时两者都是同步返回，直接顺序触发，省掉 WhenAll 的状态机开销
+        var configLoad = _config.LoadAsync();
+        var windowLoad = _windowStateService.LoadAsync();
+        if (!configLoad.IsCompleted || !windowLoad.IsCompleted)
+        {
+            await Task.WhenAll(configLoad, windowLoad);
+        }
 
         var language = (CultureCode)_config.GetConfig().General.Language;
         SystemLanguage.InitializeLanguage(language);
@@ -61,8 +64,12 @@ public class MainServicer : IMainServicer
 
         ShowMainWindow();
 
-        _appContextMenuServicer.Init();
-        _webSiteContextMenuServicer.Init();
+        // 上下文菜单 Init 推迟到渲染回合之后，让 Start() 尽早返回；用 Send 不会被后台任务插队
+        _ = Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _appContextMenuServicer.Init();
+            _webSiteContextMenuServicer.Init();
+        });
     }
 
     private async Task PreloadCategoriesAsync()
@@ -103,12 +110,11 @@ public class MainServicer : IMainServicer
         mainWindow.WindowState = WindowState.Normal;
         mainWindow.DataContext = mainVM;
 
-        mainWindow.Opened += async (_, _) =>
+        mainWindow.Opened += (_, _) =>
         {
             try
             {
                 mainVM.LoadDefaultPage();
-                await Task.Delay(100);
             }
             catch (Exception ex)
             {
@@ -116,8 +122,9 @@ public class MainServicer : IMainServicer
             }
         };
 
-        mainWindow.IsVisible = true;
+        // 先挂 MainWindow 再设可见：部分 Avalonia 逻辑依赖 MainWindow 就绪（关闭策略、Activate 路径）
         desk.MainWindow = mainWindow;
+        mainWindow.IsVisible = true;
     }
 
     private async Task OnShuttingDown()

@@ -10,6 +10,10 @@
                   IconSource="/Resources/Icons/tai32.ico"
                   xmlns:na="using:Taix.Client.Controls.Navigation"
                   xmlns:control="using:Taix.Client.Controls"
+                  xmlns:base="using:Taix.Client.Controls.Base"
+                  xmlns:button="using:Taix.Client.Controls.Button"
+                  xmlns:search="using:Taix.Client.Shared.Models.Search"
+                  xmlns:conv="using:Taix.Client.Controls.Converters"
                   PageContainer="{Binding PageContainer}"
                   xmlns:i="using:Avalonia.Xaml.Interactivity"
                   xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
@@ -20,13 +24,250 @@
                   Height="553" Width="860" MinHeight="553" MinWidth="860"
                   Title="{Binding Title}"
                   ConnectionStatus="{Binding ConnectionStatus}">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
 
-        <Grid x:Name="NavigationHost" Grid.Column="0" Width="80" Margin="0,40,0,15">
+    <ui:DefaultWindow.Resources>
+        <conv:SearchResultTypeConverter x:Key="SearchTypeConverter" />
+    </ui:DefaultWindow.Resources>
+
+    <ui:DefaultWindow.Styles>
+        <Style Selector="TextBox.search-input">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="CaretBrush" Value="{DynamicResource ThemeBrush}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource ThemeBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DefaultTextBrush}" />
+        </Style>
+        <Style Selector="TextBox.search-input:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox.search-input:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox.search-input /template/ TextBlock#PART_Watermark">
+            <Setter Property="Opacity" Value="0.85" />
+            <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
+        </Style>
+
+        <Style Selector="ListBox#SearchResultList">
+            <Setter Property="Padding" Value="8,2,8,8" />
+        </Style>
+        <Style Selector="ListBox#SearchResultList ListBoxItem">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+        <Style Selector="ListBox#SearchResultList ListBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="ListBox#SearchResultList ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="ListBox#SearchResultList ListBoxItem:selected /template/ ContentPresenter > Grid > Border.selection-bar">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+
+        <Style Selector="ListBox#SearchResultList ListBoxItem.section-header">
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Margin" Value="0,10,0,4" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+        <Style Selector="ListBox#SearchResultList ListBoxItem.section-header:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBox#SearchResultList ListBoxItem.section-header:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="ListBox#SearchResultList ListBoxItem.category-row">
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+        <Style Selector="ListBox#SearchResultList ListBoxItem.category-card-row">
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+        <Style Selector="ListBox#SearchResultList ListBoxItem.category-card-row:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBox#SearchResultList ListBoxItem.category-card-row:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Border.category-card">
+            <Setter Property="Background" Value="{DynamicResource SettingPanelBgBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SettingPanelBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ListBox#SearchResultList ListBoxItem.category-card-row:pointerover Border.category-card">
+            <Setter Property="BorderBrush" Value="{DynamicResource SettingPanelSpliteLineBrush}" />
+        </Style>
+        <Style Selector="ListBox#SearchResultList ListBoxItem.category-card-row:selected Border.category-card">
+            <Setter Property="Background" Value="{DynamicResource ListItemSelectedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush}" />
+        </Style>
+
+        <Style Selector="Border.total-pill">
+            <Setter Property="Background">
+                <SolidColorBrush Color="{DynamicResource ThemeColor}" Opacity="0.14" />
+            </Setter>
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.total-pill TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource ThemeBrush}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="Border.cat-pill">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SettingPanelBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.cat-pill TextBlock.pill-name">
+            <Setter Property="Foreground" Value="{DynamicResource DefaultTextBrush}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.cat-pill TextBlock.pill-time">
+            <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="5,0,0,0" />
+        </Style>
+        <Style Selector="TextBlock.cat-overflow">
+            <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="4,0,0,0" />
+        </Style>
+
+        <Style Selector="Border.badge-app">
+            <Setter Property="Background" Value="{DynamicResource ThemeBadgeBgBrush}" />
+        </Style>
+        <Style Selector="Border.badge-app TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource ThemeBadgeFgBrush}" />
+        </Style>
+        <Style Selector="Border.badge-web">
+            <Setter Property="Background" Value="#332E6FE0" />
+        </Style>
+        <Style Selector="Border.badge-web TextBlock">
+            <Setter Property="Foreground" Value="#7AA8FF" />
+        </Style>
+        <Style Selector="Border.badge-cat-app, Border.badge-cat-web">
+            <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+        </Style>
+        <Style Selector="Border.badge-cat-app TextBlock, Border.badge-cat-web TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
+        </Style>
+
+        <Style Selector="Border.tip-key">
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="MinWidth" Value="20" />
+        </Style>
+        <Style Selector="Border.tip-key TextBlock">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBlock.tip-label">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="6,0,16,0" />
+        </Style>
+        <Style Selector="TextBlock.section-label">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="Button.palette-ghost">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.palette-ghost /template/ ContentPresenter">
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.palette-ghost:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+        </Style>
+
+        <Style Selector="Button.palette-esc">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WindowBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="MinWidth" Value="34" />
+            <Setter Property="MinHeight" Value="22" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.palette-esc /template/ ContentPresenter">
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.palette-esc:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+        </Style>
+        <Style Selector="Button.palette-esc:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush}" />
+        </Style>
+        <Style Selector="Button.palette-esc:pointerover TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource DefaultTextBrush}" />
+        </Style>
+    </ui:DefaultWindow.Styles>
+
+    <Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid x:Name="NavigationHost" Grid.Column="0" Width="80" Margin="0,40,0,15">
             <DockPanel>
                 <na:Navigation x:Name="Navigation"
                                Width="80"
@@ -60,7 +301,260 @@
                                    Instance="{Binding PageContainer,Mode=TwoWay}"
                                    Uri="{Binding Uri,Mode=TwoWay}"
                                    Title="{Binding Title,Mode=TwoWay}" />
-        </Border>
+            </Border>
+        </Grid>
+
+        <Grid x:Name="SearchOverlay"
+              ZIndex="500"
+              Margin="0,40,0,0"
+              IsVisible="{Binding IsSearchOpen}">
+            <Border Background="#80000000"
+                    PointerReleased="OnSearchMaskPointerReleased" />
+
+            <!-- 搜索面板 -->
+            <Border x:DataType="vm:SearchPaletteViewModel"
+                    DataContext="{Binding SearchVm}"
+                    Width="640" Height="480"
+                    CornerRadius="14"
+                    Background="{DynamicResource SearchSurfaceBrush}"
+                    BorderBrush="{DynamicResource SearchBorderLightBrush}"
+                    BorderThickness="1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    ClipToBounds="True">
+                <Grid RowDefinitions="56,Auto,*,Auto">
+                    <!-- 顶部搜索行：图标 + 输入框 + 清除 + 关闭 -->
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="20,0">
+                        <base:Icon Grid.Column="0"
+                                   IconType="Search"
+                                   FontSize="16"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SubTextBrush}" />
+                        <TextBox Grid.Column="1"
+                                 x:Name="SearchInput"
+                                 Classes="search-input"
+                                 Margin="14,0,0,0"
+                                 Watermark="{DynamicResource SearchPlaceholder}"
+                                 Text="{Binding Keyword, Mode=TwoWay}" />
+                        <Button Grid.Column="2"
+                                x:Name="ClearButton"
+                                Classes="palette-ghost"
+                                VerticalAlignment="Center"
+                                Command="{Binding ClearKeywordCommand}"
+                                IsVisible="{Binding Keyword, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                ToolTip.Tip="{DynamicResource Clear}">
+                            <base:Icon IconType="Cancel"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource SubTextBrush}" />
+                        </Button>
+                        <Button Grid.Column="3"
+                                x:Name="SearchCloseButton"
+                                Classes="palette-esc"
+                                Margin="6,0,0,0"
+                                VerticalAlignment="Center"
+                                Command="{Binding CloseCommand}"
+                                ToolTip.Tip="{DynamicResource SearchTipClose}">
+                            <TextBlock Text="esc"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SubTextBrush}" />
+                        </Button>
+                    </Grid>
+
+                    <!-- 分隔线 + 状态条 -->
+                    <Border Grid.Row="1"
+                            BorderBrush="{DynamicResource SearchBorderLightBrush}"
+                            BorderThickness="0,1,0,0">
+                        <Grid Margin="20,8,20,6" ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding StatusText}"
+                                       Classes="section-label" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding ResultsCountText}"
+                                       Classes="section-label"
+                                       Opacity="0.7" />
+                        </Grid>
+                    </Border>
+
+                    <!-- 结果列表 / 空态 -->
+                    <Grid Grid.Row="2">
+                        <ListBox x:Name="SearchResultList"
+                                 ItemsSource="{Binding Results}"
+                                 SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 IsVisible="{Binding !IsEmpty}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="search:SearchResultItem">
+                                    <Panel>
+                                        <!-- 分组标题 -->
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   FontSize="10"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource SubTextBrush}"
+                                                   Margin="14,0,0,0"
+                                                   IsVisible="{Binding IsHeader}" />
+
+                                        <!-- 分类卡片行 -->
+                                        <Grid Margin="6,4"
+                                              IsVisible="{Binding IsCategoryCard}">
+                                            <Border Classes="category-card"
+                                                    Margin="10,0,4,0">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <StackPanel Grid.Column="0"
+                                                                Margin="14,10,0,10"
+                                                                Spacing="8"
+                                                                VerticalAlignment="Center">
+                                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding DisplayName}"
+                                                                       FontSize="14" FontWeight="SemiBold"
+                                                                       Foreground="{DynamicResource DefaultTextBrush}"
+                                                                       VerticalAlignment="Center" />
+                                                            <Border Classes="total-pill"
+                                                                    IsVisible="{Binding UsageText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                                <TextBlock Text="{Binding UsageText}" />
+                                                            </Border>
+                                                        </StackPanel>
+
+                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <ItemsControl ItemsSource="{Binding CategoryPills}">
+                                                                <ItemsControl.ItemsPanel>
+                                                                    <ItemsPanelTemplate>
+                                                                        <StackPanel Orientation="Horizontal" />
+                                                                    </ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate DataType="search:CategoryPill">
+                                                                        <Border Classes="cat-pill">
+                                                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                                                <TextBlock Classes="pill-name"
+                                                                                           Text="{Binding Name}" />
+                                                                                <TextBlock Classes="pill-time"
+                                                                                           Text="{Binding UsageText}"
+                                                                                           IsVisible="{Binding UsageText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                                            </StackPanel>
+                                                                        </Border>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                            <TextBlock Classes="cat-overflow"
+                                                                       Text="{Binding OverflowText}"
+                                                                       IsVisible="{Binding HasOverflow}" />
+                                                        </StackPanel>
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Column="2"
+                                                               Text="›"
+                                                               FontSize="16"
+                                                               Foreground="{DynamicResource SubTextBrush}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="8,0,12,2" />
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+
+                                        <!-- 普通条目行 -->
+                                        <Grid ColumnDefinitions="3,Auto,*,Auto,Auto" Margin="6,0" Height="40"
+                                              IsVisible="{Binding IsItemRow}">
+                                            <Border Grid.Column="0"
+                                                    Classes="selection-bar"
+                                                    Width="3"
+                                                    Margin="0,8"
+                                                    CornerRadius="2"
+                                                    Background="{DynamicResource ThemeBrush}"
+                                                    Opacity="0"
+                                                    VerticalAlignment="Stretch" />
+
+                                            <base:Img Grid.Column="1"
+                                                      Width="20" Height="20" DecodeWidth="20"
+                                                      URL="{Binding IconFile}"
+                                                      Margin="10,0,0,0"
+                                                      VerticalAlignment="Center" />
+
+                                            <Grid Grid.Column="2"
+                                                  Margin="12,0,12,0"
+                                                  VerticalAlignment="Center"
+                                                  ColumnDefinitions="Auto,*">
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding DisplayName}"
+                                                           Foreground="{DynamicResource DefaultTextBrush}"
+                                                           FontSize="13"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Grid.Column="1"
+                                                           Margin="8,0,0,0"
+                                                           Text="{Binding SecondaryText}"
+                                                           Foreground="{DynamicResource SubTextBrush}"
+                                                           FontSize="11"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           IsVisible="{Binding SecondaryText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            </Grid>
+
+                                            <TextBlock Grid.Column="3"
+                                                       Text="{Binding UsageText}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,10,0"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource SubTextBrush}"
+                                                       IsVisible="{Binding UsageText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                                            <Border Grid.Column="4"
+                                                    VerticalAlignment="Center"
+                                                    Padding="6,1"
+                                                    CornerRadius="3"
+                                                    Margin="0,0,4,0"
+                                                    Classes.badge-app="{Binding Type, Converter={x:Static conv:SearchResultTypeConverter.IsAppConverter}}"
+                                                    Classes.badge-web="{Binding Type, Converter={x:Static conv:SearchResultTypeConverter.IsWebConverter}}"
+                                                    Classes.badge-cat-app="{Binding Type, Converter={x:Static conv:SearchResultTypeConverter.IsCategoryAppConverter}}"
+                                                    Classes.badge-cat-web="{Binding Type, Converter={x:Static conv:SearchResultTypeConverter.IsCategoryWebConverter}}">
+                                                <TextBlock FontSize="9"
+                                                           FontWeight="SemiBold"
+                                                           Text="{Binding Type, Converter={StaticResource SearchTypeConverter}}" />
+                                            </Border>
+                                        </Grid>
+                                    </Panel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- 空态 -->
+                        <StackPanel IsVisible="{Binding IsEmpty}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="10">
+                            <base:Icon IconType="SearchAndApps"
+                                       FontSize="32"
+                                       Foreground="{DynamicResource SubTextBrush}"
+                                       Opacity="0.5"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="{DynamicResource SearchEmptyHint}"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource SubTextBrush}"
+                                       FontSize="12" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- 底部提示行 -->
+                    <Border Grid.Row="3"
+                            BorderBrush="{DynamicResource SearchBorderLightBrush}"
+                            BorderThickness="0,1,0,0"
+                            Padding="16,8"
+                            Background="{DynamicResource SearchFooterBrush}">
+                        <StackPanel Orientation="Horizontal">
+                            <Border Classes="tip-key"><TextBlock Text="↑↓" /></Border>
+                            <TextBlock Text="{DynamicResource SearchTipNav}" Classes="tip-label" />
+                            <Border Classes="tip-key"><TextBlock Text="↵" /></Border>
+                            <TextBlock Text="{DynamicResource SearchTipEnter}" Classes="tip-label" />
+                            <Border Classes="tip-key"><TextBlock Text="←→" /></Border>
+                            <TextBlock Text="{DynamicResource SearchTipExpand}" Classes="tip-label" />
+                            <Border Classes="tip-key"><TextBlock Text="Esc" /></Border>
+                            <TextBlock Text="{DynamicResource SearchTipClose}" Classes="tip-label" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 
 

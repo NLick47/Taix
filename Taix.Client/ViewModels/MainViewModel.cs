@@ -33,6 +33,10 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
     private bool _isConnectionMonitoringStarted;
     private bool _isNavigatingBack;
 
+    private ISearchService? _searchService;
+    private SearchPaletteViewModel? _searchVm;
+    private bool _isSearchOpen;
+
     public MainViewModel(
         IServiceProvider serviceProvider,
         IAppConfig appConfig,
@@ -230,6 +234,17 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
     {
         LoadDefaultPageInternal();
 
+        // 订阅全局搜索 Toggle 请求。延迟到这里订阅以规避 MainViewModel↔SearchService 的构造期循环依赖
+        // （SearchService 注入 INavigationService=本实例）。此时单例均已构造完毕。
+        if (_searchService == null)
+        {
+            _searchService = _serviceProvider.GetService(typeof(ISearchService)) as ISearchService;
+            if (_searchService != null)
+            {
+                _searchService.SearchToggleRequested += OnSearchToggle;
+            }
+        }
+
         if (_isStartupInitCompleted) return;
         _isStartupInitCompleted = true;
 
@@ -269,8 +284,58 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
 
     public void Dispose()
     {
+        if (_searchService != null)
+        {
+            _searchService.SearchToggleRequested -= OnSearchToggle;
+            _searchService = null;
+        }
+        _searchVm?.Dispose();
+        _searchVm = null;
+
         _connectionCts.Cancel();
         _connectionCts.Dispose();
         _disposables.Dispose();
+    }
+
+    public bool IsSearchOpen
+    {
+        get => _isSearchOpen;
+        set
+        {
+            if (_isSearchOpen == value) return;
+            _isSearchOpen = value;
+            OnPropertyChanged();
+
+            // 展开时确保搜索 VM 就绪，并把它的关闭回调接到本状态
+            if (value)
+            {
+                EnsureSearchVm();
+            }
+        }
+    }
+
+    public SearchPaletteViewModel SearchVm
+    {
+        get
+        {
+            EnsureSearchVm();
+            return _searchVm!;
+        }
+    }
+
+    private void EnsureSearchVm()
+    {
+        if (_searchVm != null) return;
+        _searchVm = _serviceProvider.GetService(typeof(SearchPaletteViewModel)) as SearchPaletteViewModel;
+        if (_searchVm != null)
+        {
+            // 导航跳转/清除后统一收口到 IsSearchOpen，无需独立窗口的关闭逻辑
+            _searchVm.CloseRequested = () => IsSearchOpen = false;
+        }
+    }
+
+    private void OnSearchToggle()
+    {
+        IsSearchOpen = !IsSearchOpen;
     }
 }

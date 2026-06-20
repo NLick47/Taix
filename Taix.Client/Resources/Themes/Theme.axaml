@@ -42,6 +42,17 @@
             <SolidColorBrush x:Key="StandardBackgroundBrush2" Color="{StaticResource Surface4}" />
             <SolidColorBrush x:Key="ButtonBorderBrush" Color="{StaticResource BorderDefault}" />
 
+            <!--【全局搜索浮窗中性色骨架】-->
+            <Color x:Key="SearchSurfaceColor">#24232A</Color>
+            <Color x:Key="SearchInputColor">#2A2930</Color>
+            <Color x:Key="SearchFooterColor">#2A2930</Color>
+            <Color x:Key="SearchBorderLightColor">#3A3940</Color>
+            <Color x:Key="SearchBorderMediumColor">#4A4950</Color>
+            <SolidColorBrush x:Key="SearchSurfaceBrush" Color="{StaticResource SearchSurfaceColor}" />
+            <SolidColorBrush x:Key="SearchInputBrush" Color="{StaticResource SearchInputColor}" />
+            <SolidColorBrush x:Key="SearchFooterBrush" Color="{StaticResource SearchFooterColor}" />
+            <SolidColorBrush x:Key="SearchBorderLightBrush" Color="{StaticResource SearchBorderLightColor}" />
+
             <!--【窗口】-->
             <!--窗口边框颜色-->
             <SolidColorBrush x:Key="WindowBorderBrush" Color="{StaticResource BorderDefault}" />
@@ -112,6 +123,10 @@
             <SolidColorBrush x:Key="ListItemSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.16" />
             <SolidColorBrush x:Key="ListItemSelectedHoverBrush" Color="{DynamicResource ThemeColor}" Opacity="0.24" />
             <SolidColorBrush x:Key="ListItemAccentBrush" Color="{DynamicResource ThemeColor}" Opacity="0.85" />
+
+            <!--全局搜索徽标（暗色：背景半透明，前景接近主题色但更亮以保证对比度）-->
+            <SolidColorBrush x:Key="ThemeBadgeBgBrush" Color="{DynamicResource ThemeColor}" Opacity="0.22" />
+            <SolidColorBrush x:Key="ThemeBadgeFgBrush" Color="{DynamicResource ThemeColor}" />
 
             <!--日期选择控件-->
             <Color x:Key="DatePickerItemBgColor">#484850</Color>
@@ -302,6 +317,17 @@
             <SolidColorBrush x:Key="StandardBackgroundBrush2" Color="#ffffff" />
             <SolidColorBrush x:Key="ButtonBorderBrush" Color="#d0d0d0" />
 
+            <!--【全局搜索浮窗中性色骨架】-->
+            <Color x:Key="SearchSurfaceColor">#FFFFFF</Color>
+            <Color x:Key="SearchInputColor">#F8F7FA</Color>
+            <Color x:Key="SearchFooterColor">#F5F4F7</Color>
+            <Color x:Key="SearchBorderLightColor">#EAE8EE</Color>
+            <Color x:Key="SearchBorderMediumColor">#DDDBE2</Color>
+            <SolidColorBrush x:Key="SearchSurfaceBrush" Color="{StaticResource SearchSurfaceColor}" />
+            <SolidColorBrush x:Key="SearchInputBrush" Color="{StaticResource SearchInputColor}" />
+            <SolidColorBrush x:Key="SearchFooterBrush" Color="{StaticResource SearchFooterColor}" />
+            <SolidColorBrush x:Key="SearchBorderLightBrush" Color="{StaticResource SearchBorderLightColor}" />
+
             <!--【窗口】-->
 
             <!--窗口边框颜色-->
@@ -375,6 +401,10 @@
             <SolidColorBrush x:Key="ListItemSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.10" />
             <SolidColorBrush x:Key="ListItemSelectedHoverBrush" Color="{DynamicResource ThemeColor}" Opacity="0.16" />
             <SolidColorBrush x:Key="ListItemAccentBrush" Color="{DynamicResource ThemeColor}" Opacity="0.90" />
+
+            <!--全局搜索徽标（浅色：更浅背景，文字饱和便于阅读）-->
+            <SolidColorBrush x:Key="ThemeBadgeBgBrush" Color="{DynamicResource ThemeColor}" Opacity="0.14" />
+            <SolidColorBrush x:Key="ThemeBadgeFgBrush" Color="{DynamicResource ThemeColor}" />
 
             <!--日期选择控件-->
             <Color x:Key="DatePickerItemBgColor">#F9F9F9</Color>

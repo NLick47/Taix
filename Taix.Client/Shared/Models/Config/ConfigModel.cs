@@ -9,4 +9,6 @@ public class ConfigModel
     public GeneralModel General { get; set; } = new();
 
     public BehaviorModel Behavior { get; set; } = new();
+
+    public ShortcutModel Shortcut { get; set; } = new();
 }

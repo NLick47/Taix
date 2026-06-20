@@ -62,6 +62,8 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
         return Task.CompletedTask;
     }
 
+    public override Task RefreshAsync() => ExecuteAsync(LoadDataCoreAsync);
+
     public ReactiveCommand<object, Unit> ShowChooseCommand { get; }
     public ReactiveCommand<object, Unit> ChoosedCommand { get; }
     public ReactiveCommand<object, Unit> GotoDetailCommand { get; }

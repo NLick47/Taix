@@ -198,6 +198,8 @@ public partial class DataPageViewModel : DataPageModel
         return LoadDataAsync(date, dataType);
     }
 
+    public override Task RefreshAsync() => OnRefreshAsync(null!);
+
     private void OnToDetail(object obj)
     {
         var date = TabbarSelectedIndex switch { 0 => DayDate, 1 => WeekDate, 2 => MonthDate, 3 => YearDate, _ => DateTime.Now };

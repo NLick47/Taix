@@ -48,6 +48,7 @@ public class PageContainer : TemplatedControl
         ["CategoryPage"] = typeof(Views.CategoryPage),
         ["CategoryAppListPage"] = typeof(Views.CategoryAppListPage),
         ["CategoryWebSiteListPage"] = typeof(Views.CategoryWebSiteListPage),
+        ["CategorySummaryPage"] = typeof(Views.CategorySummaryPage),
         ["ChartPage"] = typeof(Views.ChartPage),
         ["WebSiteDetailPage"] = typeof(Views.WebSiteDetailPage),
     };
@@ -103,6 +104,8 @@ public class PageContainer : TemplatedControl
         get => GetValue(InstanceProperty);
         set => SetValue(InstanceProperty, value);
     }
+
+    public ModelBase? CurrentViewModel { get; private set; }
 
     protected override Type StyleKeyOverride => typeof(PageContainer);
 
@@ -230,7 +233,7 @@ public class PageContainer : TemplatedControl
     {
         try
         {
-            // 模板元素未就绪时不执行加载，挂起等待逻辑树就绪
+            // 模板未就绪时挂起
             if (ContentPresenter == null || ScrollViewer == null)
             {
                 PendingUri = Uri;
@@ -292,7 +295,14 @@ public class PageContainer : TemplatedControl
                     OnLoadPaged?.Invoke(this, EventArgs.Empty);
 
                     if (page.Instance.DataContext is ModelBase newVm)
+                    {
+                        CurrentViewModel = newVm;
                         _ = newVm.OnNavigatedToAsync();
+                    }
+                    else
+                    {
+                        CurrentViewModel = null;
+                    }
                 }
                 else
                 {

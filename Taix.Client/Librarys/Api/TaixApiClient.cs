@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Web;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Shared.Models;
+using Taix.Client.Shared.Models.Category;
 using Taix.Client.Shared.Models.Data;
 using Taix.Client.Shared.Models.Web;
 
@@ -224,6 +225,36 @@ public class TaixApiClient : ITaixApiClient
     {
         return PostAsync<int, ApplyMatchRequest>("api/category/apply-directory-match", new ApplyMatchRequest { Patterns = patterns });
     }
+
+    public Task<CategorySummaryModel> GetAppCategorySummaryAsync(int categoryId, DateTime start, DateTime end, DateTime? prevStart = null, DateTime? prevEnd = null, CancellationToken cancellationToken = default) =>
+        GetAsync<CategorySummaryModel>(
+            TzQuery(SummaryQuery($"api/category/app/{categoryId}/summary", start, end, prevStart, prevEnd)),
+            cancellationToken);
+
+    public Task<CategorySummaryModel> GetWebCategorySummaryAsync(int categoryId, DateTime start, DateTime end, DateTime? prevStart = null, DateTime? prevEnd = null, CancellationToken cancellationToken = default) =>
+        GetAsync<CategorySummaryModel>(
+            TzQuery(SummaryQuery($"api/category/web/{categoryId}/summary", start, end, prevStart, prevEnd)),
+            cancellationToken);
+
+    private static string SummaryQuery(string basePath, DateTime start, DateTime end, DateTime? prevStart, DateTime? prevEnd)
+    {
+        var s = $"?start={Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:ss"))}&end={Uri.EscapeDataString(end.ToString("yyyy-MM-ddTHH:mm:ss"))}";
+        if (prevStart.HasValue && prevEnd.HasValue)
+        {
+            s += $"&prevStart={Uri.EscapeDataString(prevStart.Value.ToString("yyyy-MM-ddTHH:mm:ss"))}&prevEnd={Uri.EscapeDataString(prevEnd.Value.ToString("yyyy-MM-ddTHH:mm:ss"))}";
+        }
+        return basePath + s;
+    }
+
+    public Task<List<CategoryMemberModel>> GetAppCategoryMembersAsync(int categoryId, DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<List<CategoryMemberModel>>(
+            TzQuery(SummaryQuery($"api/category/app/{categoryId}/members", start, end, null, null)),
+            cancellationToken);
+
+    public Task<List<CategoryMemberModel>> GetWebCategoryMembersAsync(int categoryId, DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        GetAsync<List<CategoryMemberModel>>(
+            TzQuery(SummaryQuery($"api/category/web/{categoryId}/members", start, end, null, null)),
+            cancellationToken);
 
     // Data
     private static string TzQuery(string url)

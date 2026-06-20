@@ -9,6 +9,8 @@
              xmlns:select="using:Taix.Client.Controls.Select"
              xmlns:Tabbar="using:Taix.Client.Controls.Tabbar"
              xmlns:SettingPanel="using:Taix.Client.Controls.SettingPanel"
+             xmlns:input="using:Taix.Client.Controls.Input"
+             xmlns:base="using:Taix.Client.Controls.Base"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:Taix.Client.Behaviors"
              x:Class="Taix.Client.Views.SettingPage">
@@ -122,6 +124,91 @@
                 </StackPanel>
 
                 <StackPanel x:Name="Section3" Margin="0,30,0,0">
+                    <StackPanel Classes="section-header">
+                        <Border Classes="section-accent" />
+                        <TextBlock Classes="section-title" Text="{DynamicResource Shortcuts}" />
+                    </StackPanel>
+                    <Border Background="{DynamicResource SettingPanelBgBrush}"
+                            CornerRadius="{StaticResource RadiusSmall}"
+                            Margin="0,10,0,0"
+                            BorderBrush="{DynamicResource SettingPanelBorderBrush}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <StackPanel.Styles>
+                                <Style Selector="Grid.shortcut-row">
+                                    <Setter Property="Margin" Value="20,16" />
+                                </Style>
+                                <Style Selector="Border.shortcut-divider">
+                                    <Setter Property="Height" Value="1" />
+                                    <Setter Property="Margin" Value="20,0" />
+                                    <Setter Property="Background" Value="{DynamicResource SettingPanelBorderBrush}" />
+                                </Style>
+                                <Style Selector="TextBlock.shortcut-title">
+                                    <Setter Property="FontSize" Value="13" />
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                </Style>
+                                <Style Selector="TextBlock.shortcut-desc">
+                                    <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
+                                    <Setter Property="FontSize" Value="11" />
+                                </Style>
+                            </StackPanel.Styles>
+
+                            <!-- 行 1：刷新 -->
+                            <Grid Classes="shortcut-row" ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0"
+                                            Margin="0,0,16,0"
+                                            VerticalAlignment="Center"
+                                            Spacing="3">
+                                    <TextBlock Classes="shortcut-title" Text="{DynamicResource RefreshShortcut}" />
+                                    <TextBlock Classes="shortcut-desc" Text="{DynamicResource RefreshShortcutDesc}" />
+                                </StackPanel>
+                                <input:KeyGestureCapture Grid.Column="1"
+                                                         VerticalAlignment="Center"
+                                                         Placeholder="{DynamicResource PressKeysHint}"
+                                                         DefaultValue="F5"
+                                                         Value="{Binding RefreshShortcut, Mode=TwoWay}" />
+                            </Grid>
+
+                            <Border Classes="shortcut-divider" />
+
+                            <!-- 行 2：搜索 -->
+                            <Grid Classes="shortcut-row" ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0"
+                                            Margin="0,0,16,0"
+                                            VerticalAlignment="Center"
+                                            Spacing="3">
+                                    <TextBlock Classes="shortcut-title" Text="{DynamicResource SearchShortcut}" />
+                                    <TextBlock Classes="shortcut-desc" Text="{DynamicResource SearchShortcutDesc}" />
+                                </StackPanel>
+                                <input:KeyGestureCapture Grid.Column="1"
+                                                         VerticalAlignment="Center"
+                                                         Placeholder="{DynamicResource PressKeysHint}"
+                                                         DefaultValue="Ctrl+K"
+                                                         Value="{Binding SearchShortcut, Mode=TwoWay}" />
+                            </Grid>
+
+                            <Border Classes="shortcut-divider" />
+
+                            <!-- 行 3：返回上一页 -->
+                            <Grid Classes="shortcut-row" ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0"
+                                            Margin="0,0,16,0"
+                                            VerticalAlignment="Center"
+                                            Spacing="3">
+                                    <TextBlock Classes="shortcut-title" Text="{DynamicResource NavigateBackShortcut}" />
+                                    <TextBlock Classes="shortcut-desc" Text="{DynamicResource NavigateBackShortcutDesc}" />
+                                </StackPanel>
+                                <input:KeyGestureCapture Grid.Column="1"
+                                                         VerticalAlignment="Center"
+                                                         Placeholder="{DynamicResource PressKeysHint}"
+                                                         DefaultValue="Alt+Left"
+                                                         Value="{Binding NavigateBackShortcut, Mode=TwoWay}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="Section4" Margin="0,30,0,0">
                     <StackPanel Classes="section-header">
                         <Border Classes="section-accent" />
                         <TextBlock Classes="section-title" Text="{DynamicResource About}" />
