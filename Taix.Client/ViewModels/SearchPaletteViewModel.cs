@@ -288,6 +288,15 @@ public class SearchPaletteViewModel : ModelBase
         }
     }
 
+    public async Task RefreshAsync()
+    {
+        var keyword = (Keyword ?? string.Empty).Trim();
+        if (keyword.Length == 0)
+            await LoadDefaultAsync();
+        else
+            await OnKeywordChangedAsync(keyword);
+    }
+
     private async Task OnKeywordChangedAsync(string keyword)
     {
         keyword = keyword?.Trim() ?? string.Empty;

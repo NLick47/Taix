@@ -57,6 +57,10 @@ public class SearchService : ISearchService
         _webData = webData;
         _categorys = categorys;
         _navigationService = navigationService;
+
+        // 分类增删改时失效搜索语料缓存，避免全局搜索仍展示已删分类
+        _categorys.CategoriesChanged += InvalidateCache;
+        _webData.CategoriesChanged += InvalidateCache;
     }
 
     public Task ShowAsync()

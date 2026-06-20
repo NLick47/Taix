@@ -25,6 +25,8 @@ public class ApiWebData : IWebData
         _webSiteData = webSiteData;
     }
 
+    public event Action? CategoriesChanged;
+
     public Task AddUrlBrowseTimeAsync(Site site, int duration, DateTime? dateTime = null) =>
         _apiClient.AddUrlBrowseTimeAsync(site.Url, site.Title, duration, dateTime);
 
@@ -48,6 +50,8 @@ public class ApiWebData : IWebData
     public void RefreshCategoriesCache()
     {
         _cachedCategories = null;
+        // 通知下游（如全局搜索语料缓存）网站分类已变更
+        CategoriesChanged?.Invoke();
     }
 
     public async Task<WebSiteCategoryModel> CreateWebSiteCategoryAsync(WebSiteCategoryModel data)

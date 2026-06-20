@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,6 +8,9 @@ namespace Taix.Client.Shared.Servicers.Interfaces;
 
 public interface ICategorys
 {
+
+    event Action? CategoriesChanged;
+
     Task<List<CategoryModel>> GetCategoriesAsync(CancellationToken cancellationToken = default);
 
     Task<CategoryModel?> GetCategoryAsync(int id, CancellationToken cancellationToken = default);

@@ -11,6 +11,11 @@ namespace Taix.Client.Shared.Servicers.Interfaces;
 public interface IWebData
 {
     /// <summary>
+    /// 网站分类列表发生增删改时触发，供依赖分类语料的下游（如全局搜索）失效自身缓存
+    //</summary>
+    event Action? CategoriesChanged;
+
+    /// <summary>
     /// 添加链接浏览时长
     /// </summary>
     Task AddUrlBrowseTimeAsync(Site site, int duration, DateTime? dateTime = null);

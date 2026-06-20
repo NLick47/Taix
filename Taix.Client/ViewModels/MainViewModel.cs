@@ -310,6 +310,8 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
             if (value)
             {
                 EnsureSearchVm();
+                // 每次展开重新加载，确保拿到分类增删改后的最新语料
+                _ = _searchVm?.RefreshAsync();
             }
         }
     }
