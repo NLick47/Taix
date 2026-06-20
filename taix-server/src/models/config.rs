@@ -12,6 +12,8 @@ pub struct ConfigModel {
     pub general: GeneralModel,
     #[serde(rename = "Behavior")]
     pub behavior: BehaviorModel,
+    #[serde(rename = "Shortcut")]
+    pub shortcut: ShortcutModel,
 }
 
 impl Default for ConfigModel {
@@ -20,6 +22,7 @@ impl Default for ConfigModel {
             version: CURRENT_CONFIG_VERSION,
             general: GeneralModel::default(),
             behavior: BehaviorModel::default(),
+            shortcut: ShortcutModel::default(),
         }
     }
 }
@@ -124,6 +127,27 @@ impl Default for BehaviorModel {
             ignore_url_list: Vec::new(),
             is_white_list: false,
             process_white_list: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ShortcutModel {
+    #[serde(rename = "Refresh")]
+    pub refresh: String,
+    #[serde(rename = "Search")]
+    pub search: String,
+    #[serde(rename = "NavigateBack")]
+    pub navigate_back: String,
+}
+
+impl Default for ShortcutModel {
+    fn default() -> Self {
+        Self {
+            refresh: "F5".to_string(),
+            search: "Ctrl+K".to_string(),
+            navigate_back: "Alt+Left".to_string(),
         }
     }
 }
