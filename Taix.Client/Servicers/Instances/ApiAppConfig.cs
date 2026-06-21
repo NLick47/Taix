@@ -302,8 +302,8 @@ public class ApiAppConfig : IAppConfig
             changes.Add("General.Theme");
         if (old.General.ThemeColor != next.General.ThemeColor)
             changes.Add("General.ThemeColor");
-        if (old.General.IsWindowGradient != next.General.IsWindowGradient)
-            changes.Add("General.IsWindowGradient");
+        if (old.General.WindowGradientScheme != next.General.WindowGradientScheme)
+            changes.Add("General.WindowGradientScheme");
         if (old.General.StartPage != next.General.StartPage)
             changes.Add("General.StartPage");
         if (old.General.IsAutoUpdate != next.General.IsAutoUpdate)

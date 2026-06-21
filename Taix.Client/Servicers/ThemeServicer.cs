@@ -32,7 +32,7 @@ public class ThemeServicer : IThemeServicer
             if (Application.Current != null)
                 Application.Current.RequestedThemeVariant = theme;
             UpdateThemeColor();
-            UpdateWindowBackground();
+            UpdateWindowBackground(theme);
         }
 
         if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
@@ -61,7 +61,7 @@ public class ThemeServicer : IThemeServicer
             LoadTheme(_themeOptions[e.NewConfig.General.Theme], true);
         }
 
-        if (e.HasChange("General.IsWindowGradient"))
+        if (e.HasChange("General.WindowGradientScheme"))
         {
             UpdateWindowBackground();
         }
@@ -84,20 +84,33 @@ public class ThemeServicer : IThemeServicer
         }
     }
 
-    private void UpdateWindowBackground()
+    private void UpdateWindowBackground(ThemeVariant? targetTheme = null)
     {
         var config = _appConfig.GetConfig();
         if (Application.Current == null) return;
 
-        if (config.General.IsWindowGradient)
+        var themeVariant = targetTheme ?? Application.Current.ActualThemeVariant;
+        var isLight = themeVariant == ThemeVariant.Light;
+
+        switch (config.General.WindowGradientScheme)
         {
-            Application.Current.Resources.Remove("WindowBackground");
-        }
-        else
-        {
-            var isLight = Application.Current.ActualThemeVariant == ThemeVariant.Light;
-            var color = isLight ? Color.Parse("#ededf0") : Color.Parse("#131315");
-            Application.Current.Resources["WindowBackground"] = new SolidColorBrush(color);
+            case 0:
+                // 禁用
+                var color = isLight ? Color.Parse("#ededf0") : Color.Parse("#131315");
+                Application.Current.Resources["WindowBackground"] = new SolidColorBrush(color);
+                break;
+            case 1:
+                if (Application.Current.Resources.TryGetResource("WindowBackgroundModern", themeVariant, out var v1) && v1 is IBrush b1)
+                    Application.Current.Resources["WindowBackground"] = b1;
+                break;
+            case 2:
+                if (Application.Current.Resources.TryGetResource("WindowBackgroundClassic", themeVariant, out var v2) && v2 is IBrush b2)
+                    Application.Current.Resources["WindowBackground"] = b2;
+                break;
+            case 3:
+                if (Application.Current.Resources.TryGetResource("WindowBackgroundOriginal", themeVariant, out var v3) && v3 is IBrush b3)
+                    Application.Current.Resources["WindowBackground"] = b3;
+                break;
         }
     }
 }

@@ -63,8 +63,8 @@ public class GeneralModel
         Group = "Features", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
     public bool IsWebEnabled { get; set; } = false;
 
-    [Config(Name = "系统托盘", Description = "关闭窗口时最小化到系统托盘而非退出程序", Group = "界面",CultureCode = CultureCode.ZhCn)]
-    [Config(Name = "System Tray", Description = "Minimize to system tray instead of exiting when closing window", Group = "Interface", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
+    [Config(Name = "系统托盘", Description = "修改后需结束 taix-shell 进程并重启生效", Group = "界面", CultureCode = CultureCode.ZhCn)]
+    [Config(Name = "System Tray", Description = "Requires killing taix-shell process and restart to take effect", Group = "Interface", ToggleFalseText = "Off", ToggleTrueText = "On", CultureCode = CultureCode.EnUs)]
     public bool IsEnableTray { get; set; } = true;
 
     [Config(Name = "保存窗口大小", Description = "重启软件时恢复上次窗口尺寸", Group = "界面", CultureCode = CultureCode.ZhCn)]
@@ -77,9 +77,9 @@ public class GeneralModel
 
     public double WindowHeight { get; set; }
 
-    [Config(Name = "窗口渐变", Description = "启用窗口背景渐变效果", Group = "界面", CultureCode = CultureCode.ZhCn)]
-    [Config(Name = "Window Gradient", Description = "Enable window background gradient effect", Group = "Interface", CultureCode = CultureCode.EnUs)]
-    public bool IsWindowGradient { get; set; } = true;
+    [Config(Options = "禁用|渐变1|渐变2|渐变3", Name = "窗口渐变", Group = "界面", CultureCode = CultureCode.ZhCn)]
+    [Config(Options = "Off|Gradient 1|Gradient 2|Gradient 3", Name = "Window Gradient", Group = "Interface", CultureCode = CultureCode.EnUs)]
+    public int WindowGradientScheme { get; set; } = 1;
 
     public string SyncUrl { get; set; } = string.Empty;
 

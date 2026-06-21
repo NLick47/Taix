@@ -61,12 +61,28 @@
             <SolidColorBrush x:Key="SubTextBrush" Color="{StaticResource TextSecondary}" />
 
             <SolidColorBrush x:Key="Background" Color="{StaticResource Surface1}" />
-            <!--窗口背景颜色 - 保持原有渐变特色 -->
-            <LinearGradientBrush x:Key="WindowBackground" StartPoint="0%,0%" EndPoint="100%,100%">
+            <LinearGradientBrush x:Key="WindowBackgroundModern" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#080814" Offset="0" />
+                <GradientStop Color="#1A1A32" Offset="0.5" />
+                <GradientStop Color="#2E2E52" Offset="1" />
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="WindowBackgroundClassic" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#050510" Offset="0" />
+                <GradientStop Color="#12122A" Offset="0.35" />
+                <GradientStop Color="#2A2660" Offset="0.7" />
+                <GradientStop Color="#4A3A8A" Offset="1" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="WindowBackgroundOriginal" StartPoint="0%,0%" EndPoint="100%,100%">
                 <GradientStop Color="#131315" Offset="0" />
                 <GradientStop Color="#1a1a1e" Offset="0.4" />
                 <GradientStop Color="#18181c" Offset="0.8" />
                 <GradientStop Color="{DynamicResource ThemeColor}" Offset="1.3" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="WindowBackground" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#080814" Offset="0" />
+                <GradientStop Color="#1A1A32" Offset="0.5" />
+                <GradientStop Color="#2E2E52" Offset="1" />
             </LinearGradientBrush>
             <SolidColorBrush x:Key="WindowContentBackground" Color="{StaticResource Surface3}" Opacity="0.6" />
             <SolidColorBrush x:Key="WindowContentBorder" Color="{StaticResource BorderSubtle}" />
@@ -337,13 +353,31 @@
             <SolidColorBrush x:Key="SubTextBrush" Color="#7e7e7e" />
 
             <SolidColorBrush x:Key="Background" Color="#f3f3f3" />
-            <!--窗口背景颜色-->
-            <!--<SolidColorBrush x:Key="WindowBackground" Color="#f3f3f3" />-->
-            <LinearGradientBrush x:Key="WindowBackground" StartPoint="0%,0%" EndPoint="100%,100%">
+            <!--窗口背景 - 现代方案：干净明亮，灰白渐变，无主题色介入-->
+            <LinearGradientBrush x:Key="WindowBackgroundModern" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#C8C8D8" Offset="0" />
+                <GradientStop Color="#E8E8F0" Offset="0.5" />
+                <GradientStop Color="#FFFFFF" Offset="1" />
+            </LinearGradientBrush>
+            <!--窗口背景 - 经典方案：梦幻紫蓝渐变，无主题色介入-->
+            <LinearGradientBrush x:Key="WindowBackgroundClassic" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#E0E0EC" Offset="0" />
+                <GradientStop Color="#FAFAFC" Offset="0.35" />
+                <GradientStop Color="#D0C8F8" Offset="0.7" />
+                <GradientStop Color="#B8A8E8" Offset="1" />
+            </LinearGradientBrush>
+            <!--窗口背景 - 原始方案：柔和渐变，主题色轻微晕染-->
+            <LinearGradientBrush x:Key="WindowBackgroundOriginal" StartPoint="0%,0%" EndPoint="100%,100%">
                 <GradientStop Color="#e0e0eb" Offset="0" />
                 <GradientStop Color="#ffffff" Offset="0.4" />
                 <GradientStop Color="#eaeaf2" Offset="0.75" />
                 <GradientStop Color="{DynamicResource ThemeColor}" Offset="1.0" />
+            </LinearGradientBrush>
+            <!--默认使用现代方案-->
+            <LinearGradientBrush x:Key="WindowBackground" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#C8C8D8" Offset="0" />
+                <GradientStop Color="#E8E8F0" Offset="0.5" />
+                <GradientStop Color="#FFFFFF" Offset="1" />
             </LinearGradientBrush>
 
             <SolidColorBrush x:Key="WindowContentBackground" Color="#f9f9f9" />

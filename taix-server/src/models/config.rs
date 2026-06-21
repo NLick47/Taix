@@ -84,6 +84,8 @@ pub struct GeneralModel {
     pub sync_url: String,
     #[serde(rename = "DataRetentionDays")]
     pub data_retention_days: i32,
+    #[serde(rename = "WindowGradientScheme")]
+    pub window_gradient_scheme: i32,
 }
 
 impl Default for GeneralModel {
@@ -100,6 +102,7 @@ impl Default for GeneralModel {
             is_enable_tray: true,
             sync_url: String::new(),
             data_retention_days: 31,
+            window_gradient_scheme: 1,
         }
     }
 }

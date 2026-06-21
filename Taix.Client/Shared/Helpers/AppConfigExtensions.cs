@@ -27,13 +27,13 @@ public static class AppConfigExtensions
         => config.WhenChanged("General.ThemeColor", handler);
 
     public static IDisposable WhenWindowGradientChanged(this IAppConfig config, Action handler)
-        => config.WhenChanged("General.IsWindowGradient", handler);
+        => config.WhenChanged("General.WindowGradientScheme", handler);
 
     public static IDisposable WhenAnyThemeRelatedChanged(this IAppConfig config, Action handler)
     {
         EventHandler<ConfigChangedEventArgs> wrapper = (s, e) =>
         {
-            if (e.HasAnyChange("General.Theme", "General.ThemeColor", "General.IsWindowGradient"))
+            if (e.HasAnyChange("General.Theme", "General.ThemeColor", "General.WindowGradientScheme"))
                 handler();
         };
         config.ConfigChanged += wrapper;
