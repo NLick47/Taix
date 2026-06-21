@@ -102,7 +102,7 @@ impl Default for GeneralModel {
             is_enable_tray: true,
             sync_url: String::new(),
             data_retention_days: 31,
-            window_gradient_scheme: 1,
+            window_gradient_scheme: 3,
         }
     }
 }
