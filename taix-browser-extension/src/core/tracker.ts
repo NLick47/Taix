@@ -35,11 +35,12 @@ export class Tracker {
   private currentTabId: number = -1;
   private urlChangeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private isPageVisible: boolean = true;
-  private isWindowFocused: boolean = true;
+  private isWindowFocused: boolean = false;
   private isUserIdle: boolean = false;
   private idleEventReceived: boolean = false;
   private lastSavedTime: number = 0;
   private started: boolean = false;
+  private initialized: boolean = false;
 
   constructor(browser: BrowserAPI) {
     this.browser = browser;
@@ -62,9 +63,10 @@ export class Tracker {
     this.queue.setAll(this.state.notifyFailList);
 
     // SW 重启后非持久化态重置，等首次事件自纠
-    // isWindowFocused/isPageVisible 默认 true，idle 兜底防误算
+    // isWindowFocused 默认 false，必须收到焦点事件才计时
+    // isPageVisible 默认 true，idle 兜底防误算
     this.isPageVisible = true;
-    this.isWindowFocused = true;
+    this.isWindowFocused = false;
     this.isUserIdle = false;
     this.idleEventReceived = false;
 
@@ -112,15 +114,14 @@ export class Tracker {
       }
     }
 
-    // isWindowFocused / isPageVisible 不持久化，SW 重启后默认 true
-    // 重启那一刻浏览器若在后台，没有焦点变化事件来纠正，doPeriodicSave 会一直累加时长
-    // 用最近焦点窗口的真实 focused 校准，后台时把 startTime 拉回 now，等真实焦点事件再起算
+    // 获取最近焦点窗口的真实 focused 状态
     try {
       const win = await this.browser.windows.getLastFocused();
       if (win) {
         this.currentWindowId = win.id;
         this.isWindowFocused = !!win.focused;
-        if (!this.isWindowFocused && this.state.activePage?.url) {
+        // 前台时重置 startTime，后台时保持
+        if (this.isWindowFocused && this.state.activePage?.url) {
           this.state.activePage.startTime = Date.now();
           this.lastSavedTime = 0;
           this.state.save();
@@ -129,6 +130,9 @@ export class Tracker {
     } catch {
       // ignore
     }
+
+    // 初始化完成，允许计时
+    this.initialized = true;
   }
 
   private setupIdleListener(): void {
@@ -268,16 +272,32 @@ export class Tracker {
   }
 
   private flushQueue(): void {
-    while (!this.queue.isEmpty() && this.connection.getStatus() === 'connected') {
+    if (this.queue.isEmpty()) {
+      console.log('[Taix] flushQueue: 队列为空，无需发送');
+      return;
+    }
+
+    console.log('[Taix] flushQueue: 开始发送队列，长度:', this.queue.length());
+
+    let attempts = 0;
+    const maxAttempts = 50;
+    let sentCount = 0;
+
+    while (!this.queue.isEmpty() && this.connection.getStatus() === 'connected' && attempts < maxAttempts) {
+      attempts++;
       const item = this.queue.peek();
       if (!item) break;
       const sent = this.connection.send(JSON.stringify(item));
       if (sent) {
         this.queue.remove();
+        sentCount++;
       } else {
+        console.warn('[Taix] flushQueue 发送中断，剩余队列长度:', this.queue.length());
         break;
       }
     }
+
+    console.log('[Taix] flushQueue: 发送完成，已发送:', sentCount, '剩余:', this.queue.length());
     this.state.notifyFailList = this.queue.getAll();
     this.state.save();
   }
@@ -319,20 +339,38 @@ export class Tracker {
 
   private doHeartbeat(): void {
     const status = this.connection.getStatus();
-    if (status !== 'connected' && !this.state.isSleep) {
+
+    // sleep 模式下也尝试重连
+    if (status === 'sleep') {
+      if (this.state.reconnectFail >= 1000) {
+        this.state.reconnectFail = 0;
+      }
+      if (this.state.reconnectFail % 10 === 0) {
+        this.connection.connect();
+      }
+      this.state.reconnectFail++;
+      this.state.save();
+      return;
+    }
+
+    if (status !== 'connected') {
       this.state.reconnectFail++;
       this.connection.connect();
       if (this.state.reconnectFail >= CONFIG.RECONNECT_FAIL_SLEEP && !this.state.isSleep) {
         this.state.isSleep = true;
+        console.warn('[Taix] 重连失败次数达到阈值，进入 sleep 模式');
         this.state.save();
       }
       return;
     }
 
+    // 连接成功后重置计数器
+    this.state.reconnectFail = 0;
     this.connection.send('ping');
   }
 
   private doPeriodicSave(): void {
+    if (!this.initialized) return; // 初始化未完成，不计时
     if (!this.state.activePage?.url) return;
     if (!this.isPageVisible) return;
     if (!this.isWindowFocused) return;

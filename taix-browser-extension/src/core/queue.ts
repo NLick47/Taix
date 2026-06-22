@@ -7,13 +7,14 @@ export class Queue {
 
   add(data: BrowseData): void {
     const last = this.items[this.items.length - 1];
+    // 合并相邻时段：同 URL、时间连续或紧挨（gap 在 0-60s）
     if (last && last.Url === data.Url) {
-      const gap = data.ActiveTime - (last.ActiveTime + last.Duration);
-      if (gap >= -5 && gap <= 60) {
-        last.Duration += data.Duration;
-        if (data.ActiveTime < last.ActiveTime) {
-          last.ActiveTime = data.ActiveTime;
-        }
+      const lastEndTime = last.ActiveTime + last.Duration;
+      const gap = data.ActiveTime - lastEndTime;
+      // 只允许正向时间连续，gap >= 0 且 <= 60s
+      if (gap >= 0 && gap <= 60) {
+        // 合并时段：扩展 Duration，ActiveTime 保持最早
+        last.Duration += data.Duration + gap;
         return;
       }
     }
@@ -21,7 +22,10 @@ export class Queue {
     this.items.push({ ...data });
 
     if (this.items.length > this.max) {
-      this.items.shift();
+      const dropped = this.items.shift();
+      if (dropped) {
+        console.warn('[Taix] 队列溢出，丢弃最早数据:', dropped);
+      }
     }
   }
 

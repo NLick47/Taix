@@ -21,8 +21,7 @@ export class Connection {
   }
 
   connect(): void {
-    this.isConnected = false;
-
+    // 先清理旧连接，防止旧 WebSocket 的回调干扰新连接
     if (this.ws) {
       try {
         this.ws.onopen = null;
@@ -35,6 +34,10 @@ export class Connection {
       }
       this.ws = null;
     }
+
+    // 重置状态
+    this.isConnected = false;
+    this.isSleep = false;
 
     this.ws = new WebSocket(CONFIG.WS_URL);
 
