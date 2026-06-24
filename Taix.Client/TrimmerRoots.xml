@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <linker>
-    <assembly fullname="SkiaSharp" preserve="all" />
-    <assembly fullname="HarfBuzzSharp" preserve="all" />
-    <assembly fullname="Avalonia.Skia" preserve="all" />
-
     <assembly fullname="Taix" preserve="all" />
 </linker>
