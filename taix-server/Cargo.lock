@@ -2121,7 +2121,6 @@ dependencies = [
  "tokio",
  "tower-http",
  "tracing",
- "url",
 ]
 
 [[package]]

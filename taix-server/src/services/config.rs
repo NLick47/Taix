@@ -195,7 +195,7 @@ impl ConfigService {
                     ignored = true;
                     break;
                 }
-             
+
                 if domain_lower.ends_with(&format!(".{}", p)) {
                     ignored = true;
                     break;
@@ -307,6 +307,27 @@ impl ConfigService {
     }
 }
 
+fn compile_patterns(patterns: &[String]) -> Option<RegexSet> {
+    let regex_patterns: Vec<String> = patterns
+        .iter()
+        .map(|p| p.trim())
+        .filter(|p| !p.is_empty())
+        .map(|p| wildcard_to_regex(p))
+        .collect();
+
+    if regex_patterns.is_empty() {
+        return None;
+    }
+
+    match RegexSet::new(&regex_patterns) {
+        Ok(set) => Some(set),
+        Err(e) => {
+            warn!("Failed to compile regex set: {}", e);
+            None
+        }
+    }
+}
+
 /// 将通配符模式转换为正则表达式
 /// * 匹配任意数量字符 -> .*
 /// ? 匹配单个字符 -> .
@@ -331,27 +352,6 @@ fn wildcard_to_regex(pattern: &str) -> String {
 
     result.push('$');
     result
-}
-
-fn compile_patterns(patterns: &[String]) -> Option<RegexSet> {
-    let regex_patterns: Vec<String> = patterns
-        .iter()
-        .map(|p| p.trim())
-        .filter(|p| !p.is_empty())
-        .map(|p| wildcard_to_regex(p))
-        .collect();
-
-    if regex_patterns.is_empty() {
-        return None;
-    }
-
-    match RegexSet::new(&regex_patterns) {
-        Ok(set) => Some(set),
-        Err(e) => {
-            warn!("Failed to compile regex set: {}", e);
-            None
-        }
-    }
 }
 
 fn match_text(text: &str, regex_set: &Option<RegexSet>, exact_list: &[String]) -> bool {

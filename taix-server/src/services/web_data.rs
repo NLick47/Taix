@@ -236,13 +236,10 @@ impl WebDataService {
                     }
                 }
                 // 否则尝试从域名获取默认favicon
-                if let Ok(url) = url::Url::parse(&url_str) {
-                    if let Some(domain) = url.host_str() {
-                        let scheme = url.scheme();
-                        let default_icon_url = format!("{}://{}/favicon.ico", scheme, domain);
-                        let _ = save_icon(&default_icon_url, &dir, result_site_id, result_url_id, &pool).await;
-                    }
-                }
+                if let Some((scheme, domain)) = extract_domain_scheme(&url_str) {
+                let default_icon_url = format!("{}://{}/favicon.ico", scheme, domain);
+                let _ = save_icon(&default_icon_url, &dir, result_site_id, result_url_id, &pool).await;
+            }
             });
         }
 
@@ -1373,6 +1370,19 @@ fn convert_svg_to_png(svg_bytes: &[u8]) -> Result<Vec<u8>, AppError> {
 
     pixmap.encode_png()
         .map_err(|e| AppError::Internal(format!("PNG encode error: {}", e)))
+}
+
+/// 从 URL 字符串提取 scheme 和 domain
+fn extract_domain_scheme(url_str: &str) -> Option<(String, String)> {
+    let stripped = url_str.strip_prefix("https://")
+        .or_else(|| url_str.strip_prefix("http://"))?;
+    let domain = stripped.split('/').next()?;
+    let scheme = if url_str.starts_with("https") {
+        "https".to_string()
+    } else {
+        "http".to_string()
+    };
+    Some((scheme, domain.to_string()))
 }
 
 /// 清洗 HTML title，提取核心品牌名（去掉常见分隔符后的标语后缀）
