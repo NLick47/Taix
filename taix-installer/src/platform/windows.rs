@@ -155,20 +155,6 @@ $sc.Save()
     Ok(())
 }
 
-pub fn add_defender_exclusion(path: &Path) -> Result<()> {
-    let path_str = path.to_str().context("Invalid path")?;
-
-    let _ = std::process::Command::new("powershell")
-        .args([
-            "-NoProfile",
-            "-Command",
-            &format!("Add-MpPreference -ExclusionPath '{}'", path_str),
-        ])
-        .output();
-
-    Ok(())
-}
-
 #[allow(dead_code)]
 pub fn remove_defender_exclusion(path: &Path) -> Result<()> {
     let path_str = path.to_str().context("Invalid path")?;

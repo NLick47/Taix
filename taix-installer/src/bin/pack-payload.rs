@@ -2,6 +2,7 @@ use anyhow::{bail, Context, Result};
 use std::fs;
 use std::io::Write;
 use std::path::Path;
+use std::process::Command;
 
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
@@ -20,49 +21,71 @@ fn main() -> Result<()> {
 }
 
 fn pack_payload(source_dir: &Path, output_path: &Path) -> Result<()> {
-    let mut files = Vec::new();
-    collect_files(source_dir, source_dir, &mut files)?;
+    // 使用 7z 极限压缩
+    // -t7z 输出 7z 格式
+    // -mx=9 最高压缩级别
+    // -m0=lzma2:d=128m:fb=273 LZMA2 算法，128MB字典，273 fast bytes
+    // -mf=BCJ2 可执行文件过滤器（比 BCJ 更强）
+    let temp_7z = output_path.with_extension("7z");
 
-    println!("Packing {} files from {}", files.len(), source_dir.display());
+    // 尝试多个可能的 7z 路径
+    let seven_zip_paths = [
+        "7z",
+        "C:\\Program Files\\7-Zip\\7z.exe",
+        "C:\\Program Files (x86)\\7-Zip\\7z.exe",
+    ];
 
-    let mut raw_payload = Vec::new();
+    let mut success = false;
+    let mut last_error = String::new();
 
-    raw_payload
-        .write_all(&(files.len() as u32).to_le_bytes())
-        .context("Failed to write file count")?;
+    for seven_zip in &seven_zip_paths {
+        println!("Trying 7z path: {}", seven_zip);
+        let result = Command::new(seven_zip)
+            .args([
+                "a",
+                "-t7z",
+                "-mx=9",
+                "-m0=lzma2:d=128m:fb=273",
+                "-mf=BCJ2",
+                &format!("{}", temp_7z.display()),
+                &format!("{}\\*", source_dir.display()),
+            ])
+            .output();
 
-    for (relative_path, abs_path) in &files {
-        let path_bytes = relative_path.as_bytes();
-        raw_payload
-            .write_all(&(path_bytes.len() as u32).to_le_bytes())
-            .context("Failed to write path length")?;
-        raw_payload
-            .write_all(path_bytes)
-            .context("Failed to write path")?;
-
-        let content = fs::read(abs_path)
-            .with_context(|| format!("Failed to read file: {}", abs_path.display()))?;
-
-        raw_payload
-            .write_all(&(content.len() as u64).to_le_bytes())
-            .context("Failed to write file size")?;
-        raw_payload
-            .write_all(&content)
-            .context("Failed to write file content")?;
+        match result {
+            Ok(output) => {
+                println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+                if !output.stderr.is_empty() {
+                    println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+                }
+                if output.status.success() {
+                    success = true;
+                    break;
+                } else {
+                    last_error = format!(
+                        "{} failed with code {:?}: {}",
+                        seven_zip,
+                        output.status.code(),
+                        String::from_utf8_lossy(&output.stderr)
+                    );
+                }
+            }
+            Err(e) => {
+                last_error = format!("{} not found: {}", seven_zip, e);
+            }
+        }
     }
 
-    println!("Raw payload size: {} bytes", raw_payload.len());
+    if !success {
+        bail!("Failed to run 7z. Tried all paths. Last error: {}", last_error);
+    }
 
-    // 使用 XZ 压缩 (LZMA2 算法)
-    let mut compressed = Vec::new();
-    let mut encoder = xz2::write::XzEncoder::new(compressed, 9);
-    encoder.write_all(&raw_payload).context("Failed to compress")?;
-    compressed = encoder.finish().context("Failed to finalize compression")?;
+    // 读取压缩后的 7z 文件
+    let compressed = fs::read(&temp_7z).context("Failed to read compressed file")?;
 
     println!(
-        "Compressed payload size: {} bytes (ratio: {:.2}x)",
-        compressed.len(),
-        raw_payload.len() as f64 / compressed.len() as f64
+        "Compressed payload size: {} bytes",
+        compressed.len()
     );
 
     // 写入 payload + marker + size
@@ -79,27 +102,9 @@ fn pack_payload(source_dir: &Path, output_path: &Path) -> Result<()> {
     fs::write(output_path, &output)
         .with_context(|| format!("Failed to write output: {}", output_path.display()))?;
 
+    // 清理临时文件
+    let _ = fs::remove_file(&temp_7z);
+
     println!("Payload written to: {}", output_path.display());
-    Ok(())
-}
-
-fn collect_files(base: &Path, current: &Path, files: &mut Vec<(String, std::path::PathBuf)>) -> Result<()> {
-    for entry in fs::read_dir(current)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        if path.is_dir() {
-            collect_files(base, &path, files)?;
-        } else {
-            let relative = path
-                .strip_prefix(base)
-                .context("Failed to compute relative path")?
-                .to_str()
-                .context("Invalid UTF-8 in path")?
-                .replace('\\', "/");
-
-            files.push((relative, path));
-        }
-    }
     Ok(())
 }

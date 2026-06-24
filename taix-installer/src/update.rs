@@ -1,4 +1,4 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -6,9 +6,9 @@ use crate::platform::{Platform, PROCESSES, TASK_NAME, save_install_location};
 use crate::sfx;
 use crate::ui::cli;
 
-pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
+pub fn run_update(install_dir: Option<PathBuf>, _silent: bool) -> Result<()> {
     if !sfx::has_payload() {
-        bail!("No embedded payload. This installer has no files to update.");
+        bail!("安装程序无效");
     }
 
     let install_dir = if let Some(dir) = install_dir {
@@ -18,26 +18,12 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
     };
 
     if !install_dir.exists() {
-        bail!(
-            "Taix installation not found at: {}",
-            install_dir.display()
-        );
+        bail!("未找到 Taix 安装");
     }
 
-    let total_steps = 6;
-    let mut step = 0;
+    println!("\n安装目录: {}", install_dir.display());
 
-    if !silent {
-        println!("\n检测到安装目录: {}", install_dir.display());
-        if !cli::confirm_update()? {
-            println!("更新已取消。");
-            return Ok(());
-        }
-    }
-
-    // 停止所有进程
-    step += 1;
-    cli::show_step(step, total_steps, "停止运行中的进程...");
+    cli::show_step(1, 5, "停止运行中的进程...");
     for proc_name in PROCESSES {
         if <() as Platform>::is_process_running(proc_name) {
             <() as Platform>::stop_process(proc_name)?;
@@ -54,22 +40,14 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
             std::thread::sleep(Duration::from_secs(1));
             retries += 1;
         }
-
-        if <() as Platform>::is_process_running(proc_name) {
-            cli::show_warning(&format!("无法停止进程 {}，可能需要手动关闭", proc_name));
-        }
     }
 
-    // 停掉计划任务看门狗，防止重新注册前的时间窗口内它再次拉起旧版 shell
     <() as Platform>::stop_scheduled_task(TASK_NAME);
 
-    // 备份当前版本
-    step += 1;
-    cli::show_step(step, total_steps, "备份当前版本...");
+    cli::show_step(2, 5, "备份当前版本...");
     let backup_dir = install_dir.with_extension("bak");
     if backup_dir.exists() {
-        std::fs::remove_dir_all(&backup_dir)
-            .with_context(|| format!("Failed to remove old backup: {}", backup_dir.display()))?;
+        let _ = std::fs::remove_dir_all(&backup_dir);
     }
 
     let critical_files = [
@@ -84,53 +62,34 @@ pub fn run_update(install_dir: Option<PathBuf>, silent: bool) -> Result<()> {
         let src = install_dir.join(file);
         if src.exists() {
             let dst = backup_dir.join(file);
-            std::fs::copy(&src, &dst)
-                .with_context(|| format!("Failed to backup: {}", src.display()))?;
+            std::fs::copy(&src, &dst)?;
         }
     }
 
-    // 解压新文件
-    step += 1;
-    cli::show_step(step, total_steps, "解压更新文件...");
+    cli::show_step(3, 5, "解压更新文件...");
+    cli::show_extracting();
     sfx::extract_to(&install_dir)?;
 
-    // 验证关键文件
-    step += 1;
-    cli::show_step(step, total_steps, "验证安装...");
+    cli::show_step(4, 5, "验证安装...");
     let shell_exe = install_dir.join("taix-shell.exe");
     if !shell_exe.exists() {
-        cli::show_warning("更新失败，正在恢复备份...");
+        println!("更新失败，正在恢复备份...");
         restore_backup(&backup_dir, &install_dir)?;
-        bail!("Update failed: taix-shell.exe not found after extraction");
+        bail!("更新文件不完整");
     }
 
-    // 重新注册开机启动
-    step += 1;
-    cli::show_step(step, total_steps, "更新开机启动配置...");
+    cli::show_step(5, 5, "重启服务...");
     <() as Platform>::register_startup(&shell_exe, TASK_NAME)?;
-
-    // 重启服务
-    step += 1;
-    cli::show_step(step, total_steps, "重启服务...");
-    <() as Platform>::start_process(&shell_exe)?;
+    let _ = <() as Platform>::start_process(&shell_exe);
 
     std::thread::sleep(Duration::from_secs(2));
 
-    if !<() as Platform>::is_process_running("taix-shell") {
-        cli::show_warning("taix-shell 未能自动启动，请手动启动");
-    }
-
     let _ = std::fs::remove_dir_all(&backup_dir);
-
-    // 更新安装路径记录
     save_install_location(&install_dir)?;
 
-    if !silent {
-        cli::show_update_complete(&install_dir);
-    } else {
-        cli::show_success("Taix 更新完成!");
-        println!("安装目录: {}", install_dir.display());
-    }
+    cli::show_complete("更新完成!");
+    println!("安装目录: {}", install_dir.display());
+    cli::wait_exit();
 
     Ok(())
 }
@@ -140,8 +99,7 @@ fn restore_backup(backup_dir: &PathBuf, install_dir: &PathBuf) -> Result<()> {
         let entry = entry?;
         let src = entry.path();
         let dst = install_dir.join(entry.file_name());
-        std::fs::copy(&src, &dst)
-            .with_context(|| format!("Failed to restore: {}", src.display()))?;
+        std::fs::copy(&src, &dst)?;
     }
     Ok(())
 }

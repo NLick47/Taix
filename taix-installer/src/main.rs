@@ -5,115 +5,76 @@ mod ui;
 mod update;
 
 use anyhow::Result;
-use clap::Parser;
 use platform::read_install_location;
-use std::path::PathBuf;
-
-#[derive(Parser, Debug)]
-#[command(name = "taix-installer")]
-#[command(about = "Taix 安装器/更新器", long_about = None)]
-struct Args {
-    #[arg(short, long, value_name = "PATH")]
-    install_dir: Option<PathBuf>,
-
-    #[arg(short, long)]
-    update: bool,
-
-    #[arg(short = 'U', long)]
-    uninstall: bool,
-
-    #[arg(short, long)]
-    silent: bool,
-
-    #[arg(long)]
-    desktop_shortcut: bool,
-
-    #[arg(long)]
-    defender_exclusion: bool,
-
-    #[arg(long)]
-    extract_only: Option<PathBuf>,
-}
 
 fn main() {
-    let args = Args::parse();
-
-    let result = run(args);
+    let result = run();
 
     if let Err(e) = result {
-        eprintln!("\n[错误] {}", e);
-
-        for cause in e.chain().skip(1) {
-            eprintln!("  原因: {}", cause);
-        }
-
-        println!("\n按 Enter 键退出...");
-        let _ = std::io::stdin().read_line(&mut String::new());
+        println!("\n{}", format_error(&e));
+        ui::cli::wait_exit();
         std::process::exit(1);
     }
 }
 
-fn run(args: Args) -> Result<()> {
-    if let Some(dest) = args.extract_only {
-        return sfx::extract_to(&dest);
+fn format_error(e: &anyhow::Error) -> String {
+    let msg = e.to_string();
+
+    // 友好化常见错误
+    if msg.contains("disk") || msg.contains("space") || msg.contains("磁盘") {
+        return "安装失败：磁盘空间不足".to_string();
+    }
+    if msg.contains("permission") || msg.contains("denied") || msg.contains("权限") {
+        return "安装失败：权限不足，请以管理员身份运行".to_string();
+    }
+    if msg.contains("network") || msg.contains("网络") {
+        return "安装失败：网络连接错误".to_string();
     }
 
-    if args.update {
-        return update::run_update(args.install_dir, args.silent);
-    }
+    format!("安装失败：{}", msg)
+}
 
-    if args.uninstall {
-        return install::run_uninstall(args.install_dir, args.silent);
-    }
+fn run() -> Result<()> {
+    show_header();
 
     if !sfx::has_payload() {
         let existing_install = read_install_location();
         if existing_install.is_some() {
-            println!("检测到已安装的 Taix。");
-            println!("请使用 --update 进行更新，或 --uninstall 进行卸载。");
+            println!("  检测到已安装的 Taix");
+            println!("  请使用安装程序进行更新或卸载");
         } else {
-            println!("未检测到 Taix 安装。");
-            println!("此安装器无内嵌文件，无法进行安装。");
+            println!("  未检测到 Taix 安装");
+            println!("  此安装程序无效，请重新下载");
         }
-        println!("\n按 Enter 键退出...");
-        let _ = std::io::stdin().read_line(&mut String::new());
+        ui::cli::wait_exit();
         return Ok(());
     }
 
     let existing_install = read_install_location();
     if let Some(existing_dir) = existing_install {
-        println!("检测到已安装的 Taix: {}", existing_dir.display());
+        println!("  检测到已安装的 Taix\n");
 
-        let choice = ui::cli::prompt_install_action()?;
+        let choice = ui::cli::select_action()?;
         match choice {
-            InstallAction::Update => {
-                return update::run_update(Some(existing_dir), args.silent);
-            }
-            InstallAction::Reinstall => {}
-            InstallAction::Uninstall => {
-                return install::run_uninstall(Some(existing_dir), args.silent);
-            }
-            InstallAction::Cancel => {
-                println!("操作已取消。");
-                println!("\n按 Enter 键退出...");
-                let _ = std::io::stdin().read_line(&mut String::new());
+            0 => return update::run_update(Some(existing_dir), false),
+            1 => {} // 重新安装，继续
+            2 => return install::run_uninstall(Some(existing_dir), false),
+            3 => {
+                println!("  已取消");
+                ui::cli::wait_exit();
                 return Ok(());
             }
+            _ => return Ok(()),
         }
     }
 
-    install::run_install(
-        args.install_dir,
-        args.silent,
-        args.desktop_shortcut,
-        args.defender_exclusion,
-    )
+    install::run_install(None, false, false, false)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum InstallAction {
-    Update,
-    Reinstall,
-    Uninstall,
-    Cancel,
+fn show_header() {
+    println!();
+    println!("  ╔════════════════════════════════════╗");
+    println!("  ║        Taix 安装程序               ║");
+    println!("  ╚════════════════════════════════════╝");
+    println!();
 }

@@ -1,37 +1,189 @@
-use crate::InstallAction;
-use anyhow::Result;
-use dialoguer::{Confirm, Select};
+use std::io::{self, Write};
 use std::path::PathBuf;
+use console::{pad_str, Alignment, Term};
 
-pub fn prompt_install_dir(default: PathBuf) -> Result<PathBuf> {
-    println!("\n默认安装目录: {}", default.display());
+/// 显示选择菜单，返回选中项索引
+pub fn select_action() -> io::Result<usize> {
+    let term = Term::stdout();
+    let options = ["更新", "重新安装", "卸载", "取消"];
+    let mut selected = 0;
 
-    let choices = ["确认，开始安装", "自定义安装目录"];
+    let _ = term.hide_cursor();
 
-    let selection = Select::new()
-        .with_prompt("请选择操作")
-        .default(0)
-        .items(&choices)
-        .interact()
-        .map_err(|e| anyhow::anyhow!("Select error: {}", e))?;
+    println!("\n  请选择要执行的操作：\n");
 
-    if selection == 0 {
-        return Ok(default);
+    print_options(&options, selected);
+    println!();
+    print_help(options.len());
+
+    io::stdout().flush()?;
+
+    loop {
+        let key = term.read_key()?;
+
+        match key {
+            console::Key::ArrowUp => {
+                if selected > 0 {
+                    selected -= 1;
+                    refresh_menu(&term, &options, selected)?;
+                }
+            }
+            console::Key::ArrowDown => {
+                if selected < options.len() - 1 {
+                    selected += 1;
+                    refresh_menu(&term, &options, selected)?;
+                }
+            }
+            console::Key::Enter => {
+                let _ = term.show_cursor();
+                return Ok(selected);
+            }
+            console::Key::Escape => {
+                let _ = term.show_cursor();
+                return Ok(3); // 取消
+            }
+            console::Key::Char(c) => {
+                if let Some(digit) = c.to_digit(10) {
+                    let idx = digit as usize;
+                    if idx >= 1 && idx <= options.len() {
+                        let _ = term.show_cursor();
+                        return Ok(idx - 1);
+                    }
+                }
+            }
+            _ => {}
+        }
     }
-
-    // 打开文件夹选择对话框
-    println!("\n正在打开文件夹选择对话框...");
-    if let Some(path) = browse_folder() {
-        println!("已选择: {}", path.display());
-        return Ok(path);
-    }
-
-    // 对话框取消
-    println!("\n已取消选择，使用默认目录: {}", default.display());
-    Ok(default)
 }
 
-/// 调用系统对话框选择文件夹 (Windows)
+fn print_options(options: &[&str], selected: usize) {
+    for (i, opt) in options.iter().enumerate() {
+        let num = i + 1;
+        if i == selected {
+            println!("    ▶ [{}] {}  ", num, opt);
+        } else {
+            println!("      [{}] {}  ", num, opt);
+        }
+    }
+}
+
+fn print_help(option_count: usize) {
+    println!("  提示: 按 ↑↓ 选择, 或按数字键 1-{} 直接选择, Enter 确认", option_count);
+}
+
+fn refresh_menu(term: &Term, options: &[&str], selected: usize) -> io::Result<()> {
+    let lines_to_clear = options.len() + 2;
+    term.clear_last_lines(lines_to_clear)?;
+    print_options(options, selected);
+    println!();
+    print_help(options.len());
+    io::stdout().flush()?;
+    Ok(())
+}
+
+pub fn prompt_install_dir(default: &std::path::Path) -> io::Result<PathBuf> {
+    let term = Term::stdout();
+    let options = ["确认，开始安装", "自定义安装目录"];
+    let mut selected = 0;
+
+    let _ = term.hide_cursor();
+
+    println!("\n  默认安装目录:");
+    println!("    {}", default.display());
+    println!("\n  请选择：\n");
+
+    print_dir_options(&options, selected);
+    println!();
+    print_dir_help(options.len());
+
+    io::stdout().flush()?;
+
+    loop {
+        let key = term.read_key()?;
+
+        match key {
+            console::Key::ArrowUp => {
+                if selected > 0 {
+                    selected -= 1;
+                    refresh_dir_menu(&term, &options, selected)?;
+                }
+            }
+            console::Key::ArrowDown => {
+                if selected < options.len() - 1 {
+                    selected += 1;
+                    refresh_dir_menu(&term, &options, selected)?;
+                }
+            }
+            console::Key::Enter => {
+                let _ = term.show_cursor();
+                if selected == 0 {
+                    return Ok(default.to_path_buf());
+                }
+                // 自定义安装目录
+                if let Some(path) = browse_folder() {
+                    return Ok(path);
+                }
+                // 用户取消了对话框，回到菜单重新选择
+                println!("  [未选择目录，回到菜单]");
+                std::thread::sleep(std::time::Duration::from_millis(800));
+                let _ = term.hide_cursor();
+                refresh_dir_menu(&term, &options, selected)?;
+                continue;
+            }
+            console::Key::Escape => {
+                let _ = term.show_cursor();
+                return Ok(default.to_path_buf());
+            }
+            console::Key::Char(c) => {
+                if let Some(digit) = c.to_digit(10) {
+                    let idx = digit as usize;
+                    if idx >= 1 && idx <= options.len() {
+                        let _ = term.show_cursor();
+                        if idx == 1 {
+                            return Ok(default.to_path_buf());
+                        }
+                        if let Some(path) = browse_folder() {
+                            return Ok(path);
+                        }
+                        // 用户取消了对话框，回到菜单重新选择
+                        println!("  [未选择目录，回到菜单]");
+                        std::thread::sleep(std::time::Duration::from_millis(800));
+                        let _ = term.hide_cursor();
+                        refresh_dir_menu(&term, &options, selected)?;
+                        continue;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn print_dir_options(options: &[&str], selected: usize) {
+    for (i, opt) in options.iter().enumerate() {
+        let num = i + 1;
+        if i == selected {
+            println!("    ▶ [{}] {}  ", num, opt);
+        } else {
+            println!("      [{}] {}  ", num, opt);
+        }
+    }
+}
+
+fn print_dir_help(option_count: usize) {
+    println!("  提示: 按 ↑↓ 选择, 或按数字键 1-{} 直接选择, Enter 确认", option_count);
+}
+
+fn refresh_dir_menu(term: &Term, options: &[&str], selected: usize) -> io::Result<()> {
+    let lines_to_clear = options.len() + 2;
+    term.clear_last_lines(lines_to_clear)?;
+    print_dir_options(options, selected);
+    println!();
+    print_dir_help(options.len());
+    io::stdout().flush()?;
+    Ok(())
+}
+
 fn browse_folder() -> Option<PathBuf> {
     let script = r#"
 Add-Type -AssemblyName System.Windows.Forms
@@ -49,102 +201,30 @@ if ($dialog.ShowDialog() -eq 'OK') { $dialog.SelectedPath } else { '' }
     if output.status.success() {
         let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
         if !path.is_empty() {
-            return Some(PathBuf::from(path));
+            return Some(std::path::PathBuf::from(path));
         }
     }
-
     None
 }
 
-pub fn confirm_install() -> Result<bool> {
-    Confirm::new()
-        .with_prompt("开始安装?")
-        .default(true)
-        .interact()
-        .map_err(|e| anyhow::anyhow!("Confirm error: {}", e))
-}
-
-pub fn confirm_update() -> Result<bool> {
-    Confirm::new()
-        .with_prompt("开始更新?")
-        .default(true)
-        .interact()
-        .map_err(|e| anyhow::anyhow!("Confirm error: {}", e))
-}
-
-pub fn confirm_uninstall() -> Result<bool> {
-    Confirm::new()
-        .with_prompt("确认卸载 Taix?")
-        .default(false)
-        .interact()
-        .map_err(|e| anyhow::anyhow!("Confirm error: {}", e))
-}
-
 pub fn show_step(step: usize, total: usize, message: &str) {
-    println!("[{}/{}] {}", step, total, message);
+    println!("\n  [{}/{}] {}", step, total, message);
 }
 
-pub fn show_success(message: &str) {
-    println!("\n========================================");
-    println!("  {}", message);
-    println!("========================================\n");
+pub fn show_extracting() {
+    println!("  正在解压，请稍候...");
 }
 
-#[allow(dead_code)]
-pub fn show_error(message: &str) {
-    println!("\n[错误] {}", message);
+pub fn show_complete(message: &str) {
+    let content_width = 32;
+    let padded = pad_str(message, content_width, Alignment::Center, None);
+    println!();
+    println!("  ╔════════════════════════════════════╗");
+    println!("  ║  {}  ║", padded);
+    println!("  ╚════════════════════════════════════╝");
 }
 
-pub fn show_warning(message: &str) {
-    println!("[警告] {}", message);
-}
-
-pub fn show_install_complete(install_dir: &std::path::Path) {
-    println!("\n========================================");
-    println!("  Taix 安装完成!");
-    println!("========================================");
-    println!("\n安装目录: {}", install_dir.display());
-    println!("\n按 Enter 键退出...");
-
-    let _ = std::io::stdin().read_line(&mut String::new());
-}
-
-pub fn show_update_complete(install_dir: &std::path::Path) {
-    println!("\n========================================");
-    println!("  Taix 更新完成!");
-    println!("========================================");
-    println!("\n安装目录: {}", install_dir.display());
-    println!("\n按 Enter 键退出...");
-
-    let _ = std::io::stdin().read_line(&mut String::new());
-}
-
-pub fn show_uninstall_complete(install_dir: &std::path::Path) {
-    println!("\n========================================");
-    println!("  Taix 卸载完成!");
-    println!("========================================");
-    println!("\n注意: 用户数据 (配置、数据库、日志等) 已保留。");
-    println!("如需完全删除，请手动删除: {}", install_dir.display());
-    println!("\n按 Enter 键退出...");
-
-    let _ = std::io::stdin().read_line(&mut String::new());
-}
-
-pub fn prompt_install_action() -> Result<InstallAction> {
-    let choices = ["更新", "重新安装", "卸载", "取消"];
-
-    let selection = Select::new()
-        .with_prompt("请选择操作")
-        .default(0)
-        .items(&choices)
-        .interact()
-        .map_err(|e| anyhow::anyhow!("Select error: {}", e))?;
-
-    Ok(match selection {
-        0 => InstallAction::Update,
-        1 => InstallAction::Reinstall,
-        2 => InstallAction::Uninstall,
-        3 => InstallAction::Cancel,
-        _ => InstallAction::Cancel,
-    })
+pub fn wait_exit() {
+    println!("\n  按 Enter 键退出...");
+    let _ = io::stdin().read_line(&mut String::new());
 }
