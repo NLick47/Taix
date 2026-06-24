@@ -83,6 +83,9 @@ jobs:
 
           Copy-Item "taix-shell/resources" -Destination $publishDir -Recurse -Force
 
+          # Remove macOS-only files
+          Get-ChildItem -Path "$publishDir/resources" -Recurse -Include "*.icns" -File | Remove-Item -Force
+
       - name: Remove debug symbol files
         shell: pwsh
         run: |
@@ -91,6 +94,14 @@ jobs:
             Remove-Item $_.FullName -Force
             Write-Host "Removed PDB: $($_.FullName)"
           }
+
+      - name: Install 7-Zip for ultra compression
+        shell: pwsh
+        run: |
+          choco install 7zip -y
+          # 确保 7z 命令可用
+          7z | Out-Null
+          Write-Host "7-Zip installed successfully"
 
       - name: Build Installer
         shell: bash

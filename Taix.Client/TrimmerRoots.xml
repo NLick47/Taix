@@ -4,8 +4,5 @@
     <assembly fullname="HarfBuzzSharp" preserve="all" />
     <assembly fullname="Avalonia.Skia" preserve="all" />
 
-    <assembly fullname="ReactiveUI" preserve="all" />
-    <assembly fullname="ReactiveUI.Avalonia" preserve="all" />
-
     <assembly fullname="Taix" preserve="all" />
 </linker>

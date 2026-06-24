@@ -6,7 +6,6 @@
 
     <Application.Styles>
         <SimpleTheme />
-        <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Simple/Simple.xaml" />
     </Application.Styles>
 
     <Application.Resources>
@@ -18,12 +17,13 @@
                 <!--<ResourceInclude Source="/Resources/Localization/StringResources.en.axaml"/>-->
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
-        
-        <ControlTheme x:Key="{x:Type WindowDrawnDecorations}" 
+
+        <ControlTheme x:Key="{x:Type WindowDrawnDecorations}"
                       TargetType="WindowDrawnDecorations">
             <Setter Property="DefaultTitleBarHeight" Value="0"/>
             <Setter Property="DefaultFrameThickness" Value="0"/>
             <Setter Property="DefaultShadowThickness" Value="0"/>
+
             <Setter Property="Template">
                 <WindowDrawnDecorationsTemplate>
                     <WindowDrawnDecorationsContent />

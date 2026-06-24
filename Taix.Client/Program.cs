@@ -18,6 +18,7 @@ internal sealed class Program
         var builder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .UseReactiveUI(_ => { });
+
 #if DEBUG
         builder.WithDeveloperTools();
 #endif
