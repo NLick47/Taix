@@ -37,14 +37,6 @@ fn build_task_xml(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) 
       <Enabled>true</Enabled>
       <Delay>PT30S</Delay>
     </LogonTrigger>
-    <TimeTrigger>
-      <Repetition>
-        <Interval>PT5M</Interval>
-        <StopAtDurationEnd>false</StopAtDurationEnd>
-      </Repetition>
-      <StartBoundary>2020-01-01T00:00:00</StartBoundary>
-      <Enabled>true</Enabled>
-    </TimeTrigger>
   </Triggers>
   <Principals>
     <Principal id="Author">
@@ -71,10 +63,6 @@ fn build_task_xml(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) 
     <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
     <Priority>7</Priority>
     <UseUnifiedSchedulingEngine>true</UseUnifiedSchedulingEngine>
-    <RestartOnFailure>
-      <Interval>PT1M</Interval>
-      <Count>999</Count>
-    </RestartOnFailure>
   </Settings>
   <Actions Context="Author">
     <Exec>
