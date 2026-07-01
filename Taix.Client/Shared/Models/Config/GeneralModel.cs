@@ -73,18 +73,9 @@ public class GeneralModel
 
     public int DataRetentionDays { get; set; } = 31;
 
-    public double WindowWidth { get; set; }
-
-    public double WindowHeight { get; set; }
-
     [Config(Options = "禁用|渐变1|渐变2|渐变3", Name = "窗口渐变", Group = "界面", CultureCode = CultureCode.ZhCn)]
     [Config(Options = "Off|Gradient 1|Gradient 2|Gradient 3", Name = "Window Gradient", Group = "Interface", CultureCode = CultureCode.EnUs)]
     public int WindowGradientScheme { get; set; } = 3;
 
     public string SyncUrl { get; set; } = string.Empty;
-
-    /// <summary>
-    /// ChartPage 分类筛选器隐藏的分类 ID 列表（JSON 数组字符串）
-    /// </summary>
-    public string ChartHiddenCategoryIds { get; set; } = string.Empty;
 }

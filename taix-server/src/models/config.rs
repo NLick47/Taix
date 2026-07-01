@@ -86,6 +86,8 @@ pub struct GeneralModel {
     pub data_retention_days: i32,
     #[serde(rename = "WindowGradientScheme")]
     pub window_gradient_scheme: i32,
+    #[serde(rename = "IsSaveWindowSize")]
+    pub is_save_window_size: bool,
 }
 
 impl Default for GeneralModel {
@@ -103,6 +105,7 @@ impl Default for GeneralModel {
             sync_url: String::new(),
             data_retention_days: 31,
             window_gradient_scheme: 3,
+            is_save_window_size: false,
         }
     }
 }
