@@ -30,7 +30,7 @@ struct TrayUserData {
     icon: HICON,
 }
 
-/// 延迟获取 TaskbarCreated 已注册消息 ID（explorer 重启时重建托盘图标）
+/// 延迟获取 TaskbarCreated 已注册消息 ID
 fn taskbar_restart_msg() -> u32 {
     use std::sync::OnceLock;
     static MSG_ID: OnceLock<u32> = OnceLock::new();
@@ -40,7 +40,7 @@ fn taskbar_restart_msg() -> u32 {
     })
 }
 
-/// 窗口过程 —— 借鉴 tray-icon crate 的实现模式
+
 unsafe extern "system" fn tray_wnd_proc(
     hwnd: HWND,
     msg: u32,
@@ -103,7 +103,16 @@ pub fn run_tray(
 ) -> anyhow::Result<()> {
     let icon = load_icon()?;
 
-    // 将 cmd_tx + icon 封装为 heap 对象，窗口过程通过 GWLP_USERDATA 访问
+    {
+        let deadline = std::time::Instant::now() + Duration::from_secs(1);
+        while std::time::Instant::now() < deadline {
+            if shutdown.load(Ordering::Relaxed) {
+                return Ok(());
+            }
+            std::thread::sleep(Duration::from_millis(100));
+        }
+    }
+
     let userdata = Box::new(TrayUserData {
         cmd_tx: cmd_tx.clone(),
         icon,
@@ -112,11 +121,9 @@ pub fn run_tray(
 
     let hwnd = create_hidden_window(userdata_ptr as *mut std::ffi::c_void)?;
 
-    // 注册托盘图标
     register_tray_icon(hwnd, ID_TRAYICON, icon);
 
     if !initial_config.is_visible {
-        // 隐藏：NIM_DELETE 再 NIM_ADD 相对繁琐，直接用 NIM_MODIFY + NIF_STATE
         unsafe {
             let mut nid: NOTIFYICONDATAW = std::mem::zeroed();
             nid.cbSize = std::mem::size_of::<NOTIFYICONDATAW>() as u32;
@@ -226,22 +233,41 @@ fn create_hidden_window(lp_param: *mut std::ffi::c_void) -> anyhow::Result<HWND>
     }
 }
 
+/// 注册托盘图标，失败时指数退避重试（应对计划任务启动时托盘区域未就绪）
 fn register_tray_icon(hwnd: HWND, id: u32, icon: HICON) {
     let tooltip: Vec<u16> = "Taix\0".encode_utf16().collect();
 
-    unsafe {
-        let mut nid: NOTIFYICONDATAW = std::mem::zeroed();
-        nid.cbSize = std::mem::size_of::<NOTIFYICONDATAW>() as u32;
-        nid.hWnd = hwnd;
-        nid.uID = id;
-        nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
-        nid.uCallbackMessage = WM_TRAYICON;
-        nid.hIcon = icon;
-        let tip_len = tooltip.len().min(nid.szTip.len());
-        nid.szTip[..tip_len].copy_from_slice(&tooltip[..tip_len]);
+    let mut attempt: u32 = 0;
+    loop {
+        let ok = unsafe {
+            let mut nid: NOTIFYICONDATAW = std::mem::zeroed();
+            nid.cbSize = std::mem::size_of::<NOTIFYICONDATAW>() as u32;
+            nid.hWnd = hwnd;
+            nid.uID = id;
+            nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+            nid.uCallbackMessage = WM_TRAYICON;
+            nid.hIcon = icon;
+            let tip_len = tooltip.len().min(nid.szTip.len());
+            nid.szTip[..tip_len].copy_from_slice(&tooltip[..tip_len]);
+            Shell_NotifyIconW(NIM_ADD, &nid).as_bool()
+        };
 
-        if !Shell_NotifyIconW(NIM_ADD, &nid).as_bool() {
-            tracing::error!(target: "taix_shell::tray", "NIM_ADD failed");
+        if ok {
+            break;
         }
+
+        attempt += 1;
+        if attempt >= 10 {
+            tracing::error!(target: "taix_shell::tray", "NIM_ADD failed after {} retries", attempt);
+            return;
+        }
+
+        let delay = if attempt <= 5 {
+            Duration::from_secs(1)
+        } else {
+            Duration::from_secs(2)
+        };
+        tracing::warn!(target: "taix_shell::tray", "NIM_ADD failed (attempt {}), retrying in {}ms", attempt, delay.as_millis());
+        std::thread::sleep(delay);
     }
 }
