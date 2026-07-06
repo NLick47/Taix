@@ -129,15 +129,17 @@ fn create_shortcut_via_powershell(target: &Path, shortcut: &Path) -> Result<()> 
     let shortcut_str = shortcut.to_str().context("Invalid shortcut path")?;
     let work_dir = target.parent().and_then(|p| p.to_str()).unwrap_or(".");
 
+    // 显式设置 IconLocation 为 EXE 自身，避免 Windows 图标缓存
     let script = format!(
         r#"
 $ws = New-Object -ComObject WScript.Shell
 $sc = $ws.CreateShortcut('{}')
 $sc.TargetPath = '{}'
 $sc.WorkingDirectory = '{}'
+$sc.IconLocation = '{}'
 $sc.Save()
 "#,
-        shortcut_str, target_str, work_dir
+        shortcut_str, target_str, work_dir, target_str
     );
 
     let output = std::process::Command::new("powershell")
