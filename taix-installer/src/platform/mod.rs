@@ -102,6 +102,16 @@ pub trait Platform {
     fn desktop_dir() -> PathBuf;
 }
 
+pub fn restore_backup(backup_dir: &std::path::Path, install_dir: &std::path::Path) -> anyhow::Result<()> {
+    for entry in std::fs::read_dir(backup_dir)? {
+        let entry = entry?;
+        let src = entry.path();
+        let dst = install_dir.join(entry.file_name());
+        std::fs::copy(&src, &dst)?;
+    }
+    Ok(())
+}
+
 /// 检测安装目录（优先使用记录文件，其次使用其他方式）
 pub fn detect_install_dir() -> PathBuf {
     // 优先从安装路径记录文件读取
