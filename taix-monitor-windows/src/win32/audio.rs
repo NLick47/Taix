@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+use tracing::{debug, error, warn};
 use windows::Win32::Media::Audio::{eConsole, eRender, IMMDeviceEnumerator, MMDeviceEnumerator};
 use windows::Win32::System::Com::{
     CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_ALL, COINIT_APARTMENTTHREADED,
@@ -21,7 +22,6 @@ impl AudioState {
 }
 
 /// 专用 COM 线程，负责轮询音频播放状态。
-/// COM 在该线程中初始化一次，IMMDeviceEnumerator 实例复用，避免散落在 tokio 阻塞线程池中。
 pub struct AudioMonitor {
     handle: Option<thread::JoinHandle<()>>,
     state: AudioState,
@@ -31,17 +31,15 @@ pub struct AudioMonitor {
 impl AudioMonitor {
     pub fn start() -> Self {
         let is_playing = Arc::new(AtomicBool::new(false));
-        let running = Arc::new(AtomicBool::new(true));
         let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel::<()>();
 
         let is_playing_clone = Arc::clone(&is_playing);
-        let running_clone = Arc::clone(&running);
 
         let handle = thread::spawn(move || {
             unsafe {
                 let hr = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
                 if hr.is_err() {
-                    tracing::error!(target: "audio_monitor", "CoInitializeEx failed");
+                    error!(target: "audio_monitor", "CoInitializeEx failed");
                     return;
                 }
 
@@ -52,13 +50,16 @@ impl AudioMonitor {
                 ) {
                     Ok(e) => e,
                     Err(e) => {
-                        tracing::error!(target: "audio_monitor", "CoCreateInstance(MMDeviceEnumerator) failed: {:?}", e);
+                        error!(
+                            target: "audio_monitor",
+                            "CoCreateInstance(MMDeviceEnumerator) failed: {:?}", e
+                        );
                         CoUninitialize();
                         return;
                     }
                 };
 
-                while running_clone.load(Ordering::Relaxed) {
+                loop {
                     let playing = match enumerator.GetDefaultAudioEndpoint(eRender, eConsole) {
                         Ok(device) => {
                             let meter: windows::core::Result<IAudioMeterInformation> =
@@ -67,18 +68,27 @@ impl AudioMonitor {
                                 Ok(m) => match m.GetPeakValue() {
                                     Ok(peak) => peak > 0.0001,
                                     Err(e) => {
-                                        tracing::debug!(target: "audio_monitor", "GetPeakValue failed: {:?}", e);
+                                        debug!(
+                                            target: "audio_monitor",
+                                            "GetPeakValue failed: {:?}", e
+                                        );
                                         false
                                     }
                                 },
                                 Err(e) => {
-                                    tracing::debug!(target: "audio_monitor", "Activate(IAudioMeterInformation) failed: {:?}", e);
+                                    debug!(
+                                        target: "audio_monitor",
+                                        "Activate(IAudioMeterInformation) failed: {:?}", e
+                                    );
                                     false
                                 }
                             }
                         }
                         Err(e) => {
-                            tracing::debug!(target: "audio_monitor", "GetDefaultAudioEndpoint failed: {:?}", e);
+                            debug!(
+                                target: "audio_monitor",
+                                "GetDefaultAudioEndpoint failed: {:?}", e
+                            );
                             false
                         }
                     };
@@ -109,11 +119,11 @@ impl AudioMonitor {
 
     pub fn stop(mut self) {
         if let Err(e) = self.shutdown_tx.send(()) {
-            tracing::warn!(target: "audio_monitor", "Shutdown signal failed: {:?}", e);
+            warn!(target: "audio_monitor", "Shutdown signal failed: {:?}", e);
         }
         if let Some(h) = self.handle.take() {
             if let Err(e) = h.join() {
-                tracing::error!(target: "audio_monitor", "Audio thread panicked: {:?}", e);
+                error!(target: "audio_monitor", "Audio thread panicked: {:?}", e);
             }
         }
     }

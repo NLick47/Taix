@@ -1,46 +1,112 @@
 use std::path::PathBuf;
-use std::sync::Arc;
-use tokio::sync::broadcast;
-use tracing::info;
+use std::time::Duration;
 
-use crate::models::SessionCheckpoint;
+use crate::win32::audio::AudioMonitor;
+use tracing::{error, info, warn};
 
-/// 崩溃恢复：从 active_session.json 读取上次活跃会话并上报
-async fn recover_session(data_dir: &std::path::Path, client: &crate::transport::client::MonitorClient) {
+pub fn run(data_dir: Option<PathBuf>) -> ! {
+    // 单实例锁
+    drop(crate::win32::single_instance::try_acquire("Global\\TaixMonitorSingleInstance").unwrap_or_else(|| {
+        error!(target: "main", "Another instance is already running");
+        std::process::exit(1);
+    }));
+
+    let data_dir = data_dir
+        .or_else(|| std::env::var("TAIX_DATA_DIR").ok().map(PathBuf::from))
+        .unwrap_or_else(|| {
+            std::env::current_exe()
+                .ok()
+                .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+                .unwrap_or_else(|| PathBuf::from("."))
+        });
+
+    info!(target: "main", "Starting... dataDir={:?}", data_dir);
+
+    // 启动音频监控 COM 线程
+    let audio_monitor = AudioMonitor::start();
+    let audio_state = audio_monitor.state();
+
+    // 初始化组件
+    let mut app_manager = crate::app_manager::AppManager::new(Some(data_dir.clone()));
+    let mut timer = crate::app_timer::AppTimer::new();
+    let mut sleep_detector = crate::sleep_detector::SleepDetector::new(audio_state);
+    let queue = crate::transport::queue::MessageQueue::new("TaixDaemon");
+
+    // 崩溃恢复
+    try_recover_session(&data_dir, &queue);
+
+    let mut last_hwnd = windows::Win32::Foundation::HWND(0 as *mut _);
+    info!(target: "main", "Running.");
+
+    loop {
+        let loop_start = std::time::Instant::now();
+
+        // 前台窗口轮询
+        if let Some(event) = app_manager.poll_foreground(&mut last_hwnd) {
+            timer.on_app_switch(event);
+        }
+
+        // Sleep/Wake 检测
+        if let Some(status) = sleep_detector.tick() {
+            timer.on_sleep_status_changed(status);
+            info!(
+                target: "main",
+                "{} detected",
+                match status {
+                    crate::models::SleepStatus::Sleep => "System sleep",
+                    crate::models::SleepStatus::Wake => "System wake",
+                }
+            );
+
+            timer.tick(&Some(data_dir.clone()), &queue);
+            let msg = match status {
+                crate::models::SleepStatus::Sleep => crate::models::MonitorMessage::Sleep,
+                crate::models::SleepStatus::Wake => crate::models::MonitorMessage::Wake,
+            };
+            let mut json = msg.to_string();
+            json.push('\n');
+            queue.enqueue(json.into_bytes());
+            // 跳过下面重复的 timer.tick
+            continue;
+        }
+
+        timer.tick(&Some(data_dir.clone()), &queue);
+
+        let elapsed = loop_start.elapsed();
+        if elapsed < Duration::from_secs(1) {
+            std::thread::sleep(Duration::from_secs(1) - elapsed);
+        }
+    }
+}
+
+/// 崩溃恢复 从 active_session.json 读取上次活跃会话并上报
+fn try_recover_session(data_dir: &std::path::Path, queue: &crate::transport::queue::MessageQueue) {
     let cp_path = data_dir.join("active_session.json");
     if !cp_path.exists() {
         return;
     }
 
     let recovered = match std::fs::read_to_string(&cp_path) {
-        Ok(s) => match serde_json::from_str::<SessionCheckpoint>(&s) {
-            Ok(cp) => Some(cp),
-            Err(e) => {
-                tracing::warn!(target: "main", "Corrupt checkpoint: {}", e);
+        Ok(s) => match crate::models::SessionCheckpoint::from_str(&s) {
+            Some(cp) => Some(cp),
+            None => {
+                warn!(target: "main", "Corrupt checkpoint");
                 None
             }
         },
         Err(e) => {
-            tracing::warn!(target: "main", "Failed to read checkpoint: {}", e);
+            warn!(target: "main", "Failed to read checkpoint: {}", e);
             None
         }
     };
 
-    let cp_mtime = match std::fs::metadata(&cp_path) {
-        Ok(m) => m.modified().ok(),
-        Err(e) => {
-            tracing::warn!(target: "main", "Failed to read checkpoint metadata: {}", e);
-            None
-        }
-    };
+    let cp_mtime = std::fs::metadata(&cp_path).ok().and_then(|m| m.modified().ok());
 
     if let Some(cp) = recovered {
-        let now = chrono::Local::now();
-        let since = chrono::DateTime::from_timestamp(cp.since_ts, 0)
-            .map(|utc| utc.with_timezone(&chrono::Local))
-            .unwrap_or(now);
+        let now = std::time::SystemTime::now();
+        let since = std::time::UNIX_EPOCH + std::time::Duration::from_secs(cp.since_ts.max(0) as u64);
 
-        let idle = crate::win32::get_system_idle_time();
+        let idle = crate::win32::get_system_idle_time().unwrap_or(Duration::ZERO);
         let inactive_threshold = if cfg!(debug_assertions) {
             std::time::Duration::from_secs(10)
         } else {
@@ -64,7 +130,10 @@ async fn recover_session(data_dir: &std::path::Path, client: &crate::transport::
                 cp.process
             );
         } else {
-            let delta = (now - since).num_seconds().max(0);
+            let delta = now
+                .duration_since(since)
+                .unwrap_or_default()
+                .as_secs() as i64;
             let delta = delta.min(3600);
             info!(
                 target: "main",
@@ -78,178 +147,20 @@ async fn recover_session(data_dir: &std::path::Path, client: &crate::transport::
             } else {
                 Some(cp.process.as_str())
             };
-            client.send_app_duration(&cp.process, delta, since, exe, icon, desc).await;
+            let msg = crate::models::MonitorMessage::App {
+                p: &cp.process,
+                d: delta,
+                a: now.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs() as i64,
+                f: exe,
+                i: icon,
+                desc,
+            };
+            let mut json = msg.to_string();
+            json.push('\n');
+            queue.enqueue(json.into_bytes());
         }
     }
 
-    if let Err(e) = std::fs::remove_file(&cp_path) {
-        tracing::debug!(target: "main", "Failed to remove checkpoint: {}", e);
-    }
-    if let Err(e) = std::fs::remove_file(data_dir.join("active_session.json.tmp")) {
-        tracing::debug!(target: "main", "Failed to remove checkpoint tmp: {}", e);
-    }
-}
-
-pub async fn run(
-    data_dir: Option<PathBuf>,
-    mut shutdown_rx: tokio::sync::watch::Receiver<()>,
-) {
-    let log_filter = if cfg!(debug_assertions) {
-        "debug"
-    } else {
-        "taix_monitor_windows=warn"
-    };
-
-    let _logging_guard =
-        taix_logging::init("taix-monitor", log_filter, taix_logging::PanicMode::LogOnly);
-
-    let _single_instance = match crate::win32::single_instance::try_acquire("Global\\TaixMonitorSingleInstance") {
-        Some(guard) => guard,
-        None => {
-            tracing::error!(target: "main", "Another instance is already running. Exiting.");
-            return;
-        }
-    };
-
-    info!(target: "main", "Starting... dataDir={:?}", data_dir);
-
-    let app_manager = Arc::new(crate::app_manager::AppManager::new(data_dir.clone()));
-    let app_observer = crate::app_observer::AppObserver::spawn(Arc::clone(&app_manager));
-    let app_events = app_observer.subscribe();
-
-    let audio_monitor = crate::win32::audio::AudioMonitor::start();
-    let sleep_detector = crate::sleep_detector::SleepDetector::new(audio_monitor.state());
-    let sleep_events = sleep_detector.subscribe();
-
-    let app_timer = crate::app_timer::AppTimer::new(app_events, sleep_detector.subscribe(), data_dir.clone());
-    let duration_events = app_timer.subscribe();
-
-    // 传输层
-    let pipe = crate::transport::pipe::NamedPipeTransport::new("TaixDaemon");
-    let queue = crate::transport::queue::MessageQueue::new(pipe);
-    let client = Arc::new(crate::transport::client::MonitorClient::new(queue));
-
-    // 崩溃恢复
-    if let Some(ref data_dir) = data_dir {
-        recover_session(data_dir, &client).await;
-    }
-
-    // app 时长处理
-    let client_clone = Arc::clone(&client);
-    let duration_handle = tokio::spawn(async move {
-        let mut rx = duration_events;
-        loop {
-            match rx.recv().await {
-                Ok(event) => {
-                    let exe = (!event.app.executable_path.is_empty()).then_some(event.app.executable_path.as_str());
-                    let icon = (!event.app.icon_path.is_empty()).then_some(event.app.icon_path.as_str());
-                    let desc = (!event.app.description.is_empty())
-                        .then_some(event.app.description.as_str())
-                        .or_else(|| Some(event.app.process.as_str()));
-                    client_clone.send_app_duration(
-                        &event.app.process,
-                        event.duration_secs,
-                        event.start_time,
-                        exe,
-                        icon,
-                        desc,
-                    ).await;
-                    info!(
-                        target: "main",
-                        "Queued app duration: {} = {}s",
-                        event.app.process,
-                        event.duration_secs,
-                    );
-                }
-                Err(broadcast::error::RecvError::Lagged(n)) => {
-                    tracing::warn!(target: "main", "Duration events lagged by {} messages", n);
-                }
-                Err(broadcast::error::RecvError::Closed) => break,
-            }
-        }
-    });
-
-    // 睡眠检测处理
-    let client_clone = Arc::clone(&client);
-    let sleep_event_handle = tokio::spawn(async move {
-        let mut rx = sleep_events;
-        loop {
-            match rx.recv().await {
-                Ok(status) => {
-                    match status {
-                        crate::models::SleepStatus::Sleep => {
-                            info!(target: "main", "System sleep detected, sending notification...");
-                            client_clone.send_sleep().await;
-                            info!(target: "main", "Sleep notification queued");
-                        }
-                        crate::models::SleepStatus::Wake => {
-                            info!(target: "main", "System wake detected, sending notification...");
-                            client_clone.send_wake().await;
-                            info!(target: "main", "Wake notification queued");
-                        }
-                    }
-                }
-                Err(broadcast::error::RecvError::Lagged(n)) => {
-                    tracing::warn!(target: "main", "Sleep events lagged by {} messages", n);
-                }
-                Err(broadcast::error::RecvError::Closed) => break,
-            }
-        }
-    });
-
-    // 启动核心循环
-    let timer_handle = tokio::spawn(app_timer.run());
-    let sleep_handle = tokio::spawn(sleep_detector.clone().run());
-
-    info!(target: "main", "Running. Waiting for shutdown signal.");
-
-    // 等待关闭信号
-    let _ = shutdown_rx.changed().await;
-
-    info!(target: "main", "Stopping...");
-
-    // 发送关机信号
-    sleep_detector.shutdown();
-    // drop observer，AppTimer 刷出剩余时长后退出
-    drop(app_observer);
-    info!(target: "main", "AppObserver stopped");
-
-    // 等待 AppTimer 结束，需在 duration_handle 之前
-    if let Err(e) = tokio::time::timeout(std::time::Duration::from_secs(2), timer_handle).await {
-        tracing::warn!(target: "main", "AppTimer shutdown timed out: {}", e);
-    }
-    info!(target: "main", "AppTimer stopped");
-
-    // 等待 duration_handle 处理剩余事件
-    if let Err(e) = tokio::time::timeout(std::time::Duration::from_secs(2), duration_handle).await {
-        tracing::warn!(target: "main", "Duration handler shutdown timed out: {}", e);
-    }
-    info!(target: "main", "Duration handler stopped");
-
-    // 等待 sleep detector 结束
-    if let Err(e) = tokio::time::timeout(std::time::Duration::from_secs(2), sleep_handle).await {
-        tracing::warn!(target: "main", "Sleep detector shutdown timed out: {}", e);
-    }
-    info!(target: "main", "Sleep detector stopped");
-
-    // 停止音频监控线程（专用 COM 线程，不依赖 tokio 线程池）
-    audio_monitor.stop();
-    info!(target: "main", "Audio monitor stopped");
-
-    // drop sleep_detector，sleep_event_handle 退出
-    drop(sleep_detector);
-    if let Err(e) = tokio::time::timeout(std::time::Duration::from_secs(2), sleep_event_handle).await {
-        tracing::warn!(target: "main", "Sleep event handler shutdown timed out: {}", e);
-    }
-    info!(target: "main", "Sleep event handler stopped");
-
-    // 等待 client 任务结束
-    if let Ok(client) = Arc::try_unwrap(client) {
-        client.shutdown().await;
-    } else {
-        tracing::warn!(target: "main", "Could not unwrap Arc for client shutdown; background tasks may still hold references");
-    }
-    info!(target: "main", "MonitorClient stopped");
-
-    info!(target: "main", "Stopped.");
+    let _ = std::fs::remove_file(&cp_path);
+    let _ = std::fs::remove_file(data_dir.join("active_session.json.tmp"));
 }

@@ -1,96 +1,165 @@
 use super::pipe::NamedPipeTransport;
-use std::time::Duration;
-use tokio::sync::mpsc;
-use tracing::{debug, error, info, warn};
+use std::collections::VecDeque;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::{Duration, Instant};
+use tracing::{debug, warn};
 
-// 单条消息最大重试次数，约 25 秒退避
+const MAX_QUEUED: usize = 2048;
+const CONSUMER_INTERVAL: Duration = Duration::from_millis(100);
 const MAX_SEND_ATTEMPTS: u32 = 10;
-/// channel 容量：同时存在的未处理消息数上限。
-const CHANNEL_CAPACITY: usize = 256;
+/// pending 中的消息超过此时间则丢弃，防止 daemon 长期不可用时积压
+const PENDING_TTL: Duration = Duration::from_secs(300);
 
-/// 带背压的消息队列。当内部 channel 满时，`enqueue` 会同步阻塞（等待消费者），
-/// 确保调用者明确感知到背压，而不是静默丢弃消息。
+#[derive(Clone)]
+struct TimedMessage {
+    data: Vec<u8>,
+    enqueued_at: Instant,
+}
+
 pub struct MessageQueue {
-    tx: mpsc::Sender<Vec<u8>>,
-    task: Option<tokio::task::JoinHandle<()>>,
+    inner: Arc<Inner>,
+    _consumer: Option<thread::JoinHandle<()>>,
+}
+
+struct Inner {
+    buf: Mutex<VecDeque<TimedMessage>>,
+    running: AtomicBool,
+    pipe_name: String,
 }
 
 impl MessageQueue {
-    pub fn new(mut transport: NamedPipeTransport) -> Self {
-        let (tx, mut rx) = mpsc::channel::<Vec<u8>>(CHANNEL_CAPACITY);
+    pub fn new(pipe_name: &str) -> Self {
+        let inner = Arc::new(Inner {
+            buf: Mutex::new(VecDeque::with_capacity(256)),
+            running: AtomicBool::new(true),
+            pipe_name: pipe_name.to_owned(),
+        });
 
-        let task = tokio::spawn(async move {
-            while let Some(message) = rx.recv().await {
-                match send_with_retry(&mut transport, &message).await {
-                    Ok(()) => {
-                        info!(target: "message_queue", "Sent {} bytes to named pipe", message.len());
+        // 消费者线程：后台 flush 到命名管道
+        let inner_clone = Arc::clone(&inner);
+        let _consumer = thread::spawn(move || {
+            let mut transport = NamedPipeTransport::new(&inner_clone.pipe_name);
+            let mut pending: Vec<TimedMessage> = Vec::new();
+
+            while inner_clone.running.load(Ordering::Relaxed) {
+                // 1. 从共享缓冲取消息
+                let batch = {
+                    let mut buf = inner_clone.buf.lock().unwrap_or_else(|e| e.into_inner());
+                    if buf.is_empty() && pending.is_empty() {
+                        drop(buf);
+                        thread::sleep(CONSUMER_INTERVAL);
+                        continue;
                     }
-                    Err(e) => {
-                        error!(
-                            target: "message_queue",
-                            "Dropped message after {} retries: {}",
-                            MAX_SEND_ATTEMPTS, e
-                        );
+                    // pending 中超时消息丢弃
+                    let now = Instant::now();
+                    pending.retain(|m| now.duration_since(m.enqueued_at) < PENDING_TTL);
+                    // 把 pending 中没发成功的放回队列头部
+                    let mut all: VecDeque<TimedMessage> = pending.drain(..).collect();
+                    all.append(&mut *buf);
+                    all.into_iter().collect::<Vec<_>>()
+                };
+
+                // 2. 尝试发送所有消息
+                match send_batch(&mut transport, &batch) {
+                    Ok(()) => {
+                        pending.clear();
+                    }
+                    Err(unsent) => {
+                        pending = unsent;
+                        // 连接失败，等一会再试
+                        thread::sleep(Duration::from_millis(500));
                     }
                 }
             }
-            debug!(target: "message_queue", "Send loop ended");
+
+            // 退出前最后一次尝试
+            if !pending.is_empty() {
+                let batch: Vec<TimedMessage> = {
+                    let mut buf = inner_clone.buf.lock().unwrap_or_else(|e| e.into_inner());
+                    let mut all: VecDeque<TimedMessage> = pending.drain(..).collect();
+                    all.append(&mut *buf);
+                    all.into_iter().collect()
+                };
+                let _ = send_batch(&mut transport, &batch);
+            }
         });
 
         Self {
-            tx,
-            task: Some(task),
+            inner,
+            _consumer: Some(_consumer),
         }
     }
 
-    /// 将消息入队。使用 `async` 语义，若 channel 满则等待，绝不静默丢弃。
-    pub async fn enqueue(&self, data: Vec<u8>) -> Result<(), mpsc::error::SendError<Vec<u8>>> {
-        self.tx.send(data).await
-    }
-
-    pub async fn shutdown(mut self) {
-        // drop sender 关闭 channel，让消费任务优雅退出
-        drop(self.tx);
-        if let Some(task) = self.task.take() {
-            if let Err(e) = tokio::time::timeout(Duration::from_secs(30), task).await {
-                warn!(target: "message_queue", "Shutdown timed out waiting for send loop: {}", e);
-            }
+    /// 主线程调用：将消息加入缓冲
+    pub fn enqueue(&self, data: Vec<u8>) {
+        let mut buf = self.inner.buf.lock().unwrap_or_else(|e| e.into_inner());
+        if buf.len() >= MAX_QUEUED {
+            buf.pop_front();
+            warn!(target: "message_queue", "Queue full, dropped oldest message");
         }
+        buf.push_back(TimedMessage {
+            data,
+            enqueued_at: Instant::now(),
+        });
     }
 }
 
-async fn send_with_retry(
+/// 尝试发送一批消息。成功返回 Ok(())，失败返回 Err(未发送的消息)。
+fn send_batch(
     transport: &mut NamedPipeTransport,
-    message: &[u8],
-) -> std::io::Result<()> {
-    let mut last_err = std::io::Error::new(std::io::ErrorKind::Other, "No send attempts made");
+    batch: &[TimedMessage],
+) -> Result<(), Vec<TimedMessage>> {
+    if batch.is_empty() {
+        return Ok(());
+    }
 
-    for attempt in 1..=MAX_SEND_ATTEMPTS {
-        if !transport.is_connected() {
-            if let Err(e) = transport.connect().await {
-                warn!(target: "message_queue", "Pipe connect failed (attempt {}): {}", attempt, e);
-                last_err = e;
-                if attempt < MAX_SEND_ATTEMPTS {
-                    let delay = Duration::from_millis(500 * attempt as u64);
-                    tokio::time::sleep(delay).await;
+    // 如果没有连接，先连接
+    if !transport.is_connected() {
+        if let Err(e) = transport.connect() {
+            debug!(target: "message_queue", "Pipe connect failed: {}", e);
+            return Err(batch.to_vec());
+        }
+        debug!(target: "message_queue", "Pipe connected");
+    }
+
+    // 逐条发送，每条失败时重试 MAX_SEND_ATTEMPTS 次
+    let mut unsent: Vec<TimedMessage> = Vec::new();
+    for (idx, msg) in batch.iter().enumerate() {
+        let mut ok = false;
+        for attempt in 1..=MAX_SEND_ATTEMPTS {
+            match transport.send(&msg.data) {
+                Ok(()) => {
+                    ok = true;
+                    break;
                 }
-                continue;
+                Err(e) => {
+                    warn!(
+                        target: "message_queue",
+                        "Pipe send failed (attempt {}): {}", attempt, e
+                    );
+                    transport.disconnect();
+                    if attempt < MAX_SEND_ATTEMPTS {
+                        thread::sleep(Duration::from_millis(500 * attempt as u64));
+                        // 尝试重新连接
+                        if let Err(e) = transport.connect() {
+                            warn!(target: "message_queue", "Reconnect failed: {}", e);
+                        }
+                    }
+                }
             }
         }
-
-        match transport.send(message).await {
-            Ok(()) => return Ok(()),
-            Err(e) => {
-                warn!(target: "message_queue", "Pipe send failed (attempt {}): {}", attempt, e);
-                last_err = e;
-                transport.disconnect();
-                if attempt < MAX_SEND_ATTEMPTS {
-                    let delay = Duration::from_millis(500 * attempt as u64);
-                    tokio::time::sleep(delay).await;
-                }
-            }
+        if !ok {
+            // 当前消息失败后，后续所有消息也都发不出去了，全部保留
+            unsent.extend(batch[idx..].iter().cloned());
+            break;
         }
     }
 
-    Err(last_err)
+    if unsent.is_empty() {
+        Ok(())
+    } else {
+        Err(unsent)
+    }
 }

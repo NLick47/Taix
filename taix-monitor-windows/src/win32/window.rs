@@ -2,6 +2,7 @@ use crate::models::WindowInfo;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
+use tracing::{debug, error};
 use windows::Win32::Foundation::{HWND, LPARAM, RECT};
 use windows::Win32::Graphics::Gdi::{
     DeleteObject, GetDC, GetDIBits, GetObjectW, ReleaseDC, BITMAPINFO, BITMAPINFOHEADER, BI_RGB,
@@ -12,10 +13,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     DestroyIcon, EnumChildWindows, GetClassNameW, GetForegroundWindow, GetIconInfo, GetWindowRect,
     GetWindowTextLengthW, GetWindowTextW, IsWindow, IsWindowVisible, HICON,
 };
-use windows::Win32::UI::Accessibility::{SetWinEventHook, UnhookWinEvent};
 use windows::core::PCWSTR;
-
-const WINEVENT_OUTOFCONTEXT: u32 = 0x0000;
 
 pub fn get_foreground_window() -> HWND {
     unsafe { GetForegroundWindow() }
@@ -78,9 +76,12 @@ pub fn get_window_thread_process_id(hwnd: HWND) -> (u32, u32) {
 }
 
 pub fn get_window_info(hwnd: HWND) -> Option<WindowInfo> {
+    if !is_valid_visible_window(hwnd) {
+        return None;
+    }
     let title = get_window_text(hwnd);
     if get_window_rect(hwnd).is_none() {
-        tracing::error!(target: "win32::window", "GetWindowRect failed for hwnd={:?}", hwnd);
+        error!(target: "win32::window", "GetWindowRect failed for hwnd={:?}", hwnd);
         return None;
     }
     let class_name = get_window_class_name(hwnd);
@@ -91,36 +92,12 @@ pub fn get_window_info(hwnd: HWND) -> Option<WindowInfo> {
     })
 }
 
-pub unsafe fn set_win_event_hook(
-    event_min: u32,
-    event_max: u32,
-    callback: windows::Win32::UI::Accessibility::WINEVENTPROC,
-) -> Result<windows::Win32::UI::Accessibility::HWINEVENTHOOK, windows::core::Error> {
-    let hook = SetWinEventHook(event_min, event_max, None, callback, 0, 0, WINEVENT_OUTOFCONTEXT);
-    if hook.0.is_null() {
-        Err(windows::core::Error::new(
-            windows::core::HRESULT(0x80004005u32 as i32),
-            "SetWinEventHook failed",
-        ))
-    } else {
-        Ok(hook)
-    }
-}
-
-pub unsafe fn unhook_win_event(
-    hook: windows::Win32::UI::Accessibility::HWINEVENTHOOK,
-) {
-    if !UnhookWinEvent(hook).as_bool() {
-        tracing::debug!(target: "win32::window", "UnhookWinEvent returned false");
-    }
-}
-
 pub fn enum_child_windows(parent: HWND) -> Vec<HWND> {
     let mut children: Vec<HWND> = Vec::new();
     unsafe {
         let ptr = LPARAM(&mut children as *mut _ as isize);
         if !EnumChildWindows(Some(parent), Some(enum_child_proc), ptr).as_bool() {
-            tracing::debug!(target: "win32::window", "EnumChildWindows returned false");
+            debug!(target: "win32::window", "EnumChildWindows returned false");
         }
     }
     children
@@ -133,6 +110,12 @@ unsafe extern "system" fn enum_child_proc(hwnd: HWND, lparam: LPARAM) -> windows
 }
 
 pub fn extract_icon_to_png(exe_path: &str, output_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let (width, height, pixels_rgba) = extract_icon_rgba(exe_path)?;
+    save_rgba_as_png(output_path, width, height, &pixels_rgba)
+}
+
+/// 从 exe/dll 中提取图标，返回 (宽度, 高度, RGBA 像素数据)
+fn extract_icon_rgba(exe_path: &str) -> Result<(i32, i32, Vec<u8>), Box<dyn std::error::Error>> {
     unsafe {
         let path_wide: Vec<u16> = exe_path.encode_utf16().chain(Some(0)).collect();
         let mut large = HICON::default();
@@ -147,21 +130,28 @@ pub fn extract_icon_to_png(exe_path: &str, output_path: &Path) -> Result<(), Box
         if count == 0 || large.is_invalid() {
             if !small.is_invalid() {
                 if DestroyIcon(small).is_err() {
-                    tracing::debug!(target: "win32::window", "DestroyIcon(small) failed");
+                    debug!(target: "win32::window", "DestroyIcon(small) failed");
                 }
             }
             return Err("No icon found".into());
         }
         if !small.is_invalid() {
             if let Err(e) = DestroyIcon(small) {
-                tracing::debug!(target: "win32::window", "DestroyIcon(small) failed: {:?}", e);
+                debug!(target: "win32::window", "DestroyIcon(small) failed: {:?}", e);
             }
         }
 
         let mut info = windows::Win32::UI::WindowsAndMessaging::ICONINFO::default();
         if GetIconInfo(large, &mut info as *mut _).is_err() {
+            // GetIconInfo 失败时仍需释放可能的 GDI 对象
+            if !info.hbmColor.is_invalid() {
+                let _ = DeleteObject(HGDIOBJ::from(info.hbmColor));
+            }
+            if !info.hbmMask.is_invalid() {
+                let _ = DeleteObject(HGDIOBJ::from(info.hbmMask));
+            }
             if DestroyIcon(large).is_err() {
-                tracing::debug!(target: "win32::window", "DestroyIcon(large) failed");
+                debug!(target: "win32::window", "DestroyIcon(large) failed");
             }
             return Err("GetIconInfo failed".into());
         }
@@ -217,57 +207,58 @@ pub fn extract_icon_to_png(exe_path: &str, output_path: &Path) -> Result<(), Box
         if lines == 0 {
             if !info.hbmColor.is_invalid() {
                 if !DeleteObject(HGDIOBJ::from(info.hbmColor)).as_bool() {
-                    tracing::debug!(target: "win32::window", "DeleteObject(hbmColor) returned false");
+                    debug!(target: "win32::window", "DeleteObject(hbmColor) returned false");
                 }
             }
             if !DeleteObject(HGDIOBJ::from(info.hbmMask)).as_bool() {
-                tracing::debug!(target: "win32::window", "DeleteObject(hbmMask) returned false");
+                debug!(target: "win32::window", "DeleteObject(hbmMask) returned false");
             }
             if ReleaseDC(None, hdc) == 0 {
-                tracing::debug!(target: "win32::window", "ReleaseDC returned 0");
+                debug!(target: "win32::window", "ReleaseDC returned 0");
             }
             if DestroyIcon(large).is_err() {
-                tracing::debug!(target: "win32::window", "DestroyIcon(large) failed");
+                debug!(target: "win32::window", "DestroyIcon(large) failed");
             }
             return Err("GetDIBits failed".into());
         }
 
         if !info.hbmColor.is_invalid() {
             if !DeleteObject(HGDIOBJ::from(info.hbmColor)).as_bool() {
-                tracing::debug!(target: "win32::window", "DeleteObject(hbmColor) returned false");
+                debug!(target: "win32::window", "DeleteObject(hbmColor) returned false");
             }
         }
         if !DeleteObject(HGDIOBJ::from(info.hbmMask)).as_bool() {
-            tracing::debug!(target: "win32::window", "DeleteObject(hbmMask) returned false");
+            debug!(target: "win32::window", "DeleteObject(hbmMask) returned false");
         }
         if ReleaseDC(None, hdc) == 0 {
-            tracing::debug!(target: "win32::window", "ReleaseDC returned 0");
+            debug!(target: "win32::window", "ReleaseDC returned 0");
         }
         if DestroyIcon(large).is_err() {
-            tracing::debug!(target: "win32::window", "DestroyIcon(large) failed");
+            debug!(target: "win32::window", "DestroyIcon(large) failed");
         }
 
-        // 转换 BGRA -> RGBA 并保存为 PNG
+        // 转换 BGRA -> RGBA 返回给调用方
         let mut rgba_pixels = vec![0u8; (width * height * 4) as usize];
         for y in 0..height {
             for x in 0..width {
                 let idx = ((y * width + x) * 4) as usize;
-                let b = pixels[idx];
-                let g = pixels[idx + 1];
-                let r = pixels[idx + 2];
-                let a = pixels[idx + 3];
-                rgba_pixels[idx] = r;
-                rgba_pixels[idx + 1] = g;
-                rgba_pixels[idx + 2] = b;
-                rgba_pixels[idx + 3] = a;
+                rgba_pixels[idx] = pixels[idx + 2];     // R
+                rgba_pixels[idx + 1] = pixels[idx + 1]; // G
+                rgba_pixels[idx + 2] = pixels[idx];     // B
+                rgba_pixels[idx + 3] = pixels[idx + 3]; // A
             }
         }
 
-        let file = File::create(output_path)?;
-        let mut encoder = png::Encoder::new(BufWriter::new(file), width as u32, height as u32);
-        encoder.set_color(png::ColorType::Rgba);
-        encoder.set_depth(png::BitDepth::Eight);
-        encoder.write_header()?.write_image_data(&rgba_pixels)?;
-        Ok(())
+        Ok((width, height, rgba_pixels))
     }
+}
+
+/// 将 RGBA 像素数据保存为 PNG 文件
+fn save_rgba_as_png(output_path: &Path, width: i32, height: i32, rgba_pixels: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+    let file = File::create(output_path)?;
+    let mut encoder = png::Encoder::new(BufWriter::new(file), width as u32, height as u32);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_depth(png::BitDepth::Eight);
+    encoder.write_header()?.write_image_data(rgba_pixels)?;
+    Ok(())
 }

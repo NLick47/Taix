@@ -1,10 +1,9 @@
-use tokio::net::windows::named_pipe::ClientOptions;
-use tokio::io::AsyncWriteExt;
+use std::fs::{File, OpenOptions};
 use std::io;
 
 pub struct NamedPipeTransport {
     pipe_name: String,
-    writer: Option<tokio::net::windows::named_pipe::NamedPipeClient>,
+    writer: Option<File>,
 }
 
 impl NamedPipeTransport {
@@ -19,26 +18,26 @@ impl NamedPipeTransport {
         self.writer.is_some()
     }
 
-    /// 连接命名管道。`ClientOptions::open` 内部调用同步的 `CreateFileW`，
-    /// 因此放入 `spawn_blocking` 避免阻塞 tokio worker 线程。
-    pub async fn connect(&mut self) -> io::Result<()> {
+    pub fn connect(&mut self) -> io::Result<()> {
+        // 断开旧连接后才创建新连接
         self.disconnect();
         let pipe_path = format!("\\\\.\\pipe\\{}", self.pipe_name);
-        let client = tokio::task::spawn_blocking(move || {
-            ClientOptions::new().open(&pipe_path)
-        })
-        .await
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("spawn_blocking join error: {}", e)))?;
-        self.writer = Some(client?);
+        // 同步打开命名管道；内部调用 CreateFileW，无 FILE_FLAG_OVERLAPPED
+        let f = OpenOptions::new().write(true).open(&pipe_path)?;
+        self.writer = Some(f);
         Ok(())
     }
 
-    pub async fn send(&mut self, data: &[u8]) -> io::Result<()> {
-        let writer = self.writer.as_mut()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::NotConnected, "Not connected"))?;
-        writer.write_all(data).await?;
-        writer.flush().await?;
-        Ok(())
+    pub fn send(&mut self, data: &[u8]) -> io::Result<()> {
+        use std::io::Write;
+        self.writer
+            .as_mut()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotConnected, "Not connected"))?
+            .write_all(data)?;
+        self.writer
+            .as_mut()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotConnected, "Not connected"))?
+            .flush()
     }
 
     pub fn disconnect(&mut self) {

@@ -1,7 +1,8 @@
 use std::path::Path;
+use tracing::debug;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Storage::FileSystem::{GetFileVersionInfoSizeW, GetFileVersionInfoW, VerQueryValueW};
-use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ};
+use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
 use windows::core::PCWSTR;
 
 #[link(name = "kernel32")]
@@ -17,12 +18,12 @@ extern "system" {
 
 pub fn get_process_exe_path(pid: u32) -> Option<String> {
     unsafe {
-        let handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid).ok()?;
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
         let mut buf = vec![0u16; 4096];
         let mut len = buf.len() as u32;
         let result = QueryFullProcessImageNameW(handle, 0, buf.as_mut_ptr(), &mut len);
         if let Err(e) = CloseHandle(handle) {
-            tracing::debug!(target: "win32::process", "CloseHandle failed: {:?}", e);
+            debug!(target: "win32::process", "CloseHandle failed: {:?}", e);
         }
         if result == 0 {
             return None;

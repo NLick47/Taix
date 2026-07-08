@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::time::SystemTime;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SleepStatus {
@@ -7,7 +7,7 @@ pub enum SleepStatus {
     Sleep,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AppType {
     Win32,
     Uwp,
@@ -61,37 +61,126 @@ pub struct AppActiveEvent {
 pub struct AppDurationEvent {
     pub duration_secs: i64,
     pub app: AppInfo,
-    pub start_time: chrono::DateTime<chrono::Local>,
+    pub start_time: SystemTime,
 }
 
 // 通过命名管道发给 daemon 的格式
-#[derive(Serialize)]
-#[serde(tag = "t")]
 pub enum MonitorMessage<'a> {
-    #[serde(rename = "app")]
     App {
         p: &'a str,
         d: i64,
         a: i64,
-        #[serde(skip_serializing_if = "Option::is_none")]
         f: Option<&'a str>,
-        #[serde(skip_serializing_if = "Option::is_none")]
         i: Option<&'a str>,
-        #[serde(skip_serializing_if = "Option::is_none")]
         desc: Option<&'a str>,
     },
-    #[serde(rename = "sleep")]
     Sleep,
-    #[serde(rename = "wake")]
     Wake,
 }
 
-// 崩溃恢复用的会话检查点，记录最近一次刷盘时的活跃应用状态
-#[derive(Debug, Clone, Serialize, Deserialize)]
+impl<'a> fmt::Display for MonitorMessage<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MonitorMessage::App {
+                p,
+                d,
+                a,
+                f: file_path,
+                i: icon_path,
+                desc,
+            } => {
+                write!(f, "{{\"t\":\"app\",\"p\":{},\"d\":{},\"a\":{}", json_escape(p), d, a)?;
+                if let Some(v) = file_path {
+                    write!(f, ",\"f\":{}", json_escape(v))?;
+                }
+                if let Some(v) = icon_path {
+                    write!(f, ",\"i\":{}", json_escape(v))?;
+                }
+                if let Some(v) = desc {
+                    write!(f, ",\"desc\":{}", json_escape(v))?;
+                }
+                write!(f, "}}")
+            }
+            MonitorMessage::Sleep => write!(f, "{{\"t\":\"sleep\"}}"),
+            MonitorMessage::Wake => write!(f, "{{\"t\":\"wake\"}}"),
+        }
+    }
+}
+
+fn json_escape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => {
+                use std::fmt::Write;
+                let _ = write!(out, "\\u{:04x}", c as u32);
+            }
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+// 崩溃恢复用的会话检查点
+#[derive(Debug, Clone)]
 pub struct SessionCheckpoint {
     pub process: String,
     pub exe_path: String,
     pub icon_path: String,
     pub desc: String,
     pub since_ts: i64,
+}
+
+impl fmt::Display for SessionCheckpoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // 简单 key=value 格式，用 \0 分隔避免路径中的特殊字符问题
+        // process\0<process>\0path\0<exe_path>\0icon\0<icon_path>\0desc\0<desc>\0since\0<ts>
+        write!(
+            f,
+            "process\x00{}\x00path\x00{}\x00icon\x00{}\x00desc\x00{}\x00since\x00{}",
+            self.process, self.exe_path, self.icon_path, self.desc, self.since_ts
+        )
+    }
+}
+
+impl SessionCheckpoint {
+    pub fn from_str(s: &str) -> Option<Self> {
+        let parts: Vec<&str> = s.split('\x00').collect();
+        if parts.len() < 10 {
+            return None;
+        }
+        // 按 key 查找
+        let mut process = "";
+        let mut exe_path = "";
+        let mut icon_path = "";
+        let mut desc = "";
+        let mut since_ts = 0i64;
+        for chunk in parts.chunks(2) {
+            if chunk.len() < 2 {
+                break;
+            }
+            match chunk[0] {
+                "process" => process = chunk[1],
+                "path" => exe_path = chunk[1],
+                "icon" => icon_path = chunk[1],
+                "desc" => desc = chunk[1],
+                "since" => since_ts = chunk[1].parse().ok()?,
+                _ => {}
+            }
+        }
+        Some(Self {
+            process: process.to_owned(),
+            exe_path: exe_path.to_owned(),
+            icon_path: icon_path.to_owned(),
+            desc: desc.to_owned(),
+            since_ts,
+        })
+    }
 }

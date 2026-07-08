@@ -1,13 +1,17 @@
-use crate::models::{AppInfo, AppType};
-use crate::win32::process::{get_file_description, get_process_exe_path, get_process_name};
-use crate::win32::window::{enum_child_windows, extract_icon_to_png, get_window_class_name};
-use dashmap::DashMap;
+use crate::models::{AppActiveEvent, AppInfo, AppType};
+use crate::win32::window::{
+    get_foreground_window, get_window_info, get_window_thread_process_id,
+    is_valid_visible_window,
+};
+use std::collections::HashMap;
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{debug, error};
 use windows::Win32::Foundation::HWND;
+
+use crate::win32::process::{get_file_description, get_process_exe_path, get_process_name};
+use crate::win32::window::{enum_child_windows, extract_icon_to_png, get_window_class_name, get_window_text};
+use tracing::{debug, error, info, warn};
 
 const MAX_CACHE_SIZE: usize = 500;
 const CACHE_TTL_SECS: u64 = 3600;
@@ -17,14 +21,15 @@ static SYS_CLASS_NAMES: &[&str] = &[
     "TopLevelWindowForOverflowXamlIsland", "Shell_InputSwitchTopLevelWindow",
     "LockScreenControllerProxyWindow", "ForegroundStaging", "DV2ControlHost", "Button",
 ];
-static SYS_PROCESSES: &[&str] = &["ShellExperienceHost", "StartMenuExperienceHost", "SearchHost", "LockApp"];
+static SYS_PROCESSES: &[&str] = &[
+    "ShellExperienceHost", "StartMenuExperienceHost", "SearchHost", "LockApp",
+];
 
 #[derive(Clone)]
 struct CachedApp {
     info: AppInfo,
     time: Instant,
 }
-
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 struct CacheKey {
@@ -44,7 +49,7 @@ impl CacheKey {
 }
 
 pub struct AppManager {
-    cache: Arc<DashMap<CacheKey, CachedApp>>,
+    cache: HashMap<CacheKey, CachedApp>,
     data_dir: PathBuf,
 }
 
@@ -64,18 +69,21 @@ impl AppManager {
                     .unwrap_or_else(|| PathBuf::from("."))
             });
         Self {
-            cache: Arc::new(DashMap::with_capacity(MAX_CACHE_SIZE)),
+            cache: HashMap::with_capacity(MAX_CACHE_SIZE),
             data_dir,
         }
     }
 
-    pub fn get_app_info(&self, hwnd: HWND) -> Result<AppInfo, AppInfoError> {
+    pub fn get_app_info(&mut self, hwnd: HWND) -> Result<AppInfo, AppInfoError> {
         let (_tid, pid) = crate::win32::window::get_window_thread_process_id(hwnd);
 
         let name = match get_process_name(pid) {
             Some(n) => n,
             None => {
-                error!(target: "app_manager", "Failed to get process name for hwnd={:?}, pid={}", hwnd, pid);
+                error!(
+                    target: "app_manager",
+                    "Failed to get process name for hwnd={:?}, pid={}", hwnd, pid
+                );
                 return Err(AppInfoError::ProcessNotFound { _pid: pid });
             }
         };
@@ -83,9 +91,14 @@ impl AppManager {
         let (exe_path, base_app_type, process_name) = if name == "ApplicationFrameHost" {
             let path = get_uwp_path(hwnd, pid).or_else(|| {
                 let cls = get_window_class_name(hwnd);
-                if cls.is_empty() { None } else { Some(cls) }
+                if cls.is_empty() {
+                    None
+                } else {
+                    Some(cls)
+                }
             });
-            let proc = path.as_deref()
+            let proc = path
+                .as_deref()
                 .and_then(|p| Path::new(p).file_stem())
                 .map(|s| s.to_string_lossy().to_string())
                 .unwrap_or_else(|| {
@@ -93,8 +106,12 @@ impl AppManager {
                     if !cls.is_empty() {
                         cls
                     } else {
-                        let title = crate::win32::window::get_window_text(hwnd);
-                        if !title.is_empty() { title } else { name.clone() }
+                        let title = get_window_text(hwnd);
+                        if !title.is_empty() {
+                            title
+                        } else {
+                            name.clone()
+                        }
                     }
                 });
             (path, AppType::Uwp, proc)
@@ -111,14 +128,13 @@ impl AppManager {
         let path_key = exe_path.as_deref().unwrap_or("");
         let cache_key = CacheKey::new(&process_name, app_type, path_key);
 
-        // DashMap 提供真正的并发无锁读
+        // 缓存命中检查
         if let Some(entry) = self.cache.get(&cache_key) {
             if entry.time.elapsed() < Duration::from_secs(CACHE_TTL_SECS) {
                 debug!(target: "app_manager", "Cache hit for key={:?}", cache_key);
                 return Ok(entry.info.clone());
             }
-            // TTL 过期：删除旧项，继续走新建逻辑
-            drop(entry);
+            // TTL 过期
             self.cache.remove(&cache_key);
         }
 
@@ -134,47 +150,94 @@ impl AppManager {
             .unwrap_or_default();
 
         let info = AppInfo {
-            process: process_name.to_string(),
+            process: process_name.clone(),
             description,
             executable_path: exe_path.clone().unwrap_or_default(),
             icon_path,
             app_type,
         };
 
-        // 插入缓存（DashMap 自动处理并发写）
+        // 缓存
         self.evict_if_needed();
-        self.cache.insert(cache_key.clone(), CachedApp {
-            info: info.clone(),
-            time: Instant::now(),
-        });
+        self.cache.insert(
+            cache_key.clone(),
+            CachedApp {
+                info: info.clone(),
+                time: Instant::now(),
+            },
+        );
 
-        debug!(target: "app_manager", "Resolved app: name={}, type={}, path={}",
-            info.process, info.app_type, info.executable_path);
+        debug!(
+            target: "app_manager",
+            "Resolved app: name={}, type={}, path={}",
+            info.process, info.app_type, info.executable_path
+        );
 
         Ok(info)
     }
 
-    /// 当缓存超过阈值时，淘汰最老的条目。
-    fn evict_if_needed(&self) {
+    /// 轮询前台窗口状态
+    pub fn poll_foreground(&mut self, last_hwnd: &mut HWND) -> Option<AppActiveEvent> {
+        let hwnd = get_foreground_window();
+        if hwnd == *last_hwnd || hwnd.0.is_null() {
+            return None;
+        }
+        *last_hwnd = hwnd;
+
+        if !is_valid_visible_window(hwnd) {
+            return None;
+        }
+
+        let (_tid, pid) = get_window_thread_process_id(hwnd);
+
+        let app = match self.get_app_info(hwnd) {
+            Ok(a) => a,
+            Err(_) => return None,
+        };
+
+        if !is_valid_visible_window(hwnd) {
+            return None;
+        }
+
+        let (tid2, pid2) = get_window_thread_process_id(hwnd);
+        if pid2 != pid || tid2 != _tid {
+            return None;
+        }
+
+        let window = match get_window_info(hwnd) {
+            Some(w) => w,
+            None => return None,
+        };
+
+        info!(
+            target: "app_observer",
+            "Foreground changed -> [{}] {} | title: {} | class: {}",
+            app.app_type, app.process, window.title, window.class_name
+        );
+
+        Some(AppActiveEvent { app, window })
+    }
+
+    fn evict_if_needed(&mut self) {
         const CLEANUP_THRESHOLD: usize = MAX_CACHE_SIZE + MAX_CACHE_SIZE / 2;
         let len = self.cache.len();
         if len <= CLEANUP_THRESHOLD {
             return;
         }
 
-
         let to_remove = len - MAX_CACHE_SIZE;
-        let keys: Vec<_> = self.cache.iter()
-            .map(|e| (e.key().clone(), e.value().time))
-            .collect();
-
-        let mut sorted: Vec<_> = keys.into_iter().map(|(k, t)| (k, t)).collect();
+        let mut sorted: Vec<_> = self.cache.iter().map(|(k, v)| (k.clone(), v.time)).collect();
         sorted.sort_by(|a, b| a.1.cmp(&b.1));
 
         for (key, _) in sorted.into_iter().take(to_remove) {
             self.cache.remove(&key);
         }
-        debug!(target: "app_manager", "Cache LRU evicted {} entries, remaining={}", to_remove, self.cache.len());
+        debug!(
+            target: "app_manager",
+            "Cache LRU evicted {} entries, remaining={}",
+            to_remove,
+            self.cache.len()
+        );
     }
 }
 
@@ -182,7 +245,10 @@ fn extract_icon(data_dir: &Path, exe_path: &str, process_name: &str) -> Option<S
     let icon_dir = data_dir.join("AppIcons");
     std::fs::create_dir_all(&icon_dir).ok()?;
 
-    let safe_name: String = process_name.chars().filter(|c| !r#"<>:"/\?*"#.contains(*c)).collect();
+    let safe_name: String = process_name
+        .chars()
+        .filter(|c| !r#"<>:"/\?*"#.contains(*c))
+        .collect();
     let path_hash = format!("{:08x}", crc32fast::hash(exe_path.as_bytes()));
     let icon_path = icon_dir.join(format!("{}_{}.png", safe_name, path_hash));
 
@@ -191,7 +257,10 @@ fn extract_icon(data_dir: &Path, exe_path: &str, process_name: &str) -> Option<S
     }
 
     if let Err(e) = extract_icon_to_png(exe_path, &icon_path) {
-        tracing::warn!(target: "app_manager", "Failed to extract icon for {}: {}", process_name, e);
+        warn!(
+            target: "app_manager",
+            "Failed to extract icon for {}: {}", process_name, e
+        );
         return None;
     }
     relative_path(&icon_path, data_dir)
@@ -222,7 +291,7 @@ fn is_system(name: &str, hwnd: HWND) -> bool {
         if cls.eq_ignore_ascii_case("CabinetWClass") {
             return false;
         }
-        return crate::win32::window::get_window_text(hwnd).is_empty();
+        return get_window_text(hwnd).is_empty();
     }
     SYS_PROCESSES.iter().any(|&s| s.eq_ignore_ascii_case(name))
 }
