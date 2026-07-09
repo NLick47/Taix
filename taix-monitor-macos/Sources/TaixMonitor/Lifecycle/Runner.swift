@@ -22,7 +22,7 @@ actor Runner {
         self.gamepadMonitor = GamepadMonitor()
         self.idleDetector = IdleDetector(
             eventBus: eventBus,
-            threshold: configuration.idleThreshold,
+            config: configuration.monitorConfig,
             gamepadMonitor: gamepadMonitor
         )
         self.sessionTracker = SessionTracker(

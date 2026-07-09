@@ -27,7 +27,7 @@ struct MonitorEvent: Codable, Sendable {
     let app: AppInfo?
     let duration: TimeInterval?
     let window: WindowInfo?
-    
+
     enum EventKind: String, Codable, Sendable {
         case foregroundChanged
         case sessionTick
@@ -35,4 +35,16 @@ struct MonitorEvent: Codable, Sendable {
         case idleDetected
         case activityResumed
     }
+}
+
+struct MonitorConfig: Sendable {
+    let inactiveThresholdSecs: TimeInterval
+    let maxSoundDurationSecs: TimeInterval
+    let sleepWatch: Bool
+
+    static let `default` = MonitorConfig(
+        inactiveThresholdSecs: 900,
+        maxSoundDurationSecs: 7200,
+        sleepWatch: true
+    )
 }

@@ -3,7 +3,7 @@ import Foundation
 actor SessionTracker {
     private enum TimerState {
         case idle
-        case tracking(app: AppInfo, window: WindowInfo?, start: Date, accumulatedMs: TimeInterval)
+        case tracking(app: AppInfo, window: WindowInfo?, start: Date, accumulatedMs: TimeInterval, lastPeriodicCheck: Date)
         case suspended(app: AppInfo?, window: WindowInfo?, accumulatedMs: TimeInterval)
     }
 
@@ -41,7 +41,7 @@ actor SessionTracker {
         tickTask = Task { [weak self] in
             while !Task.isCancelled, let self = self {
                 try? await Task.sleep(nanoseconds: UInt64(self.tickInterval * 1_000_000_000))
-                await self.flushTick()
+                await self.periodicCheck()
             }
         }
     }
@@ -62,6 +62,8 @@ actor SessionTracker {
                 await beginSession(app: app, window: event.window)
             }
         case .idleDetected:
+            // 注意：flushFinal 在 suspendSession 之前调用，会将当前会话结束
+            // suspendSession 只是保存状态，不会重复 flush
             await flushFinal()
             await suspendSession()
         case .activityResumed:
@@ -73,7 +75,7 @@ actor SessionTracker {
 
     private func beginSession(app: AppInfo, window: WindowInfo?) async {
         let now = Date()
-        state = .tracking(app: app, window: window, start: now, accumulatedMs: 0)
+        state = .tracking(app: app, window: window, start: now, accumulatedMs: 0, lastPeriodicCheck: now)
         await saveSnapshot()
 
         Logger.info("Session started: \(app.name) [\(app.bundleIdentifier ?? "no-bundle-id")]")
@@ -90,7 +92,7 @@ actor SessionTracker {
 
     private func suspendSession() async {
         switch state {
-        case .tracking(let app, let window, _, let accumulatedMs):
+        case .tracking(let app, let window, _, let accumulatedMs, _):
             state = .suspended(app: app, window: window, accumulatedMs: accumulatedMs)
             await saveSnapshot()
             Logger.info("Session suspended: \(app.name)")
@@ -107,7 +109,7 @@ actor SessionTracker {
         case .suspended(let app, let window, let accumulatedMs):
             if let app = app {
                 let window = window ?? WindowInfo(title: "", windowClass: "")
-                state = .tracking(app: app, window: window, start: now, accumulatedMs: accumulatedMs)
+                state = .tracking(app: app, window: window, start: now, accumulatedMs: accumulatedMs, lastPeriodicCheck: now)
                 await saveSnapshot()
                 Logger.info("Session resumed: \(app.name)")
             } else {
@@ -118,25 +120,26 @@ actor SessionTracker {
         }
     }
 
-    private func flushTick() async {
+    private func periodicCheck() async {
         let now = Date()
         switch state {
-        case .tracking(let app, let window, let start, var accumulatedMs):
-            if let event = computeFlush(start: start, end: now, accumulatedMs: &accumulatedMs, app: app, isFinal: false) {
-                Logger.debug("Session tick: \(app.name) [duration: \(event.duration ?? 0)s]")
-                await transport.send(event)
-                state = .tracking(app: app, window: window, start: now, accumulatedMs: accumulatedMs)
+        case .tracking(let app, _, let start, let accumulatedMs, let lastPeriodicCheck):
+            if now.timeIntervalSince(lastPeriodicCheck) >= tickInterval {
                 await saveSnapshot()
+                state = .tracking(app: app, window: nil, start: start, accumulatedMs: accumulatedMs, lastPeriodicCheck: now)
+                Logger.debug("Periodic checkpoint: \(app.name)")
             }
-        default:
-            break
+        case .idle:
+            await persistence.clear()
+        case .suspended:
+            await persistence.clear()
         }
     }
 
     private func flushFinal() async {
         let now = Date()
         switch state {
-        case .tracking(let app, let window, let start, var accumulatedMs):
+        case .tracking(let app, _, let start, var accumulatedMs, _):
             if let event = computeFlush(start: start, end: now, accumulatedMs: &accumulatedMs, app: app, isFinal: true) {
                 Logger.info("Session ended: \(app.name) [duration: \(event.duration ?? 0)s]")
                 await transport.send(event)
@@ -177,7 +180,7 @@ actor SessionTracker {
         guard durationSecs > 0 else { return nil }
 
         return MonitorEvent(
-            kind: isFinal ? .sessionEnded : .sessionTick,
+            kind: .sessionEnded,
             timestamp: start,
             app: app,
             duration: Double(durationSecs),
@@ -187,7 +190,7 @@ actor SessionTracker {
 
     private func saveSnapshot() async {
         switch state {
-        case .tracking(let app, let window, let start, let accumulatedMs):
+        case .tracking(let app, _, let start, let accumulatedMs, _):
             let snapshot = SessionSnapshot(
                 bundleIdentifier: app.bundleIdentifier ?? "",
                 executablePath: app.executablePath,
