@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
+using Avalonia.Styling;
 using Taix.Client.Logging;
 using Taix.Client.Shared.Helpers;
 
@@ -13,6 +16,9 @@ public class MultiTrackTimeRuler : Control
     private const int SecondsPerHour = 3600;
 
     private static readonly Typeface NormalTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
+
+    // FormattedText 缓存
+    private readonly Dictionary<(string Text, int Size), FormattedText> _labelCache = new();
 
     private double _visibleStartHour = 0.0;
     private double _visibleEndHour = 24.0;
@@ -83,6 +89,8 @@ public class MultiTrackTimeRuler : Control
         _periodNoonBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodNoonBgBrush")!;
         _periodAfternoonBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodAfternoonBgBrush")!;
         _periodEveningBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodEveningBgBrush")!;
+
+        _labelCache.Clear();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -144,8 +152,8 @@ public class MultiTrackTimeRuler : Control
             {
                 ctx.DrawLine(_tickMajor, new Point(x, 6), new Point(x, bottomY));
 
-                var label = new FormattedText($"{h:D2}:00", CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight, font, 9, _tickText);
+                // 使用缓存的 FormattedText
+                var label = GetCachedTimeRulerLabel($"{h:D2}:00", 9);
                 var labelX = Math.Max(2, x + 4);
                 if (labelX + label.Width > bounds.Width - 2)
                     labelX = Math.Max(2, bounds.Width - 2 - label.Width);
@@ -244,8 +252,8 @@ public class MultiTrackTimeRuler : Control
                     ? $"{minutes:D2}"
                     : $":{minutes:D2}";
 
-                var label = new FormattedText(labelText, CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight, font, 8, _tickText);
+                // 使用缓存的 FormattedText
+                var label = GetCachedTimeRulerLabel(labelText, 8);
 
                 var labelX = sx - label.Width / 2;
                 if (labelX < 2) labelX = 2;
@@ -254,5 +262,17 @@ public class MultiTrackTimeRuler : Control
                 ctx.DrawText(label, new Point(labelX, 13));
             }
         }
+    }
+
+    private FormattedText GetCachedTimeRulerLabel(string text, int size)
+    {
+        var key = (text, size);
+        if (_labelCache.TryGetValue(key, out var cached))
+            return cached;
+
+        var ft = new FormattedText(text, CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight, NormalTypeface, size, _tickText);
+        _labelCache[key] = ft;
+        return ft;
     }
 }

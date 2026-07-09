@@ -107,13 +107,14 @@
                                                    Date="{Binding DayDate}"
                                                    UsageItems="{Binding TimelineUsageItems}"
                                                    UseCategoryColor="{Binding UseCategoryColor}"
+                                                   HoveredTimeRange="{Binding HoveredTimeRange}"
                                                    VisibleStartHour="{Binding TimelineStartHour,Mode=TwoWay}"
                                                    VisibleEndHour="{Binding TimelineEndHour,Mode=TwoWay}" />
                             </Border>
 
                             <Grid Grid.Row="1" Margin="0,8,0,0"
                                   ColumnDefinitions="*,Auto,Auto">
-                                <!-- 居中：时间范围 + 操作提示 -->
+                                <!-- 时间范围 + 操作提示 -->
                                 <StackPanel Grid.Column="0"
                                             Orientation="Horizontal"
                                             HorizontalAlignment="Center"
@@ -168,7 +169,7 @@
                                 VerticalAlignment="Stretch"
                                 Date="{Binding DayDate}"
                                 DataItems="{Binding MultiTrackItems}"
-                                UseCategoryColor="{Binding UseCategoryColor}"
+                                HoveredTimeRange="{Binding HoveredTimeRange, Mode=TwoWay}"
                                 VisibleStartHour="{Binding TimelineStartHour}"
                                 VisibleEndHour="{Binding TimelineEndHour}"
                                 ClickCommand="{Binding ToDetailCommand}" />

@@ -10,8 +10,9 @@ public class TimelineUsageItem
     public string CategoryColor { get; set; } = "#888888";
     public DateTime Start { get; set; }
     public DateTime End { get; set; }
-    public int Duration { get; set; }
-    public bool IsShortSession { get; set; }
     public bool IsIdle { get; set; }
     public object? Data { get; set; }
+
+    public int Duration => (int)(End - Start).TotalSeconds;
+    public bool IsShortSession => Duration <= 60;
 }

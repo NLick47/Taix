@@ -278,11 +278,6 @@ public partial class DataPageViewModel : DataPageModel
         var sessions = await _dataService.GetAppSessionsAsync(dayStart, dayEnd, ct);
         ct.ThrowIfCancellationRequested();
         _daySessions = sessions.ToList();
-        foreach (var s in _daySessions)
-        {
-            s.StartTime = DateTime.SpecifyKind(s.StartTime, DateTimeKind.Utc).ToLocalTime();
-            s.EndTime = DateTime.SpecifyKind(s.EndTime, DateTimeKind.Utc).ToLocalTime();
-        }
 
         var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
         var daySessions = _daySessions;
@@ -293,36 +288,36 @@ public partial class DataPageViewModel : DataPageModel
             DateTime? cursor = null;
             foreach (var session in daySessions.Where(s => s.AppModel != null).OrderBy(s => s.StartTime))
             {
-                if (cursor.HasValue && session.StartTime > cursor.Value)
+                var startLocal = DateTime.SpecifyKind(session.StartTime, DateTimeKind.Utc).ToLocalTime();
+                var endLocal = DateTime.SpecifyKind(session.EndTime, DateTimeKind.Utc).ToLocalTime();
+
+                if (cursor.HasValue && startLocal > cursor.Value)
                 {
                     list.Add(new TimelineUsageItem
                     {
                         Name = ResourceStrings.IdleTime, Color = "#484f58",
                         CategoryName = ResourceStrings.SystemCategory, CategoryColor = "#8b949e",
-                        Start = cursor.Value, End = session.StartTime,
+                        Start = cursor.Value, End = startLocal,
                         IsIdle = true
                     });
                 }
 
                 var appName = session.AppModel?.GetDisplayName() ?? "Unknown";
                 var categoryName = session.AppModel?.Category?.Name ?? "Unknown";
-                var paletteColor = Colors.GetTimelinePaletteColor(appName, isDark);
+                var paletteColor = TimelineColorService.GetColor(appName, isDark);
                 var categoryColor = session.AppModel?.Category?.Color
-                                    ?? Colors.GetTimelinePaletteColor(categoryName, isDark);
-                var isShort = session.Duration <= 60;
+                                    ?? TimelineColorService.GetColor(categoryName, isDark);
                 list.Add(new TimelineUsageItem
                 {
                     Name = appName,
                     Color = paletteColor,
                     CategoryName = categoryName,
                     CategoryColor = categoryColor,
-                    Start = session.StartTime,
-                    End = session.EndTime,
-                    Duration = session.Duration,
-                    IsShortSession = isShort,
+                    Start = startLocal,
+                    End = endLocal,
                     Data = session
                 });
-                cursor = session.EndTime;
+                cursor = endLocal;
             }
 
             if (cursor.HasValue && cursor.Value < dayEnd)
@@ -394,54 +389,56 @@ public partial class DataPageViewModel : DataPageModel
             return;
         }
 
-        var timelineItems = TimelineUsageItems;
-        if (timelineItems == null || timelineItems.Count == 0)
-        {
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                Data = _dayAppRawData;
-                MultiTrackItems = [];
-                MultiTrackTotalDurationText = "";
-            });
-            return;
-        }
-
-        var referenceDate = timelineItems.FirstOrDefault()?.Start.Date ?? DayDate.Date;
+        var referenceDate = DayDate.Date;
         var startHour = Math.Min(TimelineStartHour, TimelineEndHour);
         var endHour = Math.Max(TimelineStartHour, TimelineEndHour);
         var startTime = referenceDate.AddHours(startHour);
         var endTime = referenceDate.AddHours(endHour);
 
         var daySessions = _daySessions;
-
+        var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+        var utcStart = startTime.ToUniversalTime();
+        var utcEnd = endTime.ToUniversalTime();
         var result = await Task.Run(() =>
         {
-            var rangeSec = (endTime - startTime).TotalSeconds;
-            var thresholdSec = rangeSec < 3600 ? 10 : 60;
-
-            var filtered = daySessions
-                .Where(s => s.AppModel != null && s.Duration > thresholdSec && s.EndTime > startTime && s.StartTime < endTime)
+            // Step 1: 过滤 + 剪裁 + 转本地时间
+            var rawFiltered = daySessions
+                .Where(s => s.AppModel != null && s.EndTime > utcStart && s.StartTime < utcEnd)
+                .Select(s =>
+                {
+                    var clipStart = s.StartTime < utcStart ? utcStart : s.StartTime;
+                    var clipEnd = s.EndTime > utcEnd ? utcEnd : s.EndTime;
+                    var clipDuration = (int)(clipEnd - clipStart).TotalSeconds;
+                    var localClipStart = ClipUtcToLocal(clipStart, referenceDate);
+                    var localClipEnd = ClipUtcToLocal(clipEnd, referenceDate);
+                    return (Session: s, ClipDuration: clipDuration, LocalStart: localClipStart, LocalEnd: localClipEnd);
+                })
                 .ToList();
 
-            if (filtered.Count == 0)
-            {
+            if (rawFiltered.Count == 0)
                 return (Data: new List<ChartsDataModel>(), MultiTrackItems: new List<MultiTrackTimelineItem>(), TotalDurationText: "");
-            }
 
-            var grouped = filtered
-                .GroupBy(s => s.AppModel!.ID)
-                .Select(g => new DailyLogModel
-                {
-                    AppModel = g.First().AppModel,
-                    Time = g.Sum(s => s.Duration),
-                    Date = DayDate
-                });
+            // Step 2: 图表数据
+            var chartData = ChartDataMapper.MapFromDailyLogs(
+                rawFiltered.GroupBy(x => x.Session.AppModel!.ID)
+                    .Select(g =>
+                    {
+                        var first = g.First();
+                        return new DailyLogModel
+                        {
+                            AppModel = first.Session.AppModel,
+                            Time = g.Sum(x => x.ClipDuration),
+                            Date = DayDate
+                        };
+                    }),
+                includeBadges: true);
 
-            var chartData = ChartDataMapper.MapFromDailyLogs(grouped, includeBadges: true);
+            // Step 3: 多轨道数据
+            var totalDurationSec = rawFiltered.Sum(x => x.ClipDuration);
+            var totalDurationText = FormatDuration(totalDurationSec);
+            var mtItems = BuildMultiTrackItems(rawFiltered, totalDurationSec, isDark);
 
-            var (mtItems, durationText) = BuildMultiTrackItemsInternal(timelineItems, startTime, endTime);
-
-            return (Data: chartData, MultiTrackItems: mtItems, TotalDurationText: durationText);
+            return (Data: chartData, MultiTrackItems: mtItems, TotalDurationText: totalDurationText);
         });
 
         await Dispatcher.UIThread.InvokeAsync(() =>
@@ -452,75 +449,87 @@ public partial class DataPageViewModel : DataPageModel
         }, DispatcherPriority.Background);
     }
 
-    private static (List<MultiTrackTimelineItem> Items, string TotalDurationText) BuildMultiTrackItemsInternal(
-        IEnumerable<TimelineUsageItem>? timelineItems, DateTime startTime, DateTime endTime)
+    private static List<MultiTrackTimelineItem> BuildMultiTrackItems(
+        List<(AppSessionModel Session, int ClipDuration, DateTime LocalStart, DateTime LocalEnd)> rawFiltered,
+        double totalDurationSec, bool isDark)
     {
-        var allItems = timelineItems?
-            .Where(i => !TimelineHelpers.IsIdleItem(i) && i.End > startTime && i.Start < endTime)
-            .ToList();
-
-        if (allItems == null || allItems.Count == 0)
-        {
-            return ([], "");
-        }
-
-        var rangeSec = (endTime - startTime).TotalSeconds;
-        var thresholdSec = rangeSec < 3600 ? 10 : 60;
-
-        double totalDurationSec = 0;
-        foreach (var item in allItems)
-        {
-            var segStart = item.Start < startTime ? startTime : item.Start;
-            var segEnd = item.End > endTime ? endTime : item.End;
-            totalDurationSec += (segEnd - segStart).TotalSeconds;
-        }
-        var totalDurationText = FormatDuration(totalDurationSec);
-
-        var longItems = allItems.Where(i => i.Duration > thresholdSec).ToList();
-
-        var result = longItems
-            .GroupBy(i => i.Name)
+        return rawFiltered
+            .GroupBy(x => x.Session.AppModel!.GetDisplayName() ?? "Unknown")
             .Select(g =>
             {
                 var first = g.First();
-                var segments = g.Select(seg =>
-                {
-                    var segStart = seg.Start < startTime ? startTime : seg.Start;
-                    var segEnd = seg.End > endTime ? endTime : seg.End;
-                    return new MultiTrackSegment
-                    {
-                        Start = segStart,
-                        End = segEnd,
-                        Color = seg.Color,
-                        CategoryColor = seg.CategoryColor
-                    };
-                }).ToList();
+                var appModel = first.Session.AppModel;
+                var paletteColor = TimelineColorService.GetColor(g.Key, isDark);
 
-                var appDurationSec = segments.Sum(s => (s.End - s.Start).TotalSeconds);
-                var appModel = (first.Data as AppSessionModel)?.AppModel;
-                var percentage = totalDurationSec > 0 ? appDurationSec / totalDurationSec * 100 : 0;
+                var rawSegments = g
+                    .Select(x => new MultiTrackSegment
+                    {
+                        Start = x.LocalStart,
+                        End = x.LocalEnd,
+                        Color = paletteColor,
+                        DurationMinutes = (int)(x.LocalEnd - x.LocalStart).TotalMinutes,
+                        ActualDurationSeconds = x.ClipDuration,
+                    });
+
+                var segments = MergeSegments(rawSegments);
+
+                var appDurationSec = g.Sum(x => x.ClipDuration);
 
                 return new MultiTrackTimelineItem
                 {
-                    Name = first.Name,
+                    Name = g.Key,
                     Icon = appModel?.IconFile,
-                    Color = first.Color,
-                    CategoryName = first.CategoryName,
-                    CategoryColor = first.CategoryColor,
+                    Color = paletteColor,
                     TotalDuration = TimeSpan.FromSeconds(appDurationSec),
-                    Percentage = percentage,
                     Segments = segments,
-                    AppModel = appModel
+                    AppModel = appModel,
                 };
             })
             .OrderByDescending(i => i.TotalDuration)
             .ToList();
+    }
 
-        return (result, totalDurationText);
+    private static List<MultiTrackSegment> MergeSegments(IEnumerable<MultiTrackSegment> source, int mergeGapSec = 60)
+    {
+        var sorted = source.OrderBy(s => s.Start).ToList();
+        if (sorted.Count <= 1) return sorted;
+
+        var merged = new List<MultiTrackSegment> { sorted[0] };
+
+        for (var i = 1; i < sorted.Count; i++)
+        {
+            var cur = sorted[i];
+            var last = merged[^1];
+            var gap = (cur.Start - last.End).TotalSeconds;
+
+            if (gap < mergeGapSec)
+            {
+                // 只扩展不缩小，处理重叠/相邻
+                if (cur.End > last.End)
+                {
+                    last.End = cur.End;
+                    last.DurationMinutes = (int)(last.End - last.Start).TotalMinutes;
+                    last.ActualDurationSeconds += cur.ActualDurationSeconds;  // 累加实际使用时长
+                }
+            }
+            else
+            {
+                merged.Add(cur);
+            }
+        }
+
+        return merged;
     }
 
     private static bool IsIdleItem(TimelineUsageItem item) =>
         TimelineHelpers.IsIdleItem(item.Name);
+
+
+    private static DateTime ClipUtcToLocal(DateTime utcTime, DateTime referenceDate)
+    {
+        var local = utcTime.ToLocalTime();
+        return referenceDate.Date + local.TimeOfDay;
+    }
 
     #endregion
 

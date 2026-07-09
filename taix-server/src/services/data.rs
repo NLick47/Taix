@@ -1178,10 +1178,10 @@ impl DataService {
 
 
 fn merge_and_filter_sessions(sessions: Vec<AppSessionModel>) -> Vec<AppSessionModel> {
-    const MERGE_GAP_SECS: i64 = 30;
+    const OVERLAP_TRIM_SECS: i64 = 2;
+    const SAME_APP_MERGE_GAP_SECS: i64 = 60;
     const MIN_DURATION_SECS: i64 = 3;
 
-    // 过滤超短片段
     let sessions: Vec<_> = sessions
         .into_iter()
         .filter(|s| s.duration >= MIN_DURATION_SECS)
@@ -1191,36 +1191,79 @@ fn merge_and_filter_sessions(sessions: Vec<AppSessionModel>) -> Vec<AppSessionMo
         return sessions;
     }
 
-    // 按应用分组合并相邻段
-    let mut by_app: HashMap<i64, Vec<AppSessionModel>> = HashMap::new();
-    for session in sessions {
-        by_app.entry(session.app_model_id).or_default().push(session);
+    let mut linear = Vec::with_capacity(sessions.len());
+    let mut iter = sessions.into_iter();
+    let mut current = iter.next().unwrap();
+
+    for mut next in iter {
+        let overlap = (current.end_time - next.start_time).num_seconds();
+        if overlap > 0 {
+            if overlap <= OVERLAP_TRIM_SECS {
+                // Small overlap — sampling noise, just push next.start forward
+                next.start_time = current.end_time;
+                let new_dur = (next.end_time - next.start_time).num_seconds();
+                if new_dur <= 0 {
+                    // next fully consumed, skip it
+                    continue;
+                }
+                next.duration = new_dur;
+            } else {
+                // Significant overlap — current didn't run that long, trim it
+                current.end_time = next.start_time;
+                current.duration = (current.end_time - current.start_time).num_seconds();
+                if current.duration <= 0 {
+                    // current collapsed, next becomes the new current
+                    current = next;
+                    continue;
+                }
+            }
+        }
+        linear.push(current);
+        current = next;
+    }
+    linear.push(current);
+
+    if linear.len() <= 1 {
+        return linear;
     }
 
-    let mut merged = Vec::new();
-    for (_, mut app_sessions) in by_app {
-        app_sessions.sort_by(|a, b| a.start_time.cmp(&b.start_time));
-
-        let mut iter = app_sessions.into_iter();
-        let mut current = iter.next().unwrap();
-        for next in iter {
-            let gap = next.start_time.signed_duration_since(current.end_time).num_seconds();
-            if gap <= MERGE_GAP_SECS {
+    let mut merged = Vec::with_capacity(linear.len());
+    let mut iter = linear.into_iter();
+    let mut current = iter.next().unwrap();
+    for next in iter {
+        if current.app_model_id == next.app_model_id {
+            let gap = (next.start_time - current.end_time).num_seconds();
+            if gap <= SAME_APP_MERGE_GAP_SECS {
                 if next.end_time > current.end_time {
                     current.end_time = next.end_time;
                 }
-                current.duration = current
-                    .end_time
-                    .signed_duration_since(current.start_time)
-                    .num_seconds();
-            } else {
-                merged.push(current);
-                current = next;
+                current.duration = (current.end_time - current.start_time).num_seconds();
+                continue;
             }
         }
         merged.push(current);
+        current = next;
     }
+    merged.push(current);
 
-    merged.sort_by(|a, b| a.start_time.cmp(&b.start_time));
-    merged
+    let mut result = Vec::with_capacity(merged.len());
+    let mut iter = merged.into_iter();
+    let mut current = iter.next().unwrap();
+    for next in iter {
+        let overlap = (current.end_time - next.start_time).num_seconds();
+        if overlap > 0 {
+            current.end_time = next.start_time;
+            current.duration = (current.end_time - current.start_time).num_seconds();
+            if current.duration > 0 {
+                result.push(current);
+            }
+            current = next;
+        } else {
+            result.push(current);
+            current = next;
+        }
+    }
+    result.push(current);
+
+    result
 }

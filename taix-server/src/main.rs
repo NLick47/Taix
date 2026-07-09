@@ -42,7 +42,7 @@ async fn main() {
     };
 
     let _logging_guard =
-        taix_logging::init("taix-server", log_filter, taix_logging::PanicMode::SyncFile);
+        taix_logging::init("taix-server", log_filter, taix_logging::PanicMode::SyncFile, 30);
 
     if let Err(e) = run(&exe_dir).await {
         tracing::error!("FATAL: {}", e);

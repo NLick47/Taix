@@ -150,7 +150,7 @@ fn try_recover_session(data_dir: &std::path::Path, queue: &crate::transport::que
             let msg = crate::models::MonitorMessage::App {
                 p: &cp.process,
                 d: delta,
-                a: now.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs() as i64,
+                a: cp.since_ts,
                 f: exe,
                 i: icon,
                 desc,

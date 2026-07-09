@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -7,6 +8,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
+using Avalonia.Styling;
 using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Servicers.Interfaces;
 
@@ -45,6 +47,9 @@ public class Timeline : Control
     private double _visibleStartHour = 0.0;
     private double _visibleEndHour = 24.0;
 
+    private IList<TimelineUsageItem>? _cachedNonIdleItems;
+    private bool _nonIdleItemsCacheValid;
+
     public static readonly DirectProperty<Timeline, IEnumerable<TimelineUsageItem>> UsageItemsProperty =
         AvaloniaProperty.RegisterDirect<Timeline, IEnumerable<TimelineUsageItem>>(
             nameof(UsageItems), o => o.UsageItems, (o, v) => o.UsageItems = v);
@@ -78,6 +83,17 @@ public class Timeline : Control
         AvaloniaProperty.RegisterDirect<Timeline, bool>(
             nameof(UseCategoryColor), o => o.UseCategoryColor, (o, v) => o.UseCategoryColor = v);
 
+    private TimeRange? _hoveredTimeRange;
+    public static readonly DirectProperty<Timeline, TimeRange?> HoveredTimeRangeProperty =
+        AvaloniaProperty.RegisterDirect<Timeline, TimeRange?>(
+            nameof(HoveredTimeRange), o => o.HoveredTimeRange, (o, v) => o.HoveredTimeRange = v);
+
+    public TimeRange? HoveredTimeRange
+    {
+        get => _hoveredTimeRange;
+        set => SetAndRaise(HoveredTimeRangeProperty, ref _hoveredTimeRange, value);
+    }
+
     public bool UseCategoryColor
     {
         get => _useCategoryColor;
@@ -87,7 +103,11 @@ public class Timeline : Control
     public IEnumerable<TimelineUsageItem> UsageItems
     {
         get => _usageItems;
-        set => SetAndRaise(UsageItemsProperty, ref _usageItems, value);
+        set
+        {
+            SetAndRaise(UsageItemsProperty, ref _usageItems, value);
+            _nonIdleItemsCacheValid = false;
+        }
     }
 
     public TimelineViewMode ViewMode
@@ -153,6 +173,21 @@ public class Timeline : Control
     private double _dragStartOffset;
     private Point? _mousePos;
     private TimelineUsageItem? _hoveredItem;
+    private IBrush? _hoverHighlightBrush;
+    private IBrush? _hoverDimBrush;
+
+    // FormattedText 缓存
+    private readonly Dictionary<(string Text, int Size), FormattedText> _labelCache = new();
+    private FormattedText? _cachedTooltipTitle;
+    private FormattedText? _cachedTooltipInfo;
+    private FormattedText? _cachedDurLabel;
+    private FormattedText? _cachedStartLabel;
+    private FormattedText? _cachedEndLabel;
+    private string? _cachedTooltipTitleText;
+    private string? _cachedTooltipInfoText;
+    private string? _cachedDurLabelText;
+    private string? _cachedStartLabelText;
+    private string? _cachedEndLabelText;
 
     #endregion
 
@@ -254,6 +289,37 @@ public class Timeline : Control
         _selectionHandleBorderPen = new Pen(FindBrush("TimelineSelectionHandleBorderBrush"), 2);
         _selectionLabelBgBrush = FindBrush("TimelineSelectionLabelBgBrush");
         _selectionLabelTextBrush = FindBrush("TimelineSelectionLabelTextBrush");
+
+        var isLight = this.ActualThemeVariant == ThemeVariant.Light;
+        _hoverHighlightBrush = new ImmutableSolidColorBrush(isLight
+            ? Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF)
+            : Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
+        _hoverDimBrush = new ImmutableSolidColorBrush(isLight
+            ? Color.FromArgb(0x45, 0x00, 0x00, 0x00)
+            : Color.FromArgb(0x65, 0x00, 0x00, 0x00));
+
+        // 清空 FormattedText 缓存（主题可能已变）
+        _labelCache.Clear();
+        ClearTooltipCache();
+        ClearSelectionLabelCache();
+    }
+
+    private void ClearTooltipCache()
+    {
+        _cachedTooltipTitle = null;
+        _cachedTooltipInfo = null;
+        _cachedTooltipTitleText = null;
+        _cachedTooltipInfoText = null;
+    }
+
+    private void ClearSelectionLabelCache()
+    {
+        _cachedDurLabel = null;
+        _cachedStartLabel = null;
+        _cachedEndLabel = null;
+        _cachedDurLabelText = null;
+        _cachedStartLabelText = null;
+        _cachedEndLabelText = null;
     }
 
     private IBrush FindBrush(string key, double opacity = 1.0)
@@ -287,7 +353,8 @@ public class Timeline : Control
             || change.Property == MajorTickIntervalProperty
             || change.Property == VisibleStartHourProperty
             || change.Property == VisibleEndHourProperty
-            || change.Property == UseCategoryColorProperty)
+            || change.Property == UseCategoryColorProperty
+            || change.Property == HoveredTimeRangeProperty)
         {
             if (change.Property == UsageItemsProperty)
             {
@@ -304,8 +371,8 @@ public class Timeline : Control
 
     private void FitToData()
     {
-        var items = UsageItems?.Where(i => !IsIdle(i)).ToList();
-        if (items == null || items.Count == 0) { _offsetX = 0; return; }
+        var items = GetNonIdleItems();
+        if (items.Count == 0) { _offsetX = 0; return; }
 
         var firstSeconds = items.Min(i => i.Start.Hour * 3600 + i.Start.Minute * 60);
         var lastSeconds = items.Max(i => i.End.Hour * 3600 + i.End.Minute * 60);
@@ -338,10 +405,10 @@ public class Timeline : Control
 
     private void ResetSelection()
     {
-        var items = UsageItems?.Where(i => !IsIdle(i)).ToList();
+        var items = GetNonIdleItems();
         var maxHour = (double)MaxDaySeconds / HourSeconds;
 
-        if (items == null || items.Count == 0)
+        if (items.Count == 0)
         {
             VisibleStartHour = 0.0;
             VisibleEndHour = maxHour;
@@ -605,6 +672,13 @@ public class Timeline : Control
             else
                 DrawCategoryTrack(ctx, pps);
 
+            // 绘制 hover 高亮边框（覆盖在色块之上）
+            if (!_isPanning && !_isSelecting && _hoveredItem != null && !IsIdle(_hoveredItem))
+                DrawHoverHighlight(ctx, pps);
+
+            // 绘制外部联动高亮（来自多轨道图悬停）
+            DrawExternalHoverHighlight(ctx, pps);
+
             if (!_isSelecting)
                 DrawSelectedRange(ctx, pps);
             else
@@ -682,10 +756,8 @@ public class Timeline : Control
                 // 主刻度线（贯穿整个高度）
                 ctx.DrawLine(_tickMajor, new Point(x, HeaderH - 4), new Point(x, Bounds.Height));
 
-                var label = new FormattedText($"{h:D2}:00", CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight,
-                    MediumTypeface,
-                    10, _tickText);
+                // 使用缓存的 FormattedText
+                var label = GetCachedHourLabel(h, 10);
 
                 // 修复标签被裁剪：左侧不超出边界
                 var labelX = Math.Max(2, x + 4);
@@ -744,7 +816,6 @@ public class Timeline : Control
         else labelIntervalMinutes = 15;
 
         var stepSeconds = labelIntervalMinutes * 60;
-        var font = NormalTypeface;
 
         for (var h = 0; h < maxHours; h++)
         {
@@ -758,8 +829,8 @@ public class Timeline : Control
                     ? $"{minutes:D2}"  // 5分钟间隔且不是15的倍数时，只显示数字
                     : $":{minutes:D2}";
 
-                var label = new FormattedText(labelText, CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight, font, 9, _timeLabelText);
+                // 使用缓存的 FormattedText
+                var label = GetCachedMinuteLabel(labelText);
 
                 var labelX = sx - label.Width / 2;
                 if (labelX < 2) labelX = 2;
@@ -793,6 +864,9 @@ public class Timeline : Control
 
         var dayStart = Date.Date;
         var dayEnd = dayStart.AddDays(1);
+        const double shortSessionThreshold = 10; // seconds
+        const double shortBarHeight = 6;
+        const double normalBarHeight = UsageH;
 
         foreach (var item in items)
         {
@@ -804,8 +878,8 @@ public class Timeline : Control
             var w = Math.Max(DurationToW(drawStart, drawEnd, pps), 1);
             if (x + w < 0 || x > Bounds.Width) continue;
 
-            var isShort = item.IsShortSession;
-            var h = isShort ? UsageH * 0.3 : UsageH;
+            var isShort = item.Duration <= shortSessionThreshold;
+            var h = isShort ? shortBarHeight : normalBarHeight;
             var y = UsageY + (UsageH - h) / 2;
             var r = new Rect(x, y, w, h);
 
@@ -816,15 +890,58 @@ public class Timeline : Control
             else
             {
                 var c = GetItemDisplayColor(item);
-                var alpha = isShort ? (byte)0x80 : (byte)0xDD;
+                var alpha = isShort ? (byte)0x60 : (byte)0xDD;
                 ctx.DrawRectangle(new ImmutableSolidColorBrush(Color.FromArgb(alpha, c.R, c.G, c.B)), null, r);
             }
         }
     }
 
+    private void DrawHoverHighlight(DrawingContext ctx, double pps)
+    {
+        if (_hoveredItem == null) return;
+
+        var dayStart = Date.Date;
+        var dayEnd = dayStart.AddDays(1);
+
+        // dim all non-hover items
+        foreach (var item in UsageItems ?? [])
+        {
+            if (item == _hoveredItem || IsIdle(item)) continue;
+
+            var drawStart = item.Start < dayStart ? dayStart : item.Start;
+            var drawEnd = item.End > dayEnd ? dayEnd : item.End;
+            if (drawEnd <= drawStart) continue;
+
+            var x = TimeToX(drawStart, pps);
+            var w = Math.Max(DurationToW(drawStart, drawEnd, pps), 1);
+            if (x + w < 0 || x > Bounds.Width) continue;
+
+            ctx.DrawRectangle(_hoverDimBrush, null, new Rect(x, UsageY, w, UsageH));
+        }
+
+        // highlight border around hovered item
+        {
+            var drawStart = _hoveredItem.Start < dayStart ? dayStart : _hoveredItem.Start;
+            var drawEnd = _hoveredItem.End > dayEnd ? dayEnd : _hoveredItem.End;
+            if (drawEnd <= drawStart) return;
+
+            var x = TimeToX(drawStart, pps);
+            var w = Math.Max(DurationToW(drawStart, drawEnd, pps), 1);
+            if (x + w < 0 || x > Bounds.Width) return;
+
+            var isShort = _hoveredItem.Duration <= 10;
+            var h = isShort ? 6 : UsageH;
+            var y = UsageY + (UsageH - h) / 2;
+            var r = new Rect(x, y, w, h);
+
+            var borderPen = new Pen(_hoverHighlightBrush!, 2);
+            ctx.DrawRectangle(null, borderPen, r);
+        }
+    }
+
     private void DrawCategoryTrack(DrawingContext ctx, double pps)
     {
-        var merged = MergeCategory((UsageItems ?? []).ToList());
+        var merged = MergeCategory(GetNonIdleItems().ToList());
         if (merged.Count == 0) return;
 
         var dayStart = Date.Date;
@@ -862,10 +979,8 @@ public class Timeline : Control
         ctx.DrawRectangle(new ImmutableSolidColorBrush(c), null,
             new Rect(x + 2, y + 2, 3, th - 4), 2, 2);
 
-        var title = new FormattedText(_hoveredItem.Name, CultureInfo.CurrentCulture,
-            FlowDirection.LeftToRight,
-            SemiBoldTypeface,
-            12, _tipText);
+        // 使用缓存的 tooltip 文本
+        var title = GetCachedTooltipTitle(_hoveredItem.Name);
         ctx.DrawText(title, new Point(x + p + 6, y + p));
 
         var dur = (int)(_hoveredItem.End - _hoveredItem.Start).TotalSeconds;
@@ -875,10 +990,8 @@ public class Timeline : Control
             >= 60 => $"{dur / 60}m{dur % 60}s",
             _ => $"{dur}s"
         };
-        var info = new FormattedText(
-            $"{_hoveredItem.Start:HH:mm} – {_hoveredItem.End:HH:mm} · {durStr}",
-            CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            NormalTypeface, 10, _tipSub);
+        var infoText = $"{_hoveredItem.Start:HH:mm} – {_hoveredItem.End:HH:mm} · {durStr}";
+        var info = GetCachedTooltipInfo(infoText);
         ctx.DrawText(info, new Point(x + p + 6, y + p + 22));
     }
 
@@ -912,7 +1025,76 @@ public class Timeline : Control
         return merged;
     }
 
-    private bool IsIdle(TimelineUsageItem i) => TimelineHelpers.IsIdleItem(i);
+    /// <summary>
+    /// 绘制高亮边框（来自 MultiTrackTimeline 的段悬浮联动）
+    /// 复用单轨时间轴自身的 hover 风格：暗化非高亮区域 + 亮边框
+    /// </summary>
+    private void DrawExternalHoverHighlight(DrawingContext ctx, double pps)
+    {
+        if (_hoveredTimeRange is not { } range) return;
+
+        var startSec = range.Start.Hour * HourSeconds + range.Start.Minute * 60 + range.Start.Second;
+        var endSec = range.End.Hour * HourSeconds + range.End.Minute * 60 + range.End.Second;
+        if (endSec <= startSec) return;
+
+        var x1 = startSec * pps + _offsetX;
+        var x2 = endSec * pps + _offsetX;
+
+        if (x2 < 0 || x1 > Bounds.Width) return;
+
+        x1 = Math.Max(0, x1);
+        x2 = Math.Min(Bounds.Width, x2);
+        if (x2 <= x1) return;
+
+        // 暗化所有色块（非高亮区域）
+        var dayStart = Date.Date;
+        var dayEnd = dayStart.AddDays(1);
+        var isLight = this.ActualThemeVariant == ThemeVariant.Light;
+        var dimBrush = new ImmutableSolidColorBrush(isLight
+            ? Color.FromArgb(0x50, 0x00, 0x00, 0x00)
+            : Color.FromArgb(0x70, 0x00, 0x00, 0x00));
+
+        foreach (var item in UsageItems ?? [])
+        {
+            if (IsIdle(item)) continue;
+
+            var drawStart = item.Start < dayStart ? dayStart : item.Start;
+            var drawEnd = item.End > dayEnd ? dayEnd : item.End;
+            if (drawEnd <= drawStart) continue;
+
+            var ix = TimeToX(drawStart, pps);
+            var iw = Math.Max(DurationToW(drawStart, drawEnd, pps), 1);
+            if (ix + iw < 0 || ix > Bounds.Width) continue;
+
+            // 跳过与高亮区域重叠的色块
+            if (ix + iw > x1 && ix < x2) continue;
+
+            ctx.DrawRectangle(dimBrush, null, new Rect(ix, UsageY, iw, UsageH));
+        }
+
+        // 高亮区域：半透明高亮层 + 亮边框
+        if (x2 > x1)
+        {
+            ctx.DrawRectangle(_selectBg, null, new Rect(x1, UsageY, x2 - x1, UsageH));
+            ctx.DrawRectangle(null, _selectPen, new Rect(x1, UsageY, x2 - x1, UsageH));
+        }
+    }
+
+    private bool IsIdle(TimelineUsageItem i) => TimelineHelpers.IsIdleItem(i.Name);
+
+    /// <summary>
+    /// 获取缓存的非空闲 items 列表
+    /// </summary>
+    private IList<TimelineUsageItem> GetNonIdleItems()
+    {
+        if (_nonIdleItemsCacheValid && _cachedNonIdleItems != null)
+            return _cachedNonIdleItems;
+        _cachedNonIdleItems = (UsageItems ?? Array.Empty<TimelineUsageItem>())
+            .Where(i => !IsIdle(i))
+            .ToArray();
+        _nonIdleItemsCacheValid = true;
+        return _cachedNonIdleItems;
+    }
 
     private Color ParseColor(string? hex)
     {
@@ -1048,7 +1230,6 @@ public class Timeline : Control
         var startTime = Date.Date.AddSeconds(startSec);
         var endTime = Date.Date.AddSeconds(endSec);
 
-        var font = SemiBoldTypeface;
         const double labelHeight = 18;
         const double padding = 6;
         var y = UsageY - labelHeight - 3;
@@ -1062,15 +1243,13 @@ public class Timeline : Control
             < 3600 => $"{durationSec / 60}m",
             _ => $"{durationSec / 3600}h{durationSec % 3600 / 60}m"
         };
-        var durLabel = new FormattedText(durationStr, CultureInfo.CurrentCulture,
-            FlowDirection.LeftToRight, font, 10, _selectionLabelTextBrush);
+        var durLabel = GetCachedSelectionLabel(durationStr);
         var durLabelW = durLabel.Width + padding * 2;
         var durLabelX = (x1 + x2) / 2 - durLabelW / 2;
 
         // 起始时间标签
         var startText = startTime.ToString("HH:mm");
-        var startLabel = new FormattedText(startText, CultureInfo.CurrentCulture,
-            FlowDirection.LeftToRight, font, 10, _selectionLabelTextBrush);
+        var startLabel = GetCachedSelectionLabel(startText);
         var startLabelW = startLabel.Width + padding * 2;
         var startLabelX = x1;
         if (startLabelX + startLabelW > Bounds.Width) startLabelX = Bounds.Width - startLabelW;
@@ -1082,8 +1261,7 @@ public class Timeline : Control
 
         // 结束时间标签
         var endText = endTime.ToString("HH:mm");
-        var endLabel = new FormattedText(endText, CultureInfo.CurrentCulture,
-            FlowDirection.LeftToRight, font, 10, _selectionLabelTextBrush);
+        var endLabel = GetCachedSelectionLabel(endText);
         var endLabelW = endLabel.Width + padding * 2;
         var endLabelX = x2 - endLabelW;
         if (endLabelX < 0) endLabelX = 0;
@@ -1178,5 +1356,64 @@ public class Timeline : Control
         _offsetX = Math.Clamp(-(startSec * pps),
             Math.Min(0, Bounds.Width - MaxDaySeconds * pps), 0);
     }
+
+    #region FormattedText Cache Helpers
+
+    private FormattedText GetCachedHourLabel(int hour, int size)
+    {
+        var text = $"{hour:D2}:00";
+        var key = (text, size);
+        if (_labelCache.TryGetValue(key, out var cached))
+            return cached;
+
+        var tf = size == 10 ? MediumTypeface : NormalTypeface;
+        var ft = new FormattedText(text, CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight, tf, size, _tickText);
+        _labelCache[key] = ft;
+        return ft;
+    }
+
+    private FormattedText GetCachedMinuteLabel(string text)
+    {
+        var key = (text, 9);
+        if (_labelCache.TryGetValue(key, out var cached))
+            return cached;
+
+        var ft = new FormattedText(text, CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight, NormalTypeface, 9, _timeLabelText);
+        _labelCache[key] = ft;
+        return ft;
+    }
+
+    private FormattedText GetCachedTooltipTitle(string text)
+    {
+        if (_cachedTooltipTitleText == text && _cachedTooltipTitle != null)
+            return _cachedTooltipTitle;
+
+        _cachedTooltipTitle = new FormattedText(text, CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight, SemiBoldTypeface, 12, _tipText);
+        _cachedTooltipTitleText = text;
+        return _cachedTooltipTitle;
+    }
+
+    private FormattedText GetCachedTooltipInfo(string text)
+    {
+        if (_cachedTooltipInfoText == text && _cachedTooltipInfo != null)
+            return _cachedTooltipInfo;
+
+        _cachedTooltipInfo = new FormattedText(text, CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight, NormalTypeface, 10, _tipSub);
+        _cachedTooltipInfoText = text;
+        return _cachedTooltipInfo;
+    }
+
+    private FormattedText GetCachedSelectionLabel(string text)
+    {
+        // 使用简单的单个缓存策略，因为选区标签通常同时只有 3 个
+        return new FormattedText(text, CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight, SemiBoldTypeface, 10, _selectionLabelTextBrush);
+    }
+
+    #endregion
 
 }

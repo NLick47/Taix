@@ -18,21 +18,21 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="80" />
+                            <ColumnDefinition Width="72" />
                         </Grid.ColumnDefinitions>
 
-                        <!-- 左侧占位（宽度由 SharedSizeGroup 与数据行对齐） -->
+                        <!-- 左侧占位 -->
                         <Border Grid.Column="0" />
 
                         <!-- 时间刻度 -->
-                        <Border Grid.Column="1" Margin="16,0">
+                        <Border Grid.Column="1" Margin="12,0">
                             <timeline:MultiTrackTimeRuler
                                 Date="{Binding Date, RelativeSource={RelativeSource TemplatedParent}}"
                                 VisibleStartHour="{Binding VisibleStartHour, RelativeSource={RelativeSource TemplatedParent}}"
                                 VisibleEndHour="{Binding VisibleEndHour, RelativeSource={RelativeSource TemplatedParent}}" />
                         </Border>
 
-                        <!-- 右侧占位（宽度由 SharedSizeGroup 与数据行对齐） -->
+                        <!-- 右侧占位 -->
                         <Border Grid.Column="2" />
                     </Grid>
 
@@ -54,7 +54,7 @@
                         <ListBox.Styles>
                             <Style Selector="ListBoxItem">
                                 <Setter Property="Padding" Value="0" />
-                                <Setter Property="Margin" Value="0,0,0,8" />
+                                <Setter Property="Margin" Value="0,0,0,6" />
                                 <Setter Property="Background" Value="Transparent" />
                                 <Setter Property="Focusable" Value="False" />
                                 <Setter Property="Cursor" Value="Hand" />
@@ -68,133 +68,102 @@
                             <Style Selector="ListBoxItem Border.row">
                                 <Setter Property="Transitions">
                                     <Transitions>
-                                        <BrushTransition Property="BorderBrush" Duration="0:0:0.2" />
+                                        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                                        <BrushTransition Property="Background" Duration="0:0:0.15" />
                                     </Transitions>
                                 </Setter>
                             </Style>
                             <Style Selector="ListBoxItem:pointerover Border.row">
                                 <Setter Property="BorderBrush" Value="{DynamicResource ChartCardHoverBorderBrush}" />
-                            </Style>
-                            <Style Selector="ListBoxItem Border.hover-overlay">
-                                <Setter Property="Opacity" Value="0" />
-                                <Setter Property="Transitions">
-                                    <Transitions>
-                                        <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
-                                    </Transitions>
-                                </Setter>
-                            </Style>
-                            <Style Selector="ListBoxItem:pointerover Border.hover-overlay">
-                                <Setter Property="Opacity" Value="0.06" />
+                                <Setter Property="Background" Value="{DynamicResource MultiTrackRowHoverBgBrush}" />
                             </Style>
                         </ListBox.Styles>
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="timeline:MultiTrackTimelineItem">
-                                <Border Height="64"
+                                <Border Height="52"
                                         CornerRadius="8"
                                         Background="{DynamicResource MultiTrackRowBgBrush}"
                                         BorderBrush="{DynamicResource MultiTrackRowBorderBrush}"
                                         BorderThickness="1"
                                         Cursor="Hand"
-                                        ClipToBounds="True"
+                                        ClipToBounds="False"
                                         Classes="row">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="180" />
                                             <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="80" />
+                                            <ColumnDefinition Width="72" />
                                         </Grid.ColumnDefinitions>
 
-                                        <!-- 左侧：图标 + 名称/分类 -->
+                                        <!-- 左侧：颜色标记 + 图标 + 名称 -->
                                         <Border Grid.Column="0"
                                                 VerticalAlignment="Center"
-                                                Margin="14,0,0,0">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="auto" />
-                                                    <ColumnDefinition Width="auto" />
-                                                </Grid.ColumnDefinitions>
+                                                Margin="10,0,0,0">
+                                            <Grid ColumnDefinitions="Auto,Auto,*">
+
+                                                <Rectangle Width="3"
+                                                           Height="20"
+                                                           Fill="{Binding Color}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"
+                                                           RadiusX="1.5"
+                                                           RadiusY="1.5" />
 
                                                 <!-- 图标 -->
-                                                <Border Background="{DynamicResource MultiTrackIconBgBrush}"
-                                                        CornerRadius="8"
-                                                        Width="42"
-                                                        Height="42"
-                                                        HorizontalAlignment="Left"
+                                                <Border Grid.Column="1"
+                                                        Background="{DynamicResource MultiTrackIconBgBrush}"
+                                                        CornerRadius="6"
+                                                        Width="30"
+                                                        Height="30"
                                                         VerticalAlignment="Center">
                                                     <base:Img URL="{Binding Icon}"
-                                                              Width="30"
-                                                              Height="30"
-                                                              DecodeWidth="30"
+                                                              Width="18"
+                                                              Height="18"
+                                                              DecodeWidth="18"
                                                               HorizontalAlignment="Center"
                                                               VerticalAlignment="Center" />
                                                 </Border>
 
-                                                <StackPanel Grid.Column="1"
-                                                            VerticalAlignment="Center"
-                                                            Margin="12,0,0,0"
-                                                            MaxWidth="120">
-                                                    <TextBlock Text="{Binding Name}"
-                                                               FontSize="13"
-                                                               FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource DefaultTextBrush}"
-                                                               VerticalAlignment="Center"
-                                                               TextTrimming="CharacterEllipsis" />
-                                                    <Border CornerRadius="3"
-                                                            Padding="5,1"
-                                                            Margin="0,3,0,0"
-                                                            HorizontalAlignment="Left"
-                                                            IsVisible="{Binding CategoryName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                        <Border.Background>
-                                                            <SolidColorBrush Color="{Binding CategoryColor}"
-                                                                             Opacity="0.25" />
-                                                        </Border.Background>
-                                                        <TextBlock Text="{Binding CategoryName}"
-                                                                   FontSize="10"
-                                                                   Foreground="{DynamicResource SubTextBrush}" />
-                                                    </Border>
-                                                </StackPanel>
+                                                <TextBlock Grid.Column="2"
+                                                           Text="{Binding Name}"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource DefaultTextBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="8,0,4,0"
+                                                           TextTrimming="CharacterEllipsis" />
                                             </Grid>
                                         </Border>
 
                                         <!-- 中间：轨道 -->
                                         <Border Grid.Column="1"
-                                                Height="36"
+                                                Height="28"
                                                 VerticalAlignment="Center"
-                                                Margin="16,0"
+                                                Margin="12,0"
                                                 CornerRadius="6"
+                                                ClipToBounds="False"
                                                 Background="{DynamicResource MultiTrackTrackBgBrush}"
                                                 BorderBrush="{DynamicResource MultiTrackTrackBorderBrush}"
-                                                BorderThickness="1"
-                                                ClipToBounds="True">
+                                                BorderThickness="1">
                                             <timeline:MultiTrackRow
                                                 Segments="{Binding Segments}"
-                                                UseCategoryColor="{Binding UseCategoryColor,
-                                                    RelativeSource={RelativeSource AncestorType=timeline:MultiTrackTimeline}}"
                                                 VisibleStartHour="{Binding VisibleStartHour,
                                                     RelativeSource={RelativeSource AncestorType=timeline:MultiTrackTimeline}}"
                                                 VisibleEndHour="{Binding VisibleEndHour,
                                                     RelativeSource={RelativeSource AncestorType=timeline:MultiTrackTimeline}}" />
                                         </Border>
 
-                                        <!-- 右侧：时长 + 百分比 -->
+                                        <!-- 右侧：时长 -->
                                         <StackPanel Grid.Column="2"
                                                     VerticalAlignment="Center"
-                                                    Margin="0,0,16,0"
-                                                    MinWidth="68">
+                                                    HorizontalAlignment="Right"
+                                                    Margin="0,0,12,0">
                                             <TextBlock Text="{Binding DurationText}"
-                                                       FontSize="14"
+                                                       FontSize="12"
                                                        FontWeight="SemiBold"
                                                        Foreground="{DynamicResource StandardTextBrush}"
                                                        HorizontalAlignment="Right" />
-                                            <TextBlock Text="{Binding Percentage, StringFormat='{}{0:F1}%'}"
-                                                       FontSize="11"
-                                                       Foreground="{DynamicResource SubTextBrush}"
-                                                       Margin="0,2,0,0"
-                                                       HorizontalAlignment="Right" />
                                         </StackPanel>
-                                        <!-- Hover overlay -->
-                                        <Border Grid.ColumnSpan="3" CornerRadius="8" IsHitTestVisible="False"
-                                                Classes="hover-overlay" Background="#FFFFFF" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>

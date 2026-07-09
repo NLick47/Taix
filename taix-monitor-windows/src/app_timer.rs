@@ -247,32 +247,13 @@ impl AppTimer {
                 // GetTickCount64 在睡眠时不 tick，但 periodic 检测需要的是"实际运行时间"，
                 // 所以直接用 tick 差值判断 60 秒周期
                 if now_tick >= *last_periodic_tick && now_tick - *last_periodic_tick >= 60_000 {
-                    let flush = Self::compute_flush(
-                        *start_time,
-                        *start_tick,
-                        now,
-                        now_tick,
-                        FlushKind::Periodic,
-                        accumulated_ms,
-                        app,
-                    );
-                    *start_time = now;
-                    *start_tick = now_tick;
                     *last_periodic_tick = now_tick;
 
-                    if let Some(event) = &flush {
-                        info!(
-                            target: "app_timer",
-                            "Periodic flush | [{}] {} (title: {}) | duration: {}s",
-                            event.app.app_type, event.app.process, window.title,
-                            event.duration_secs
-                        );
-                        send_duration_event(queue, event);
-                    }
-
-                    // 写检查点
+                    // 只写检查点，不发送 duration event。
+                    // 这样连续使用同一个应用不会产生碎片化 session，
+                    // 只有在 Final flush（应用切换/睡眠）时才写入数据库。
                     if let Some(dir) = data_dir {
-                        let since_ts = now
+                        let since_ts = start_time
                             .duration_since(UNIX_EPOCH)
                             .unwrap_or_default()
                             .as_secs() as i64;

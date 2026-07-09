@@ -300,11 +300,12 @@
             <SolidColorBrush x:Key="TimelineSelectionLabelTextBrush" Color="#B0B8FF" />
 
             <!-- 多轨道时间轴 -->
-            <SolidColorBrush x:Key="MultiTrackRowBgBrush" Color="#26262C" />
-            <SolidColorBrush x:Key="MultiTrackRowBorderBrush" Color="#383840" />
-            <SolidColorBrush x:Key="MultiTrackIconBgBrush" Color="#303038" />
-            <SolidColorBrush x:Key="MultiTrackTrackBgBrush" Color="#1A1A20" />
-            <SolidColorBrush x:Key="MultiTrackTrackBorderBrush" Color="#303038" />
+            <SolidColorBrush x:Key="MultiTrackRowBgBrush" Color="#1E1E28" />
+            <SolidColorBrush x:Key="MultiTrackRowBorderBrush" Color="#2E2E3A" />
+            <SolidColorBrush x:Key="MultiTrackRowHoverBgBrush" Color="#262632" />
+            <SolidColorBrush x:Key="MultiTrackIconBgBrush" Color="#2A2A36" />
+            <SolidColorBrush x:Key="MultiTrackTrackBgBrush" Color="#121218" />
+            <SolidColorBrush x:Key="MultiTrackTrackBorderBrush" Color="#262630" />
 
             <!-- 颜色模式切换 -->
             <SolidColorBrush x:Key="ColorModeToggleBgBrush" Color="#1A1A20" />
@@ -598,11 +599,12 @@
             <SolidColorBrush x:Key="TimelineSelectionLabelTextBrush" Color="#000000" />
 
             <!-- 多轨道时间轴 -->
-            <SolidColorBrush x:Key="MultiTrackRowBgBrush" Color="#f2f2f6" />
-            <SolidColorBrush x:Key="MultiTrackRowBorderBrush" Color="#d8d8e0" />
-            <SolidColorBrush x:Key="MultiTrackIconBgBrush" Color="#e8e8f0" />
-            <SolidColorBrush x:Key="MultiTrackTrackBgBrush" Color="#e2e2e8" />
-            <SolidColorBrush x:Key="MultiTrackTrackBorderBrush" Color="#d0d0d8" />
+            <SolidColorBrush x:Key="MultiTrackRowBgBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="MultiTrackRowBorderBrush" Color="#E2E2EA" />
+            <SolidColorBrush x:Key="MultiTrackRowHoverBgBrush" Color="#F0F0F6" />
+            <SolidColorBrush x:Key="MultiTrackIconBgBrush" Color="#ECECF2" />
+            <SolidColorBrush x:Key="MultiTrackTrackBgBrush" Color="#EAEAF0" />
+            <SolidColorBrush x:Key="MultiTrackTrackBorderBrush" Color="#D8D8E0" />
 
             <!-- 颜色模式切换 -->
             <SolidColorBrush x:Key="ColorModeToggleBgBrush" Color="#E4E4EC" />

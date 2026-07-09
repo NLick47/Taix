@@ -28,27 +28,64 @@ public class Colors
         "#77E4D4", "#FD5E5E", "#B4FF9F", "#07FF01", "#FFE162", "#C70B80", "#590696", "#97DBAE", "#ff1801"
     };
 
-    public static string[] TimelinePaletteDark =
-    {
-        "#5b8ff9", "#5ad8a6", "#f6bd16", "#e8684a", "#6dc8ec",
-        "#9270ca", "#ff9d4d", "#269a99", "#ff99c3", "#a0d911",
-        "#13c2c2", "#eb2f96", "#faad14", "#fadb14", "#a8071a"
-    };
+    public static string[] TimelinePaletteDark { get; } = GenerateTimelinePalette(45, isDark: true);
 
-    public static string[] TimelinePaletteLight =
-    {
-        "#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de",
-        "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc", "#37a2da",
-        "#32c5e9", "#9fe6b8", "#ffdb5c", "#ff9f7f", "#fb7293"
-    };
+    public static string[] TimelinePaletteLight { get; } = GenerateTimelinePalette(45, isDark: false);
+
+    // 颜色缓存，避免重复计算 hash
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(string Key, bool IsDark), string> _timelineColorCache = new();
 
     public static string GetTimelinePaletteColor(string key, bool isDark)
     {
-        var palette = isDark ? TimelinePaletteDark : TimelinePaletteLight;
-        if (string.IsNullOrEmpty(key)) return palette[0];
-        var hash = key.GetHashCode();
-        var index = System.Math.Abs(hash) % palette.Length;
-        return palette[index];
+        if (string.IsNullOrEmpty(key)) return isDark ? TimelinePaletteDark[0] : TimelinePaletteLight[0];
+        return _timelineColorCache.GetOrAdd((key, isDark), static k =>
+        {
+            var palette = k.IsDark ? TimelinePaletteDark : TimelinePaletteLight;
+            var hash = k.Key.GetHashCode();
+            var index = System.Math.Abs(hash) % palette.Length;
+            return palette[index];
+        });
+    }
+
+    private static string[] GenerateTimelinePalette(int count, bool isDark)
+    {
+        var baseL = isDark ? 0.60 : 0.45;
+        var saturation = isDark ? 0.80 : 0.72;
+        var result = new string[count];
+
+        for (var i = 0; i < count; i++)
+        {
+            var h = i * 360.0 / count;
+            var l = h switch
+            {
+                >= 36 and <= 72 => baseL + 0.10,
+                >= 200 and <= 260 => baseL - 0.05,
+                >= 270 and <= 310 => baseL + 0.03,
+                _ => baseL
+            };
+            if (l < 0.25) l = 0.25;
+            if (l > 0.85) l = 0.85;
+            result[i] = HslToHex(h, saturation, l);
+        }
+
+        return result;
+    }
+
+    private static string HslToHex(double h, double s, double l)
+    {
+        var c = (1.0 - System.Math.Abs(2.0 * l - 1.0)) * s;
+        var x = c * (1.0 - System.Math.Abs((h / 60.0) % 2.0 - 1.0));
+        var m = l - c / 2.0;
+
+        double r, g, b;
+        if (h < 60) { r = c; g = x; b = 0; }
+        else if (h < 120) { r = x; g = c; b = 0; }
+        else if (h < 180) { r = 0; g = c; b = x; }
+        else if (h < 240) { r = 0; g = x; b = c; }
+        else if (h < 300) { r = x; g = 0; b = c; }
+        else { r = c; g = 0; b = x; }
+
+        return $"#{(byte)((r + m) * 255):X2}{(byte)((g + m) * 255):X2}{(byte)((b + m) * 255):X2}";
     }
 
     public static IColor Get(ColorTypes color)
