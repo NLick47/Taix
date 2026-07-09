@@ -43,6 +43,16 @@ impl ConfigModel {
             return Err("数据保存天数必须在 1 到 9999 之间".to_string());
         }
 
+        if self.behavior.inactive_threshold < 1 || self.behavior.inactive_threshold > 60 {
+            return Err("空闲阈值必须在 1 到 60 分钟之间".to_string());
+        }
+
+        if self.behavior.max_sound_duration < 15
+            || self.behavior.max_sound_duration > 480
+            || self.behavior.max_sound_duration % 15 != 0 {
+            return Err("声音持续时间必须在 15 到 480 分钟之间，且为 15 的倍数".to_string());
+        }
+
         Ok(())
     }
 
@@ -123,6 +133,10 @@ pub struct BehaviorModel {
     pub is_white_list: bool,
     #[serde(rename = "ProcessWhiteList")]
     pub process_white_list: Vec<String>,
+    #[serde(rename = "InactiveThreshold")]
+    pub inactive_threshold: i32,
+    #[serde(rename = "MaxSoundDuration")]
+    pub max_sound_duration: i32,
 }
 
 impl Default for BehaviorModel {
@@ -133,6 +147,8 @@ impl Default for BehaviorModel {
             ignore_url_list: Vec::new(),
             is_white_list: false,
             process_white_list: Vec::new(),
+            inactive_threshold: 15,
+            max_sound_duration: 120,
         }
     }
 }

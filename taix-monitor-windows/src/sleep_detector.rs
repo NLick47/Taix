@@ -1,18 +1,12 @@
-use crate::models::SleepStatus;
+use crate::models::{MonitorConfig, SleepStatus};
 use crate::win32::audio::AudioState;
 use crate::win32::gamepad::GamepadState;
 use crate::win32::get_system_idle_time;
 use std::time::{Duration, Instant};
 use tracing::info;
 
-#[cfg(debug_assertions)]
-const INACTIVE_THRESHOLD: Duration = Duration::from_secs(10);
-#[cfg(not(debug_assertions))]
-const INACTIVE_THRESHOLD: Duration = Duration::from_secs(900);
 /// 恢复后判定用户活跃的 idle 阈值（Duration）
 const RESUME_IDLE_THRESHOLD: Duration = Duration::from_secs(30);
-/// 声音持续播放超过此时间后仍 idle 则判定睡眠（秒）
-const MAX_SOUND_DURATION_SECS: u64 = 7200;
 /// idle 单次检测跳变超过此值视为系统从休眠/锁定恢复（Duration）
 const RESUME_JUMP_THRESHOLD: Duration = Duration::from_secs(60);
 
@@ -40,10 +34,13 @@ pub struct SleepDetector {
     tick_count: u32,
     last_valid_idle: Duration,
     idle_failures: u32,
+    inactive_threshold: Duration,
+    max_sound_duration: Duration,
+    sleep_watch: bool,
 }
 
 impl SleepDetector {
-    pub fn new(audio_state: AudioState) -> Self {
+    pub fn new(audio_state: AudioState, config: &MonitorConfig) -> Self {
         Self {
             state: DetectorState::Initial,
             current: SleepStatus::Wake,
@@ -52,11 +49,18 @@ impl SleepDetector {
             tick_count: 0,
             last_valid_idle: Duration::ZERO,
             idle_failures: 0,
+            inactive_threshold: Duration::from_secs(config.inactive_threshold_secs),
+            max_sound_duration: Duration::from_secs(config.max_sound_duration_secs),
+            sleep_watch: config.sleep_watch,
         }
     }
 
     /// 主循环每秒调用。内部每 SLEEP_CHECK_INTERVAL 秒做一次检测
     pub fn tick(&mut self) -> Option<SleepStatus> {
+        // 睡眠检测关闭时，始终返回 Wake
+        if !self.sleep_watch {
+            return None;
+        }
         self.tick_count += 1;
         if self.tick_count < SLEEP_CHECK_TICKS {
             return None;
@@ -73,6 +77,12 @@ impl SleepDetector {
         let is_playing_sound = self.audio_state.is_playing();
         let is_gamepad_active = self.gamepad_state.is_active();
 
+        info!(
+            target: "sleep_detector",
+            "tick: idle={:?}, threshold={:?}, sound={}, gamepad={}",
+            idle, self.inactive_threshold, is_playing_sound, is_gamepad_active
+        );
+
         // get_system_idle_time 连续多次失败时主动进入睡眠态
         if self.idle_failures >= MAX_IDLE_FAILURES {
             if self.current != SleepStatus::Sleep {
@@ -86,11 +96,9 @@ impl SleepDetector {
             return None;
         }
 
-        let (next_state, next_status) = Self::transition(
-            std::mem::replace(
-                &mut self.state,
-                DetectorState::Initial,
-            ),
+        let state = std::mem::replace(&mut self.state, DetectorState::Initial);
+        let (next_state, next_status) = self.transition(
+            state,
             self.current,
             idle,
             is_playing_sound,
@@ -118,6 +126,7 @@ impl SleepDetector {
     }
 
     fn transition(
+        &self,
         state: DetectorState,
         current: SleepStatus,
         idle: Duration,
@@ -127,7 +136,7 @@ impl SleepDetector {
         match state {
             DetectorState::Initial => {
                 let next =
-                    Self::evaluate_status(current, idle, is_playing_sound, None, is_gamepad_active);
+                    self.evaluate_status(current, idle, is_playing_sound, None, is_gamepad_active);
                 (
                     DetectorState::Monitoring {
                         last_idle: idle,
@@ -152,7 +161,7 @@ impl SleepDetector {
                     );
                 }
 
-                let (next_status, next_sound) = Self::evaluate_status_with_sound(
+                let (next_status, next_sound) = self.evaluate_status_with_sound(
                     current,
                     idle,
                     is_playing_sound,
@@ -173,7 +182,7 @@ impl SleepDetector {
                         target: "sleep_detector",
                         "User activity detected, exiting resume cooldown, broadcasting Wake"
                     );
-                    let (next_status, next_sound) = Self::evaluate_status_with_sound(
+                    let (next_status, next_sound) = self.evaluate_status_with_sound(
                         SleepStatus::Wake,
                         idle,
                         is_playing_sound,
@@ -200,23 +209,25 @@ impl SleepDetector {
     }
 
     fn evaluate_status(
+        &self,
         current: SleepStatus,
         idle: Duration,
         is_playing_sound: bool,
         sound_start: Option<Instant>,
         is_gamepad_active: bool,
     ) -> SleepStatus {
-        Self::evaluate_status_with_sound(current, idle, is_playing_sound, sound_start, is_gamepad_active).0
+        self.evaluate_status_with_sound(current, idle, is_playing_sound, sound_start, is_gamepad_active).0
     }
 
     fn evaluate_status_with_sound(
+        &self,
         current: SleepStatus,
         idle: Duration,
         is_playing_sound: bool,
         sound_start: Option<Instant>,
         is_gamepad_active: bool,
     ) -> (SleepStatus, Option<Instant>) {
-        let user_active = idle < INACTIVE_THRESHOLD || is_gamepad_active;
+        let user_active = idle < self.inactive_threshold || is_gamepad_active;
 
         match current {
             SleepStatus::Sleep if user_active => (SleepStatus::Wake, None),
@@ -224,7 +235,7 @@ impl SleepDetector {
                 if is_playing_sound {
                     match sound_start {
                         None => (SleepStatus::Wake, Some(Instant::now())),
-                        Some(t) if t.elapsed() < Duration::from_secs(MAX_SOUND_DURATION_SECS) => {
+                        Some(t) if t.elapsed() < self.max_sound_duration => {
                             (SleepStatus::Wake, Some(t))
                         }
                         Some(_) => (SleepStatus::Sleep, None),

@@ -81,7 +81,7 @@
                                               IsShowIcon="False" />
                             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0"
                                         IsVisible="{Binding IsCustomRetention}">
-                                <NumericUpDown Value="{Binding DataRetentionDays, Mode=TwoWay}" Minimum="1" Maximum="9999" Width="100" VerticalAlignment="Center" />
+                                <NumericUpDown Value="{Binding DataRetentionDays, Mode=TwoWay}" Minimum="1" Maximum="9999" Width="110" VerticalAlignment="Center" />
                                 <TextBlock Text="{DynamicResource Days}" VerticalAlignment="Center" FontSize="13" />
                             </StackPanel>
                         </StackPanel>

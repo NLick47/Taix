@@ -7,6 +7,30 @@ pub enum SleepStatus {
     Sleep,
 }
 
+/// Monitor 配置，从 AppConfig.json 读取
+#[derive(Debug, Clone)]
+pub struct MonitorConfig {
+    /// 空闲阈值（秒），默认 900 (15分钟)
+    pub inactive_threshold_secs: u64,
+    /// 声音持续时间（秒），默认 7200 (120分钟)
+    pub max_sound_duration_secs: u64,
+    /// 是否启用睡眠检测，默认 true
+    pub sleep_watch: bool,
+}
+
+impl Default for MonitorConfig {
+    fn default() -> Self {
+        Self {
+            #[cfg(debug_assertions)]
+            inactive_threshold_secs: 10,
+            #[cfg(not(debug_assertions))]
+            inactive_threshold_secs: 900,
+            max_sound_duration_secs: 7200,
+            sleep_watch: true,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AppType {
     Win32,

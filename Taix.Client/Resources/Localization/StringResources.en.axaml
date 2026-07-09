@@ -387,4 +387,11 @@
     <system:String x:Key="TimelineTotalDuration">Total Duration</system:String>
     <system:String x:Key="TimelineAppColor">App</system:String>
     <system:String x:Key="TimelineCategoryColor">Category</system:String>
+
+    <!-- Sleep detection config -->
+    <system:String x:Key="InactiveThreshold">Inactive Threshold</system:String>
+    <system:String x:Key="InactiveThresholdDesc">How long before idle system pauses tracking, restart monitor process to apply</system:String>
+    <system:String x:Key="MaxSoundDuration">Sound Duration</system:String>
+    <system:String x:Key="MaxSoundDurationDesc">Max time to stay active while sound is playing, then sleep, restart monitor process to apply</system:String>
+    <system:String x:Key="Minutes">minutes</system:String>
 </ResourceDictionary>

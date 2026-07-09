@@ -3,23 +3,61 @@ use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
+use crate::constants::default_data_dir;
+
+#[derive(Debug, Clone)]
+pub struct MonitorConfig {
+    pub inactive_threshold: i32,
+    pub max_sound_duration: i32,
+    pub sleep_watch: bool,
+}
+
+impl Default for MonitorConfig {
+    fn default() -> Self {
+        Self {
+            inactive_threshold: 15,
+            max_sound_duration: 120,
+            sleep_watch: true,
+        }
+    }
+}
+
+fn build_monitor_args(config: &MonitorConfig) -> Vec<String> {
+    vec![
+        "run".to_owned(),
+        "--inactive-threshold".to_owned(),
+        config.inactive_threshold.to_string(),
+        "--max-sound-duration".to_owned(),
+        config.max_sound_duration.to_string(),
+        "--sleep-watch".to_owned(),
+        config.sleep_watch.to_string(),
+    ]
+}
+
 #[derive(Clone)]
-pub struct ServiceManager {}
+pub struct ServiceManager {
+    data_dir: PathBuf,
+}
 
 impl ServiceManager {
     const MAX_MISSING_RETRIES: u32 = 6;
 
-    pub fn new(_data_dir: Option<PathBuf>) -> Self {
-        Self {}
+    pub fn new(data_dir: Option<PathBuf>) -> Self {
+        Self {
+            data_dir: data_dir.unwrap_or_else(default_data_dir),
+        }
     }
 
     pub fn run(self, shutdown: std::sync::Arc<AtomicBool>) {
+        let monitor_config = crate::config::load_monitor_config(&self.data_dir);
+        let monitor_args = build_monitor_args(&monitor_config);
+
         let self_clone = self.clone();
         let shutdown_clone = shutdown.clone();
         let monitor_handle = std::thread::spawn(move || {
             self_clone.supervise(
                 crate::constants::MONITOR_EXE_NAME,
-                &["run"],
+                &monitor_args,
                 shutdown_clone,
             );
         });
@@ -36,7 +74,7 @@ impl ServiceManager {
     fn supervise(
         &self,
         exe_name: &'static str,
-        extra_args: &'static [&'static str],
+        args: &[String],
         shutdown: std::sync::Arc<AtomicBool>,
     ) {
         #[cfg(target_os = "windows")]
@@ -93,7 +131,7 @@ impl ServiceManager {
                 continue;
             }
 
-            let args = build_args(extra_args);
+            let args = build_args(args);
             let mut child = match spawn_process(&exe_path, &args) {
                 Ok(c) => c,
                 Err(_) => {
@@ -142,8 +180,8 @@ impl ServiceManager {
     }
 }
 
-fn build_args(extra: &[&str]) -> Vec<String> {
-    extra.iter().map(|&s| s.to_owned()).collect()
+fn build_args(args: &[String]) -> Vec<String> {
+    args.to_vec()
 }
 
 fn resolve_exe_path(exe_name: &str) -> Option<PathBuf> {

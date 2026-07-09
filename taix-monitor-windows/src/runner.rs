@@ -1,10 +1,16 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
+use crate::models::MonitorConfig;
 use crate::win32::audio::AudioMonitor;
 use tracing::{error, info, warn};
 
-pub fn run(data_dir: Option<PathBuf>) -> ! {
+pub fn run(
+    data_dir: Option<PathBuf>,
+    inactive_threshold_secs: Option<u64>,
+    max_sound_duration_secs: Option<u64>,
+    sleep_watch: Option<bool>,
+) -> ! {
     // 单实例锁
     drop(crate::win32::single_instance::try_acquire("Global\\TaixMonitorSingleInstance").unwrap_or_else(|| {
         error!(target: "main", "Another instance is already running");
@@ -16,11 +22,24 @@ pub fn run(data_dir: Option<PathBuf>) -> ! {
         .unwrap_or_else(|| {
             std::env::current_exe()
                 .ok()
-                .and_then(|p| p.parent().map(|d| d.to_path_buf()))
-                .unwrap_or_else(|| PathBuf::from("."))
+                .and_then(|p| p.parent().map(|d| d.to_path_buf().join("Data")))
+                .unwrap_or_else(|| PathBuf::from("Data"))
         });
 
     info!(target: "main", "Starting... dataDir={:?}", data_dir);
+
+    let config = MonitorConfig {
+        inactive_threshold_secs: inactive_threshold_secs.unwrap_or(900),
+        max_sound_duration_secs: max_sound_duration_secs.unwrap_or(7200),
+        sleep_watch: sleep_watch.unwrap_or(true),
+    };
+    info!(
+        target: "main",
+        "Config: inactive_threshold={}s, max_sound_duration={}s, sleep_watch={}",
+        config.inactive_threshold_secs,
+        config.max_sound_duration_secs,
+        config.sleep_watch
+    );
 
     // 启动音频监控 COM 线程
     let audio_monitor = AudioMonitor::start();
@@ -29,11 +48,11 @@ pub fn run(data_dir: Option<PathBuf>) -> ! {
     // 初始化组件
     let mut app_manager = crate::app_manager::AppManager::new(Some(data_dir.clone()));
     let mut timer = crate::app_timer::AppTimer::new();
-    let mut sleep_detector = crate::sleep_detector::SleepDetector::new(audio_state);
+    let mut sleep_detector = crate::sleep_detector::SleepDetector::new(audio_state, &config);
     let queue = crate::transport::queue::MessageQueue::new("TaixDaemon");
 
     // 崩溃恢复
-    try_recover_session(&data_dir, &queue);
+    try_recover_session(&data_dir, &queue, &config);
 
     let mut last_hwnd = windows::Win32::Foundation::HWND(0 as *mut _);
     info!(target: "main", "Running.");
@@ -80,7 +99,7 @@ pub fn run(data_dir: Option<PathBuf>) -> ! {
 }
 
 /// 崩溃恢复 从 active_session.json 读取上次活跃会话并上报
-fn try_recover_session(data_dir: &std::path::Path, queue: &crate::transport::queue::MessageQueue) {
+fn try_recover_session(data_dir: &std::path::Path, queue: &crate::transport::queue::MessageQueue, config: &MonitorConfig) {
     let cp_path = data_dir.join("active_session.json");
     if !cp_path.exists() {
         return;
@@ -107,11 +126,7 @@ fn try_recover_session(data_dir: &std::path::Path, queue: &crate::transport::que
         let since = std::time::UNIX_EPOCH + std::time::Duration::from_secs(cp.since_ts.max(0) as u64);
 
         let idle = crate::win32::get_system_idle_time().unwrap_or(Duration::ZERO);
-        let inactive_threshold = if cfg!(debug_assertions) {
-            std::time::Duration::from_secs(10)
-        } else {
-            std::time::Duration::from_secs(300)
-        };
+        let inactive_threshold = Duration::from_secs(config.inactive_threshold_secs);
 
         let too_old = cp_mtime.map_or(false, |t| {
             t.elapsed().map_or(false, |e| e > std::time::Duration::from_secs(300))

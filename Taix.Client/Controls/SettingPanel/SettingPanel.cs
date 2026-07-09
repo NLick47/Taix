@@ -324,7 +324,12 @@ public class SettingPanel : TemplatedControl
         else if (pi.PropertyType == typeof(List<string>))
             uIElement = RenderListStringConfigControl(attribute, pi);
         else if (pi.PropertyType == typeof(int))
-            uIElement = RenderOptionsConfigControl(attribute, pi);
+        {
+            if (string.IsNullOrEmpty(attribute.Options))
+                uIElement = RenderNumericUpDownConfigControl(attribute, pi);
+            else
+                uIElement = RenderOptionsConfigControl(attribute, pi);
+        }
         else if (pi.PropertyType == typeof(string))
             if (pi.Name.LastIndexOf("Color") != -1)
                 uIElement = RenderColorConfigControl(attribute, pi);
@@ -399,6 +404,30 @@ public class SettingPanel : TemplatedControl
             }
         };
 
+
+        var item = new SettingPanelItem();
+        item.Init(configAttribute, control);
+        pi.SetValue(_configData, pi.GetValue(Data));
+        return item;
+    }
+
+    private Control RenderNumericUpDownConfigControl(ConfigAttribute configAttribute, PropertyInfo pi)
+    {
+        var control = new NumericUpDown
+        {
+            Minimum = configAttribute.Min,
+            Maximum = configAttribute.Max,
+            Increment = configAttribute.Step,
+            Width = 120,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        control.Value = Convert.ToDecimal(pi.GetValue(Data));
+        control.ValueChanged += (_, args) =>
+        {
+            pi.SetValue(_configData, Convert.ToInt32(args.NewValue));
+            _isCanRender = false;
+            Data = DeepCopy(_configData, _configData.GetType());
+        };
 
         var item = new SettingPanelItem();
         item.Init(configAttribute, control);

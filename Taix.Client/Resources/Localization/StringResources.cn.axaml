@@ -401,4 +401,11 @@
     <system:String x:Key="TimelineTotalDuration">轨道总时长</system:String>
     <system:String x:Key="TimelineAppColor">应用</system:String>
     <system:String x:Key="TimelineCategoryColor">分类</system:String>
+
+    <!-- 睡眠检测配置 -->
+    <system:String x:Key="InactiveThreshold">空闲阈值</system:String>
+    <system:String x:Key="InactiveThresholdDesc">系统无操作多久后自动暂停统计，重启 monitor 进程生效</system:String>
+    <system:String x:Key="MaxSoundDuration">声音持续时间</system:String>
+    <system:String x:Key="MaxSoundDurationDesc">播放声音时保持活跃的最长时间，超过后进入休眠，重启 monitor 进程生效</system:String>
+    <system:String x:Key="Minutes">分钟</system:String>
 </ResourceDictionary>

@@ -49,4 +49,18 @@ public class BehaviorModel
         Placeholder = "Process name, no need to enter .exe. Supports wildcard",
         CultureCode = CultureCode.EnUs)]
     public List<string> ProcessWhiteList { get; set; } = new();
+
+    [Config(Name = "空闲阈值", Description = "系统无操作多久后自动暂停统计，单位：分钟。重启 taix-shell 生效", Group = "偏好",
+        Min = 1, Max = 60, Step = 1, CultureCode = CultureCode.ZhCn)]
+    [Config(Name = "Inactive Threshold",
+        Description = "How long before idle system pauses tracking, unit: minutes. Restart taix-shell to apply",
+        Group = "Preference", Min = 1, Max = 60, Step = 1, CultureCode = CultureCode.EnUs)]
+    public int InactiveThreshold { get; set; } = 15;
+
+    [Config(Name = "声音持续时间", Description = "播放声音时保持活跃的最长时间，超过后进入休眠，单位：分钟。重启 taix-shell 生效", Group = "偏好",
+        Min = 15, Max = 480, Step = 15, CultureCode = CultureCode.ZhCn)]
+    [Config(Name = "Sound Duration",
+        Description = "Max time to stay active while sound is playing, then sleep, unit: minutes. Restart taix-shell to apply",
+        Group = "Preference", Min = 15, Max = 480, Step = 15, CultureCode = CultureCode.EnUs)]
+    public int MaxSoundDuration { get; set; } = 120;
 }

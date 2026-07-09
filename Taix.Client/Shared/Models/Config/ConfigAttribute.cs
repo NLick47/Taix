@@ -26,6 +26,13 @@ public class ConfigAttribute : Attribute
     public string ToggleFalseText;
     public string ToggleTrueText;
 
+    /// <summary>NumericUpDown 最小值（仅 int 类型 Options 为空时生效）</summary>
+    public int Min;
+    /// <summary>NumericUpDown 最大值</summary>
+    public int Max;
+    /// <summary>NumericUpDown 步进值</summary>
+    public int Step = 1;
+
     public ConfigAttribute()
     {
         ToggleTrueText ??= "开";

@@ -1,10 +1,12 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-
+  <!-- ========================================================================
+       NumericUpDownRepeatButton
+       ======================================================================== -->
   <ControlTheme x:Key="NumericUpDownRepeatButton" TargetType="RepeatButton">
-    <Setter Property="Width" Value="28" />
-    <Setter Property="Height" Value="16" />
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="14" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Cursor" Value="Hand" />
@@ -12,12 +14,7 @@
       <ControlTemplate>
         <Border x:Name="ButtonBorder"
                 Background="{TemplateBinding Background}"
-                CornerRadius="4">
-          <Border.Transitions>
-            <Transitions>
-              <BrushTransition Property="Background" Duration="0:0:0.12" />
-            </Transitions>
-          </Border.Transitions>
+                CornerRadius="3">
           <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
             <ContentPresenter Content="{TemplateBinding Content}" />
           </Panel>
@@ -26,13 +23,16 @@
     </Setter>
   </ControlTheme>
 
+  <!-- ========================================================================
+       ButtonSpinner
+       ======================================================================== -->
   <ControlTheme x:Key="{x:Type ButtonSpinner}" TargetType="ButtonSpinner">
     <Setter Property="Foreground" Value="{DynamicResource DefaultTextBrush}" />
     <Setter Property="Background" Value="{DynamicResource InputBoxBgBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
-    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="MinHeight" Value="28" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
     <Setter Property="Focusable" Value="True" />
@@ -49,27 +49,27 @@
                         DockPanel.Dock="Right"
                         Orientation="Vertical"
                         VerticalAlignment="Center"
-                        Margin="2,2,2,2"
+                        Margin="1,1,1,1"
                         IsVisible="{TemplateBinding ShowButtonSpinner}"
                         Spacing="1">
 
               <RepeatButton x:Name="PART_IncreaseButton"
                             Theme="{StaticResource NumericUpDownRepeatButton}"
                             IsTabStop="False">
-                <Path Width="8"
-                      Height="5"
+                <Path Width="7"
+                      Height="4"
                       Fill="{DynamicResource SubTextBrush}"
-                      Data="M 0 5 L 4 0 L 8 5 Z"
+                      Data="M 0 4 L 3.5 0 L 7 4 Z"
                       Stretch="Uniform" />
               </RepeatButton>
 
               <RepeatButton x:Name="PART_DecreaseButton"
                             Theme="{StaticResource NumericUpDownRepeatButton}"
                             IsTabStop="False">
-                <Path Width="8"
-                      Height="5"
+                <Path Width="7"
+                      Height="4"
                       Fill="{DynamicResource SubTextBrush}"
-                      Data="M 0 0 L 4 5 L 8 0 Z"
+                      Data="M 0 0 L 3.5 4 L 7 0 Z"
                       Stretch="Uniform" />
               </RepeatButton>
             </StackPanel>
@@ -86,13 +86,16 @@
     </Setter>
   </ControlTheme>
 
+  <!-- ========================================================================
+       NumericUpDown
+       ======================================================================== -->
   <ControlTheme x:Key="{x:Type NumericUpDown}" TargetType="NumericUpDown">
     <Setter Property="Foreground" Value="{DynamicResource DefaultTextBrush}" />
     <Setter Property="Background" Value="{DynamicResource InputBoxBgBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
-    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="MinHeight" Value="28" />
     <Setter Property="FontSize" Value="13" />
     <Setter Property="FormatString" Value="{}{0:0}" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -129,4 +132,5 @@
       </ControlTemplate>
     </Setter>
   </ControlTheme>
+
 </ResourceDictionary>
