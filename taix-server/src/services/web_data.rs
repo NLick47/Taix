@@ -370,6 +370,7 @@ impl WebDataService {
 
         tx.commit().await?;
         invalidate_web_category_cache().await;
+        invalidate_url_match_cache().await;
         Ok(())
     }
 
