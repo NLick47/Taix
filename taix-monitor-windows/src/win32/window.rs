@@ -5,10 +5,11 @@ use std::path::Path;
 use tracing::{debug, error};
 use windows::Win32::Foundation::{HWND, LPARAM, RECT};
 use windows::Win32::Graphics::Gdi::{
-    DeleteObject, GetDC, GetDIBits, GetObjectW, ReleaseDC, BITMAPINFO, BITMAPINFOHEADER, BI_RGB,
+    CreateCompatibleDC, DeleteDC, DeleteObject, GetDC, GetDIBits, GetObjectW, ReleaseDC, BITMAPINFO, BITMAPINFOHEADER, BI_RGB,
     DIB_RGB_COLORS, HGDIOBJ,
 };
-use windows::Win32::UI::Shell::ExtractIconExW;
+use windows::Win32::Storage::FileSystem::FILE_ATTRIBUTE_NORMAL;
+use windows::Win32::UI::Shell::{ExtractIconExW, SHGetFileInfoW, SHFILEINFOW, SHGFI_ICON, SHGFI_LARGEICON, SHGFI_SMALLICON, SHGFI_USEFILEATTRIBUTES};
 use windows::Win32::UI::WindowsAndMessaging::{
     DestroyIcon, EnumChildWindows, GetClassNameW, GetForegroundWindow, GetIconInfo, GetWindowRect,
     GetWindowTextLengthW, GetWindowTextW, IsWindow, IsWindowVisible, HICON,
@@ -110,12 +111,19 @@ unsafe extern "system" fn enum_child_proc(hwnd: HWND, lparam: LPARAM) -> windows
 }
 
 pub fn extract_icon_to_png(exe_path: &str, output_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    let (width, height, pixels_rgba) = extract_icon_rgba(exe_path)?;
-    save_rgba_as_png(output_path, width, height, &pixels_rgba)
+    if let Ok((width, height, pixels_rgba)) = extract_icon_rgba_via_extract_icon(exe_path) {
+        return save_rgba_as_png(output_path, width, height, &pixels_rgba);
+    }
+
+    debug!(target: "win32::window", "ExtractIconExW failed for {}, trying SHGetFileInfoW", exe_path);
+    if let Ok((width, height, pixels_rgba)) = extract_icon_rgba_via_shgetfileinfo(exe_path) {
+        return save_rgba_as_png(output_path, width, height, &pixels_rgba);
+    }
+
+    Err("No icon found via ExtractIconExW or SHGetFileInfoW".into())
 }
 
-/// 从 exe/dll 中提取图标，返回 (宽度, 高度, RGBA 像素数据)
-fn extract_icon_rgba(exe_path: &str) -> Result<(i32, i32, Vec<u8>), Box<dyn std::error::Error>> {
+fn extract_icon_rgba_via_extract_icon(exe_path: &str) -> Result<(i32, i32, Vec<u8>), Box<dyn std::error::Error>> {
     unsafe {
         let path_wide: Vec<u16> = exe_path.encode_utf16().chain(Some(0)).collect();
         let mut large = HICON::default();
@@ -127,22 +135,65 @@ fn extract_icon_rgba(exe_path: &str) -> Result<(i32, i32, Vec<u8>), Box<dyn std:
             Some(&mut small as *mut _),
             1,
         );
-        if count == 0 || large.is_invalid() {
-            if !small.is_invalid() {
-                if DestroyIcon(small).is_err() {
-                    debug!(target: "win32::window", "DestroyIcon(small) failed");
-                }
-            }
-            return Err("No icon found".into());
-        }
-        if !small.is_invalid() {
-            if let Err(e) = DestroyIcon(small) {
-                debug!(target: "win32::window", "DestroyIcon(small) failed: {:?}", e);
-            }
+
+        if count == 0 || count == u32::MAX {
+            return Err("ExtractIconExW returned 0 or u32::MAX".into());
         }
 
+        let icon = if !large.is_invalid() {
+            if !small.is_invalid() {
+                let _ = DestroyIcon(small);
+            }
+            large
+        } else if !small.is_invalid() {
+            debug!(target: "win32::window", "Using small icon fallback for {}", exe_path);
+            small
+        } else {
+            return Err("Both large and small icons are invalid".into());
+        };
+
+        extract_icon_rgba_from_hicon(icon)
+    }
+}
+
+fn extract_icon_rgba_via_shgetfileinfo(exe_path: &str) -> Result<(i32, i32, Vec<u8>), Box<dyn std::error::Error>> {
+    unsafe {
+        let path_wide: Vec<u16> = exe_path.encode_utf16().chain(Some(0)).collect();
+        let mut shfi = SHFILEINFOW::default();
+
+        let result = SHGetFileInfoW(
+            PCWSTR(path_wide.as_ptr()),
+            FILE_ATTRIBUTE_NORMAL,
+            Some(&mut shfi as *mut _),
+            std::mem::size_of::<SHFILEINFOW>() as u32,
+            SHGFI_ICON | SHGFI_LARGEICON | SHGFI_USEFILEATTRIBUTES,
+        );
+
+        if result != 0 && !shfi.hIcon.is_invalid() {
+            return extract_icon_rgba_from_hicon(shfi.hIcon);
+        }
+
+        // 回退到小图标
+        let result = SHGetFileInfoW(
+            PCWSTR(path_wide.as_ptr()),
+            FILE_ATTRIBUTE_NORMAL,
+            Some(&mut shfi as *mut _),
+            std::mem::size_of::<SHFILEINFOW>() as u32,
+            SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES,
+        );
+
+        if result != 0 && !shfi.hIcon.is_invalid() {
+            return extract_icon_rgba_from_hicon(shfi.hIcon);
+        }
+
+        Err("SHGetFileInfoW failed to get icon".into())
+    }
+}
+
+fn extract_icon_rgba_from_hicon(icon: HICON) -> Result<(i32, i32, Vec<u8>), Box<dyn std::error::Error>> {
+    unsafe {
         let mut info = windows::Win32::UI::WindowsAndMessaging::ICONINFO::default();
-        if GetIconInfo(large, &mut info as *mut _).is_err() {
+        if GetIconInfo(icon, &mut info as *mut _).is_err() {
             // GetIconInfo 失败时仍需释放可能的 GDI 对象
             if !info.hbmColor.is_invalid() {
                 let _ = DeleteObject(HGDIOBJ::from(info.hbmColor));
@@ -150,13 +201,14 @@ fn extract_icon_rgba(exe_path: &str) -> Result<(i32, i32, Vec<u8>), Box<dyn std:
             if !info.hbmMask.is_invalid() {
                 let _ = DeleteObject(HGDIOBJ::from(info.hbmMask));
             }
-            if DestroyIcon(large).is_err() {
-                debug!(target: "win32::window", "DestroyIcon(large) failed");
+            if DestroyIcon(icon).is_err() {
+                debug!(target: "win32::window", "DestroyIcon failed");
             }
             return Err("GetIconInfo failed".into());
         }
 
         let hdc = GetDC(None);
+        let mem_dc = CreateCompatibleDC(Some(hdc));
 
         let (width, height, hbm_color) = if info.hbmColor.is_invalid() {
             let mut bm = windows::Win32::Graphics::Gdi::BITMAP::default();
@@ -175,6 +227,17 @@ fn extract_icon_rgba(exe_path: &str) -> Result<(i32, i32, Vec<u8>), Box<dyn std:
             );
             (bm.bmWidth, bm.bmHeight, info.hbmColor)
         };
+
+        // 检查宽高是否有效
+        if width == 0 || height == 0 {
+            if !info.hbmColor.is_invalid() {
+                let _ = DeleteObject(HGDIOBJ::from(info.hbmColor));
+            }
+            let _ = DeleteObject(HGDIOBJ::from(info.hbmMask));
+            let _ = ReleaseDC(None, hdc);
+            let _ = DestroyIcon(icon);
+            return Err("Invalid bitmap dimensions (width or height is 0)".into());
+        }
 
         let mut bmi = BITMAPINFO {
             bmiHeader: BITMAPINFOHEADER {
@@ -195,7 +258,7 @@ fn extract_icon_rgba(exe_path: &str) -> Result<(i32, i32, Vec<u8>), Box<dyn std:
 
         let mut pixels = vec![0u8; (width * height * 4) as usize];
         let lines = GetDIBits(
-            hdc,
+            mem_dc,
             hbm_color,
             0,
             height as u32,
@@ -206,50 +269,29 @@ fn extract_icon_rgba(exe_path: &str) -> Result<(i32, i32, Vec<u8>), Box<dyn std:
 
         if lines == 0 {
             if !info.hbmColor.is_invalid() {
-                if !DeleteObject(HGDIOBJ::from(info.hbmColor)).as_bool() {
-                    debug!(target: "win32::window", "DeleteObject(hbmColor) returned false");
-                }
+                let _ = DeleteObject(HGDIOBJ::from(info.hbmColor));
             }
-            if !DeleteObject(HGDIOBJ::from(info.hbmMask)).as_bool() {
-                debug!(target: "win32::window", "DeleteObject(hbmMask) returned false");
-            }
-            if ReleaseDC(None, hdc) == 0 {
-                debug!(target: "win32::window", "ReleaseDC returned 0");
-            }
-            if DestroyIcon(large).is_err() {
-                debug!(target: "win32::window", "DestroyIcon(large) failed");
-            }
+            let _ = DeleteObject(HGDIOBJ::from(info.hbmMask));
+            let _ = DeleteDC(mem_dc);
+            let _ = ReleaseDC(None, hdc);
+            let _ = DestroyIcon(icon);
             return Err("GetDIBits failed".into());
         }
 
+        // 释放资源
         if !info.hbmColor.is_invalid() {
-            if !DeleteObject(HGDIOBJ::from(info.hbmColor)).as_bool() {
-                debug!(target: "win32::window", "DeleteObject(hbmColor) returned false");
-            }
+            let _ = DeleteObject(HGDIOBJ::from(info.hbmColor));
         }
-        if !DeleteObject(HGDIOBJ::from(info.hbmMask)).as_bool() {
-            debug!(target: "win32::window", "DeleteObject(hbmMask) returned false");
-        }
-        if ReleaseDC(None, hdc) == 0 {
-            debug!(target: "win32::window", "ReleaseDC returned 0");
-        }
-        if DestroyIcon(large).is_err() {
-            debug!(target: "win32::window", "DestroyIcon(large) failed");
+        let _ = DeleteObject(HGDIOBJ::from(info.hbmMask));
+        let _ = DeleteDC(mem_dc);
+        let _ = ReleaseDC(None, hdc);
+        let _ = DestroyIcon(icon);
+
+        for chunk in pixels.chunks_exact_mut(4) {
+            chunk.swap(0, 2);
         }
 
-        // 转换 BGRA -> RGBA 返回给调用方
-        let mut rgba_pixels = vec![0u8; (width * height * 4) as usize];
-        for y in 0..height {
-            for x in 0..width {
-                let idx = ((y * width + x) * 4) as usize;
-                rgba_pixels[idx] = pixels[idx + 2];     // R
-                rgba_pixels[idx + 1] = pixels[idx + 1]; // G
-                rgba_pixels[idx + 2] = pixels[idx];     // B
-                rgba_pixels[idx + 3] = pixels[idx + 3]; // A
-            }
-        }
-
-        Ok((width, height, rgba_pixels))
+        Ok((width, height, pixels))
     }
 }
 

@@ -22,8 +22,8 @@ pub fn run(
         .unwrap_or_else(|| {
             std::env::current_exe()
                 .ok()
-                .and_then(|p| p.parent().map(|d| d.to_path_buf().join("Data")))
-                .unwrap_or_else(|| PathBuf::from("Data"))
+                .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+                .unwrap_or_else(|| PathBuf::from("."))
         });
 
     info!(target: "main", "Starting... dataDir={:?}", data_dir);
