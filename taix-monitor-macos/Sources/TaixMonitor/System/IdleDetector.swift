@@ -142,18 +142,13 @@ actor IdleDetector {
 
         lastIdleTime = idleSeconds
 
-        // 判断用户是否活跃（与 Windows 端一致的逻辑）
         let userActive = idleSeconds < config.inactiveThresholdSecs || gamepadActive
 
-        // 处理状态转换（与 Windows 端一致的声音持续检测逻辑）
-        // 注意：soundStart 追踪的是"用户 idle 但声音播放中"的持续时间
         if !userActive && audioPlaying {
-            // 用户 idle 但声音播放中，追踪声音开始时间
             if soundStart == nil {
                 soundStart = Date()
                 Logger.debug("Sound started while idle, tracking duration")
             }
-            // 声音持续播放未超过阈值，保持 Wake 状态（不发送 idleDetected）
             if let start = soundStart, Date().timeIntervalSince(start) < config.maxSoundDurationSecs {
                 lastIdleTime = idleSeconds
                 return
@@ -166,8 +161,14 @@ actor IdleDetector {
             soundStart = nil
         }
 
-        // 计算有效 idle 状态（用户不活跃、无声音、无手柄、超过阈值）
-        let effectiveIdle = !audioPlaying && !gamepadActive && idleSeconds >= config.inactiveThresholdSecs
+        // 计算有效 idle 状态
+        let effectiveIdle: Bool
+        if isIdle {
+            effectiveIdle = !userActive
+        } else {
+            // 当前是 Wake 状态，音频播放可以阻止进入 Sleep
+            effectiveIdle = !audioPlaying && !gamepadActive && idleSeconds >= config.inactiveThresholdSecs
+        }
 
         if effectiveIdle && !isIdle {
             isIdle = true
@@ -175,9 +176,15 @@ actor IdleDetector {
             await publish(kind: .idleDetected)
         } else if !effectiveIdle && isIdle {
             isIdle = false
-            let reason = audioPlaying ? "audio playing" : (gamepadActive ? "gamepad input" : "user activity")
-            Logger.info("System activity resumed (\(reason))")
-            await publish(kind: .activityResumed)
+            // 只有用户活跃或手柄才能触发 activityResumed，音频不能
+            if userActive {
+                Logger.info("System activity resumed (user activity)")
+                await publish(kind: .activityResumed)
+            } else if gamepadActive {
+                Logger.info("System activity resumed (gamepad input)")
+                await publish(kind: .activityResumed)
+            }
+            // 音频播放不触发 activityResumed
         }
     }
 
