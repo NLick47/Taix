@@ -293,16 +293,24 @@ public class DetailPageViewModel : DetailPageModel
         await _appConfig.SaveAsync();
     }
 
+    private static readonly char[] RegexMetaChars = ['^', '$', '[', ']', '(', ')', '{', '}', '|', '+', '\\'];
+
     private bool IsProcessIgnore(string name, string? file)
     {
         var ignoreList = _appConfig.GetConfig().Behavior.IgnoreProcessList;
-        return ignoreList.Any(item => IsProcessMatch(name, file, item));
+        return ignoreList.Contains(name);
     }
 
     private bool IsProcessRegexIgnore(string name, string? file)
     {
         var ignoreList = _appConfig.GetConfig().Behavior.IgnoreProcessList;
-        return ignoreList.Any(item => IsProcessMatch(name, file, item));
+        return ignoreList.Any(item => IsWildcardOrRegexPattern(item) && IsProcessMatch(name, file, item));
+    }
+
+    private static bool IsWildcardOrRegexPattern(string pattern)
+    {
+        // 包含通配符或正则元字符才算是模式匹配
+        return pattern.Contains('*') || pattern.Contains('?') || pattern.IndexOfAny(RegexMetaChars) >= 0;
     }
 
     private static bool IsProcessMatch(string name, string? file, string pattern)
