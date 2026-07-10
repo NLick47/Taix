@@ -37,7 +37,6 @@ public partial class DataPageViewModel : DataPageModel
     private readonly IStateService _stateService;
 
 
-    private List<AppSessionModel> _daySessions = [];
     private List<ChartsDataModel> _dayAppRawData = [];
     private CancellationTokenSource? _updateFilterCts;
     private bool _suppressTimelineFilterUpdate;
@@ -257,7 +256,7 @@ public partial class DataPageViewModel : DataPageModel
                         Data = chartData;
                         TimelineUsageItems = [];
                         MultiTrackItems = [];
-                        _daySessions = [];
+                        DaySessions = [];
                         _dayAppRawData = [];
                     }
                     break;
@@ -277,10 +276,10 @@ public partial class DataPageViewModel : DataPageModel
 
         var sessions = await _dataService.GetAppSessionsAsync(dayStart, dayEnd, ct);
         ct.ThrowIfCancellationRequested();
-        _daySessions = sessions.ToList();
+        DaySessions = sessions.ToList();
 
         var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
-        var daySessions = _daySessions;
+        var daySessions = DaySessions;
 
         var items = await Task.Run(() =>
         {
@@ -378,7 +377,7 @@ public partial class DataPageViewModel : DataPageModel
             return;
         }
 
-        if (_daySessions.Count == 0)
+        if (DaySessions.Count == 0)
         {
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -395,7 +394,7 @@ public partial class DataPageViewModel : DataPageModel
         var startTime = referenceDate.AddHours(startHour);
         var endTime = referenceDate.AddHours(endHour);
 
-        var daySessions = _daySessions;
+        var daySessions = DaySessions;
         var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
         var utcStart = startTime.ToUniversalTime();
         var utcEnd = endTime.ToUniversalTime();

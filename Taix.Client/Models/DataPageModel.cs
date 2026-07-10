@@ -7,6 +7,7 @@ using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Controls.Timeline;
 using Taix.Client.PageState;
+using Taix.Client.Shared.Models;
 
 namespace Taix.Client.Models;
 
@@ -57,6 +58,15 @@ public partial class DataPageModel : ModelBase
     {
         get => _multiTrackItems;
         set { _multiTrackItems = value; OnPropertyChanged(); }
+    }
+
+    private List<AppSessionModel> _daySessions = [];
+
+    [PageState(DataCache = true)]
+    public List<AppSessionModel> DaySessions
+    {
+        get => _daySessions;
+        set { _daySessions = value; OnPropertyChanged(); }
     }
 
     private double _timelineStartHour;
