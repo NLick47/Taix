@@ -39,17 +39,17 @@ public class Imager
         return Cache.IsFailed(BuildCacheKey(filePath, decodeWidth, decodeHeight));
     }
 
-    public static async Task<Bitmap> LoadAsync(string filePath, string? defaultPath = null, int decodeWidth = 0, int decodeHeight = 0, CancellationToken cancellationToken = default)
+    public static async Task<Bitmap> LoadAsync(string filePath, string? defaultPath = null, int decodeWidth = 0, int decodeHeight = 0, bool noCache = false, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(filePath))
             return GetDefaultBitmap(defaultPath);
 
         var cacheKey = BuildCacheKey(filePath, decodeWidth, decodeHeight);
 
-        if (Cache.TryGet(cacheKey, out var cachedBitmap))
+        if (!noCache && Cache.TryGet(cacheKey, out var cachedBitmap))
             return cachedBitmap;
 
-        if (Cache.IsFailed(cacheKey))
+        if (!noCache && Cache.IsFailed(cacheKey))
             return GetDefaultBitmap(defaultPath);
 
         var sw = Stopwatch.StartNew();
@@ -84,6 +84,11 @@ public class Imager
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+            if (noCache)
+            {
+                Logger.Debug($"[Imager] 加载完成(无缓存) [{sw.ElapsedMilliseconds}ms]: {filePath}");
+                return bitmap;
+            }
             var result = Cache.Add(cacheKey, bitmap);
             Logger.Debug($"[Imager] 加载完成 [{sw.ElapsedMilliseconds}ms]: {filePath}");
             return result;
@@ -96,7 +101,8 @@ public class Imager
         catch (Exception ex)
         {
             Logger.Error($"[Imager] 异步加载图片异常 [{sw.ElapsedMilliseconds}ms]: {filePath}", ex);
-            Cache.MarkFailed(cacheKey);
+            if (!noCache)
+                Cache.MarkFailed(cacheKey);
             return GetDefaultBitmap(defaultPath);
         }
     }

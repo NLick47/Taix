@@ -26,6 +26,9 @@ public class Img : TemplatedControl
     public static readonly StyledProperty<int> DecodeHeightProperty =
         AvaloniaProperty.Register<Img, int>(nameof(DecodeHeight));
 
+    public static readonly StyledProperty<bool> NoCacheProperty =
+        AvaloniaProperty.Register<Img, bool>(nameof(NoCache));
+
     public static readonly DirectProperty<Img, string> URLProperty =
         AvaloniaProperty.RegisterDirect<Img, string>(
             nameof(URL),
@@ -65,6 +68,12 @@ public class Img : TemplatedControl
         set => SetValue(DecodeHeightProperty, value);
     }
 
+    public bool NoCache
+    {
+        get => GetValue(NoCacheProperty);
+        set => SetValue(NoCacheProperty, value);
+    }
+
     public string URL
     {
         get => _url;
@@ -93,7 +102,9 @@ public class Img : TemplatedControl
     {
         base.OnDetachedFromVisualTree(e);
         CancelLoading();
-        Resource = Imager.GetDefaultBitmap();
+        // Popup 关闭时内容可能被 detach，但不重置 Resource
+        // 如果使用了 ShouldUseOverlayLayer="True"，每次关闭都会触发 detach
+        // 正常情况下 Popup 只是隐藏，不会触发 detach
     }
 
     private double GetDpiScale()
@@ -124,13 +135,13 @@ public class Img : TemplatedControl
         var decodeWidth = DecodeWidth > 0 ? (int)(DecodeWidth * dpiScale) : 0;
         var decodeHeight = DecodeHeight > 0 ? (int)(DecodeHeight * dpiScale) : 0;
 
-        if (Imager.TryGetFromCache(path, out var cached, decodeWidth, decodeHeight))
+        if (!NoCache && Imager.TryGetFromCache(path, out var cached, decodeWidth, decodeHeight))
         {
             Resource = cached ?? Imager.GetDefaultBitmap();
             return;
         }
 
-        if (Imager.IsFailed(path, decodeWidth, decodeHeight))
+        if (!NoCache && Imager.IsFailed(path, decodeWidth, decodeHeight))
         {
             Resource = Imager.GetDefaultBitmap();
             return;
@@ -160,6 +171,7 @@ public class Img : TemplatedControl
                 path,
                 decodeWidth: decodeWidth,
                 decodeHeight: decodeHeight,
+                noCache: NoCache,
                 cancellationToken: token);
 
             token.ThrowIfCancellationRequested();

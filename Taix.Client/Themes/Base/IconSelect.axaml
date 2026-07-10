@@ -147,7 +147,7 @@
                                                 <DataTemplate>
                                                     <WrapPanel Orientation="Horizontal">
                                                         <Border>
-                                                            <controls:Img URL="{Binding}" Width="25" Height="25" DecodeWidth="25" />
+                                                            <controls:Img URL="{Binding}" Width="25" Height="25" NoCache="True" />
                                                         </Border>
                                                     </WrapPanel>
                                                 </DataTemplate>
