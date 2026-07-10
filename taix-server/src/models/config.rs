@@ -1,7 +1,16 @@
 use crate::constants;
 use serde::{Deserialize, Serialize};
 
-pub const CURRENT_CONFIG_VERSION: u32 = 3;
+/// 当前配置版本号
+/// 添加新字段时必须升级此版本号！
+/// 这样可以确保服务端触发 migrate() 和 persist()，补全缺失字段
+///
+/// 历史版本变更：
+/// - v1: 初始版本
+/// - v2: 添加 Shortcut 配置
+/// - v3: 添加 DataRetentionDays
+/// - v4: 添加 WindowGradientScheme, IsSaveWindowSize, InactiveThreshold, MaxSoundDuration
+pub const CURRENT_CONFIG_VERSION: u32 = 4;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -56,13 +65,11 @@ impl ConfigModel {
         Ok(())
     }
 
+    /// 版本迁移：处理版本升级时的特殊逻辑
+    /// 新增字段由 serde(default) 自动填充，这里只需升级版本号
     pub fn migrate(&mut self) {
         if self.version >= CURRENT_CONFIG_VERSION {
             return;
-        }
-
-        if self.version < 3 {
-            self.general.data_retention_days = 31;
         }
 
         self.version = CURRENT_CONFIG_VERSION;

@@ -25,7 +25,23 @@ public class ApiAppConfig : IAppConfig
     /// </summary>
     private ConfigModel? _serverSnapshot;
 
-    private static string CacheFilePath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.config.cache.json");
+    private static string CacheFilePath
+    {
+        get
+        {
+            if (OperatingSystem.IsMacOS())
+            {
+                return Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Taix",
+                    "app.config.cache.json");
+            }
+
+            return Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "app.config.cache.json");
+        }
+    }
 
     public ApiAppConfig(HttpClient httpClient)
     {
@@ -130,15 +146,7 @@ public class ApiAppConfig : IAppConfig
             {
                 var json = File.ReadAllText(CacheFilePath);
                 var config = JsonSerializer.Deserialize(json, ClientJsonContext.Default.ConfigModel);
-                if (config != null)
-                {
-                    // 版本校验：缓存配置版本必须和当前模型版本一致
-                    if (config.Version == ConfigModel.CurrentVersion)
-                    {
-                        return config;
-                    }
-                    Logger.Warn($"配置缓存版本不匹配（缓存: {config.Version}, 期望: {ConfigModel.CurrentVersion}），将重新加载");
-                }
+                return config;
             }
         }
         catch (Exception ex)
@@ -152,6 +160,12 @@ public class ApiAppConfig : IAppConfig
     {
         try
         {
+            var directory = Path.GetDirectoryName(CacheFilePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
             var json = JsonSerializer.Serialize(config, ClientJsonContext.Default.ConfigModel);
             var tempPath = CacheFilePath + ".tmp";
             File.WriteAllText(tempPath, json);

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <linker>
     <assembly fullname="Taix" preserve="all" />
+    <type fullname="Taix.Client.Resources.Localization.StringResourcesCn" preserve="all" />
+    <type fullname="Taix.Client.Resources.Localization.StringResourcesEn" preserve="all" />
 </linker>
