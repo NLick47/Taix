@@ -183,6 +183,7 @@ pub async fn init_db(db_path: &str, tz_id: &str) -> anyhow::Result<SqlitePool> {
             let steps = [
                 "baseline", "add_columns", "rename_columns", "data_fixes", "indexes",
                 "utc_hourslog", "utc_webbrowse", "utc_appduration", "utc_daily", "utc_daily_rebuild", "defaults",
+                "fix_orphaned_categories",
                 "perf_indexes", "app_sessions", "web_category_url_match",
             ];
             let mut has_pending = false;
@@ -292,6 +293,23 @@ async fn migrate(pool: &SqlitePool, tz_id: &str) -> anyhow::Result<()> {
     if !is_done(&mut tx, "defaults").await? {
         ensure_default_categories(&mut tx).await?;
         mark_done(&mut tx, "defaults").await?;
+    }
+
+    // data_fixes 运行 early 阶段时系统分类尚未创建，需在此处补修孤立记录
+    if !is_done(&mut tx, "fix_orphaned_categories").await? {
+        sqlx::query(
+            "UPDATE AppModels SET CategoryID = (SELECT ID FROM CategoryModels WHERE IsSystem = 1 LIMIT 1) WHERE CategoryID IS NULL OR CategoryID = 0 OR CategoryID NOT IN (SELECT ID FROM CategoryModels)"
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        sqlx::query(
+            "UPDATE WebSiteModels SET CategoryID = (SELECT ID FROM WebSiteCategoryModels WHERE IsSystem = 1 LIMIT 1) WHERE CategoryID IS NULL OR CategoryID = 0 OR CategoryID NOT IN (SELECT ID FROM WebSiteCategoryModels)"
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        mark_done(&mut tx, "fix_orphaned_categories").await?;
     }
 
     if !is_done(&mut tx, "perf_indexes").await? {
