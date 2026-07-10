@@ -1026,9 +1026,6 @@ public class Timeline : Control
     }
 
     /// <summary>
-    /// 绘制高亮边框（来自 MultiTrackTimeline 的段悬浮联动）
-    /// 复用单轨时间轴自身的 hover 风格：暗化非高亮区域 + 亮边框
-    /// </summary>
     private void DrawExternalHoverHighlight(DrawingContext ctx, double pps)
     {
         if (_hoveredTimeRange is not { } range) return;
@@ -1046,13 +1043,14 @@ public class Timeline : Control
         x2 = Math.Min(Bounds.Width, x2);
         if (x2 <= x1) return;
 
-        // 暗化所有色块（非高亮区域）
         var dayStart = Date.Date;
         var dayEnd = dayStart.AddDays(1);
         var isLight = this.ActualThemeVariant == ThemeVariant.Light;
+
+        // 1. 柔和暗化非高亮色块
         var dimBrush = new ImmutableSolidColorBrush(isLight
-            ? Color.FromArgb(0x50, 0x00, 0x00, 0x00)
-            : Color.FromArgb(0x70, 0x00, 0x00, 0x00));
+            ? Color.FromArgb(0x60, 0x00, 0x00, 0x00)
+            : Color.FromArgb(0x75, 0x00, 0x00, 0x00));
 
         foreach (var item in UsageItems ?? [])
         {
@@ -1066,18 +1064,35 @@ public class Timeline : Control
             var iw = Math.Max(DurationToW(drawStart, drawEnd, pps), 1);
             if (ix + iw < 0 || ix > Bounds.Width) continue;
 
-            // 跳过与高亮区域重叠的色块
             if (ix + iw > x1 && ix < x2) continue;
 
             ctx.DrawRectangle(dimBrush, null, new Rect(ix, UsageY, iw, UsageH));
         }
 
-        // 高亮区域：半透明高亮层 + 亮边框
-        if (x2 > x1)
-        {
-            ctx.DrawRectangle(_selectBg, null, new Rect(x1, UsageY, x2 - x1, UsageH));
-            ctx.DrawRectangle(null, _selectPen, new Rect(x1, UsageY, x2 - x1, UsageH));
-        }
+        var accentColor = isLight
+            ? Color.FromArgb(0xCC, 0x2B, 0x20, 0xD9)
+            : Color.FromArgb(0xCC, 0x58, 0xA6, 0xFF);
+
+        // 2. 底部柔光柱（仅轨道区下方，营造悬浮投影感）
+        var glowColor = isLight
+            ? Color.FromArgb(0x14, 0x2B, 0x20, 0xD9)
+            : Color.FromArgb(0x18, 0x58, 0xA6, 0xFF);
+        var glowBrush = new ImmutableSolidColorBrush(glowColor);
+        ctx.DrawRectangle(glowBrush, null,
+            new Rect(x1, UsageY, x2 - x1, UsageH), 6, 6);
+
+        // 3. 顶部标尺指示条（accent color 细条 + 圆角）
+        var rulerBarBrush = new ImmutableSolidColorBrush(accentColor);
+        ctx.DrawRectangle(rulerBarBrush, null,
+            new Rect(x1, HeaderH - 3, x2 - x1, 3), 1.5, 1.5);
+
+        // 4. 两侧纤细引导线（虚线感：短线段 + 低不透明度）
+        var guideColor = isLight
+            ? Color.FromArgb(0x60, 0x2B, 0x20, 0xD9)
+            : Color.FromArgb(0x70, 0x58, 0xA6, 0xFF);
+        var guidePen = new Pen(new ImmutableSolidColorBrush(guideColor), 1);
+        ctx.DrawLine(guidePen, new Point(x1, HeaderH), new Point(x1, Bounds.Height));
+        ctx.DrawLine(guidePen, new Point(x2, HeaderH), new Point(x2, Bounds.Height));
     }
 
     private bool IsIdle(TimelineUsageItem i) => TimelineHelpers.IsIdleItem(i.Name);
