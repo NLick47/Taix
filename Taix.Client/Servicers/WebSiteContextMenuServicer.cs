@@ -226,6 +226,7 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
         data.BadgeList = newBadgeList;
 
         await _appConfig.SaveAsync();
+        _mainViewModel?.RefreshCurrentPage();
     }
 
 

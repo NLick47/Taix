@@ -356,6 +356,7 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         }
 
         await _appConfig.SaveAsync();
+        _mainViewModel?.RefreshCurrentPage();
     }
 
     private void AddIgnoreBadge(ChartsDataModel data)

@@ -228,6 +228,15 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
         _isNavigatingBack = false;
     }
 
+    /// <summary>
+    /// 刷新当前页面数据
+    /// </summary>
+    public void RefreshCurrentPage()
+    {
+        if (PageContainer?.CurrentViewModel != null)
+            _ = PageContainer.CurrentViewModel.RefreshAsync();
+    }
+
     private bool _isStartupInitCompleted;
 
     public void LoadDefaultPage()
