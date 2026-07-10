@@ -1,7 +1,17 @@
 use anyhow::{bail, Context, Result};
+use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 
 use super::Platform;
+
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+
+fn silent_cmd(program: &str) -> std::process::Command {
+    let mut cmd = std::process::Command::new(program);
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    cmd
+}
 
 impl Platform for () {
     fn create_shortcut(target: &Path, shortcut: &Path, _name: &str) -> Result<()> {
@@ -19,7 +29,7 @@ impl Platform for () {
     fn register_startup(exe_path: &Path, _name: &str) -> anyhow::Result<()> {
         let exe_str = exe_path.to_str().context("Invalid exe path")?;
 
-        let shell_output = std::process::Command::new(exe_str)
+        let shell_output = silent_cmd(exe_str)
             .arg("install")
             .output()
             .context("Failed to run taix-shell install")?;
@@ -38,7 +48,7 @@ impl Platform for () {
         let shell_exe = install_dir.join("taix-shell.exe");
 
         if shell_exe.exists() {
-            let output = std::process::Command::new(&shell_exe)
+            let output = silent_cmd(&shell_exe.to_string_lossy())
                 .arg("uninstall")
                 .output();
 
@@ -49,7 +59,7 @@ impl Platform for () {
             }
         }
 
-        let _ = std::process::Command::new("schtasks")
+        let _ = silent_cmd("schtasks")
             .args(["/DELETE", "/F", "/TN", name])
             .output();
 
@@ -57,13 +67,13 @@ impl Platform for () {
     }
 
     fn stop_scheduled_task(name: &str) {
-        let _ = std::process::Command::new("schtasks")
+        let _ = silent_cmd("schtasks")
             .args(["/END", "/TN", name])
             .output();
     }
 
     fn stop_process(name: &str) -> Result<bool> {
-        let output = std::process::Command::new("taskkill")
+        let output = silent_cmd("taskkill")
             .args(["/F", "/IM", &format!("{}.exe", name)])
             .output()
             .context("Failed to run taskkill")?;
@@ -87,7 +97,7 @@ impl Platform for () {
     }
 
     fn is_process_running(name: &str) -> bool {
-        let output = std::process::Command::new("tasklist")
+        let output = silent_cmd("tasklist")
             .args(["/FI", &format!("IMAGENAME eq {}.exe", name), "/NH"])
             .output();
 
@@ -138,7 +148,7 @@ $sc.Save()
         shortcut_str, target_str, work_dir, target_str
     );
 
-    let output = std::process::Command::new("powershell")
+    let output = silent_cmd("powershell")
         .args(["-NoProfile", "-NonInteractive", "-Command", &script])
         .output()
         .context("Failed to run PowerShell")?;
@@ -157,7 +167,7 @@ $sc.Save()
 pub fn remove_defender_exclusion(path: &Path) -> Result<()> {
     let path_str = path.to_str().context("Invalid path")?;
 
-    let _ = std::process::Command::new("powershell")
+    let _ = silent_cmd("powershell")
         .args([
             "-NoProfile",
             "-Command",
@@ -170,7 +180,7 @@ pub fn remove_defender_exclusion(path: &Path) -> Result<()> {
 
 #[allow(dead_code)]
 pub fn is_elevated() -> bool {
-    let output = std::process::Command::new("net")
+    let output = silent_cmd("net")
         .args(["session"])
         .output();
 

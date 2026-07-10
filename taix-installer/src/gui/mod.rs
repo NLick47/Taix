@@ -2,6 +2,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
 use anyhow::Result;
 use image::GenericImageView;
 use serde::Deserialize;
@@ -16,6 +19,10 @@ use wry::WebViewBuilder;
 use crate::platform;
 use crate::platform::restore_backup;
 use crate::sfx;
+use crate::i18n::I18n;
+
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 const WINDOW_WIDTH: f64 = 660.0;
 const WINDOW_HEIGHT: f64 = 480.0;
@@ -41,10 +48,39 @@ enum InstEvent {
 struct IpcMessage {
     cmd: String,
     payload: Option<serde_json::Value>,
+    #[serde(default)]
+    lang: Option<String>,
 }
 
 fn frontend_html() -> &'static str {
     include_str!("../../frontend/index.html")
+}
+
+fn get_window_title() -> String {
+    // 检测系统语言
+    #[cfg(target_os = "windows")]
+    {
+        use windows::Win32::Globalization::GetUserDefaultUILanguage;
+        let lang_id = unsafe { GetUserDefaultUILanguage() };
+        // LANG_CHINESE = 0x04 (primary language ID)
+        let primary_lang = lang_id & 0x3FF;
+        if primary_lang == 0x04 {
+            return "Taix 安装程序".to_string();
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let lang = std::env::var("LANG")
+            .or_else(|_| std::env::var("LC_ALL"))
+            .or_else(|_| std::env::var("LC_MESSAGES"))
+            .unwrap_or_default();
+        if lang.to_lowercase().starts_with("zh") {
+            return "Taix 安装程序".to_string();
+        }
+    }
+
+    "Taix Installer".to_string()
 }
 
 fn load_icon() -> Option<Icon> {
@@ -61,13 +97,29 @@ pub fn run_gui() {
     let proxy = event_loop.create_proxy();
 
     let window = WindowBuilder::new()
-        .with_title("Taix 安装程序")
+        .with_title(get_window_title())
         .with_inner_size(tao::dpi::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
         .with_resizable(false)
         .with_decorations(true)
         .with_window_icon(load_icon())
         .build(&event_loop)
         .expect("Failed to create window");
+
+    // 居中窗口（需要考虑 scale_factor）
+    if let Some(monitor) = window.primary_monitor() {
+        let monitor_size = monitor.size(); // Physical size
+        let scale_factor = monitor.scale_factor();
+
+        // 转换为 logical 尺寸
+        let monitor_width_logical = monitor_size.width as f64 / scale_factor;
+        let monitor_height_logical = monitor_size.height as f64 / scale_factor;
+
+        // 计算居中位置
+        let x = (monitor_width_logical - WINDOW_WIDTH) / 2.0;
+        let y = (monitor_height_logical - WINDOW_HEIGHT) / 2.0;
+
+        window.set_outer_position(tao::dpi::LogicalPosition::new(x, y));
+    }
 
     #[cfg(target_os = "windows")]
     apply_window_style(&window);
@@ -231,6 +283,8 @@ fn handle_ipc(
     worker_running: &Arc<AtomicBool>,
     hwnd: isize,
 ) {
+    let lang = msg.lang.as_deref();
+
     match msg.cmd.as_str() {
         "get_status" => {
             let has_payload = sfx::has_payload();
@@ -253,14 +307,15 @@ fn handle_ipc(
             let cmd = msg.cmd.clone();
             let proxy = proxy.clone();
             let worker_running = worker_running.clone();
+            let i18n_clone = I18n::new(lang);
             worker_running.store(true, Ordering::SeqCst);
 
             thread::spawn(move || {
                 let result = match cmd.as_str() {
-                    "install" => run_install_with_progress(dir, &proxy),
-                    "update" => run_update_with_progress(dir, &proxy),
-                    "uninstall" => run_uninstall_with_progress(dir, &proxy),
-                    _ => Err(anyhow::anyhow!("未知操作")),
+                    "install" => run_install_with_progress(dir, &proxy, &i18n_clone),
+                    "update" => run_update_with_progress(dir, &proxy, &i18n_clone),
+                    "uninstall" => run_uninstall_with_progress(dir, &proxy, &i18n_clone),
+                    _ => Err(anyhow::anyhow!("Unknown operation")),
                 };
 
                 match result {
@@ -313,9 +368,10 @@ fn handle_ipc(
 fn run_install_with_progress(
     dir: Option<String>,
     proxy: &EventLoopProxy<InstEvent>,
+    i18n: &I18n,
 ) -> Result<String> {
     if !sfx::has_payload() {
-        anyhow::bail!("安装程序无效");
+        anyhow::bail!("{}", i18n.err_invalid_installer());
     }
 
     let dest = if let Some(ref d) = dir {
@@ -332,7 +388,7 @@ fn run_install_with_progress(
         });
     }
 
-    progress(1, 4, "检查运行中的进程...", proxy);
+    progress(1, 4, i18n.step_check_process(), proxy);
     // 先停看门狗，避免进程被自动重启
     <() as platform::Platform>::stop_scheduled_task(platform::TASK_NAME);
 
@@ -351,18 +407,15 @@ fn run_install_with_progress(
             retries += 1;
         }
         if <() as platform::Platform>::is_process_running(proc_name) {
-            return Err(anyhow::anyhow!(
-                "无法停止进程: {}\n请手动关闭后重试",
-                proc_name
-            ));
+            return Err(anyhow::anyhow!("{}", i18n.err_cannot_stop_process(proc_name)));
         }
     }
 
-    progress(2, 4, "解压文件...", proxy);
+    progress(2, 4, i18n.step_extract(), proxy);
     let _ = proxy.send_event(InstEvent::Extracting);
     sfx::extract_to(&dest)?;
 
-    progress(3, 4, "创建快捷方式...", proxy);
+    progress(3, 4, i18n.step_shortcut(), proxy);
     let client_exe = dest.join("Taix.exe");
     let start_menu_dir = <() as platform::Platform>::start_menu_dir();
     let start_menu_sc = start_menu_dir.join("Taix.lnk");
@@ -370,7 +423,7 @@ fn run_install_with_progress(
         <() as platform::Platform>::create_shortcut(&client_exe, &start_menu_sc, "Taix")?;
     }
 
-    progress(4, 4, "注册开机启动...", proxy);
+    progress(4, 4, i18n.step_register_startup(), proxy);
     let shell_exe = dest.join("taix-shell.exe");
     if shell_exe.exists() {
         <() as platform::Platform>::register_startup(&shell_exe, platform::TASK_NAME)?;
@@ -381,15 +434,16 @@ fn run_install_with_progress(
 
     platform::save_install_location(&dest)?;
 
-    Ok(format!("安装完成!\n安装目录: {}", dest.display()))
+    Ok(i18n.complete_install(&dest.display().to_string()))
 }
 
 fn run_update_with_progress(
     dir: Option<String>,
     proxy: &EventLoopProxy<InstEvent>,
+    i18n: &I18n,
 ) -> Result<String> {
     if !sfx::has_payload() {
-        anyhow::bail!("安装程序无效");
+        anyhow::bail!("{}", i18n.err_invalid_installer());
     }
 
     let install_dir = if let Some(ref d) = dir {
@@ -399,7 +453,7 @@ fn run_update_with_progress(
     };
 
     if !install_dir.exists() {
-        anyhow::bail!("未找到 Taix 安装");
+        anyhow::bail!("{}", i18n.err_no_install());
     }
 
     fn progress(step: u32, total: u32, msg: &str, proxy: &EventLoopProxy<InstEvent>) {
@@ -410,7 +464,7 @@ fn run_update_with_progress(
         });
     }
 
-    progress(1, 5, "停止运行中的进程...", proxy);
+    progress(1, 5, i18n.step_stop_process(), proxy);
     // 先停看门狗，避免进程被自动重启
     <() as platform::Platform>::stop_scheduled_task(platform::TASK_NAME);
 
@@ -428,14 +482,11 @@ fn run_update_with_progress(
             retries += 1;
         }
         if <() as platform::Platform>::is_process_running(proc_name) {
-            return Err(anyhow::anyhow!(
-                "无法停止进程: {}\n请手动关闭后重试",
-                proc_name
-            ));
+            return Err(anyhow::anyhow!("{}", i18n.err_cannot_stop_process(proc_name)));
         }
     }
 
-    progress(2, 5, "备份当前版本...", proxy);
+    progress(2, 5, i18n.step_backup(), proxy);
     let backup_dir = install_dir.with_extension("bak");
     if backup_dir.exists() {
         let _ = std::fs::remove_dir_all(&backup_dir);
@@ -455,21 +506,21 @@ fn run_update_with_progress(
         }
     }
 
-    progress(3, 5, "解压更新文件...", proxy);
+    progress(3, 5, i18n.step_extract_update(), proxy);
     let _ = proxy.send_event(InstEvent::Extracting);
     sfx::extract_to(&install_dir)?;
 
-    progress(4, 5, "验证安装...", proxy);
+    progress(4, 5, i18n.step_verify(), proxy);
     let critical_files = ["Taix.exe", "taix-shell.exe", "taix-server.exe", "taix-monitor-windows.exe"];
     for file in &critical_files {
         if !install_dir.join(file).exists() {
-            let _ = proxy.send_event(InstEvent::StatusText("更新失败，正在恢复备份...".into()));
+            let _ = proxy.send_event(InstEvent::StatusText(i18n.msg_restore_backup().to_string()));
             restore_backup(&backup_dir, &install_dir)?;
-            anyhow::bail!("缺少核心文件: {}", file);
+            anyhow::bail!("{}", i18n.err_missing_file(file));
         }
     }
 
-    progress(5, 5, "重启服务...", proxy);
+    progress(5, 5, i18n.step_restart(), proxy);
     let shell_exe = install_dir.join("taix-shell.exe");
     <() as platform::Platform>::register_startup(&shell_exe, platform::TASK_NAME)?;
     let _ = <() as platform::Platform>::start_process(&shell_exe);
@@ -478,12 +529,13 @@ fn run_update_with_progress(
     let _ = std::fs::remove_dir_all(&backup_dir);
     platform::save_install_location(&install_dir)?;
 
-    Ok(format!("更新完成!\n安装目录: {}", install_dir.display()))
+    Ok(i18n.complete_update(&install_dir.display().to_string()))
 }
 
 fn run_uninstall_with_progress(
     dir: Option<String>,
     proxy: &EventLoopProxy<InstEvent>,
+    i18n: &I18n,
 ) -> Result<String> {
     let install_dir = if let Some(ref d) = dir {
         std::path::PathBuf::from(d)
@@ -492,7 +544,7 @@ fn run_uninstall_with_progress(
     };
 
     if !install_dir.exists() {
-        anyhow::bail!("Taix 安装目录不存在");
+        anyhow::bail!("{}", i18n.err_install_dir_not_exist());
     }
 
     fn progress(step: u32, total: u32, msg: &str, proxy: &EventLoopProxy<InstEvent>) {
@@ -503,19 +555,19 @@ fn run_uninstall_with_progress(
         });
     }
 
-    progress(1, 4, "停止运行中的进程...", proxy);
+    progress(1, 4, i18n.step_stop_process(), proxy);
     for proc_name in platform::PROCESSES {
         let _ = <() as platform::Platform>::stop_process(proc_name);
     }
     std::thread::sleep(std::time::Duration::from_secs(1));
 
-    progress(2, 4, "删除快捷方式...", proxy);
+    progress(2, 4, i18n.step_remove_shortcut(), proxy);
     let start_menu_sc = <() as platform::Platform>::start_menu_dir().join("Taix.lnk");
     let desktop_sc = <() as platform::Platform>::desktop_dir().join("Taix.lnk");
     let _ = <() as platform::Platform>::remove_shortcut(&start_menu_sc);
     let _ = <() as platform::Platform>::remove_shortcut(&desktop_sc);
 
-    progress(3, 4, "注销开机启动...", proxy);
+    progress(3, 4, i18n.step_unregister(), proxy);
     let _ = <() as platform::Platform>::unregister_startup(platform::TASK_NAME);
 
     #[cfg(target_os = "windows")]
@@ -525,17 +577,19 @@ fn run_uninstall_with_progress(
         for key in &old_keys {
             let _ = std::process::Command::new("reg")
                 .args(["delete", &format!("HKCU\\{}", reg_path), "/v", key, "/f"])
+                .creation_flags(CREATE_NO_WINDOW)
                 .output();
         }
         let legacy_tasks = ["TaixMonitor", "TaixServer"];
         for task in &legacy_tasks {
             let _ = std::process::Command::new("schtasks")
                 .args(["/DELETE", "/F", "/TN", task])
+                .creation_flags(CREATE_NO_WINDOW)
                 .output();
         }
     }
 
-    progress(4, 4, "删除程序文件...", proxy);
+    progress(4, 4, i18n.step_delete_files(), proxy);
     let exe_files = [
         "Taix.exe",
         "taix-shell.exe",
@@ -555,7 +609,7 @@ fn run_uninstall_with_progress(
 
     platform::remove_install_location()?;
 
-    Ok("卸载完成!\n注意: 用户数据已保留".to_string())
+    Ok(i18n.complete_uninstall().to_string())
 }
 
 fn browse_folder(default: &str, hwnd: isize) -> Option<String> {

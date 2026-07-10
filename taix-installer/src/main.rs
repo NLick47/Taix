@@ -1,6 +1,7 @@
 #![cfg_attr(feature = "gui", windows_subsystem = "windows")]
 
 mod gui;
+mod i18n;
 mod install;
 mod platform;
 mod sfx;
