@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
-using System.Reactive.Disposables;
 using System.Reactive.Disposables.Fluent;
 using System.Threading;
 using System.Text.RegularExpressions;
@@ -235,9 +234,17 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
     {
         if (WebSite == null) return;
         await _webData.UpdateWebSitesCategoryAsync(new[] { WebSite.ID }, categoryId);
+        var categoryModel = Categories.FirstOrDefault(m => m.Id == categoryId);
         WebSite = WebSite with { CategoryID = categoryId };
         if (Category == null || categoryId != Category.Id)
             Category = Categories.FirstOrDefault(m => m.Id == WebSite.CategoryID);
+        NotifySourcePageRefresh();
+    }
+
+    private void NotifySourcePageRefresh()
+    {
+        var stateService = ServiceLocator.GetService<IStateService>();
+        stateService?.Set("PageRefresh", "true");
     }
 
     private async Task OnPageCommandAsync(object obj)
@@ -350,14 +357,16 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
             _setCategoryMenuItem.Items.Add(categoryMenu);
         }
 
-        var sysCategory = sysCategories.FirstOrDefault();
-        var sysCategoryModel = sysCategory?.Data as WebSiteCategoryModel;
-        if (categoryId != 0 && sysCategoryModel != null && categoryId != sysCategoryModel.ID)
+        // 如果当前网站属于用户自定义分类，显示"未分类"选项
+        var currentCategory = sysCategories.FirstOrDefault(c => c.Id == categoryId);
+        if (currentCategory == null && categoryId != 0)
         {
+            // 当前是用户分类，显示"未分类"选项
             if (userCategories.Count > 0)
             {
                 _setCategoryMenuItem.Items.Add(new Separator());
             }
+            var sysCategory = sysCategories.FirstOrDefault();
             var un = new MenuItem
             {
                 Header = sysCategory?.Name ?? ResourceStrings.Uncategorized,
@@ -403,6 +412,7 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
             WebSite = WebSite with { Alias = input };
             var updated = await _webData.UpdateAsync(WebSite);
             if (updated != null) WebSite = updated;
+            NotifySourcePageRefresh();
             _toastService.Success(ResourceStrings.AliasUpdated);
         }
         catch
@@ -444,7 +454,9 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
     {
         if (WebSite == null) return;
         await _webData.UpdateWebSitesCategoryAsync(new[] { WebSite.ID }, 0);
-        Category = null;
+        WebSite = WebSite with { CategoryID = 0 };
+        Category = Categories.FirstOrDefault(m => m.Data is WebSiteCategoryModel wc && wc.IsSystem);
+        NotifySourcePageRefresh();
     }
 
     private bool IsUrlIgnore(string url)

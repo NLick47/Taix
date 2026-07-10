@@ -233,7 +233,7 @@ public class DetailPageViewModel : DetailPageModel
                 Name = item.Name
             };
             list.Add(option);
-            if (categoryId > 0 && categoryId == option.Id)
+            if (categoryId == option.Id)
                 Category = option;
         }
         Categorys = list;
@@ -244,15 +244,15 @@ public class DetailPageViewModel : DetailPageModel
         if (App == null || Category?.Data is not CategoryModel cat) return;
         if ((App.Category == null && Category != null) || (Category != null && App.Category?.Name != Category.Name))
         {
-            App = App with { Category = cat };
+            App = App with { CategoryID = cat.ID, Category = cat };
             var app = await _appDataService.GetAppAsync(App.ID);
             if (app != null)
             {
                 app = app with { CategoryID = cat.ID };
                 await _appDataService.UpdateAppAsync(app);
+                NotifySourcePageRefresh();
             }
         }
-        await Task.CompletedTask;
     }
 
     private async Task OnClearSelectMonthDataAsync(object _)
@@ -432,8 +432,8 @@ public class DetailPageViewModel : DetailPageModel
         var sysCategories = Categorys.Where(m => m.Data is CategoryModel c && c.IsSystem).ToList();
         var userCategories = Categorys.Where(m => m.Data is CategoryModel c && !c.IsSystem).ToList();
 
-        // 系统分类
-        foreach (var category in sysCategories)
+        // 用户分类
+        foreach (var category in userCategories)
         {
             var categoryMenu = new MenuItem
             {
@@ -445,28 +445,16 @@ public class DetailPageViewModel : DetailPageModel
             _setCategoryMenuItem.Items.Add(categoryMenu);
         }
 
-        // 用户分类
-        if (userCategories.Count > 0)
+        // 如果当前应用属于用户自定义分类，显示"未分类"选项
+        var currentCategory = sysCategories.FirstOrDefault(c => c.Id == categoryId);
+        if (currentCategory == null && categoryId != 0)
         {
-            _setCategoryMenuItem.Items.Add(new Separator());
-            foreach (var category in userCategories)
+            // 当前是用户分类，显示"未分类"选项
+            if (userCategories.Count > 0)
             {
-                var categoryMenu = new MenuItem
-                {
-                    Header = category.Name,
-                    ToggleType = MenuItemToggleType.Radio,
-                    IsChecked = categoryId == category.Id,
-                    Command = ReactiveCommand.CreateFromTask(async () => await UpdateCategory(category.Data as CategoryModel))
-                };
-                _setCategoryMenuItem.Items.Add(categoryMenu);
+                _setCategoryMenuItem.Items.Add(new Separator());
             }
-        }
-
-        var sysCategory = sysCategories.FirstOrDefault();
-        var sysCategoryModel = sysCategory?.Data as CategoryModel;
-        if (categoryId != 0 && sysCategoryModel != null && categoryId != sysCategoryModel.ID)
-        {
-            _setCategoryMenuItem.Items.Add(new Separator());
+            var sysCategory = sysCategories.FirstOrDefault();
             var un = new MenuItem
             {
                 Header = sysCategory?.Name ?? ResourceStrings.Uncategorized,
@@ -505,12 +493,22 @@ public class DetailPageViewModel : DetailPageModel
             app = app with { Alias = input };
             await _appDataService.UpdateAppAsync(app);
             App = app;
+
+            // 通知源页面刷新
+            NotifySourcePageRefresh();
             _toastService.Success(ResourceStrings.AliasUpdated);
         }
         catch
         {
             // 输入取消，无需处理
         }
+    }
+
+    private void NotifySourcePageRefresh()
+    {
+        // 通过 StateService 传递刷新标记
+        var stateService = ServiceLocator.GetService<IStateService>();
+        stateService?.Set("PageRefresh", "true");
     }
 
     private async void OnWhiteListAction()
@@ -532,10 +530,16 @@ public class DetailPageViewModel : DetailPageModel
 
     private async Task ClearCategory(int appId)
     {
+        if (App == null) return;
         var app = await _appDataService.GetAppAsync(appId);
         if (app == null) return;
         app = app with { CategoryID = 0, Category = null };
         await _appDataService.UpdateAppAsync(app);
+
+        App = App with { CategoryID = 0, Category = null };
+        Category = Categorys.FirstOrDefault(m => m.Data is CategoryModel c && c.IsSystem);
+
+        NotifySourcePageRefresh();
     }
 
     private async Task UpdateCategory(CategoryModel? category)
@@ -546,8 +550,11 @@ public class DetailPageViewModel : DetailPageModel
         app = app with { CategoryID = category.ID, Category = category };
         await _appDataService.UpdateAppAsync(app);
 
+        App = App with { CategoryID = category.ID, Category = category };
         if (Category == null || category.ID != Category.Id)
             Category = Categorys.FirstOrDefault(m => m.Id == category.ID);
+
+        NotifySourcePageRefresh();
     }
 
     #region 柱状图图表数据加载

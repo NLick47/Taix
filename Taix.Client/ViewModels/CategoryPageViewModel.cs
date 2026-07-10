@@ -71,11 +71,11 @@ public class CategoryPageViewModel : CategoryPageModel
         WhenPropertyChanged(this, x => x.ShowType, _ => ExecuteAsync(LoadDataCoreAsync)).DisposeWith(Disposables);
     }
 
-    public override Task OnNavigatedToAsync()
+    public override async Task OnNavigatedToAsync()
     {
         TryRestoreState(_navigationService, _stateService);
-        _ = ExecuteAsync(LoadDataCoreAsync);
-        return Task.CompletedTask;
+        await ExecuteAsync(LoadDataCoreAsync);
+        await TryRefreshIfNeededAsync();
     }
 
     public override void OnNavigatedFrom()

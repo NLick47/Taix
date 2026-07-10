@@ -318,14 +318,8 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
         appToUpdate = appToUpdate with { Alias = newAlias };
         await _appData.UpdateAppAsync(appToUpdate);
 
-        // 更新UI显示
-        var data = _contextMenu.Tag as ChartsDataModel;
-        if (data != null)
-        {
-            data.Name = string.IsNullOrEmpty(newAlias) ? appToUpdate.Description : newAlias;
-        }
-
         _mainViewModel?.Success(ResourceStrings.AliasUpdated);
+        _mainViewModel?.RefreshCurrentPage();
     }
 
     private async void BlockMenuItem_Click(object? sender, PointerPressedEventArgs e)
@@ -401,18 +395,12 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
 
     private async Task SetAppCategoryAsync(int appId, CategoryModel category)
     {
-        var data = _contextMenu.Tag as ChartsDataModel;
-        UpdateCategoryBadge(data, category);
-
         var app = await _appData.GetAppAsync(appId);
         if (app == null) return;
         var updatedApp = app with { CategoryID = category.ID, Category = category };
         await _appData.UpdateAppAsync(updatedApp);
 
-        if (data?.Data is DailyLogModel dailyLog)
-            dailyLog.AppModel = updatedApp;
-        else if (data?.Data is HoursLogModel hoursLog)
-            hoursLog.AppModel = updatedApp;
+        _mainViewModel?.RefreshCurrentPage();
     }
 
     private async Task CreateNewCategoryAndAssignAppAsync(IReadOnlyList<CategoryModel> existingCategories)
@@ -468,18 +456,12 @@ public class AppContextMenuServicer : IAppContextMenuServicer, IDisposable
 
     private async Task ClearAppCategoryAsync(int appId)
     {
-        var data = _contextMenu.Tag as ChartsDataModel;
-        if(data == null) return;
-        data.BadgeList = new List<ChartBadgeModel>();
         var app = await _appData.GetAppAsync(appId);
         if (app == null) return;
         var updatedApp = app with { CategoryID = 0, Category = null };
         await _appData.UpdateAppAsync(updatedApp);
 
-        if (data.Data is DailyLogModel dailyLog)
-            dailyLog.AppModel = updatedApp;
-        else if (data.Data is HoursLogModel hoursLog)
-            hoursLog.AppModel = updatedApp;
+        _mainViewModel?.RefreshCurrentPage();
     }
 
     private void OpenDirMenuItem_Click(object? sender, PointerPressedEventArgs e)

@@ -10,6 +10,7 @@ using ReactiveUI;
 using ReactiveUI.Avalonia;
 using Taix.Client.Controls.Select;
 using Taix.Client.Logging;
+using Taix.Client.Servicers.Interfaces;
 
 namespace Taix.Client.Models;
 
@@ -152,10 +153,21 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
 
     public virtual Task OnNavigatedToAsync()
     {
-        return Task.CompletedTask;
+        return TryRefreshIfNeededAsync();
     }
 
-    // 全局快捷键触发的"刷新当前页"，默认空实现，子类按需重写
+    /// <summary>
+    /// 检测刷新标记，如有则调用 RefreshAsync
+    /// </summary>
+    protected async Task TryRefreshIfNeededAsync()
+    {
+        if (ServiceLocator.GetService<IStateService>() is { } stateService && stateService.HasState<string>("PageRefresh"))
+        {
+            stateService.Remove<string>("PageRefresh");
+            await RefreshAsync();
+        }
+    }
+
     public virtual Task RefreshAsync()
     {
         return Task.CompletedTask;

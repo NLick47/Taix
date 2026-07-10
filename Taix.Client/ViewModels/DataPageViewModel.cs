@@ -163,14 +163,17 @@ public partial class DataPageViewModel : DataPageModel
     }
 
 
-    public override Task OnNavigatedToAsync()
+    public override async Task OnNavigatedToAsync()
     {
         var restored = TryRestoreState(_navigationService, _stateService);
         if (!restored)
         {
-            _ = LoadDataAsync(DayDate, 0);
+            await LoadDataAsync(DayDate, 0);
         }
-        return Task.CompletedTask;
+        else
+        {
+            await TryRefreshIfNeededAsync();
+        }
     }
 
     public override void OnNavigatedFrom()

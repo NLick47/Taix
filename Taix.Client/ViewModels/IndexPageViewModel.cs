@@ -107,14 +107,17 @@ public partial class IndexPageViewModel : IndexPageModel
         MoreType = MoreTypeOptions[0];
     }
 
-    public override Task OnNavigatedToAsync()
+    public override async Task OnNavigatedToAsync()
     {
         var restored = TryRestoreState(_navigationService, _stateService);
         if (!restored)
         {
-            _ = LoadDataAsync();
+            await LoadDataAsync();
         }
-        return Task.CompletedTask;
+        else
+        {
+            await TryRefreshIfNeededAsync();
+        }
     }
 
     public override void OnNavigatedFrom()

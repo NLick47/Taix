@@ -136,12 +136,11 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
                 return true;
             });
 
-        data.Name = string.IsNullOrEmpty(input) ? site.Title : input;
         site = site with { Alias = input };
-
         await _webData.UpdateAsync(site);
 
         _mainViewModel?.Success(ResourceStrings.AliasUpdated);
+        _mainViewModel?.RefreshCurrentPage();
     }
 
     private async void _menu_ContextMenuOpening(object? sender, CancelEventArgs e)
@@ -277,40 +276,19 @@ public class WebSiteContextMenuServicer : IWebSiteContextMenuServicer, IDisposab
     private async Task ClearSiteCategoryAsync()
     {
         var data = _menu.Tag as ChartsDataModel;
-        if (data != null)
-        {
-            var site = data.Data as WebSiteModel;
-            await _webData.UpdateWebSitesCategoryAsync(new[] { site.ID }, 0);
-            data.Data = site with { CategoryID = 0, Category = null };
-            data.BadgeList = new List<ChartBadgeModel>();
-        }
+        if (data?.Data is not WebSiteModel site) return;
+        await _webData.UpdateWebSitesCategoryAsync(new[] { site.ID }, 0);
+
+        _mainViewModel?.RefreshCurrentPage();
     }
 
 
     private async Task UpdateSiteCategoryAsync(ChartsDataModel data, int categoryId)
     {
-        var category = await _webData.GetWebSiteCategoryAsync(categoryId);
-        if (category != null)
-        {
-            var site = data.Data as WebSiteModel;
-            await _webData.UpdateWebSitesCategoryAsync(new[] { site.ID }, categoryId);
-            data.Data = site with { CategoryID = categoryId, Category = category };
+        if (data.Data is not WebSiteModel site) return;
+        await _webData.UpdateWebSitesCategoryAsync(new[] { site.ID }, categoryId);
 
-            var newBadgeList = new List<ChartBadgeModel>();
-            if (data.BadgeList != null)
-            {
-                var otherBadge = data.BadgeList.Where(m => m.Type != ChartBadgeType.Category).ToList();
-                newBadgeList.AddRange(otherBadge);
-            }
-
-            newBadgeList.Add(new ChartBadgeModel
-            {
-                Name = category.Name,
-                Color = category.Color,
-                Type = ChartBadgeType.Category
-            });
-            data.BadgeList = newBadgeList;
-        }
+        _mainViewModel?.RefreshCurrentPage();
     }
 
     private async Task CreateNewCategoryAndAssignSiteAsync(IReadOnlyList<WebSiteCategoryModel> existingCategories)

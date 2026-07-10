@@ -118,14 +118,17 @@ public partial class ChartPageViewModel : ChartPageModel
             .DisposeWith(Disposables);
     }
 
-    public override Task OnNavigatedToAsync()
+    public override async Task OnNavigatedToAsync()
     {
         var restored = TryRestoreState(_navigationService, _stateService);
         if (!restored)
         {
-            _ = ExecuteAsync(LoadDataAsync);
+            await ExecuteAsync(LoadDataAsync);
         }
-        return Task.CompletedTask;
+        else
+        {
+            await TryRefreshIfNeededAsync();
+        }
     }
 
     public override void OnNavigatedFrom()
