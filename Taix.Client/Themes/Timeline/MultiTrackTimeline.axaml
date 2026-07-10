@@ -54,7 +54,7 @@
                         <ListBox.Styles>
                             <Style Selector="ListBoxItem">
                                 <Setter Property="Padding" Value="0" />
-                                <Setter Property="Margin" Value="0,0,0,6" />
+                                <Setter Property="Margin" Value="0,0,0,8" />
                                 <Setter Property="Background" Value="Transparent" />
                                 <Setter Property="Focusable" Value="False" />
                                 <Setter Property="Cursor" Value="Hand" />
@@ -80,8 +80,8 @@
                         </ListBox.Styles>
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="timeline:MultiTrackTimelineItem">
-                                <Border Height="52"
-                                        CornerRadius="8"
+                                <Border Height="60"
+                                        CornerRadius="10"
                                         Background="{DynamicResource MultiTrackRowBgBrush}"
                                         BorderBrush="{DynamicResource MultiTrackRowBorderBrush}"
                                         BorderThickness="1"
@@ -101,25 +101,25 @@
                                                 Margin="10,0,0,0">
                                             <Grid ColumnDefinitions="Auto,Auto,*">
 
-                                                <Rectangle Width="3"
-                                                           Height="20"
+                                                <Rectangle Width="4"
+                                                           Height="24"
                                                            Fill="{Binding Color}"
                                                            VerticalAlignment="Center"
-                                                           Margin="0,0,8,0"
-                                                           RadiusX="1.5"
-                                                           RadiusY="1.5" />
+                                                           Margin="0,0,10,0"
+                                                           RadiusX="2"
+                                                           RadiusY="2" />
 
                                                 <!-- 图标 -->
                                                 <Border Grid.Column="1"
                                                         Background="{DynamicResource MultiTrackIconBgBrush}"
-                                                        CornerRadius="6"
-                                                        Width="30"
-                                                        Height="30"
+                                                        CornerRadius="8"
+                                                        Width="34"
+                                                        Height="34"
                                                         VerticalAlignment="Center">
                                                     <base:Img URL="{Binding Icon}"
-                                                              Width="18"
-                                                              Height="18"
-                                                              DecodeWidth="18"
+                                                              Width="20"
+                                                              Height="20"
+                                                              DecodeWidth="20"
                                                               HorizontalAlignment="Center"
                                                               VerticalAlignment="Center" />
                                                 </Border>
@@ -137,10 +137,10 @@
 
                                         <!-- 中间：轨道 -->
                                         <Border Grid.Column="1"
-                                                Height="28"
+                                                Height="36"
                                                 VerticalAlignment="Center"
                                                 Margin="12,0"
-                                                CornerRadius="6"
+                                                CornerRadius="8"
                                                 ClipToBounds="False"
                                                 Background="{DynamicResource MultiTrackTrackBgBrush}"
                                                 BorderBrush="{DynamicResource MultiTrackTrackBorderBrush}"
