@@ -121,6 +121,10 @@ impl DataService {
         let app_map: std::collections::HashMap<i64, AppModelRow> =
             apps.into_iter().map(|a| (a.id, a)).collect();
 
+        let categories = CategoryService::get_categories(pool).await?;
+        let category_map: std::collections::HashMap<i64, CategoryModel> =
+            categories.into_iter().map(|c| (c.id, c)).collect();
+
         // 已在 SQL 层过滤排除应用，直接排序分页
         let mut sorted_groups: Vec<_> = groups.into_iter().collect();
         sorted_groups.sort_by(|a, b| b.1.0.cmp(&a.1.0));
@@ -133,16 +137,19 @@ impl DataService {
 
         let mut result = Vec::new();
         for (app_id, (time, date)) in sorted_groups {
-            let app_model = app_map.get(&app_id).cloned().map(|a| AppModel {
-                id: a.id,
-                name: a.name,
-                alias: a.alias,
-                description: a.description,
-                file: a.file,
-                category_id: a.category_id,
-                icon_file: a.icon_file,
-                total_time: a.total_time,
-                category: None,
+            let app_model = app_map.get(&app_id).cloned().map(|a| {
+                let category = category_map.get(&a.category_id).cloned();
+                AppModel {
+                    id: a.id,
+                    name: a.name,
+                    alias: a.alias,
+                    description: a.description,
+                    file: a.file,
+                    category_id: a.category_id,
+                    icon_file: a.icon_file,
+                    total_time: a.total_time,
+                    category,
+                }
             });
 
             result.push(DailyLogModel {

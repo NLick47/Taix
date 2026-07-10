@@ -450,7 +450,7 @@
                                                     </StackPanel>
                                                 </Border>
                                                 <base:View Value="{Binding WebSitesColSelectedData}" Condition="not empty">
-                                                    <charts:ListChart IconSize="18" IsSearch="True" Margin="0,5,0,0" Height="300" Data="{Binding WebSitesColSelectedData}" ClickCommand="{Binding ToDetailCommand}" ItemMenu="{Binding WebSiteContextMenu}" />
+                                                    <charts:ListChart IsShowBadge="True" IconSize="18" IsSearch="True" Margin="0,5,0,0" Height="300" Data="{Binding WebSitesColSelectedData}" ClickCommand="{Binding ToDetailCommand}" ItemMenu="{Binding WebSiteContextMenu}" />
                                                 </base:View>
                                                 <base:View Value="{Binding WebSitesColSelectedData}" Condition="empty">
                                                     <base:EmptyData />

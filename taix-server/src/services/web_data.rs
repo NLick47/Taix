@@ -519,6 +519,10 @@ impl WebDataService {
         separated.push_unseparated(")");
         let sites: Vec<WebSiteModel> = builder.build_query_as().fetch_all(pool).await?;
 
+        let categories = Self::get_web_site_categories(pool).await?;
+        let category_map: std::collections::HashMap<i64, WebSiteCategoryModel> =
+            categories.into_iter().map(|c| (c.id, c)).collect();
+
         let mut site_map: std::collections::HashMap<i64, WebSiteModel> =
             sites.into_iter().map(|s| (s.id, s)).collect();
 
@@ -526,6 +530,8 @@ impl WebDataService {
         for (sid, dur) in rows {
             if let Some(mut s) = site_map.remove(&sid) {
                 s.duration = dur;
+                // 填充分类信息
+                s.category = category_map.get(&s.category_id).cloned();
                 result.push(s);
             }
         }

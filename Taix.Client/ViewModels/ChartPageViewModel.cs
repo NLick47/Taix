@@ -635,7 +635,7 @@ public partial class ChartPageViewModel : ChartPageModel
             WebSitesColSelectedTimeText = startTime.ToString(culture.DateTimeFormat.YearMonthPattern);
         }
 
-        var chartData = ChartDataMapper.MapFromWebSites(await _webDataService.GetDateRangeWebSiteListAsync(startTime, endTime, 0, -1, isTime, cancellationToken));
+        var chartData = ChartDataMapper.MapFromWebSites(await _webDataService.GetDateRangeWebSiteListAsync(startTime, endTime, 0, -1, isTime, cancellationToken), includeBadges: true);
         cancellationToken.ThrowIfCancellationRequested();
         WebSitesColSelectedData = chartData;
     }
