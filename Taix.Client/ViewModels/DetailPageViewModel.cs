@@ -410,7 +410,7 @@ public class DetailPageViewModel : DetailPageModel
 
     private void UpdateMenuTexts()
     {
-        _openExeMenuItem.Header = ResourceStrings.OpenWebsite;
+        _openExeMenuItem.Header = ResourceStrings.StartApplication;
         _copyProcessNameMenuItem.Header = ResourceStrings.CopyApplicationProcessName;
         _copyProcessFileMenuItem.Header = ResourceStrings.CopyApplicationFilePath;
         _openDirMenuItem.Header = ResourceStrings.OpenApplicationDirectory;
