@@ -9,28 +9,43 @@ namespace Taix.Client.Servicers.Instances;
 
 public class WindowStateService : IWindowStateService
 {
-    private readonly string _cacheFilePath;
-
     public double WindowWidth { get; set; }
     public double WindowHeight { get; set; }
+    public bool IsMaximized { get; set; }
+
+    private static string CacheFilePath
+    {
+        get
+        {
+            if (OperatingSystem.IsMacOS())
+            {
+                return Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Taix",
+                    "window.cache.json");
+            }
+
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "window.cache.json");
+        }
+    }
 
     public WindowStateService()
     {
-        _cacheFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "window.cache.json");
     }
 
     public Task LoadAsync()
     {
         try
         {
-            if (File.Exists(_cacheFilePath))
+            if (File.Exists(CacheFilePath))
             {
-                var json = File.ReadAllText(_cacheFilePath);
+                var json = File.ReadAllText(CacheFilePath);
                 var state = JsonSerializer.Deserialize(json, ClientJsonContext.Default.WindowStateModel);
                 if (state != null)
                 {
                     WindowWidth = state.WindowWidth;
                     WindowHeight = state.WindowHeight;
+                    IsMaximized = state.IsMaximized;
                 }
             }
         }
@@ -49,10 +64,18 @@ public class WindowStateService : IWindowStateService
             var state = new WindowStateModel
             {
                 WindowWidth = WindowWidth,
-                WindowHeight = WindowHeight
+                WindowHeight = WindowHeight,
+                IsMaximized = IsMaximized
             };
             var json = JsonSerializer.Serialize(state, ClientJsonContext.Default.WindowStateModel);
-            File.WriteAllText(_cacheFilePath, json);
+
+            var directory = Path.GetDirectoryName(CacheFilePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.WriteAllText(CacheFilePath, json);
         }
         catch
         {

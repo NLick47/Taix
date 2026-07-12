@@ -107,7 +107,15 @@ public class MainServicer : IMainServicer
         }
 
         mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        mainWindow.WindowState = WindowState.Normal;
+
+        if (config.General.IsSaveWindowSize && _windowStateService.IsMaximized)
+        {
+            mainWindow.WindowState = WindowState.Maximized;
+        }
+        else
+        {
+            mainWindow.WindowState = WindowState.Normal;
+        }
         mainWindow.DataContext = mainVM;
 
         mainWindow.Opened += (_, _) =>
@@ -135,8 +143,23 @@ public class MainServicer : IMainServicer
         var cfg = _config.GetConfig();
         if (cfg.General.IsSaveWindowSize)
         {
-            _windowStateService.WindowWidth = mainWindow.Width;
-            _windowStateService.WindowHeight = mainWindow.Height;
+            _windowStateService.IsMaximized = mainWindow.WindowState == WindowState.Maximized;
+
+            // 最大化时先恢复 Normal 取实际尺寸，再还原状态
+            if (_windowStateService.IsMaximized)
+            {
+                var prev = mainWindow.WindowState;
+                mainWindow.WindowState = WindowState.Normal;
+                _windowStateService.WindowWidth = mainWindow.Width;
+                _windowStateService.WindowHeight = mainWindow.Height;
+                mainWindow.WindowState = prev;
+            }
+            else
+            {
+                _windowStateService.WindowWidth = mainWindow.Width;
+                _windowStateService.WindowHeight = mainWindow.Height;
+            }
+
             await _windowStateService.SaveAsync();
         }
 
