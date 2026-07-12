@@ -3,6 +3,11 @@ import Foundation
 @main
 struct TaixMonitor {
     static func main() async {
+        guard SingleInstance.tryAcquire() else {
+            Logger.error("Another instance is already running, exiting...")
+            exit(1)
+        }
+
         let config = parseArgs()
         let runner = Runner(configuration: config)
 
