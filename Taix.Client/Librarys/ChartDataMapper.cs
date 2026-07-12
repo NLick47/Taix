@@ -25,7 +25,7 @@ public static class ChartDataMapper
                 Tag = Time.ToString(item.Time),
                 PopupText = appModel.File,
                 Icon = appModel.IconFile,
-                DateTime = DateTime.SpecifyKind(item.Date, DateTimeKind.Utc).ToLocalTime()
+                DateTime = item.Date
             };
 
             if (includeBadges)

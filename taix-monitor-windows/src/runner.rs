@@ -149,7 +149,6 @@ fn try_recover_session(data_dir: &std::path::Path, queue: &crate::transport::que
                 .duration_since(since)
                 .unwrap_or_default()
                 .as_secs() as i64;
-            let delta = delta.min(3600);
             info!(
                 target: "main",
                 "Recovered session: {} ({}s since checkpoint, idle={:?})",

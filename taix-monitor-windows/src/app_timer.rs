@@ -302,20 +302,6 @@ impl AppTimer {
             return None;
         }
 
-        const MAX_FLUSH_DURATION_MS: i64 = 3600_000;
-        let duration_ms = if duration_ms > MAX_FLUSH_DURATION_MS {
-            warn!(
-                target: "app_timer",
-                "Flush duration {}ms exceeds max {}ms for {}, truncating",
-                duration_ms,
-                MAX_FLUSH_DURATION_MS,
-                app.process
-            );
-            MAX_FLUSH_DURATION_MS
-        } else {
-            duration_ms
-        };
-
         let total_ms = duration_ms + *accumulated_ms;
         let mut duration_secs = total_ms / 1000;
         let remainder = total_ms % 1000;

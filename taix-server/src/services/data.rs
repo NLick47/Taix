@@ -1,4 +1,5 @@
 use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, Timelike, Utc};
+use chrono_tz::OffsetComponents;
 use sqlx::SqlitePool;
 use std::collections::HashMap;
 use tracing::{debug, info};
@@ -38,20 +39,23 @@ impl DataService {
         let excluded_vec: Vec<i64> = excluded.into_iter().collect();
         let has_excluded = !excluded_vec.is_empty();
 
-        let mut groups: HashMap<i64, (i64, NaiveDate)> = HashMap::new();
+        let mut groups: HashMap<(i64, NaiveDate), i64> = HashMap::new();
         if days <= 31 {
             let utc_start = tz_date_to_utc_range(start, &tz).0;
             let utc_end = tz_date_to_utc_range(end, &tz).1;
+            // 计算时区偏移秒数（UTC+8 = 28800）
+            let offset_secs: i64 = Utc::now().with_timezone(&tz).offset().base_utc_offset().num_seconds() as i64;
 
-            let rows: Vec<(i64, i64, DateTime<Utc>)> = if !has_excluded {
+            let rows: Vec<(i64, i64, NaiveDate)> = if !has_excluded {
                 sqlx::query_as(
                     r#"
-                    SELECT AppModelID, SUM(Time) as total, MAX(DataTime) as last_time
+                    SELECT AppModelID, SUM(Time) as total, date(DataTime, '+' || ? || ' seconds') as local_date
                     FROM HoursLogModels
                     WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0
-                    GROUP BY AppModelID
+                    GROUP BY AppModelID, local_date
                     "#,
                 )
+                .bind(offset_secs)
                 .bind(utc_start)
                 .bind(utc_end)
                 .fetch_all(pool)
@@ -60,14 +64,15 @@ impl DataService {
                 let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
                 let sql = format!(
                     r#"
-                    SELECT AppModelID, SUM(Time) as total, MAX(DataTime) as last_time
+                    SELECT AppModelID, SUM(Time) as total, date(DataTime, '+' || ? || ' seconds') as local_date
                     FROM HoursLogModels
                     WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0 AND AppModelID NOT IN ({})
-                    GROUP BY AppModelID
+                    GROUP BY AppModelID, local_date
                     "#,
                     placeholders
                 );
-                let mut query = sqlx::query_as::<_, (i64, i64, DateTime<Utc>)>(&sql)
+                let mut query = sqlx::query_as::<_, (i64, i64, NaiveDate)>(&sql)
+                    .bind(offset_secs)
                     .bind(utc_start)
                     .bind(utc_end);
                 for id in &excluded_vec {
@@ -76,9 +81,9 @@ impl DataService {
                 query.fetch_all(pool).await?
             };
 
-            for (app_id, time, last_time) in rows {
-                let local_date = last_time.with_timezone(&tz).date_naive();
-                groups.insert(app_id, (time, local_date));
+            for (app_id, time, local_date) in rows {
+                let key = (app_id, local_date);
+                *groups.entry(key).or_insert(0) += time;
             }
 
         } else {
@@ -108,9 +113,8 @@ impl DataService {
             };
 
             for log in logs {
-                let entry = groups.entry(log.app_model_id).or_insert((0, log.date));
-                entry.0 += log.time;
-                entry.1 = entry.1.max(log.date);
+                let key = (log.app_model_id, log.date);
+                *groups.entry(key).or_insert(0) += log.time;
             }
         }
 
@@ -127,7 +131,7 @@ impl DataService {
 
         // 已在 SQL 层过滤排除应用，直接排序分页
         let mut sorted_groups: Vec<_> = groups.into_iter().collect();
-        sorted_groups.sort_by(|a, b| b.1.0.cmp(&a.1.0));
+        sorted_groups.sort_by(|a, b| b.1.cmp(&a.1));
         let offset_usize = offset as usize;
         let limit_usize = if limit > 0 { limit as usize } else { usize::MAX };
         let sorted_groups: Vec<_> = sorted_groups.into_iter()
@@ -136,7 +140,7 @@ impl DataService {
             .collect();
 
         let mut result = Vec::new();
-        for (app_id, (time, date)) in sorted_groups {
+        for ((app_id, date), time) in sorted_groups {
             let app_model = app_map.get(&app_id).cloned().map(|a| {
                 let category = category_map.get(&a.category_id).cloned();
                 AppModel {
