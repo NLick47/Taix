@@ -11,11 +11,11 @@ pub fn run(
     max_sound_duration_secs: Option<u64>,
     sleep_watch: Option<bool>,
 ) -> ! {
-    // 单实例锁
-    drop(crate::win32::single_instance::try_acquire("Global\\TaixMonitorSingleInstance").unwrap_or_else(|| {
+
+    let _guard = crate::win32::single_instance::try_acquire("Global\\TaixMonitorSingleInstance").unwrap_or_else(|| {
         error!(target: "main", "Another instance is already running");
         std::process::exit(1);
-    }));
+    });
 
     let data_dir = data_dir
         .or_else(|| std::env::var("TAIX_DATA_DIR").ok().map(PathBuf::from))

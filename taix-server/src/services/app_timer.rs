@@ -78,8 +78,17 @@ impl AppTimerService {
             process, duration, start_time
         );
 
-        let start_time_max_hours_duration =
-            (59 - start_time.minute() as i64) * 60 + (60 - start_time.second() as i64);
+        let start_time_minute = start_time.minute() as i64;
+        let start_time_second = start_time.second() as i64;
+        let start_time_max_hours_duration = if start_time_minute == 0 && start_time_second == 0 {
+            // 整点开始，第一个小时可以完整使用
+            3600
+        } else {
+            // 非整点，计算到下一个整点的秒数
+            (60 - start_time_minute) * 60 - start_time_second
+        };
+
+        // 第一个小时的 duration，不超过到下一个整点的剩余秒数
         let start_time_hours_duration = duration.min(start_time_max_hours_duration);
         let out_hours_duration = duration - start_time_hours_duration;
 
@@ -199,6 +208,7 @@ impl AppTimerService {
         .await?;
 
         // DailyLog 使用 UPSERT，利用唯一索引 (Date, AppModelID) 保证并发安全
+        // 单日上限为 24小时，防止异常数据膨胀
         for (date_key, duration_val) in &duration_day_data {
             let date_str = date_key.to_string();
             sqlx::query(
@@ -206,12 +216,12 @@ impl AppTimerService {
                 INSERT INTO DailyLogModels (Date, AppModelID, Time)
                 VALUES (?, ?, ?)
                 ON CONFLICT(Date, AppModelID)
-                DO UPDATE SET Time = Time + excluded.Time
+                DO UPDATE SET Time = min(Time + excluded.Time, 86400)
                 "#,
             )
             .bind(&date_str)
             .bind(app_id)
-            .bind((*duration_val).min(3600))
+            .bind(*duration_val)
             .execute(&mut *tx)
             .await?;
         }
