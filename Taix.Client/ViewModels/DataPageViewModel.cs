@@ -482,6 +482,7 @@ public partial class DataPageViewModel : DataPageModel
                     Name = g.Key,
                     Icon = appModel?.IconFile,
                     Color = paletteColor,
+                    CategoryName = appModel?.Category?.Name,
                     TotalDuration = TimeSpan.FromSeconds(appDurationSec),
                     Segments = segments,
                     AppModel = appModel,

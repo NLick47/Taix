@@ -139,7 +139,7 @@
                                                   SelectedItem="{Binding SelectedColorMode, Mode=TwoWay}"
                                                   Options="{Binding ColorModeOptions}" />
 
-                                <!-- 右侧：轨道总时长 -->
+                                <!-- 轨道总时长 -->
                                 <Border Grid.Column="2"
                                         VerticalAlignment="Center"
                                         CornerRadius="{StaticResource RadiusSmall}"

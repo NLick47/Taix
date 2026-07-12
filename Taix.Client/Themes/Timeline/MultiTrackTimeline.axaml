@@ -80,7 +80,7 @@
                         </ListBox.Styles>
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="timeline:MultiTrackTimelineItem">
-                                <Border Height="60"
+                                <Border Height="70"
                                         CornerRadius="10"
                                         Background="{DynamicResource MultiTrackRowBgBrush}"
                                         BorderBrush="{DynamicResource MultiTrackRowBorderBrush}"
@@ -95,14 +95,17 @@
                                             <ColumnDefinition Width="72" />
                                         </Grid.ColumnDefinitions>
 
-                                        <!-- 左侧：颜色标记 + 图标 + 名称 -->
+                                        <!-- 左侧：颜色标记 + 图标 + 名称 + 分类 -->
                                         <Border Grid.Column="0"
                                                 VerticalAlignment="Center"
                                                 Margin="10,0,0,0">
-                                            <Grid ColumnDefinitions="Auto,Auto,*">
+                                            <Grid RowDefinitions="Auto,Auto"
+                                                  ColumnDefinitions="Auto,Auto,*">
 
-                                                <Rectangle Width="4"
-                                                           Height="24"
+                                                <Rectangle Grid.Row="0"
+                                                           Grid.RowSpan="2"
+                                                           Width="4"
+                                                           Height="36"
                                                            Fill="{Binding Color}"
                                                            VerticalAlignment="Center"
                                                            Margin="0,0,10,0"
@@ -111,6 +114,8 @@
 
                                                 <!-- 图标 -->
                                                 <Border Grid.Column="1"
+                                                        Grid.Row="0"
+                                                        Grid.RowSpan="2"
                                                         Background="{DynamicResource MultiTrackIconBgBrush}"
                                                         CornerRadius="8"
                                                         Width="34"
@@ -125,13 +130,24 @@
                                                 </Border>
 
                                                 <TextBlock Grid.Column="2"
+                                                           Grid.Row="0"
                                                            Text="{Binding Name}"
                                                            FontSize="12"
                                                            FontWeight="SemiBold"
                                                            Foreground="{DynamicResource DefaultTextBrush}"
-                                                           VerticalAlignment="Center"
-                                                           Margin="8,0,4,0"
+                                                           VerticalAlignment="Bottom"
+                                                           Margin="8,0,4,1"
                                                            TextTrimming="CharacterEllipsis" />
+
+                                                <TextBlock Grid.Column="2"
+                                                           Grid.Row="1"
+                                                           Text="{Binding CategoryName}"
+                                                           FontSize="10"
+                                                           Foreground="{DynamicResource SubTextBrush}"
+                                                           VerticalAlignment="Top"
+                                                           Margin="8,1,4,0"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           IsVisible="{Binding CategoryName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                             </Grid>
                                         </Border>
 

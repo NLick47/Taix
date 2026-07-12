@@ -11,6 +11,7 @@ public class MultiTrackTimelineItem
     public string Name { get; set; } = string.Empty;
     public string? Icon { get; set; }
     public string Color { get; set; } = "#888888";
+    public string? CategoryName { get; set; }
     public TimeSpan TotalDuration { get; set; }
     public List<MultiTrackSegment> Segments { get; set; } = new();
     public object? AppModel { get; set; }
