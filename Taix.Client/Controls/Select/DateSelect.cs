@@ -13,7 +13,6 @@ public class DayModel
     public bool IsOut => Day.Date > DateTime.Now.Date;
     public bool IsDisabled { get; set; }
     public bool IsSelected { get; set; }
-    public bool IsToday { get; set; }
 }
 
 public class DateSelect : TemplatedControl
@@ -328,11 +327,16 @@ public class DateSelect : TemplatedControl
         list.AddRange(preAppendDays);
 
         var now = DateTime.Now.Date;
-        for (var i = 1; i < days + 1; i++) list.Add(new DayModel
+        var selectedDate = Date.Date;
+        for (var i = 1; i < days + 1; i++)
         {
-            Day = new DateTime(Year, Month, i),
-            IsToday = new DateTime(Year, Month, i).Date == now
-        });
+            var currentDate = new DateTime(Year, Month, i);
+            list.Add(new DayModel
+            {
+                Day = currentDate,
+                IsSelected = currentDate.Date == selectedDate
+            });
+        }
 
         Days = list;
     }

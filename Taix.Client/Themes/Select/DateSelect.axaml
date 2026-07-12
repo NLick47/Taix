@@ -41,21 +41,21 @@
                    </Style>
                </Border.Styles>
 
+           <Grid>
+               <TextBlock x:DataType="controls:DayModel"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center"
+                          Text="{Binding Day,
+                      Converter={StaticResource DateFormatConverter},
+                      ConverterParameter={x:Static controls:DateSelectType.Date}}" />
 
-
-               <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
-                   <TextBlock x:DataType="controls:DayModel"
-                              VerticalAlignment="Center"
-                              HorizontalAlignment="Center"
-                              Text="{Binding Day,
-                           Converter={StaticResource DateFormatConverter},
-                           ConverterParameter={x:Static controls:DateSelectType.Date}}" />
-                   <Border x:DataType="controls:DayModel"
-                           Width="4" Height="4" CornerRadius="2"
-                           Background="{DynamicResource ThemeBrush}"
-                           IsVisible="{Binding IsToday}"
-                           Margin="0,2,0,0" />
-               </StackPanel>
+               <Ellipse Width="4" Height="4"
+                        Fill="{DynamicResource ThemeBrush}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,0,3"
+                        IsVisible="{Binding IsSelected}" />
+           </Grid>
 
                <Interaction.Behaviors>
                    <EventTriggerBehavior EventName="PointerReleased">
@@ -104,23 +104,31 @@
                   </MultiBinding>
               </Border.IsEnabled>
 
-              <TextBlock x:DataType="controls:DayModel"
-                         VerticalAlignment="Center"
-                         HorizontalAlignment="Center"
-                         Text="{Binding Day,
-                       Converter={StaticResource DateFormatConverter},
-                       ConverterParameter={x:Static controls:DateSelectType.Month}}" />
+               <Grid>
+                   <TextBlock x:DataType="controls:DayModel"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Center"
+                              Text="{Binding Day,
+                        Converter={StaticResource DateFormatConverter},
+                        ConverterParameter={x:Static controls:DateSelectType.Month}}" />
 
-              <Interaction.Behaviors>
-                  <EventTriggerBehavior EventName="PointerReleased">
-                      <InvokeCommandAction Command="{Binding $parent[controls:DateSelect].SelectDayCommand}"
-                                           CommandParameter="{Binding }"/>
-                  </EventTriggerBehavior>
-              </Interaction.Behaviors>
-          </Border>
+                   <Ellipse Width="4" Height="4"
+                            Fill="{DynamicResource ThemeBrush}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,0,3"
+                            IsVisible="{Binding IsSelected}" />
+               </Grid>
 
+               <Interaction.Behaviors>
+                   <EventTriggerBehavior EventName="PointerReleased">
+                       <InvokeCommandAction Command="{Binding $parent[controls:DateSelect].SelectDayCommand}"
+                                            CommandParameter="{Binding }"/>
+                   </EventTriggerBehavior>
+               </Interaction.Behaviors>
+           </Border>
 
-        </Border>
+         </Border>
     </DataTemplate>
 
     <!-- 年视图模板 -->
@@ -144,12 +152,21 @@
                     </Style>
                 </Border.Styles>
 
-                <TextBlock x:DataType="controls:DayModel"
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Center"
-                           Text="{Binding Day,
+                <Grid>
+                    <TextBlock x:DataType="controls:DayModel"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"
+                               Text="{Binding Day,
                        Converter={StaticResource DateFormatConverter},
                        ConverterParameter={x:Static controls:DateSelectType.Year}}" />
+
+                    <Ellipse Width="4" Height="4"
+                             Fill="{DynamicResource ThemeBrush}"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Bottom"
+                             Margin="0,0,0,3"
+                             IsVisible="{Binding IsSelected}" />
+                </Grid>
 
                 <Interaction.Behaviors>
                     <EventTriggerBehavior EventName="PointerReleased">
