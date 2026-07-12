@@ -220,7 +220,6 @@ public class ColorSelect : TemplatedControl
         if (_attachedWindow == null) return;
 
         _attachedWindow.AddHandler(InputElement.PointerPressedEvent, OnTopLevelPointerPressed, RoutingStrategies.Tunnel);
-        _attachedWindow.Deactivated += OnTopLevelDeactivated;
         _attachedWindow.PointerWheelChanged += OnTopLevelPointerWheelChanged;
     }
 
@@ -229,7 +228,6 @@ public class ColorSelect : TemplatedControl
         if (_attachedWindow == null) return;
 
         _attachedWindow.RemoveHandler(InputElement.PointerPressedEvent, OnTopLevelPointerPressed);
-        _attachedWindow.Deactivated -= OnTopLevelDeactivated;
         _attachedWindow.PointerWheelChanged -= OnTopLevelPointerWheelChanged;
         _attachedWindow = null;
     }
@@ -250,12 +248,6 @@ public class ColorSelect : TemplatedControl
     }
 
     private void OnTopLevelPointerWheelChanged(object? sender, PointerWheelEventArgs e)
-    {
-        if (_isDragging) return;
-        IsOpen = false;
-    }
-
-    private void OnTopLevelDeactivated(object? sender, EventArgs e)
     {
         if (_isDragging) return;
         IsOpen = false;

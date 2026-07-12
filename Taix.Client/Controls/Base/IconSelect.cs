@@ -182,7 +182,6 @@ public class IconSelect : TemplatedControl
             InputElement.PointerPressedEvent,
             OnTopLevelPointerPressed,
             RoutingStrategies.Tunnel);
-        _attachedWindow.Deactivated += OnTopLevelDeactivated;
     }
 
     private void DetachTopLevelEvents()
@@ -192,13 +191,7 @@ public class IconSelect : TemplatedControl
         _attachedWindow.RemoveHandler(
             InputElement.PointerPressedEvent,
             OnTopLevelPointerPressed);
-        _attachedWindow.Deactivated -= OnTopLevelDeactivated;
         _attachedWindow = null;
-    }
-
-    private void OnTopLevelDeactivated(object? sender, EventArgs e)
-    {
-        IsOpen = false;
     }
 
     private void OnTopLevelPointerPressed(object? sender, PointerPressedEventArgs e)

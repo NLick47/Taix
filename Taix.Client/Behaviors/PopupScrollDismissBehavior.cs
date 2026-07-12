@@ -14,6 +14,7 @@ public class PopupScrollDismissBehavior : Behavior<Popup>
     private IDisposable? _targetVisibleSubscription;
     private ScrollViewer? _scrollViewer;
     private Control? _topLevel;
+    private Window? _window;
 
     protected override void OnAttached()
     {
@@ -70,6 +71,10 @@ public class PopupScrollDismissBehavior : Behavior<Popup>
         _topLevel = TopLevel.GetTopLevel(AssociatedObject) as Control;
         if (_topLevel != null)
             _topLevel.AddHandler(InputElement.PointerPressedEvent, OnTopLevelPointerPressed, RoutingStrategies.Tunnel);
+
+        _window = TopLevel.GetTopLevel(AssociatedObject) as Window;
+        if (_window != null)
+            _window.Deactivated += OnWindowDeactivated;
     }
 
     private void DetachHandlers()
@@ -88,6 +93,18 @@ public class PopupScrollDismissBehavior : Behavior<Popup>
             _topLevel.RemoveHandler(InputElement.PointerPressedEvent, OnTopLevelPointerPressed);
             _topLevel = null;
         }
+
+        if (_window != null)
+        {
+            _window.Deactivated -= OnWindowDeactivated;
+            _window = null;
+        }
+    }
+
+    private void OnWindowDeactivated(object? sender, EventArgs e)
+    {
+        if (AssociatedObject is { IsOpen: true })
+            AssociatedObject.IsOpen = false;
     }
 
     private void OnScrollChanged(object? sender, ScrollChangedEventArgs e)
