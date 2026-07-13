@@ -2,12 +2,13 @@ use crate::models::{MonitorConfig, SleepStatus};
 use crate::win32::audio::AudioState;
 use crate::win32::gamepad::GamepadState;
 use crate::win32::get_system_idle_time;
+use crate::win32::power_watcher::{PowerEvent, PowerWatcher};
 use std::time::{Duration, Instant};
 use tracing::info;
 
-/// 恢复后判定用户活跃的 idle 阈值（Duration）
+/// 恢复后判定用户活跃的 idle 阈值
 const RESUME_IDLE_THRESHOLD: Duration = Duration::from_secs(30);
-/// idle 单次检测跳变超过此值视为系统从休眠/锁定恢复（Duration）
+/// idle 单次检测跳变超过此值视为系统从休眠/锁定恢复
 const RESUME_JUMP_THRESHOLD: Duration = Duration::from_secs(60);
 
 /// 每 N 次主循环 tick 检测一次 sleep（约 5 秒）
@@ -21,7 +22,11 @@ enum DetectorState {
         last_idle: Duration,
         sound_start: Option<Instant>,
     },
+    /// 等待用户活动或恢复事件
+    /// from_event=true: Lock/Suspend 进入，只等 Unlock/Resume 事件才恢复
+    /// from_event=false: idle跳变/系统恢复 进入，等用户活动(idle<30s)才恢复
     ResumePending {
+        from_event: bool,
         _last_idle: Duration,
     },
 }
@@ -31,6 +36,7 @@ pub struct SleepDetector {
     current: SleepStatus,
     audio_state: AudioState,
     gamepad_state: GamepadState,
+    power_watcher: Option<PowerWatcher>,
     tick_count: u32,
     last_valid_idle: Duration,
     idle_failures: u32,
@@ -41,11 +47,18 @@ pub struct SleepDetector {
 
 impl SleepDetector {
     pub fn new(audio_state: AudioState, config: &MonitorConfig) -> Self {
+        let power_watcher = if config.sleep_watch {
+            Some(PowerWatcher::start())
+        } else {
+            None
+        };
+
         Self {
             state: DetectorState::Initial,
             current: SleepStatus::Wake,
             audio_state,
             gamepad_state: GamepadState::new(),
+            power_watcher,
             tick_count: 0,
             last_valid_idle: Duration::ZERO,
             idle_failures: 0,
@@ -55,18 +68,105 @@ impl SleepDetector {
         }
     }
 
-    /// 主循环每秒调用。内部每 SLEEP_CHECK_INTERVAL 秒做一次检测
+    /// 主循环每秒调用
     pub fn tick(&mut self) -> Option<SleepStatus> {
-        // 睡眠检测关闭时，始终返回 Wake
         if !self.sleep_watch {
             return None;
         }
+
+        // 1. 优先处理电源事件 (只取一个，避免丢事件)
+        if let Some(status) = self.process_power_event() {
+            return Some(status);
+        }
+
+        // 2. ResumePending 状态下，即使不到 5 秒也要做 idle 检测
+        if matches!(self.state, DetectorState::ResumePending { .. }) {
+            self.tick_count = SLEEP_CHECK_TICKS;
+        }
+
+        // 3. 轮询 idle 检测 (每 5 秒一次)
         self.tick_count += 1;
         if self.tick_count < SLEEP_CHECK_TICKS {
             return None;
         }
         self.tick_count = 0;
 
+        self.poll_idle_detection()
+    }
+
+    /// 处理电源事件 (每次只取一个)
+    ///
+    /// 锁屏 -> 立即 Sleep，timer 停止计时
+    /// 解锁 -> 用户已通过身份验证，立即 Wake
+    /// 挂起 -> 立即 Sleep
+    /// 恢复 -> 进入 ResumePending，等用户活动
+    fn process_power_event(&mut self) -> Option<SleepStatus> {
+        let event = self
+            .power_watcher
+            .as_ref()
+            .and_then(|w| w.try_recv());
+
+        match event {
+            Some(PowerEvent::SessionLock) => {
+                // 锁屏 -> 立即 Sleep，进入 ResumePending 等待解锁事件
+                if self.current != SleepStatus::Sleep {
+                    self.current = SleepStatus::Sleep;
+                    self.state = DetectorState::ResumePending {
+                        from_event: true,
+                        _last_idle: Duration::ZERO,
+                    };
+                    info!(target: "sleep_detector", "Power event: SessionLock -> Sleep");
+                    Some(SleepStatus::Sleep)
+                } else {
+                    None
+                }
+            }
+            Some(PowerEvent::SessionUnlock) => {
+                // 解锁 -> 已通过身份验证，立即 Wake
+                // 不管当前是在 Monitoring 还是 ResumePending 都恢复
+                if self.current == SleepStatus::Sleep {
+                    self.current = SleepStatus::Wake;
+                    self.state = DetectorState::Monitoring {
+                        last_idle: Duration::ZERO,
+                        sound_start: None,
+                    };
+                    info!(target: "sleep_detector", "Power event: SessionUnlock -> Wake");
+                    Some(SleepStatus::Wake)
+                } else {
+                    None
+                }
+            }
+            Some(PowerEvent::Suspend) => {
+                // 系统挂起 -> 立即 Sleep，进入 ResumePending 等待恢复事件
+                if self.current != SleepStatus::Sleep {
+                    self.current = SleepStatus::Sleep;
+                    self.state = DetectorState::ResumePending {
+                        from_event: true,
+                        _last_idle: Duration::ZERO,
+                    };
+                    info!(target: "sleep_detector", "Power event: Suspend -> Sleep");
+                    Some(SleepStatus::Sleep)
+                } else {
+                    None
+                }
+            }
+            Some(PowerEvent::Resume) => {
+                // 系统恢复 -> 进入 ResumePending，等用户活动确认
+                if self.current == SleepStatus::Sleep {
+                    self.state = DetectorState::ResumePending {
+                        from_event: false,
+                        _last_idle: Duration::ZERO,
+                    };
+                    info!(target: "sleep_detector", "Power event: Resume -> ResumePending (waiting for activity)");
+                }
+                None
+            }
+            None => None,
+        }
+    }
+
+    /// 轮询 idle 检测
+    fn poll_idle_detection(&mut self) -> Option<SleepStatus> {
         if let Some(idle_val) = get_system_idle_time() {
             self.last_valid_idle = idle_val;
             self.idle_failures = 0;
@@ -156,7 +256,10 @@ impl SleepDetector {
                         last_idle, idle
                     );
                     return (
-                        DetectorState::ResumePending { _last_idle: idle },
+                        DetectorState::ResumePending {
+                            from_event: false,
+                            _last_idle: idle,
+                        },
                         SleepStatus::Sleep,
                     );
                 }
@@ -176,11 +279,23 @@ impl SleepDetector {
                     next_status,
                 )
             }
-            DetectorState::ResumePending { .. } => {
-                if idle < RESUME_IDLE_THRESHOLD || is_gamepad_active || is_playing_sound {
+            DetectorState::ResumePending { from_event, .. } => {
+                if from_event {
+                    // 事件进入的 ResumePending (Lock/Suspend)：
+                    // 只等 Unlock/Resume 事件恢复，idle 检测不能恢复
+                    (
+                        DetectorState::ResumePending {
+                            from_event: true,
+                            _last_idle: idle,
+                        },
+                        SleepStatus::Sleep,
+                    )
+                } else if idle < RESUME_IDLE_THRESHOLD || is_gamepad_active || is_playing_sound {
+                    // 非事件进入的 ResumePending (idle跳变/系统恢复)：
+                    // 用户活动确认后恢复
                     info!(
                         target: "sleep_detector",
-                        "User activity detected, exiting resume cooldown, broadcasting Wake"
+                        "User activity detected after resume, broadcasting Wake"
                     );
                     let (next_status, next_sound) = self.evaluate_status_with_sound(
                         SleepStatus::Wake,
@@ -199,9 +314,10 @@ impl SleepDetector {
                 } else {
                     (
                         DetectorState::ResumePending {
+                            from_event: false,
                             _last_idle: idle,
                         },
-                        current,
+                        SleepStatus::Sleep,
                     )
                 }
             }

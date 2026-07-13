@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod gamepad;
+pub mod power_watcher;
 pub mod process;
 pub mod single_instance;
 pub mod window;

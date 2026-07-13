@@ -216,19 +216,25 @@ impl Buf {
 }
 
 
-struct Sub { rules: Vec<Rule> }
+struct Sub { rules: Vec<Rule>, next_id: std::sync::atomic::AtomicU64 }
+
+impl Sub {
+    fn next_id(&self) -> tracing::Id {
+        tracing::Id::from_u64(self.next_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed).max(1))
+    }
+}
 
 impl tracing::Subscriber for Sub {
     fn enabled(&self, meta: &tracing::Metadata<'_>) -> bool {
         let el = Lvl::from_tracing(meta.level());
         match_lvl(&self.rules, meta.target()).map_or(false, |rl| el <= rl)
     }
-    fn new_span(&self, _: &tracing::span::Attributes<'_>) -> tracing::Id { tracing::Id::from_u64(0) }
+    fn new_span(&self, _: &tracing::span::Attributes<'_>) -> tracing::Id { self.next_id() }
     fn record(&self, _: &tracing::Id, _: &tracing::span::Record<'_>) {}
     fn record_follows_from(&self, _: &tracing::Id, _: &tracing::Id) {}
     fn enter(&self, _: &tracing::Id) {}
     fn exit(&self, _: &tracing::Id) {}
-    fn clone_span(&self, _: &tracing::Id) -> tracing::Id { tracing::Id::from_u64(0) }
+    fn clone_span(&self, id: &tracing::Id) -> tracing::Id { self.next_id() }
     fn drop_span(&self, _: tracing::Id) {}
     fn register_callsite(&self, _: &'static tracing::Metadata<'static>) -> tracing::subscriber::Interest {
         tracing::subscriber::Interest::sometimes()
@@ -286,7 +292,7 @@ pub fn init(name: &str, default_filter: &str, panic_mode: PanicMode, max_log_fil
     let sync = matches!(panic_mode, PanicMode::SyncFile);
     let stdout = cfg!(debug_assertions) || sync;
     let _ = LOGGER.set(Mutex::new(Writer::new(name, &log_dir, sync, stdout, max_log_files)));
-    let _ = tracing::subscriber::set_global_default(Sub { rules });
+    let _ = tracing::subscriber::set_global_default(Sub { rules, next_id: std::sync::atomic::AtomicU64::new(1) });
 
     install_panic_hook(name, &log_dir, panic_mode);
     LoggingGuard

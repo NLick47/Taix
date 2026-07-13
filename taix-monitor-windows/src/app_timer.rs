@@ -23,7 +23,6 @@ enum TimerState {
     Suspended {
         app: Option<AppInfo>,
         window: Option<WindowInfo>,
-        accumulated_ms: i64,
     },
 }
 
@@ -184,14 +183,12 @@ impl AppTimer {
                     self.state = TimerState::Suspended {
                         app: Some(app_owned),
                         window: Some(window_owned),
-                        accumulated_ms: 0,
                     };
                 }
                 TimerState::Idle => {
                     self.state = TimerState::Suspended {
                         app: None,
                         window: None,
-                        accumulated_ms: 0,
                     };
                 }
                 TimerState::Suspended { .. } => {}
@@ -200,7 +197,6 @@ impl AppTimer {
                 TimerState::Suspended {
                     app,
                     window,
-                    accumulated_ms,
                     ..
                 } => {
                     info!(target: "app_timer", "Exited sleep mode, timer resuming");
@@ -218,7 +214,7 @@ impl AppTimer {
                             window,
                             start_time: now,
                             start_tick: now_tick,
-                            accumulated_ms: *accumulated_ms,
+                            accumulated_ms: 0,
                             last_periodic_tick: now_tick,
                         };
                     } else {
@@ -232,7 +228,6 @@ impl AppTimer {
 
     /// 主循环每秒调用。检查 periodic flush，返回累积的 duration event
     pub fn tick(&mut self, data_dir: &Option<std::path::PathBuf>, queue: &MessageQueue) {
-        let now = SystemTime::now();
         let now_tick = get_tick_ms();
 
         match &mut self.state {
