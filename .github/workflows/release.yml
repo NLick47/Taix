@@ -103,6 +103,13 @@ jobs:
           7z | Out-Null
           Write-Host "7-Zip installed successfully"
 
+      - name: Install UPX for installer compression
+        shell: pwsh
+        run: |
+          choco install upx -y
+          upx --version
+          Write-Host "UPX installed successfully"
+
       - name: Build Installer
         shell: bash
         run: |

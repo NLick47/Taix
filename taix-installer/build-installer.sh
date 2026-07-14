@@ -53,6 +53,16 @@ if [ ! -f "$INSTALLER_DIR/target/release/taix-installer.exe" ]; then
     exit 1
 fi
 
+# UPX 压缩安装器本体
+echo "[2.5/3] UPX 压缩安装器..."
+if command -v upx &> /dev/null; then
+    upx --best --compress-resources=0 "$INSTALLER_DIR/target/release/taix-installer.exe"
+    UPX_SIZE=$(ls -lh "$INSTALLER_DIR/target/release/taix-installer.exe" | awk '{print $5}')
+    echo "UPX 压缩完成，大小: $UPX_SIZE"
+else
+    echo "WARNING: 未找到 upx，跳过压缩"
+fi
+
 PAYLOAD_FILE="$TEMP_DIR/payload.bin"
 "$PACK_PAYLOAD_PATH" "$TEMP_DIR" "$PAYLOAD_FILE"
 
