@@ -180,7 +180,7 @@
                     <base:View Condition="1" Value="{Binding ShowType.Id}">
                         <Charts:ListChart IsShowBadge="True"
                                           IsSearch="True"
-                                          ItemMenu="{Binding AppContextMenu}"
+                                          MenuType="WebSite"
                                           Data="{Binding Data}"
                                           Margin="0,20,0,0"
                                           ClickCommand="{Binding ToDetailCommand}" />
@@ -190,7 +190,7 @@
             <TabItem>
                 <Charts:ListChart IsShowBadge="True"
                                IsSearch="True"
-                               ItemMenu="{Binding AppContextMenu}"
+                               MenuType="App"
                                Data="{Binding WeekData}"
                                Margin="0,20,0,0"
                                ClickCommand="{Binding ToDetailCommand}" />
@@ -198,14 +198,14 @@
             <TabItem>
                 <Charts:ListChart IsShowBadge="True"
                                IsSearch="True"
-                               ItemMenu="{Binding AppContextMenu}"
+                               MenuType="App"
                                Data="{Binding MonthData}"
                                Margin="0,20,0,0"
                                ClickCommand="{Binding ToDetailCommand}" />
             </TabItem>
             <TabItem>
                 <Charts:ListChart IsShowBadge="True" IsSearch="True"
-                               ItemMenu="{Binding AppContextMenu}"
+                               MenuType="App"
                                Data="{Binding YearData}"
                                Margin="0,20,0,0"
                                ClickCommand="{Binding ToDetailCommand}" />

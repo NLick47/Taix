@@ -2,13 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Disposables.Fluent;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using ReactiveUI;
+using ReactiveUI.Avalonia;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
+using Taix.Client.Events;
 using Taix.Client.Librarys;
 using Taix.Client.Models;
 using Taix.Client.Models.Navigation;
@@ -26,33 +30,44 @@ public partial class IndexPageViewModel : IndexPageModel
 {
     private readonly IData _dataService;
     private readonly IWebData _webDataService;
-    private readonly IWebSiteContextMenuServicer _webSiteContextMenuService;
-    private readonly IAppContextMenuServicer _appContextMenuService;
     private readonly INavigationService _navigationService;
     private readonly IAppConfig _appConfig;
     private readonly IStateService _stateService;
+    private readonly IAppEventService _appEventService;
 
     public IndexPageViewModel(
         IData data,
         IWebData webData,
-        IWebSiteContextMenuServicer webSiteContextMenu,
-        IAppContextMenuServicer appContextMenu,
         INavigationService navigationService,
         IAppConfig appConfig,
-        IStateService stateService)
+        IStateService stateService,
+        IAppEventService appEventService)
     {
         _dataService = data;
         _webDataService = webData;
-        _webSiteContextMenuService = webSiteContextMenu;
-        _appContextMenuService = appContextMenu;
         _navigationService = navigationService;
         _appConfig = appConfig;
         _stateService = stateService;
+        _appEventService = appEventService;
 
         ToDetailCommand = ReactiveCommand.Create<object>(OnToDetail);
         RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync);
 
         InitializeStaticData();
+
+        _appEventService.AppChanged
+            .Throttle(TimeSpan.FromMilliseconds(100))
+            .DistinctUntilChanged()
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Subscribe(async _ => await LoadDataAsync())
+            .DisposeWith(Disposables);
+
+        _appEventService.WebSiteChanged
+            .Throttle(TimeSpan.FromMilliseconds(100))
+            .DistinctUntilChanged()
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Subscribe(async _ => await LoadDataAsync())
+            .DisposeWith(Disposables);
     }
 
     public ReactiveCommand<object, Unit> ToDetailCommand { get; }
@@ -88,9 +103,6 @@ public partial class IndexPageViewModel : IndexPageModel
             return Task.CompletedTask;
         });
 
-        AppContextMenu = _appContextMenuService.GetContextMenu();
-        WebSiteContextMenu = _webSiteContextMenuService.GetContextMenu();
-
         MoreTypeOptions =
         [
             new SelectItemModel
@@ -109,15 +121,8 @@ public partial class IndexPageViewModel : IndexPageModel
 
     public override async Task OnNavigatedToAsync()
     {
-        var restored = TryRestoreState(_navigationService, _stateService);
-        if (!restored)
-        {
-            await LoadDataAsync();
-        }
-        else
-        {
-            await TryRefreshIfNeededAsync();
-        }
+        TryRestoreState(_navigationService, _stateService);
+        await LoadDataAsync();
     }
 
     public override void OnNavigatedFrom()

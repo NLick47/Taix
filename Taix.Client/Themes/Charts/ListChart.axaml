@@ -44,8 +44,7 @@
                     <base:EmptyData x:Name="EmptyDataView" Grid.Row="1" IsVisible="False"
                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
 
-                    <ListBox x:Name="ListView" Grid.Row="1"
-                             ContextMenu="{TemplateBinding ItemMenu}">
+                    <ListBox x:Name="ListView" Grid.Row="1">
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <VirtualizingStackPanel />

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables.Fluent;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -10,9 +11,11 @@ using Avalonia;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using ReactiveUI;
+using ReactiveUI.Avalonia;
 using Taix.Client.Base.Color;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Timeline;
+using Taix.Client.Events;
 using Taix.Client.Librarys;
 using Taix.Client.Models;
 using Taix.Client.Models.Navigation;
@@ -29,12 +32,11 @@ namespace Taix.Client.ViewModels;
 public partial class DataPageViewModel : DataPageModel
 {
     private readonly IWebData _webDataService;
-    private readonly IWebSiteContextMenuServicer _webSiteContextMenuService;
     private readonly IAppConfig _appConfig;
-    private readonly IAppContextMenuServicer _appContextMenuService;
     private readonly IData _dataService;
     private readonly INavigationService _navigationService;
     private readonly IStateService _stateService;
+    private readonly IAppEventService _appEventService;
 
 
     private List<ChartsDataModel> _dayAppRawData = [];
@@ -44,24 +46,34 @@ public partial class DataPageViewModel : DataPageModel
     public DataPageViewModel(
         IData data,
         IAppConfig appConfig,
-        IWebSiteContextMenuServicer webSiteContextMenu,
-        IAppContextMenuServicer contextMenu,
         IWebData webData,
         INavigationService navigationService,
-        IStateService stateService)
+        IStateService stateService,
+        IAppEventService appEventService)
     {
         _dataService = data;
         _appConfig = appConfig;
-        _appContextMenuService = contextMenu;
-        _webSiteContextMenuService = webSiteContextMenu;
         _webDataService = webData;
         _navigationService = navigationService;
         _stateService = stateService;
+        _appEventService = appEventService;
 
         ToDetailCommand = ReactiveCommand.Create<object>(OnToDetail);
         RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync);
         RefreshCommand.DisposeWith(Disposables);
         Initialize();
+
+        _appEventService.AppChanged
+            .Throttle(TimeSpan.FromMilliseconds(100))
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Subscribe(async _ => await RefreshAsync())
+            .DisposeWith(Disposables);
+
+        _appEventService.WebSiteChanged
+            .Throttle(TimeSpan.FromMilliseconds(100))
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Subscribe(async _ => await RefreshAsync())
+            .DisposeWith(Disposables);
     }
 
     public ICommand ToDetailCommand { get; }
@@ -76,7 +88,6 @@ public partial class DataPageViewModel : DataPageModel
     private void Initialize()
     {
         TabbarData = [ResourceStrings.Daily, ResourceStrings.Weekly, ResourceStrings.Monthly, ResourceStrings.Yearly];
-        AppContextMenu = _appContextMenuService.GetContextMenu();
 
         PeriodOptions =
         [
@@ -141,9 +152,6 @@ public partial class DataPageViewModel : DataPageModel
             await LoadDataAsync(WeekDate, 1);
             await LoadDataAsync(MonthDate, 2);
             await LoadDataAsync(YearDate, 3);
-            AppContextMenu = ShowType.Id == 0
-                ? _appContextMenuService.GetContextMenu()
-                : _webSiteContextMenuService.GetContextMenu();
         });
 
         WhenPropertyChanged(this, x => x.TimelineStartHour, async _ =>
@@ -165,15 +173,8 @@ public partial class DataPageViewModel : DataPageModel
 
     public override async Task OnNavigatedToAsync()
     {
-        var restored = TryRestoreState(_navigationService, _stateService);
-        if (!restored)
-        {
-            await LoadDataAsync(DayDate, 0);
-        }
-        else
-        {
-            await TryRefreshIfNeededAsync();
-        }
+        TryRestoreState(_navigationService, _stateService);
+        await LoadDataAsync(DayDate, 0);
     }
 
     public override void OnNavigatedFrom()

@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables.Fluent;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
 using ReactiveUI;
+using Taix.Client.Controls.Charts;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
+using Taix.Client.Events;
 using Taix.Client.Models;
 using Taix.Client.Models.Navigation;
+using Taix.Client.Servicers;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Librarys;
@@ -27,19 +30,13 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
     private readonly IAppConfig _appConfig;
     private readonly IClipboardService _clipboardService;
     private readonly IDialogService _dialogService;
-    private IDisposable? _languageSubscription;
     private readonly IProcessService _processService;
     private readonly IToastService _toastService;
     private readonly INavigationDataService _navigationData;
     private readonly IWebData _webData;
-
-    private MenuItem _blockMenuItem = new();
-    private MenuItem _clearMenuItem = new();
-    private MenuItem _copyDomainMenuItem = new();
-    private MenuItem _editAliasMenuItem = new();
-    private MenuItem _openMenuItem = new();
-    private MenuItem _reloadDataMenuItem = new();
-    private MenuItem _setCategoryMenuItem = new();
+    private readonly IContextMenuServicer _contextMenuService;
+    private readonly IAppEventService _appEventService;
+    private IDisposable? _languageSubscription;
 
     public WebSiteDetailPageViewModel(
         IWebData webData,
@@ -48,7 +45,9 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         IDialogService dialogService,
         IClipboardService clipboardService,
         IProcessService processService,
-        IToastService toastService)
+        IToastService toastService,
+        IContextMenuServicer contextMenuService,
+        IAppEventService appEventService)
     {
         _webData = webData;
         _navigationData = navigationData;
@@ -57,6 +56,11 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         _clipboardService = clipboardService;
         _processService = processService;
         _toastService = toastService;
+        _contextMenuService = contextMenuService;
+        _appEventService = appEventService;
+
+        PageCommand = ReactiveCommand.CreateFromTask<object>(OnPageCommandAsync);
+        PageCommand.DisposeWith(Disposables);
 
         Initialize();
     }
@@ -92,12 +96,6 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
             if (category.Id == WebSite.CategoryID) return;
             await UpdateCategoryAsync(category.Id);
         });
-
-        InitializeMenuItems();
-        UpdateMenuTexts();
-
-        PageCommand = ReactiveCommand.CreateFromTask<object>(OnPageCommandAsync);
-        PageCommand.DisposeWith(Disposables);
     }
 
     public override async Task OnNavigatedToAsync()
@@ -125,6 +123,12 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
 
         IsRestoringState = true;
         WebSite = webSite;
+
+        _appEventService.WebSiteChanged
+            .Where(e => e.WebSite.ID == WebSite?.ID)
+            .Subscribe(e => OnWebSiteChanged(e.WebSite, e.ChangeType))
+            .DisposeWith(Disposables);
+
         ChartDate = date;
         WeekDate = date;
         MonthDate = date;
@@ -133,7 +137,50 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         SelectedPeriod = PeriodOptions[periodType];
         IsRestoringState = false;
 
+        // 设置 ContextMenu 的数据
+        await UpdateContextMenuDataAsync();
+
         await ExecuteAsync(LoadDataCoreAsync);
+    }
+
+    /// <summary>
+    /// 更新 ContextMenu 的数据上下文
+    /// </summary>
+    private async Task UpdateContextMenuDataAsync()
+    {
+        if (WebSite == null) return;
+
+        var chartData = new ChartsDataModel
+        {
+            Name = WebSite.Title,
+            Data = WebSite
+        };
+        WebSiteContextMenu = await _contextMenuService.CreateContextMenuAsync(ContextMenuType.WebSiteDetail, chartData);
+    }
+
+    private void UpdateMenuTexts()
+    {
+    }
+
+    private void OnWebSiteChanged(WebSiteModel updatedSite, AppChangeType changeType)
+    {
+        WebSite = updatedSite;
+
+        if (changeType.HasFlag(AppChangeType.WebSiteCategory))
+        {
+            _ = ReloadCategoryAndRefreshAsync(updatedSite.CategoryID);
+        }
+        else
+        {
+            _ = UpdateContextMenuDataAsync();
+        }
+    }
+
+    private async Task ReloadCategoryAndRefreshAsync(int categoryId)
+    {
+        await LoadCategoriesAsync(CancellationToken.None);
+        await UpdateContextMenuDataAsync();
+        await LoadDataAsync();
     }
 
     private Task LoadDataAsync() => ExecuteAsync(LoadDataCoreAsync);
@@ -233,18 +280,27 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
     private async Task UpdateCategoryAsync(int categoryId)
     {
         if (WebSite == null) return;
-        await _webData.UpdateWebSitesCategoryAsync(new[] { WebSite.ID }, categoryId);
-        var categoryModel = Categories.FirstOrDefault(m => m.Id == categoryId);
-        WebSite = WebSite with { CategoryID = categoryId };
-        if (Category == null || categoryId != Category.Id)
-            Category = Categories.FirstOrDefault(m => m.Id == WebSite.CategoryID);
-        NotifySourcePageRefresh();
-    }
 
-    private void NotifySourcePageRefresh()
-    {
-        var stateService = ServiceLocator.GetService<IStateService>();
-        stateService?.Set("PageRefresh", "true");
+        WebSiteCategoryModel? category;
+        if (categoryId > 0)
+        {
+            var categories = await _webData.GetWebSiteCategoriesAsync();
+            category = categories.FirstOrDefault(c => c.ID == categoryId);
+        }
+        else
+        {
+            var categories = await _webData.GetWebSiteCategoriesAsync();
+            category = categories.FirstOrDefault(c => c.IsSystem);
+            categoryId = category?.ID ?? 0;
+        }
+
+        await _webData.UpdateWebSitesCategoryAsync(new[] { WebSite.ID }, categoryId);
+        WebSite = WebSite with { CategoryID = categoryId, Category = category };
+        if (Category == null || categoryId != Category.Id)
+            Category = Categories.FirstOrDefault(m => m.Id == categoryId);
+        await UpdateContextMenuDataAsync();
+        if (WebSite != null)
+            _appEventService.PublishWebSiteChanged(WebSite, AppChangeType.WebSiteCategory);
     }
 
     private async Task OnPageCommandAsync(object obj)
@@ -268,195 +324,6 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
                     await _clipboardService.SetTextAsync(WebPageSelectedItem.Url.Title);
                 break;
         }
-    }
-
-    private void InitializeMenuItems()
-    {
-        WebSiteContextMenu = new ContextMenu();
-        WebSiteContextMenu.Opened += OnWebSiteContextMenuOpened;
-
-        _openMenuItem = new MenuItem();
-        var openCommand = ReactiveCommand.Create(() =>
-        {
-            if (!string.IsNullOrEmpty(WebSite!.Domain))
-                _processService.OpenUrl(WebSite.Domain);
-        });
-        openCommand.DisposeWith(Disposables);
-        _openMenuItem.Command = openCommand;
-
-        _copyDomainMenuItem = new MenuItem();
-        var copyCommand = ReactiveCommand.CreateFromTask(async () =>
-        {
-            if (!string.IsNullOrEmpty(WebSite!.Domain))
-                await _clipboardService.SetTextAsync(WebSite.Domain);
-        });
-        copyCommand.DisposeWith(Disposables);
-        _copyDomainMenuItem.Command = copyCommand;
-
-        _reloadDataMenuItem = new MenuItem();
-        var reloadCommand = ReactiveCommand.CreateFromTask(LoadDataAsync);
-        reloadCommand.DisposeWith(Disposables);
-        _reloadDataMenuItem.Command = reloadCommand;
-
-        _clearMenuItem = new MenuItem();
-        var clearCommand = ReactiveCommand.CreateFromTask(OnClearAsync);
-        clearCommand.DisposeWith(Disposables);
-        _clearMenuItem.Command = clearCommand;
-
-        _setCategoryMenuItem = new MenuItem();
-
-        _editAliasMenuItem = new MenuItem();
-        var editCommand = ReactiveCommand.CreateFromTask(OnEditAliasAsync);
-        editCommand.DisposeWith(Disposables);
-        _editAliasMenuItem.Command = editCommand;
-
-        _blockMenuItem = new MenuItem();
-        var blockCommand = ReactiveCommand.Create(OnBlockAction);
-        blockCommand.DisposeWith(Disposables);
-        _blockMenuItem.Command = blockCommand;
-
-        WebSiteContextMenu.Items.Add(_openMenuItem);
-        WebSiteContextMenu.Items.Add(_reloadDataMenuItem);
-        WebSiteContextMenu.Items.Add(_copyDomainMenuItem);
-        WebSiteContextMenu.Items.Add(new Separator());
-        WebSiteContextMenu.Items.Add(_setCategoryMenuItem);
-        WebSiteContextMenu.Items.Add(_editAliasMenuItem);
-        WebSiteContextMenu.Items.Add(new Separator());
-        WebSiteContextMenu.Items.Add(_blockMenuItem);
-        WebSiteContextMenu.Items.Add(_clearMenuItem);
-    }
-
-    private void OnWebSiteContextMenuOpened(object? sender, RoutedEventArgs e)
-    {
-        _ = RefreshMenuItemsAsync();
-    }
-
-    private async Task RefreshMenuItemsAsync()
-    {
-        if (WebSite == null) return;
-        _setCategoryMenuItem.Items.Clear();
-
-        var webSite = await _webData.GetWebSiteAsync(WebSite.ID);
-        if (webSite == null) return;
-        var categoryId = webSite.CategoryID;
-
-        var sysCategories = Categories.Where(m => m.Data is WebSiteCategoryModel wc && wc.IsSystem).ToList();
-        var userCategories = Categories.Where(m => m.Data is WebSiteCategoryModel wc && !wc.IsSystem).ToList();
-
-        // 用户分类
-        foreach (var category in userCategories)
-        {
-            var categoryMenu = new MenuItem
-            {
-                Header = category.Name,
-                ToggleType = MenuItemToggleType.Radio,
-                IsChecked = categoryId == category.Id
-            };
-            var command = ReactiveCommand.Create(() => _ = UpdateCategoryAsync(category.Id));
-            categoryMenu.Command = command;
-            _setCategoryMenuItem.Items.Add(categoryMenu);
-        }
-
-        // 如果当前网站属于用户自定义分类，显示"未分类"选项
-        var currentCategory = sysCategories.FirstOrDefault(c => c.Id == categoryId);
-        if (currentCategory == null && categoryId != 0)
-        {
-            // 当前是用户分类，显示"未分类"选项
-            if (userCategories.Count > 0)
-            {
-                _setCategoryMenuItem.Items.Add(new Separator());
-            }
-            var sysCategory = sysCategories.FirstOrDefault();
-            var un = new MenuItem
-            {
-                Header = sysCategory?.Name ?? ResourceStrings.Uncategorized,
-                Command = ReactiveCommand.Create(() => _ = ClearSiteCategoryAsync())
-            };
-            _setCategoryMenuItem.Items.Add(un);
-        }
-
-        _blockMenuItem.Header = IsIgnore ? ResourceStrings.Unignore : ResourceStrings.IgnoreTheSite;
-        _blockMenuItem.IsEnabled = !IsUrlRegexIgnore(WebSite.Domain);
-    }
-
-    private void UpdateMenuTexts()
-    {
-        _openMenuItem.Header = ResourceStrings.OpenWebsite;
-        _copyDomainMenuItem.Header = ResourceStrings.CopyDomain;
-        _reloadDataMenuItem.Header = ResourceStrings.Refresh;
-        _clearMenuItem.Header = ResourceStrings.ClearStatistics;
-        _editAliasMenuItem.Header = ResourceStrings.EditAlias;
-        _setCategoryMenuItem.Header = ResourceStrings.SetCategory;
-        _blockMenuItem.Header = ResourceStrings.IgnoreWebsite;
-    }
-
-    private async Task OnEditAliasAsync()
-    {
-        if (WebSite == null) return;
-        try
-        {
-            var input = await _dialogService.ShowInputModalAsync(
-                ResourceStrings.EditAlias,
-                ResourceStrings.EnterAlias,
-                WebSite.Alias,
-                val =>
-                {
-                    if (val?.Length > 15)
-                    {
-                        _toastService.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
-                        return false;
-                    }
-                    return true;
-                });
-
-            WebSite = WebSite with { Alias = input };
-            var updated = await _webData.UpdateAsync(WebSite);
-            if (updated != null) WebSite = updated;
-            NotifySourcePageRefresh();
-            _toastService.Success(ResourceStrings.AliasUpdated);
-        }
-        catch
-        {
-            // 输入取消，无需处理
-        }
-    }
-
-    private async Task OnClearAsync()
-    {
-        if (WebSite == null) return;
-        var isConfirm = await _dialogService.ShowConfirmDialogAsync(
-            ResourceStrings.ClearConfirmation,
-            ResourceStrings.ClearAllStatisticsSiteTip);
-
-        if (isConfirm)
-        {
-            await _webData.ClearAsync(WebSite.ID);
-            await ExecuteAsync(LoadDataCoreAsync, trackLoading: false);
-            _toastService.Success(ResourceStrings.OperationCompleted);
-        }
-    }
-
-    private void OnBlockAction()
-    {
-        if (WebSite == null) return;
-        var config = _appConfig.GetConfig();
-
-        if (IsIgnore)
-            config.Behavior.IgnoreUrlList.Remove(WebSite.Domain);
-        else
-            config.Behavior.IgnoreUrlList.Add(WebSite.Domain);
-
-        IsIgnore = !IsIgnore;
-        _toastService.Success(ResourceStrings.OperationCompleted);
-    }
-
-    private async Task ClearSiteCategoryAsync()
-    {
-        if (WebSite == null) return;
-        await _webData.UpdateWebSitesCategoryAsync(new[] { WebSite.ID }, 0);
-        WebSite = WebSite with { CategoryID = 0 };
-        Category = Categories.FirstOrDefault(m => m.Data is WebSiteCategoryModel wc && wc.IsSystem);
-        NotifySourcePageRefresh();
     }
 
     private bool IsUrlIgnore(string url)
@@ -513,9 +380,6 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
     public override void Dispose()
     {
         _languageSubscription?.Dispose();
-        if (WebSiteContextMenu != null)
-            WebSiteContextMenu.Opened -= OnWebSiteContextMenuOpened;
-
         base.Dispose();
     }
 }

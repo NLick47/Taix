@@ -12,9 +12,7 @@ namespace Taix.Client.Models;
 [GeneratePageState]
 public partial class ChartPageModel : ModelBase
 {
-    private ContextMenu _appContextMenu;
     private string _appCount;
-
 
     private int _columnSelectedIndex = -1;
     private List<ChartsDataModel> _data;
@@ -60,7 +58,6 @@ public partial class ChartPageModel : ModelBase
 
     private int _webColSelectedIndex = -1;
     private double _webPageCount;
-    private ContextMenu _webSiteContextMenu;
     private double _webSiteCount;
 
     private List<ChartsDataModel> _webSitesColSelectedData;
@@ -219,16 +216,6 @@ public partial class ChartPageModel : ModelBase
         set
         {
             _dataMaximum = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public ContextMenu AppContextMenu
-    {
-        get => _appContextMenu;
-        set
-        {
-            _appContextMenu = value;
             OnPropertyChanged();
         }
     }
@@ -587,18 +574,6 @@ public partial class ChartPageModel : ModelBase
             OnPropertyChanged();
         }
     }
-
-    /// <summary>
-    /// 网站右键菜单
-    /// </summary>
-    public ContextMenu WebSiteContextMenu
-    {
-        get => _webSiteContextMenu;
-        set
-        {
-            _webSiteContextMenu = value;
-            OnPropertyChanged();
-        }
-    }
-
 }
+
+    

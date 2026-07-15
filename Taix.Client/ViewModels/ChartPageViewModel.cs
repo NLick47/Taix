@@ -11,6 +11,7 @@ using ReactiveUI;
 using ReactiveUI.Avalonia;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
+using Taix.Client.Events;
 using Taix.Client.Librarys;
 using Taix.Client.Models;
 using Taix.Client.Models.Navigation;
@@ -31,11 +32,10 @@ public partial class ChartPageViewModel : ChartPageModel
     private readonly ConfigModel _config;
     private readonly IData _dataService;
     private readonly IWebData _webDataService;
-    private readonly IWebSiteContextMenuServicer _webSiteContextMenuService;
-    private readonly IAppContextMenuServicer _appContextMenuService;
     private readonly ICategorys _categoryService;
     private readonly INavigationService _navigationService;
     private readonly IStateService _stateService;
+    private readonly IAppEventService _appEventService;
     private int _appCount;
     private double _totalTime;
 
@@ -44,19 +44,17 @@ public partial class ChartPageViewModel : ChartPageModel
         ICategorys categories,
         INavigationService navigationService,
         IWebData webData,
-        IWebSiteContextMenuServicer webSiteContextMenu,
-        IAppContextMenuServicer appContextMenu,
         IAppConfig appConfig,
-        IStateService stateService)
+        IStateService stateService,
+        IAppEventService appEventService)
     {
         _dataService = data;
         _categoryService = categories;
         _navigationService = navigationService;
-        _appContextMenuService = appContextMenu;
         _webDataService = webData;
-        _webSiteContextMenuService = webSiteContextMenu;
         _stateService = stateService;
         _config = appConfig.GetConfig();
+        _appEventService = appEventService;
 
         ToDetailCommand = ReactiveCommand.Create<object>(OnToDetail);
         RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync);
@@ -64,6 +62,18 @@ public partial class ChartPageViewModel : ChartPageModel
         RefreshCommand.DisposeWith(Disposables);
 
         Initialize();
+
+        _appEventService.AppChanged
+            .Throttle(TimeSpan.FromMilliseconds(100))
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Subscribe(async _ => await RefreshAsync())
+            .DisposeWith(Disposables);
+
+        _appEventService.WebSiteChanged
+            .Throttle(TimeSpan.FromMilliseconds(100))
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Subscribe(async _ => await RefreshAsync())
+            .DisposeWith(Disposables);
     }
 
     public ReactiveCommand<object, Unit> ToDetailCommand { get; }
@@ -88,8 +98,6 @@ public partial class ChartPageViewModel : ChartPageModel
         MonthDate = DateTime.Now;
         YearDate = DateTime.Now;
         TabbarSelectedIndex = 0;
-        AppContextMenu = _appContextMenuService.GetContextMenu();
-        WebSiteContextMenu = _webSiteContextMenuService.GetContextMenu();
 
         WhenPropertyChanged(this, x => x.Date, _ => OnDateChangedAsync());
         WhenPropertyChanged(this, x => x.TabbarSelectedIndex, _ => OnTabbarChangedAsync());
@@ -120,15 +128,8 @@ public partial class ChartPageViewModel : ChartPageModel
 
     public override async Task OnNavigatedToAsync()
     {
-        var restored = TryRestoreState(_navigationService, _stateService);
-        if (!restored)
-        {
-            await ExecuteAsync(LoadDataAsync);
-        }
-        else
-        {
-            await TryRefreshIfNeededAsync();
-        }
+        TryRestoreState(_navigationService, _stateService);
+        await ExecuteAsync(LoadDataAsync);
     }
 
     public override void OnNavigatedFrom()
