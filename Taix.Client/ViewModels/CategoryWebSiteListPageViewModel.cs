@@ -12,6 +12,7 @@ using ReactiveUI.Avalonia;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Select;
 using Taix.Client.Controls.Window;
+using Taix.Client.Events;
 using Taix.Client.Models;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Servicers.Interfaces;
@@ -27,6 +28,7 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
     private readonly INavigationService _navigationService;
     private readonly IToastService _toastService;
     private readonly IWebData _webDataService;
+    private readonly IAppEventService _appEventService;
 
     private List<OptionModel> _webSiteOptionsTemp = [];
     private IDisposable? _searchSubscription;
@@ -35,12 +37,14 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
         INavigationDataService navigationData,
         INavigationService navigationService,
         IToastService toastService,
-        IWebData webData)
+        IWebData webData,
+        IAppEventService appEventService)
     {
         _navigationData = navigationData;
         _navigationService = navigationService;
         _toastService = toastService;
         _webDataService = webData;
+        _appEventService = appEventService;
         Category = _navigationData.Data as WebSiteCategoryModel ?? new WebSiteCategoryModel();
 
         ShowChooseCommand = ReactiveCommand.CreateFromTask<object>(OnShowChooseAsync).DisposeWith(Disposables);
@@ -54,6 +58,13 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
             .ObserveOn(AvaloniaScheduler.Instance)
             .Subscribe(DoSearch);
         _searchSubscription.DisposeWith(Disposables);
+
+        _appEventService.WebSiteChanged
+            .Where(e => e.ChangeType.HasFlag(AppChangeType.WebSiteCategory))
+            .Throttle(TimeSpan.FromMilliseconds(100))
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Subscribe(async _ => await RefreshAsync())
+            .DisposeWith(Disposables);
     }
 
     public override Task OnNavigatedToAsync()
@@ -117,7 +128,15 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
     {
         if (SelectedItem != null)
         {
-            await _webDataService.UpdateWebSitesCategoryAsync(new[] { SelectedItem.ID }, 0);
+            var categories = await _webDataService.GetWebSiteCategoriesAsync();
+            var systemCategory = categories.FirstOrDefault(c => c.IsSystem);
+            var categoryId = systemCategory?.ID ?? 0;
+
+            await _webDataService.UpdateWebSitesCategoryAsync(new[] { SelectedItem.ID }, categoryId);
+            
+            var removedSite = SelectedItem with { CategoryID = categoryId, Category = systemCategory };
+            _appEventService.PublishWebSiteChanged(removedSite, AppChangeType.WebSiteCategory);
+            
             CategoryWebSiteList.Remove(SelectedItem);
             if (CategoryWebSiteList.Count == 0) CategoryWebSiteList = new ObservableCollection<WebSiteModel>();
 
@@ -213,10 +232,27 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
             CategoryWebSiteList.Add(item);
 
         if (toRemove.Count > 0)
-            await _webDataService.UpdateWebSitesCategoryAsync(toRemove.ToArray(), 0);
+        {
+            var categories = await _webDataService.GetWebSiteCategoriesAsync();
+            var systemCategory = categories.FirstOrDefault(c => c.IsSystem);
+            var removeCategoryId = systemCategory?.ID ?? 0;
+            await _webDataService.UpdateWebSitesCategoryAsync(toRemove.ToArray(), removeCategoryId);
+            
+            foreach (var siteId in toRemove)
+            {
+                var site = _webSiteOptionsTemp.FirstOrDefault(m => m.WebSite.ID == siteId)?.WebSite;
+                if (site != null)
+                    _appEventService.PublishWebSiteChanged(site with { CategoryID = removeCategoryId, Category = systemCategory }, AppChangeType.WebSiteCategory);
+            }
+        }
 
         if (toAdd.Count > 0)
+        {
             await _webDataService.UpdateWebSitesCategoryAsync(toAdd.ToArray(), Category.ID);
+            
+            foreach (var site in addSites)
+                _appEventService.PublishWebSiteChanged(site with { CategoryID = Category.ID, Category = Category }, AppChangeType.WebSiteCategory);
+        }
     }
 
     private async Task OnShowChooseAsync(object obj)

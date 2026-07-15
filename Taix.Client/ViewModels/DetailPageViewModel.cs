@@ -4,17 +4,22 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Disposables.Fluent;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using ReactiveUI;
+using Taix.Client.Controls.Charts;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
+using Taix.Client.Events;
 using Taix.Client.Librarys;
+using Taix.Client.Logging;
 using Taix.Client.Models;
 using Taix.Client.Models.Navigation;
+using Taix.Client.Servicers;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Librarys;
@@ -32,20 +37,12 @@ public class DetailPageViewModel : DetailPageModel
     private readonly IClipboardService _clipboardService;
     private readonly IData _dataService;
     private readonly IDialogService _dialogService;
-    private IDisposable? _languageSubscription;
     private readonly IProcessService _processService;
     private readonly IToastService _toastService;
     private readonly INavigationDataService _navigationData;
-
-    private MenuItem _clearMenuItem;
-    private MenuItem _copyProcessFileMenuItem;
-    private MenuItem _copyProcessNameMenuItem;
-    private MenuItem _editAliasMenuItem;
-    private MenuItem _openDirMenuItem;
-    private MenuItem _openExeMenuItem;
-    private MenuItem _reloadDataMenuItem;
-    private MenuItem _setCategoryMenuItem;
-    private MenuItem _whiteListMenuItem;
+    private readonly IContextMenuServicer _contextMenuService;
+    private readonly IAppEventService _appEventService;
+    private readonly IAppUpdateService _appUpdateService;
 
     public DetailPageViewModel(
         IData data,
@@ -56,7 +53,10 @@ public class DetailPageViewModel : DetailPageModel
         IDialogService dialogService,
         IClipboardService clipboardService,
         IProcessService processService,
-        IToastService toastService)
+        IToastService toastService,
+        IContextMenuServicer contextMenuService,
+        IAppEventService appEventService,
+        IAppUpdateService appUpdateService)
     {
         _dataService = data;
         _navigationData = navigationData;
@@ -67,6 +67,9 @@ public class DetailPageViewModel : DetailPageModel
         _clipboardService = clipboardService;
         _processService = processService;
         _toastService = toastService;
+        _contextMenuService = contextMenuService;
+        _appEventService = appEventService;
+        _appUpdateService = appUpdateService;
 
         BlockActionCommand = ReactiveCommand.CreateFromTask<object>(OnBlockActionAsync);
         ClearSelectMonthDataCommand = ReactiveCommand.CreateFromTask<object>(OnClearSelectMonthDataAsync);
@@ -93,11 +96,6 @@ public class DetailPageViewModel : DetailPageModel
             new SelectItemModel { Id = 2, Name = ResourceStrings.Monthly },
             new SelectItemModel { Id = 3, Name = ResourceStrings.Yearly }
         ];
-
-        _languageSubscription = _appConfig.WhenLanguageChanged(UpdateMenuTexts);
-
-        InitializeMenuItems();
-        UpdateMenuTexts();
 
         WhenPropertyChanged(this, x => x.Date, _ => LoadDataAsync());
         WhenPropertyChanged(this, x => x.Category, _ => OnCategoryChangedAsync());
@@ -138,6 +136,12 @@ public class DetailPageViewModel : DetailPageModel
 
         IsRestoringState = true;
         App = app;
+
+        _appEventService.AppChanged
+            .Where(e => e.App.ID == App?.ID)
+            .Subscribe(e => OnAppChanged(e.App, e.ChangeType))
+            .DisposeWith(Disposables);
+
         Date = DateTime.Now;
         ChartDate = date;
         WeekDate = date;
@@ -147,9 +151,28 @@ public class DetailPageViewModel : DetailPageModel
         SelectedPeriod = PeriodOptions[periodType];
         IsRestoringState = false;
 
+        // 设置 ContextMenu 的 Tag 为当前 App 数据
+        await UpdateContextMenuDataAsync();
+
         await ExecuteAsync(LoadDataCoreAsync);
         await LoadChartDataAsync();
         await ExecuteAsync(LoadInfoAsync);
+    }
+
+    /// <summary>
+    /// 更新 ContextMenu 的数据上下文
+    /// </summary>
+    private async Task UpdateContextMenuDataAsync()
+    {
+        if (App == null) return;
+
+        var chartData = new ChartsDataModel
+        {
+            Name = App.Description,
+            Icon = App.IconFile,
+            Data = new DailyLogModel { AppModel = App }
+        };
+        AppContextMenu = await _contextMenuService.CreateContextMenuAsync(ContextMenuType.AppDetail, chartData);
     }
 
     private Task LoadDataAsync() => ExecuteAsync(LoadDataCoreAsync);
@@ -242,17 +265,31 @@ public class DetailPageViewModel : DetailPageModel
     private async Task OnCategoryChangedAsync()
     {
         if (App == null || Category?.Data is not CategoryModel cat) return;
-        if ((App.Category == null && Category != null) || (Category != null && App.Category?.Name != Category.Name))
+        if (App.CategoryID == cat.ID) return;
+
+        await _appUpdateService.UpdateCategoryAsync(App.ID, cat.ID);
+    }
+
+    private void OnAppChanged(AppModel updatedApp, AppChangeType changeType)
+    {
+        App = updatedApp;
+
+        if (changeType.HasFlag(AppChangeType.Category))
         {
-            App = App with { CategoryID = cat.ID, Category = cat };
-            var app = await _appDataService.GetAppAsync(App.ID);
-            if (app != null)
-            {
-                app = app with { CategoryID = cat.ID };
-                await _appDataService.UpdateAppAsync(app);
-                NotifySourcePageRefresh();
-            }
+            _ = ReloadCategoryAndRefreshAsync(updatedApp.CategoryID);
         }
+        else
+        {
+            _ = UpdateContextMenuDataAsync();
+        }
+    }
+
+    private async Task ReloadCategoryAndRefreshAsync(int categoryId)
+    {
+        await LoadCategorys(categoryId);
+        await UpdateContextMenuDataAsync();
+        await LoadDataAsync();
+        await LoadChartDataAsync();
     }
 
     private async Task OnClearSelectMonthDataAsync(object _)
@@ -309,7 +346,6 @@ public class DetailPageViewModel : DetailPageModel
 
     private static bool IsWildcardOrRegexPattern(string pattern)
     {
-        // 包含通配符或正则元字符才算是模式匹配
         return pattern.Contains('*') || pattern.Contains('?') || pattern.IndexOfAny(RegexMetaChars) >= 0;
     }
 
@@ -319,242 +355,6 @@ public class DetailPageViewModel : DetailPageModel
             return false;
         return WildcardHelper.IsMatch(name, pattern) ||
                (!string.IsNullOrEmpty(file) && WildcardHelper.IsMatch(file, pattern));
-    }
-
-    private void InitializeMenuItems()
-    {
-        AppContextMenu = new ContextMenu();
-        AppContextMenu.Opened += OnAppContextMenuOpened;
-
-        _openExeMenuItem = new MenuItem();
-        var openExeCommand = ReactiveCommand.Create(() =>
-        {
-            if (!string.IsNullOrEmpty(App?.File))
-                _processService.OpenFile(App.File);
-            else
-                _toastService.Error(ResourceStrings.ApplicationExist);
-        });
-        openExeCommand.DisposeWith(Disposables);
-        _openExeMenuItem.Command = openExeCommand;
-
-        _copyProcessNameMenuItem = new MenuItem();
-        var copyProcessNameCommand = ReactiveCommand.CreateFromTask(async () =>
-        {
-            if (App?.Name != null)
-                await _clipboardService.SetTextAsync(App.Name);
-        });
-        copyProcessNameCommand.DisposeWith(Disposables);
-        _copyProcessNameMenuItem.Command = copyProcessNameCommand;
-
-        _copyProcessFileMenuItem = new MenuItem();
-        var copyProcessFileCommand = ReactiveCommand.CreateFromTask(async () =>
-        {
-            if (App?.File != null)
-                await _clipboardService.SetTextAsync(App.File);
-        });
-        copyProcessFileCommand.DisposeWith(Disposables);
-        _copyProcessFileMenuItem.Command = copyProcessFileCommand;
-
-        _openDirMenuItem = new MenuItem();
-        var openDirCommand = ReactiveCommand.Create(() =>
-        {
-            if (!string.IsNullOrEmpty(App?.File))
-                _processService.OpenDirectory(App.File);
-            else
-                _toastService.Error(ResourceStrings.ApplicationFileExist);
-        });
-        openDirCommand.DisposeWith(Disposables);
-        _openDirMenuItem.Command = openDirCommand;
-
-        _reloadDataMenuItem = new MenuItem();
-        var reloadDataCommand = ReactiveCommand.CreateFromTask(async () => await OnRefreshAsync(null));
-        reloadDataCommand.DisposeWith(Disposables);
-        _reloadDataMenuItem.Command = reloadDataCommand;
-
-        _setCategoryMenuItem = new MenuItem();
-
-        _editAliasMenuItem = new MenuItem();
-        var editAliasCommand = ReactiveCommand.CreateFromTask(OnEditAliasAsync);
-        editAliasCommand.DisposeWith(Disposables);
-        _editAliasMenuItem.Command = editAliasCommand;
-
-        _whiteListMenuItem = new MenuItem();
-        var whiteListCommand = ReactiveCommand.Create(OnWhiteListAction);
-        whiteListCommand.DisposeWith(Disposables);
-        _whiteListMenuItem.Command = whiteListCommand;
-
-        _clearMenuItem = new MenuItem();
-        var clearCommand = ReactiveCommand.CreateFromTask(async () => await ClearAsync());
-        clearCommand.DisposeWith(Disposables);
-        _clearMenuItem.Command = clearCommand;
-
-        AppContextMenu.Items.Add(_openExeMenuItem);
-        AppContextMenu.Items.Add(new Separator());
-        AppContextMenu.Items.Add(_reloadDataMenuItem);
-        AppContextMenu.Items.Add(new Separator());
-        AppContextMenu.Items.Add(_setCategoryMenuItem);
-        AppContextMenu.Items.Add(_editAliasMenuItem);
-        AppContextMenu.Items.Add(new Separator());
-        AppContextMenu.Items.Add(_copyProcessNameMenuItem);
-        AppContextMenu.Items.Add(_copyProcessFileMenuItem);
-        AppContextMenu.Items.Add(_openDirMenuItem);
-        AppContextMenu.Items.Add(new Separator());
-        AppContextMenu.Items.Add(_clearMenuItem);
-        AppContextMenu.Items.Add(_whiteListMenuItem);
-    }
-
-    private void OnAppContextMenuOpened(object? sender, RoutedEventArgs e)
-    {
-        _ = RefreshMenuItemsAsync();
-    }
-
-    private void UpdateMenuTexts()
-    {
-        _openExeMenuItem.Header = ResourceStrings.StartApplication;
-        _copyProcessNameMenuItem.Header = ResourceStrings.CopyApplicationProcessName;
-        _copyProcessFileMenuItem.Header = ResourceStrings.CopyApplicationFilePath;
-        _openDirMenuItem.Header = ResourceStrings.OpenApplicationDirectory;
-        _reloadDataMenuItem.Header = ResourceStrings.Refresh;
-        _clearMenuItem.Header = ResourceStrings.ClearStatistics;
-        _setCategoryMenuItem.Header = ResourceStrings.SetCategory;
-        _editAliasMenuItem.Header = ResourceStrings.EditAlias;
-        _whiteListMenuItem.Header = ResourceStrings.AddWhitelist;
-    }
-
-    private async Task RefreshMenuItemsAsync()
-    {
-        if (App == null) return;
-        _setCategoryMenuItem.Items.Clear();
-
-        var app = await _appDataService.GetAppAsync(App.ID);
-        var categoryId = app?.CategoryID ?? 0;
-
-        var sysCategories = Categorys.Where(m => m.Data is CategoryModel c && c.IsSystem).ToList();
-        var userCategories = Categorys.Where(m => m.Data is CategoryModel c && !c.IsSystem).ToList();
-
-        // 用户分类
-        foreach (var category in userCategories)
-        {
-            var categoryMenu = new MenuItem
-            {
-                Header = category.Name,
-                ToggleType = MenuItemToggleType.Radio,
-                IsChecked = categoryId == category.Id,
-                Command = ReactiveCommand.CreateFromTask(async () => await UpdateCategory(category.Data as CategoryModel))
-            };
-            _setCategoryMenuItem.Items.Add(categoryMenu);
-        }
-
-        // 如果当前应用属于用户自定义分类，显示"未分类"选项
-        var currentCategory = sysCategories.FirstOrDefault(c => c.Id == categoryId);
-        if (currentCategory == null && categoryId != 0)
-        {
-            // 当前是用户分类，显示"未分类"选项
-            if (userCategories.Count > 0)
-            {
-                _setCategoryMenuItem.Items.Add(new Separator());
-            }
-            var sysCategory = sysCategories.FirstOrDefault();
-            var un = new MenuItem
-            {
-                Header = sysCategory?.Name ?? ResourceStrings.Uncategorized,
-                Command = ReactiveCommand.CreateFromTask(async () => await ClearCategory(App.ID))
-            };
-            _setCategoryMenuItem.Items.Add(un);
-        }
-
-        _setCategoryMenuItem.IsEnabled = _setCategoryMenuItem.Items.Count > 0;
-        _whiteListMenuItem.Header = _appConfig.GetConfig().Behavior.ProcessWhiteList.Contains(App.Name)
-            ? ResourceStrings.RemoveWhitelist
-            : ResourceStrings.AddWhitelist;
-    }
-
-    private async Task OnEditAliasAsync()
-    {
-        if (App == null) return;
-        var app = await _appDataService.GetAppAsync(App.ID);
-        if (app == null) return;
-        try
-        {
-            var input = await _dialogService.ShowInputModalAsync(
-                ResourceStrings.UpdateAlias,
-                ResourceStrings.EnterAlias,
-                app.Alias,
-                val =>
-                {
-                    if (val.Length > 15)
-                    {
-                        _toastService.Error(string.Format(ResourceStrings.AliasMaxLengthTip, 15));
-                        return false;
-                    }
-                    return true;
-                });
-
-            app = app with { Alias = input };
-            await _appDataService.UpdateAppAsync(app);
-            App = app;
-
-            // 通知源页面刷新
-            NotifySourcePageRefresh();
-            _toastService.Success(ResourceStrings.AliasUpdated);
-        }
-        catch
-        {
-            // 输入取消，无需处理
-        }
-    }
-
-    private void NotifySourcePageRefresh()
-    {
-        // 通过 StateService 传递刷新标记
-        var stateService = ServiceLocator.GetService<IStateService>();
-        stateService?.Set("PageRefresh", "true");
-    }
-
-    private async void OnWhiteListAction()
-    {
-        if (App == null) return;
-        var config = _appConfig.GetConfig();
-        if (config.Behavior.ProcessWhiteList.Contains(App.Name))
-        {
-            config.Behavior.ProcessWhiteList.Remove(App.Name);
-            _toastService.Success($"{ResourceStrings.RemovedApplicationFromWhitelist} {App.Description}");
-        }
-        else
-        {
-            config.Behavior.ProcessWhiteList.Add(App.Name);
-            _toastService.Success($"{ResourceStrings.AddedToWhitelist} {App.Description}");
-        }
-        await _appConfig.SaveAsync();
-    }
-
-    private async Task ClearCategory(int appId)
-    {
-        if (App == null) return;
-        var app = await _appDataService.GetAppAsync(appId);
-        if (app == null) return;
-        app = app with { CategoryID = 0, Category = null };
-        await _appDataService.UpdateAppAsync(app);
-
-        App = App with { CategoryID = 0, Category = null };
-        Category = Categorys.FirstOrDefault(m => m.Data is CategoryModel c && c.IsSystem);
-
-        NotifySourcePageRefresh();
-    }
-
-    private async Task UpdateCategory(CategoryModel? category)
-    {
-        if (App == null || category == null) return;
-        var app = await _appDataService.GetAppAsync(App.ID);
-        if (app == null) return;
-        app = app with { CategoryID = category.ID, Category = category };
-        await _appDataService.UpdateAppAsync(app);
-
-        App = App with { CategoryID = category.ID, Category = category };
-        if (Category == null || category.ID != Category.Id)
-            Category = Categorys.FirstOrDefault(m => m.Id == category.ID);
-
-        NotifySourcePageRefresh();
     }
 
     #region 柱状图图表数据加载
@@ -645,9 +445,6 @@ public class DetailPageViewModel : DetailPageModel
 
     public override void Dispose()
     {
-        _languageSubscription?.Dispose();
-        if (AppContextMenu != null)
-            AppContextMenu.Opened -= OnAppContextMenuOpened;
         base.Dispose();
     }
 }

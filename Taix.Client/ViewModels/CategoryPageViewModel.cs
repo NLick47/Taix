@@ -75,7 +75,6 @@ public class CategoryPageViewModel : CategoryPageModel
     {
         TryRestoreState(_navigationService, _stateService);
         await ExecuteAsync(LoadDataCoreAsync);
-        await TryRefreshIfNeededAsync();
     }
 
     public override void OnNavigatedFrom()

@@ -13,19 +13,17 @@ namespace Taix.Client.Servicers;
 
 public class MainServicer : IMainServicer
 {
-    private readonly IAppContextMenuServicer _appContextMenuServicer;
+    private readonly IContextMenuServicer _contextMenuServicer;
     private readonly IAppConfig _config;
     private readonly ICategorys _categorys;
     private readonly IShutdownService _shutdownService;
     private readonly IThemeServicer _themeServicer;
     private readonly IWebData _webData;
-    private readonly IWebSiteContextMenuServicer _webSiteContextMenuServicer;
     private readonly IWindowStateService _windowStateService;
 
     public MainServicer(
         IThemeServicer themeServicer,
-        IAppContextMenuServicer appContextMenuServicer,
-        IWebSiteContextMenuServicer webSiteContextMenuServicer,
+        IContextMenuServicer contextMenuServicer,
         IWindowStateService windowStateService,
         IAppConfig config,
         IShutdownService shutdownService,
@@ -33,8 +31,7 @@ public class MainServicer : IMainServicer
         IWebData webData)
     {
         _themeServicer = themeServicer;
-        _appContextMenuServicer = appContextMenuServicer;
-        _webSiteContextMenuServicer = webSiteContextMenuServicer;
+        _contextMenuServicer = contextMenuServicer;
         _windowStateService = windowStateService;
         _config = config;
         _shutdownService = shutdownService;
@@ -67,8 +64,7 @@ public class MainServicer : IMainServicer
         // 上下文菜单 Init 推迟到渲染回合之后，让 Start() 尽早返回；用 Send 不会被后台任务插队
         _ = Dispatcher.UIThread.InvokeAsync(() =>
         {
-            _appContextMenuServicer.Init();
-            _webSiteContextMenuServicer.Init();
+            _contextMenuServicer.Init();
         });
     }
 

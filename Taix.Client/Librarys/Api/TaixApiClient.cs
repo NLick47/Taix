@@ -344,7 +344,7 @@ public class TaixApiClient : ITaixApiClient
         DeleteAsync($"api/webdata/categories/{id}");
 
     public Task<WebSiteModel?> GetWebSiteAsync(int id) =>
-        GetAsync<WebSiteModel?>($"api/webdata/site/{id}");
+        GetAsync<WebSiteModel?>($"api/webdata/sites/{id}");
 
     public Task<WebSiteModel?> GetWebSiteByDomainAsync(string domain) =>
         GetAsync<WebSiteModel?>($"api/webdata/site-by-domain?domain={HttpUtility.UrlEncode(domain)}");

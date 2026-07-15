@@ -153,19 +153,7 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
 
     public virtual Task OnNavigatedToAsync()
     {
-        return TryRefreshIfNeededAsync();
-    }
-
-    /// <summary>
-    /// 检测刷新标记，如有则调用 RefreshAsync
-    /// </summary>
-    protected async Task TryRefreshIfNeededAsync()
-    {
-        if (ServiceLocator.GetService<IStateService>() is { } stateService && stateService.HasState<string>("PageRefresh"))
-        {
-            stateService.Remove<string>("PageRefresh");
-            await RefreshAsync();
-        }
+        return Task.CompletedTask;
     }
 
     public virtual Task RefreshAsync()

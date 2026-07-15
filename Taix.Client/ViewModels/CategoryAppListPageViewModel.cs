@@ -1,11 +1,16 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables.Fluent;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ReactiveUI;
+using ReactiveUI.Avalonia;
+using Taix.Client.Events;
 using Taix.Client.Models;
 using Taix.Client.Models.CategoryAppList;
+using Taix.Client.Servicers;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Servicers.Interfaces;
@@ -19,16 +24,22 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
     private readonly IAppData _appDataService;
     private readonly INavigationDataService _navigationData;
     private readonly INavigationService _navigationService;
+    private readonly IAppUpdateService _appUpdateService;
+    private readonly IAppEventService _appEventService;
     private List<ChooseAppModel> _appList = [];
 
     public CategoryAppListPageViewModel(
         IAppData appData,
         INavigationDataService navigationData,
-        INavigationService navigationService)
+        INavigationService navigationService,
+        IAppUpdateService appUpdateService,
+        IAppEventService appEventService)
     {
         _appDataService = appData;
         _navigationData = navigationData;
         _navigationService = navigationService;
+        _appUpdateService = appUpdateService;
+        _appEventService = appEventService;
 
         ShowChooseCommand = ReactiveCommand.CreateFromTask<object>(OnShowChooseAsync).DisposeWith(Disposables);
         ChoosedCommand = ReactiveCommand.CreateFromTask<object>(OnChoosed).DisposeWith(Disposables);
@@ -36,6 +47,13 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         SearchCommand = ReactiveCommand.CreateFromTask<object>(OnSearchAsync).DisposeWith(Disposables);
         ChooseCloseCommand = ReactiveCommand.Create<object>(OnChooseClose).DisposeWith(Disposables);
         DelCommand = ReactiveCommand.CreateFromTask<object>(OnDel).DisposeWith(Disposables);
+
+        _appEventService.AppChanged
+            .Where(e => e.ChangeType.HasFlag(AppChangeType.Category))
+            .Throttle(TimeSpan.FromMilliseconds(100))
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Subscribe(async _ => await RefreshAsync())
+            .DisposeWith(Disposables);
 
         PropertyChanged += (_, e) =>
         {
@@ -60,21 +78,15 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
 
     private async Task OnDel(object obj)
     {
-        if (SelectedItem != null)
-        {
-            var list = Data.ToList();
-            list.Remove(SelectedItem);
+        if (SelectedItem == null) return;
 
-            var app = await _appDataService.GetAppAsync(SelectedItem.ID);
-            if (app != null)
-            {
-                app = app with { CategoryID = 0, Category = null };
-                await _appDataService.UpdateAppAsync(app);
-            }
+        var list = Data.ToList();
+        list.Remove(SelectedItem);
 
-            Data = list;
-            MainPageOriginalData = list;
-        }
+        await _appUpdateService.ClearCategoryAsync(SelectedItem.ID);
+
+        Data = list;
+        MainPageOriginalData = list;
     }
 
     private void OnChooseClose(object obj)
@@ -109,34 +121,41 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         ChooseVisibility = false;
         SearchInput = "";
         var data = new List<AppModel>();
+        var appIdsToAdd = new List<int>();
+        var appIdsToRemove = new List<int>();
 
         foreach (var item in _appList)
         {
-            var app = await _appDataService.GetAppAsync(item.App.ID);
-            if (app == null) continue;
-
             if (item.IsChoosed)
             {
-                if (app.CategoryID != Category.Data.ID)
-                {
-                    app = app with { CategoryID = Category.Data.ID, Category = Category.Data };
-                    await _appDataService.UpdateAppAsync(app);
-                }
-                data.Add(app);
+                appIdsToAdd.Add(item.App.ID);
             }
             else
             {
                 var isHas = Data.Any(m => m.ID == item.App.ID);
                 if (isHas)
                 {
-                    app = app with { CategoryID = 0, Category = null };
-                    await _appDataService.UpdateAppAsync(app);
+                    appIdsToRemove.Add(item.App.ID);
                 }
             }
         }
 
-        Data = data;
-        MainPageOriginalData = data;
+        if (appIdsToAdd.Count > 0)
+        {
+            await _appUpdateService.UpdateCategoryBatchAsync(appIdsToAdd, Category.Data.ID);
+        }
+
+        if (appIdsToRemove.Count > 0)
+        {
+            foreach (var appId in appIdsToRemove)
+            {
+                await _appUpdateService.ClearCategoryAsync(appId);
+            }
+        }
+
+        var addedApps = (await _appDataService.GetAppsByCategoryIDAsync(Category.Data.ID)).ToList();
+        Data = addedApps;
+        MainPageOriginalData = addedApps;
         MainSearchInput = string.Empty;
     }
 

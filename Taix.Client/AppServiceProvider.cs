@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using Jab;
+using Taix.Client.Events;
 using Taix.Client.Librarys.Api;
 using Taix.Client.Servicers;
 using Taix.Client.Servicers.Instances;
@@ -27,10 +28,11 @@ namespace Taix.Client;
 [Singleton(typeof(IDialogService), Factory = nameof(CreateDialogService))]
 [Singleton(typeof(IClipboardService), typeof(ClipboardService))]
 [Singleton(typeof(IProcessService), typeof(ProcessService))]
-[Singleton(typeof(IAppContextMenuServicer), typeof(AppContextMenuServicer))]
+[Singleton(typeof(IContextMenuServicer), typeof(ContextMenuServicer))]
+[Singleton(typeof(IAppEventService), typeof(AppEventService))]
+[Singleton(typeof(IAppUpdateService), typeof(AppUpdateService))]
 [Singleton(typeof(IThemeServicer), typeof(ThemeServicer))]
 [Singleton(typeof(IMainServicer), typeof(MainServicer))]
-[Singleton(typeof(IWebSiteContextMenuServicer), typeof(WebSiteContextMenuServicer))]
 [Singleton(typeof(IShutdownService), typeof(ShutdownService))]
 [Singleton(typeof(IStateService), typeof(StateService))]
 [Singleton(typeof(ISearchService), typeof(SearchService))]

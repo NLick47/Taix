@@ -14,8 +14,6 @@ namespace Taix.Client.Models;
 [GeneratePageState]
 public partial class DataPageModel : ModelBase
 {
-    private ContextMenu _appContextMenu;
-
     private List<ChartsDataModel> _data;
 
     private DateTime _dayDate;
@@ -296,16 +294,6 @@ public partial class DataPageModel : ModelBase
         set
         {
             _yearDate = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public ContextMenu AppContextMenu
-    {
-        get => _appContextMenu;
-        set
-        {
-            _appContextMenu = value;
             OnPropertyChanged();
         }
     }

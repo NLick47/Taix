@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
@@ -11,6 +12,24 @@ namespace Taix.Client.Controls.Charts;
 
 public class ChartsItemTypeList : TemplatedControl
 {
+    public static readonly RoutedEvent<RoutedEventArgs> ContextMenuRequestedEvent =
+        RoutedEvent.Register<ChartsItemTypeList, RoutedEventArgs>(nameof(ContextMenuRequested), RoutingStrategies.Bubble);
+
+    public static readonly RoutedEvent<RoutedEventArgs> ItemClickRequestedEvent =
+        RoutedEvent.Register<ChartsItemTypeList, RoutedEventArgs>(nameof(ItemClickRequested), RoutingStrategies.Bubble);
+
+    public event EventHandler<RoutedEventArgs> ContextMenuRequested
+    {
+        add => AddHandler(ContextMenuRequestedEvent, value);
+        remove => RemoveHandler(ContextMenuRequestedEvent, value);
+    }
+
+    public event EventHandler<RoutedEventArgs> ItemClickRequested
+    {
+        add => AddHandler(ItemClickRequestedEvent, value);
+        remove => RemoveHandler(ItemClickRequestedEvent, value);
+    }
+
     public static readonly DirectProperty<ChartsItemTypeList, ChartsDataModel> DataProperty =
         AvaloniaProperty.RegisterDirect<ChartsItemTypeList, ChartsDataModel>(
             nameof(Data),
@@ -95,6 +114,7 @@ public class ChartsItemTypeList : TemplatedControl
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
+        PointerPressed -= OnPointerPressed;
         Loaded -= ChartsItemTypeList_Loaded;
         isRendering = false;
         var parent = Parent as Control;
@@ -118,6 +138,7 @@ public class ChartsItemTypeList : TemplatedControl
 
         if (!IsAddEvent)
         {
+            PointerPressed += OnPointerPressed;
             Loaded += ChartsItemTypeList_Loaded;
             IsAddEvent = true;
         }
@@ -156,6 +177,23 @@ public class ChartsItemTypeList : TemplatedControl
         ValueTextObj.LayoutUpdated += _layoutUpdatedHandler;
 
         ValueTextObj.Text = Data.Tag;
+    }
+
+    private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        var point = e.GetCurrentPoint(this);
+        if (Data == null) return;
+
+        if (point.Properties.IsLeftButtonPressed)
+        {
+            var args = new RoutedEventArgs(ItemClickRequestedEvent);
+            RaiseEvent(args);
+        }
+        else if (point.Properties.IsRightButtonPressed)
+        {
+            var args = new RoutedEventArgs(ContextMenuRequestedEvent);
+            RaiseEvent(args);
+        }
     }
 
     public void UpdateValueBlockWidth()

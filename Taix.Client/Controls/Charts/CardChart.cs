@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
+using Taix.Client.Servicers;
 
 namespace Taix.Client.Controls.Charts;
 
@@ -29,9 +32,9 @@ public class CardChart : TemplatedControl
         AvaloniaProperty.RegisterDirect<CardChart, ICommand>(
             nameof(ClickCommand), o => o.ClickCommand, (o, v) => o.ClickCommand = v);
 
-    public static readonly DirectProperty<CardChart, ContextMenu> ItemMenuProperty =
-        AvaloniaProperty.RegisterDirect<CardChart, ContextMenu>(
-            nameof(ItemMenu), o => o.ItemMenu, (o, v) => o.ItemMenu = v);
+    public static readonly DirectProperty<CardChart, ContextMenuType> MenuTypeProperty =
+        AvaloniaProperty.RegisterDirect<CardChart, ContextMenuType>(
+            nameof(MenuType), o => o.MenuType, (o, v) => o.MenuType = v);
 
     public static readonly DirectProperty<CardChart, double> IconSizeProperty =
         AvaloniaProperty.RegisterDirect<CardChart, double>(
@@ -41,7 +44,7 @@ public class CardChart : TemplatedControl
     private int _showLimit;
     private double _maxValueLimit;
     private ICommand _clickCommand;
-    private ContextMenu _itemMenu;
+    private ContextMenuType _menuType;
     private double _iconSize = 32;
     private WrapPanel _cardContainer;
     private double _maxValue;
@@ -72,10 +75,10 @@ public class CardChart : TemplatedControl
         set => SetAndRaise(ClickCommandProperty, ref _clickCommand, value);
     }
 
-    public ContextMenu ItemMenu
+    public ContextMenuType MenuType
     {
-        get => _itemMenu;
-        set => SetAndRaise(ItemMenuProperty, ref _itemMenu, value);
+        get => _menuType;
+        set => SetAndRaise(MenuTypeProperty, ref _menuType, value);
     }
 
     public double IconSize
@@ -98,8 +101,6 @@ public class CardChart : TemplatedControl
         base.OnPropertyChanged(change);
         if (change.Property == DataProperty)
             Render();
-        else if (change.Property == ItemMenuProperty && _cardContainer != null)
-            _cardContainer.ContextMenu = _itemMenu;
     }
 
     protected override void OnUnloaded(Avalonia.Interactivity.RoutedEventArgs e)
@@ -121,8 +122,6 @@ public class CardChart : TemplatedControl
 
         _maxValue = MaxValueLimit > 0 ? MaxValueLimit : list.Max(m => m.Value);
         var data = list;
-
-        _cardContainer.ContextMenu = _itemMenu;
 
         _cardContainer.Children.Clear();
         foreach (var item in data)
@@ -151,9 +150,35 @@ public class CardChart : TemplatedControl
             OnItemClick?.Invoke(clickData, EventArgs.Empty);
             ClickCommand?.Execute(clickData);
         }
-        if (e.GetCurrentPoint(el).Properties.IsRightButtonPressed && ItemMenu != null)
+        else if (e.GetCurrentPoint(el).Properties.IsRightButtonPressed)
         {
-            ItemMenu.Tag = clickData;
+            ShowContextMenu(clickData, el, e);
         }
+    }
+
+    private async void ShowContextMenu(ChartsDataModel data, Control target, PointerPressedEventArgs e)
+    {
+        var menu = await CreateMenuForDataAsync(data);
+        if (menu == null) return;
+
+        target.ContextMenu = menu;
+        menu.Closed += OnCardContextMenuClosed;
+        menu.Open(target);
+    }
+
+    private void OnCardContextMenuClosed(object? sender, RoutedEventArgs e)
+    {
+        if (sender is ContextMenu menu)
+        {
+            menu.Closed -= OnCardContextMenuClosed;
+            if (menu.PlacementTarget is Control target)
+                target.ContextMenu = null;
+        }
+    }
+
+    private async Task<ContextMenu?> CreateMenuForDataAsync(ChartsDataModel data)
+    {
+        var servicer = ServiceLocator.GetService<IContextMenuServicer>();
+        return servicer == null ? null : await servicer.CreateContextMenuAsync(MenuType, data);
     }
 }

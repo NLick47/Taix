@@ -1,20 +1,28 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
-using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Input;
+using Taix.Client.Servicers;
 
 namespace Taix.Client.Controls.Charts;
 
+public enum ContextMenuType
+{
+    App,
+    WebSite,
+    AppDetail,
+    WebSiteDetail
+}
 
 public class ListChart : TemplatedControl
 {
@@ -34,9 +42,9 @@ public class ListChart : TemplatedControl
         AvaloniaProperty.RegisterDirect<ListChart, ICommand>(
             nameof(ClickCommand), o => o.ClickCommand, (o, v) => o.ClickCommand = v);
 
-    public static readonly DirectProperty<ListChart, ContextMenu> ItemMenuProperty =
-        AvaloniaProperty.RegisterDirect<ListChart, ContextMenu>(
-            nameof(ItemMenu), o => o.ItemMenu, (o, v) => o.ItemMenu = v);
+    public static readonly DirectProperty<ListChart, ContextMenuType> MenuTypeProperty =
+        AvaloniaProperty.RegisterDirect<ListChart, ContextMenuType>(
+            nameof(MenuType), o => o.MenuType, (o, v) => o.MenuType = v);
 
     public static readonly DirectProperty<ListChart, bool> IsShowBadgeProperty =
         AvaloniaProperty.RegisterDirect<ListChart, bool>(
@@ -56,7 +64,7 @@ public class ListChart : TemplatedControl
     private bool _isSearch;
     private bool _isCanScroll = true;
     private ICommand? _clickCommand;
-    private ContextMenu? _itemMenu;
+    private ContextMenuType _menuType;
     private bool _isShowBadge;
     private double _iconSize = 25;
     private double _dataMaxValue;
@@ -96,10 +104,10 @@ public class ListChart : TemplatedControl
         set => SetAndRaise(ClickCommandProperty, ref _clickCommand, value);
     }
 
-    public ContextMenu ItemMenu
+    public ContextMenuType MenuType
     {
-        get => _itemMenu;
-        set => SetAndRaise(ItemMenuProperty, ref _itemMenu, value);
+        get => _menuType;
+        set => SetAndRaise(MenuTypeProperty, ref _menuType, value);
     }
 
     public bool IsShowBadge
@@ -137,8 +145,6 @@ public class ListChart : TemplatedControl
         RefreshDisplayData();
 
         _templateApplied = true;
-
-        if (IsLoaded) AttachHandlers();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -173,8 +179,8 @@ public class ListChart : TemplatedControl
 
         if (_listView != null)
         {
-            _listView.PointerReleased += OnListViewPointerReleased;
-            _listView.SelectionChanged += OnListSelectionChanged;
+            _listView.AddHandler(ChartsItemTypeList.ContextMenuRequestedEvent, OnItemContextMenuRequested, RoutingStrategies.Bubble, true);
+            _listView.AddHandler(ChartsItemTypeList.ItemClickRequestedEvent, OnItemClickRequested, RoutingStrategies.Bubble, true);
         }
 
         if (_searchBox != null)
@@ -189,8 +195,8 @@ public class ListChart : TemplatedControl
 
         if (_listView != null)
         {
-            _listView.PointerReleased -= OnListViewPointerReleased;
-            _listView.SelectionChanged -= OnListSelectionChanged;
+            _listView.RemoveHandler(ChartsItemTypeList.ContextMenuRequestedEvent, OnItemContextMenuRequested);
+            _listView.RemoveHandler(ChartsItemTypeList.ItemClickRequestedEvent, OnItemClickRequested);
         }
 
         if (_searchBox != null)
@@ -334,22 +340,45 @@ public class ListChart : TemplatedControl
         return false;
     }
 
-    #endregion
+#endregion
 
     #region Events
 
-    private void OnListSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnItemClickRequested(object? sender, RoutedEventArgs e)
     {
-        if (_listView?.ContextMenu != null && e.AddedItems.Count > 0)
-            _listView.ContextMenu.Tag = e.AddedItems[0];
+        if (e.Source is ChartsItemTypeList { Data: { } data })
+        {
+            OnItemClick?.Invoke(data, EventArgs.Empty);
+            ClickCommand?.Execute(data);
+        }
     }
 
-    private void OnListViewPointerReleased(object? sender, PointerReleasedEventArgs e)
+    private async void OnItemContextMenuRequested(object? sender, RoutedEventArgs e)
     {
-        if (e.InitialPressMouseButton != MouseButton.Left || _listView?.SelectedItem == null) return;
+        if (e.Source is ChartsItemTypeList { Data: { } data })
+        {
+            var menu = await CreateMenuForDataAsync(data);
+            if (menu == null) return;
 
-        OnItemClick?.Invoke(_listView.SelectedItem, EventArgs.Empty);
-        ClickCommand?.Execute(_listView.SelectedItem);
+            _listView.ContextMenu = menu;
+            menu.Closed += OnContextMenuClosed;
+            menu.Open(_listView);
+        }
+    }
+
+    private void OnContextMenuClosed(object? sender, RoutedEventArgs e)
+    {
+        if (sender is ContextMenu menu)
+        {
+            menu.Closed -= OnContextMenuClosed;
+            _listView.ContextMenu = null;
+        }
+    }
+
+    private async Task<ContextMenu?> CreateMenuForDataAsync(ChartsDataModel data)
+    {
+        var servicer = ServiceLocator.GetService<IContextMenuServicer>();
+        return servicer == null ? null : await servicer.CreateContextMenuAsync(MenuType, data);
     }
 
     #endregion

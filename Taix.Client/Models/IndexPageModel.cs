@@ -9,8 +9,6 @@ namespace Taix.Client.Models;
 [GeneratePageState]
 public partial class IndexPageModel : ModelBase
 {
-    private ContextMenu _appContextMenu;
-
     private List<ChartsDataModel> _appMoreData;
     private List<ChartsDataModel> _appFrequentUseData;
 
@@ -23,8 +21,6 @@ public partial class IndexPageModel : ModelBase
 
     private List<ChartsDataModel> _webFrequentUseData;
     private List<ChartsDataModel> _webMoreData;
-    private ContextMenu _webSiteContextMenu;
-
 
     private List<ChartsDataModel> _weekData;
 
@@ -84,16 +80,6 @@ public partial class IndexPageModel : ModelBase
         set
         {
             _weekData = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public ContextMenu AppContextMenu
-    {
-        get => _appContextMenu;
-        set
-        {
-            _appContextMenu = value;
             OnPropertyChanged();
         }
     }
@@ -190,19 +176,6 @@ public partial class IndexPageModel : ModelBase
         set
         {
             _webMoreData = value;
-            OnPropertyChanged();
-        }
-    }
-
-    /// <summary>
-    /// 网站右键菜单
-    /// </summary>
-    public ContextMenu WebSiteContextMenu
-    {
-        get => _webSiteContextMenu;
-        set
-        {
-            _webSiteContextMenu = value;
             OnPropertyChanged();
         }
     }
