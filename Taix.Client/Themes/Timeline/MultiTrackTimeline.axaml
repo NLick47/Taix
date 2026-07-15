@@ -29,7 +29,9 @@
                             <timeline:MultiTrackTimeRuler
                                 Date="{Binding Date, RelativeSource={RelativeSource TemplatedParent}}"
                                 VisibleStartHour="{Binding VisibleStartHour, RelativeSource={RelativeSource TemplatedParent}}"
-                                VisibleEndHour="{Binding VisibleEndHour, RelativeSource={RelativeSource TemplatedParent}}" />
+                                VisibleEndHour="{Binding VisibleEndHour, RelativeSource={RelativeSource TemplatedParent}}"
+                                BoundStartHour="{Binding FrameStartHour, RelativeSource={RelativeSource TemplatedParent}}"
+                                BoundEndHour="{Binding FrameEndHour, RelativeSource={RelativeSource TemplatedParent}}" />
                         </Border>
 
                         <!-- 右侧占位 -->

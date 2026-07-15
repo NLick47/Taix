@@ -172,6 +172,8 @@
                                 HoveredTimeRange="{Binding HoveredTimeRange, Mode=TwoWay}"
                                 VisibleStartHour="{Binding TimelineStartHour}"
                                 VisibleEndHour="{Binding TimelineEndHour}"
+                                FrameStartHour="{Binding TimelineStartHour}"
+                                FrameEndHour="{Binding TimelineEndHour}"
                                 ClickCommand="{Binding ToDetailCommand}" />
                         </Grid>
                     </base:View>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -14,9 +15,11 @@ public class MultiTrackRow : Control
 {
     private const int SecondsPerHour = 3600;
     private const double MinSegmentWidth = 3;
+    private const double MinLabelWidth = 45;
     private static readonly Color DefaultColor = Color.Parse("#888888");
 
-    private static readonly Typeface MediumTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Medium);
+    private static readonly Typeface NormalTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
+    private static readonly Typeface SemiBoldTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
 
     private IEnumerable<MultiTrackSegment> _segments = Array.Empty<MultiTrackSegment>();
     private double _visibleStartHour = 0.0;
@@ -86,6 +89,8 @@ public class MultiTrackRow : Control
         public Rect Rect;
         public Color Color;
         public double Radius;
+        public string? Label;
+        public MultiTrackSegment? Segment;
     }
 
     private CachedSegmentInfo[] _cachedSegments = Array.Empty<CachedSegmentInfo>();
@@ -94,9 +99,7 @@ public class MultiTrackRow : Control
     private double _cachedPixelsPerSec;
     private bool _cacheValid;
 
-    private bool _isRowHovered;
-
-    private List<(MultiTrackSegment Seg, Rect Bounds)> _segmentRects = new();
+    private MultiTrackSegment? _hoveredSegment;
 
     private IBrush _periodNightBrush = null!;
     private IBrush _periodMorningBrush = null!;
@@ -104,12 +107,9 @@ public class MultiTrackRow : Control
     private IBrush _periodAfternoonBrush = null!;
     private IBrush _periodEveningBrush = null!;
 
-
     private const double LuminanceThreshold = 0.4;
     private static readonly IBrush LightLabelBrush = new ImmutableSolidColorBrush(Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF));
     private static readonly IBrush DarkLabelBrush = new ImmutableSolidColorBrush(Color.FromArgb(0xF0, 0x1A, 0x1A, 0x1A));
-
-    // Tooltip related — removed, now using ToolTip.SetTip directly
 
     public MultiTrackRow()
     {
@@ -120,14 +120,12 @@ public class MultiTrackRow : Control
 
     private void OnPointerEntered(object? sender, PointerEventArgs e)
     {
-        _isRowHovered = true;
         InvalidateVisual();
     }
 
     private void OnPointerExited(object? sender, PointerEventArgs e)
     {
-        _isRowHovered = false;
-        // Clear segment hover when leaving this row
+        _hoveredSegment = null;
         HoveredTimeRange = null;
         PropagateHoverToTimeline(null);
         InvalidateVisual();
@@ -145,7 +143,6 @@ public class MultiTrackRow : Control
         var pos = e.GetPosition(this);
         var snapRadius = 12.0;
 
-        // 计算鼠标位置对应的秒数
         var viewStartSec = Math.Min(VisibleStartHour, VisibleEndHour) * SecondsPerHour;
         var viewEndSec = Math.Max(VisibleStartHour, VisibleEndHour) * SecondsPerHour;
         var viewDuration = viewEndSec - viewStartSec;
@@ -196,18 +193,20 @@ public class MultiTrackRow : Control
             if (dist < nearestDist) { nearestDist = dist; nearestSeg = seg; }
         }
 
+        var changed = _hoveredSegment != nearestSeg || (nearestSeg != null && nearestDist > snapRadius);
+        _hoveredSegment = nearestSeg != null && nearestDist <= snapRadius ? nearestSeg : null;
+
         TimeRange? newRange = null;
 
-        if (nearestSeg != null && nearestDist <= snapRadius)
+        if (_hoveredSegment != null)
         {
-            newRange = new TimeRange(nearestSeg.Start, nearestSeg.End);
+            newRange = new TimeRange(_hoveredSegment.Start, _hoveredSegment.End);
 
-            // 优先显示实际使用时长（不含间隙），更符合用户直觉
-            var tipText = $"{nearestSeg.Start:HH:mm} - {nearestSeg.End:HH:mm}  ";
-            if (nearestSeg.ActualDurationSeconds > 0)
+            var tipText = $"{_hoveredSegment.Start:HH:mm} - {_hoveredSegment.End:HH:mm}  ";
+            if (_hoveredSegment.ActualDurationSeconds > 0)
             {
-                var actualMinutes = nearestSeg.ActualDurationSeconds / 60;
-                var actualSeconds = nearestSeg.ActualDurationSeconds % 60;
+                var actualMinutes = _hoveredSegment.ActualDurationSeconds / 60;
+                var actualSeconds = _hoveredSegment.ActualDurationSeconds % 60;
                 if (actualMinutes >= 1)
                     tipText += $"{actualMinutes}m{actualSeconds}s";
                 else
@@ -215,7 +214,7 @@ public class MultiTrackRow : Control
             }
             else
             {
-                var span = nearestSeg.End - nearestSeg.Start;
+                var span = _hoveredSegment.End - _hoveredSegment.Start;
                 if (span.TotalMinutes < 1)
                     tipText += $"{span.Seconds}s";
                 else if (span.TotalHours >= 1)
@@ -230,6 +229,9 @@ public class MultiTrackRow : Control
         {
             ToolTip.SetTip(this, null);
         }
+
+        if (changed)
+            InvalidateVisual();
 
         if (HoveredTimeRange != newRange)
         {
@@ -280,7 +282,6 @@ public class MultiTrackRow : Control
         }
     }
 
-
     private static double RelativeLuminance(Color c)
     {
         static double Linearize(double v)
@@ -290,7 +291,6 @@ public class MultiTrackRow : Control
         }
         return 0.2126 * Linearize(c.R) + 0.7152 * Linearize(c.G) + 0.0722 * Linearize(c.B);
     }
-
 
     private static IBrush PickLabelBrush(Color bg) =>
         RelativeLuminance(bg) > LuminanceThreshold ? DarkLabelBrush : LightLabelBrush;
@@ -309,13 +309,11 @@ public class MultiTrackRow : Control
 
         DrawTimePeriodBackgrounds(ctx, pixelsPerSec, viewStartSec, viewEndSec);
 
-        // 检查缓存是否有效
         if (!_cacheValid
             || _cachedViewStartSec != viewStartSec
             || _cachedViewEndSec != viewEndSec
             || Math.Abs(_cachedPixelsPerSec - pixelsPerSec) > 0.001)
         {
-            // 重新计算缓存
             ComputeSegmentCache(viewStartSec, viewEndSec, pixelsPerSec);
             _cachedViewStartSec = viewStartSec;
             _cachedViewEndSec = viewEndSec;
@@ -323,21 +321,68 @@ public class MultiTrackRow : Control
             _cacheValid = true;
         }
 
-        // 绘制缓存的 segments
         var barHeight = bounds.Height * 0.85;
         var barY = (bounds.Height - barHeight) / 2;
+
+        var hasHover = _hoveredSegment != null;
 
         foreach (var info in _cachedSegments)
         {
             var rect = new Rect(info.Rect.X, barY, info.Rect.Width, info.Rect.Height);
-            var finalColor = _isRowHovered
-                ? LightenColor(info.Color, 0.25)
-                : info.Color;
+            var finalColor = info.Color;
+
+            if (hasHover)
+            {
+                var isHoveredSeg = info.Segment != null && info.Segment == _hoveredSegment;
+                finalColor = isHoveredSeg
+                    ? LightenColor(info.Color, 0.25)
+                    : DarkenColor(info.Color, 0.15);
+            }
+
             ctx.DrawRectangle(
                 GetCachedBrush(finalColor),
                 null,
                 rect, info.Radius, info.Radius);
+
+            if (info.Label != null && info.Rect.Width >= MinLabelWidth)
+            {
+                var labelSize = info.Rect.Width >= 100 ? 10 : 9;
+                var label = GetCachedLabel(info.Label, labelSize, PickLabelBrush(finalColor));
+                var lx = info.Rect.X + (info.Rect.Width - label.Width) / 2;
+                var ly = barY + (info.Rect.Height - label.Height) / 2;
+                if (lx < 2) lx = 2;
+                if (lx + label.Width > bounds.Width - 2)
+                    lx = bounds.Width - 2 - label.Width;
+                ctx.DrawText(label, new Point(lx, ly));
+            }
         }
+    }
+
+    private static string FormatDurationText(int seconds)
+    {
+        if (seconds < 60) return $"{seconds}s";
+        var minutes = seconds / 60;
+        var secs = seconds % 60;
+        if (minutes >= 60)
+        {
+            var h = minutes / 60;
+            var m = minutes % 60;
+            return m > 0 ? $"{h}h{m}m" : $"{h}h";
+        }
+        return secs > 0 ? $"{minutes}m{secs}s" : $"{minutes}m";
+    }
+
+    private readonly Dictionary<(string, int, Color), FormattedText> _labelCache = new();
+
+    private FormattedText GetCachedLabel(string text, int size, IBrush brush)
+    {
+        var key = (text, size, (brush as ISolidColorBrush)?.Color ?? Colors.White);
+        if (_labelCache.TryGetValue(key, out var cached))
+            return cached;
+        var ft = new FormattedText(text, CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight, NormalTypeface, size, brush);
+        _labelCache[key] = ft;
+        return ft;
     }
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Color, ImmutableSolidColorBrush> _brushCache = new();
@@ -379,15 +424,25 @@ public class MultiTrackRow : Control
             var radius = Math.Min(3.0, width / 2.0);
             var barHeight = bounds.Height * 0.85;
 
+            string? label = null;
+            if (width >= MinLabelWidth)
+            {
+                var secs = seg.ActualDurationSeconds > 0
+                    ? seg.ActualDurationSeconds
+                    : (int)(seg.End - seg.Start).TotalSeconds;
+                label = FormatDurationText(secs);
+            }
+
             _cachedSegments[idx++] = new CachedSegmentInfo
             {
-                Rect = new Rect(x, 0, width, barHeight), // Y 在绘制时加上 barY
+                Rect = new Rect(x, 0, width, barHeight),
                 Color = color,
-                Radius = radius
+                Radius = radius,
+                Label = label,
+                Segment = seg
             };
         }
 
-        // 如果有跳过的 segments，调整数组
         if (idx < _cachedSegments.Length)
         {
             var trimmed = new CachedSegmentInfo[idx];
@@ -396,15 +451,20 @@ public class MultiTrackRow : Control
         }
     }
 
-    /// <summary>
-    /// Lighten a color by a factor (0 = no change, 1 = white).
-    /// </summary>
     private static Color LightenColor(Color c, double factor)
     {
         return Color.FromArgb(c.A,
             (byte)Math.Min(255, c.R + (255 - c.R) * factor),
             (byte)Math.Min(255, c.G + (255 - c.G) * factor),
             (byte)Math.Min(255, c.B + (255 - c.B) * factor));
+    }
+
+    private static Color DarkenColor(Color c, double factor)
+    {
+        return Color.FromArgb(c.A,
+            (byte)Math.Max(0, c.R * (1 - factor)),
+            (byte)Math.Max(0, c.G * (1 - factor)),
+            (byte)Math.Max(0, c.B * (1 - factor)));
     }
 
     private void DrawTimePeriodBackgrounds(DrawingContext ctx, double pps, double viewStartSec, double viewEndSec)

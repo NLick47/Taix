@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using Taix.Client.Logging;
 using Taix.Client.Shared.Helpers;
 
@@ -14,15 +16,24 @@ namespace Taix.Client.Controls.Timeline;
 public class MultiTrackTimeRuler : Control
 {
     private const int SecondsPerHour = 3600;
+    private const double MinZoomHours = 0.25;
+    private const double ZoomFactor = 1.3;
+    private const double MinDragDistance = 5;
 
     private static readonly Typeface NormalTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
 
-    // FormattedText 缓存
     private readonly Dictionary<(string Text, int Size), FormattedText> _labelCache = new();
 
     private double _visibleStartHour = 0.0;
     private double _visibleEndHour = 24.0;
+    private double _boundStartHour = 0.0;
+    private double _boundEndHour = 24.0;
     private DateTime _date = DateTime.Today;
+
+    private bool _isPanning;
+    private Point _dragStart;
+    private double _dragStartHour;
+    private double _dragEndHour;
 
     public static readonly DirectProperty<MultiTrackTimeRuler, double> VisibleStartHourProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackTimeRuler, double>(
@@ -54,6 +65,26 @@ public class MultiTrackTimeRuler : Control
         set => SetAndRaise(DateProperty, ref _date, value);
     }
 
+    public static readonly DirectProperty<MultiTrackTimeRuler, double> BoundStartHourProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackTimeRuler, double>(
+            nameof(BoundStartHour), o => o.BoundStartHour, (o, v) => o.BoundStartHour = v);
+
+    public static readonly DirectProperty<MultiTrackTimeRuler, double> BoundEndHourProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackTimeRuler, double>(
+            nameof(BoundEndHour), o => o.BoundEndHour, (o, v) => o.BoundEndHour = v, 24.0);
+
+    public double BoundStartHour
+    {
+        get => _boundStartHour;
+        set => SetAndRaise(BoundStartHourProperty, ref _boundStartHour, value);
+    }
+
+    public double BoundEndHour
+    {
+        get => _boundEndHour;
+        set => SetAndRaise(BoundEndHourProperty, ref _boundEndHour, value);
+    }
+
     private IPen _tickMajor = null!;
     private IPen _tickMinor = null!;
     private IBrush _tickText = null!;
@@ -69,6 +100,12 @@ public class MultiTrackTimeRuler : Control
     {
         ClipToBounds = true;
         Height = 24;
+        Cursor = Cursor.Parse("Hand");
+
+        PointerWheelChanged += OnPointerWheelChanged;
+        PointerPressed += OnPointerPressed;
+        PointerMoved += OnPointerMoved;
+        PointerReleased += OnPointerReleased;
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -153,7 +190,7 @@ public class MultiTrackTimeRuler : Control
                 ctx.DrawLine(_tickMajor, new Point(x, 6), new Point(x, bottomY));
 
                 // 使用缓存的 FormattedText
-                var label = GetCachedTimeRulerLabel($"{h:D2}:00", 9);
+                var label = GetCachedTimeRulerLabel($"{h}:00", 9);
                 var labelX = Math.Max(2, x + 4);
                 if (labelX + label.Width > bounds.Width - 2)
                     labelX = Math.Max(2, bounds.Width - 2 - label.Width);
@@ -248,11 +285,8 @@ public class MultiTrackTimeRuler : Control
                 if (sx < -20 || sx > Bounds.Width + 20) continue;
 
                 var minutes = s / 60;
-                var labelText = labelIntervalMinutes == 5 && minutes % 15 != 0
-                    ? $"{minutes:D2}"
-                    : $":{minutes:D2}";
+                var labelText = $"{h}:{minutes:D2}";
 
-                // 使用缓存的 FormattedText
                 var label = GetCachedTimeRulerLabel(labelText, 8);
 
                 var labelX = sx - label.Width / 2;
@@ -274,5 +308,103 @@ public class MultiTrackTimeRuler : Control
             FlowDirection.LeftToRight, NormalTypeface, size, _tickText);
         _labelCache[key] = ft;
         return ft;
+    }
+
+    private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        var pos = e.GetPosition(this);
+        var bounds = Bounds;
+
+        var viewStart = Math.Min(VisibleStartHour, VisibleEndHour);
+        var viewEnd = Math.Max(VisibleStartHour, VisibleEndHour);
+        var viewDuration = viewEnd - viewStart;
+        if (viewDuration <= 0) viewDuration = 24;
+
+        var mouseHour = viewStart + (pos.X / bounds.Width) * viewDuration;
+
+        var k = e.Delta.Y > 0 ? 1.0 / ZoomFactor : ZoomFactor;
+        var boundStart = Math.Min(BoundStartHour, BoundEndHour);
+        var boundEnd = Math.Max(BoundStartHour, BoundEndHour);
+        var boundDuration = boundEnd - boundStart;
+        if (boundDuration <= 0) { boundStart = 0; boundEnd = 24; boundDuration = 24; }
+
+        var newDuration = Math.Clamp(viewDuration * k, MinZoomHours, boundDuration);
+
+        var newStart = mouseHour - (mouseHour - viewStart) * (newDuration / viewDuration);
+        var newEnd = newStart + newDuration;
+
+        if (newStart < boundStart) { newStart = boundStart; newEnd = boundStart + newDuration; }
+        if (newEnd > boundEnd) { newEnd = boundEnd; newStart = boundEnd - newDuration; }
+        if (newStart < boundStart) { newStart = boundStart; newEnd = boundEnd; }
+
+        VisibleStartHour = newStart;
+        VisibleEndHour = newEnd;
+
+        PropagateToTimeline(newStart, newEnd);
+        e.Handled = true;
+    }
+
+    private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonPressed)
+        {
+            _isPanning = true;
+            _dragStart = e.GetPosition(this);
+            _dragStartHour = VisibleStartHour;
+            _dragEndHour = VisibleEndHour;
+            e.Pointer.Capture(this);
+            e.Handled = true;
+        }
+    }
+
+    private void OnPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (!_isPanning) return;
+
+        var pos = e.GetPosition(this);
+        var bounds = Bounds;
+        var dx = pos.X - _dragStart.X;
+
+        var viewDuration = _dragEndHour - _dragStartHour;
+        if (viewDuration <= 0) return;
+
+        var boundStart = Math.Min(BoundStartHour, BoundEndHour);
+        var boundEnd = Math.Max(BoundStartHour, BoundEndHour);
+
+        var hourDelta = -dx / bounds.Width * viewDuration;
+        var newStart = _dragStartHour + hourDelta;
+        var newEnd = _dragEndHour + hourDelta;
+
+        if (newStart < boundStart) { newStart = boundStart; newEnd = boundStart + viewDuration; }
+        if (newEnd > boundEnd) { newEnd = boundEnd; newStart = boundEnd - viewDuration; }
+
+        VisibleStartHour = newStart;
+        VisibleEndHour = newEnd;
+
+        PropagateToTimeline(newStart, newEnd);
+    }
+
+    private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (_isPanning)
+        {
+            _isPanning = false;
+            e.Pointer.Capture(null);
+        }
+    }
+
+    private void PropagateToTimeline(double startHour, double endHour)
+    {
+        var parent = this.GetVisualParent();
+        while (parent != null)
+        {
+            if (parent is MultiTrackTimeline timeline)
+            {
+                timeline.VisibleStartHour = startHour;
+                timeline.VisibleEndHour = endHour;
+                return;
+            }
+            parent = parent.GetVisualParent();
+        }
     }
 }

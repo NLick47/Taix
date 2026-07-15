@@ -18,6 +18,8 @@ public class MultiTrackTimeline : TemplatedControl
     private DateTime _date = DateTime.Now;
     private double _visibleStartHour = 0.0;
     private double _visibleEndHour = 24.0;
+    private double _frameStartHour = 0.0;
+    private double _frameEndHour = 24.0;
     private ListBox? _listBox;
     private DispatcherTimer? _nowTimer;
     private double? _nowLinePosition;
@@ -57,6 +59,14 @@ public class MultiTrackTimeline : TemplatedControl
         AvaloniaProperty.RegisterDirect<MultiTrackTimeline, double>(
             nameof(VisibleEndHour), o => o.VisibleEndHour, (o, v) => o.VisibleEndHour = v, 24.0);
 
+    public static readonly DirectProperty<MultiTrackTimeline, double> FrameStartHourProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackTimeline, double>(
+            nameof(FrameStartHour), o => o.FrameStartHour, (o, v) => o.FrameStartHour = v);
+
+    public static readonly DirectProperty<MultiTrackTimeline, double> FrameEndHourProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackTimeline, double>(
+            nameof(FrameEndHour), o => o.FrameEndHour, (o, v) => o.FrameEndHour = v, 24.0);
+
     public static readonly StyledProperty<ICommand?> ClickCommandProperty =
         AvaloniaProperty.Register<MultiTrackTimeline, ICommand?>(nameof(ClickCommand));
 
@@ -82,6 +92,18 @@ public class MultiTrackTimeline : TemplatedControl
     {
         get => _visibleEndHour;
         set => SetAndRaise(VisibleEndHourProperty, ref _visibleEndHour, value);
+    }
+
+    public double FrameStartHour
+    {
+        get => _frameStartHour;
+        set => SetAndRaise(FrameStartHourProperty, ref _frameStartHour, value);
+    }
+
+    public double FrameEndHour
+    {
+        get => _frameEndHour;
+        set => SetAndRaise(FrameEndHourProperty, ref _frameEndHour, value);
     }
 
     public ICommand? ClickCommand
@@ -135,8 +157,6 @@ public class MultiTrackTimeline : TemplatedControl
             return;
         }
 
-        // We don't have Bounds.Width here, use 0 and let the row compute from its own bounds
-        // Actually compute proportionally: the row will use its own Bounds.Width
         NowLinePosition = (nowSec - viewStartSec) / viewDuration;
     }
 
