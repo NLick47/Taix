@@ -22,7 +22,7 @@ public class MultiTrackTimeRuler : Control
 
     private static readonly Typeface NormalTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
 
-    private readonly Dictionary<(string Text, int Size), FormattedText> _labelCache = new();
+    private readonly Dictionary<(string Text, int Size, Color Color), FormattedText> _labelCache = new();
 
     private double _visibleStartHour = 0.0;
     private double _visibleEndHour = 24.0;
@@ -298,14 +298,15 @@ public class MultiTrackTimeRuler : Control
         }
     }
 
-    private FormattedText GetCachedTimeRulerLabel(string text, int size)
+    private FormattedText GetCachedTimeRulerLabel(string text, int size, IBrush? brush = null)
     {
-        var key = (text, size);
+        brush ??= _tickText;
+        var key = (text, size, (brush as ISolidColorBrush)?.Color ?? default);
         if (_labelCache.TryGetValue(key, out var cached))
             return cached;
 
         var ft = new FormattedText(text, CultureInfo.CurrentCulture,
-            FlowDirection.LeftToRight, NormalTypeface, size, _tickText);
+            FlowDirection.LeftToRight, NormalTypeface, size, brush);
         _labelCache[key] = ft;
         return ft;
     }
@@ -346,6 +347,17 @@ public class MultiTrackTimeRuler : Control
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (e.ClickCount == 2)
+        {
+            var boundStart = Math.Min(BoundStartHour, BoundEndHour);
+            var boundEnd = Math.Max(BoundStartHour, BoundEndHour);
+            VisibleStartHour = boundStart;
+            VisibleEndHour = boundEnd;
+            PropagateToTimeline(boundStart, boundEnd);
+            e.Handled = true;
+            return;
+        }
+
         if (e.GetCurrentPoint(this).Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonPressed)
         {
             _isPanning = true;

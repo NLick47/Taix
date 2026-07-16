@@ -107,9 +107,11 @@ public class MultiTrackRow : Control
     private IBrush _periodAfternoonBrush = null!;
     private IBrush _periodEveningBrush = null!;
 
-    private const double LuminanceThreshold = 0.4;
-    private static readonly IBrush LightLabelBrush = new ImmutableSolidColorBrush(Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF));
-    private static readonly IBrush DarkLabelBrush = new ImmutableSolidColorBrush(Color.FromArgb(0xF0, 0x1A, 0x1A, 0x1A));
+    private const double LuminanceThreshold = 0.35;
+    private static readonly IBrush LightLabelBrush = new ImmutableSolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
+    private static readonly IBrush DarkLabelBrush = new ImmutableSolidColorBrush(Color.FromArgb(0xFF, 0x1A, 0x1A, 0x1A));
+    private static readonly ImmutableSolidColorBrush LightGlowBrush = new(Color.FromArgb(0x30, 0x00, 0x00, 0x00));
+    private static readonly ImmutableSolidColorBrush DarkGlowBrush = new(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF));
 
     public MultiTrackRow()
     {
@@ -346,13 +348,20 @@ public class MultiTrackRow : Control
 
             if (info.Label != null && info.Rect.Width >= MinLabelWidth)
             {
-                var labelSize = info.Rect.Width >= 100 ? 10 : 9;
-                var label = GetCachedLabel(info.Label, labelSize, PickLabelBrush(finalColor));
+                var labelSize = info.Rect.Width >= 100 ? 11 : 10;
+                var useLight = RelativeLuminance(finalColor) > LuminanceThreshold;
+                var labelBrush = useLight ? DarkLabelBrush : LightLabelBrush;
+                var glowBrush = useLight ? DarkGlowBrush : LightGlowBrush;
+                var label = GetCachedLabel(info.Label, labelSize, labelBrush);
                 var lx = info.Rect.X + (info.Rect.Width - label.Width) / 2;
                 var ly = barY + (info.Rect.Height - label.Height) / 2;
                 if (lx < 2) lx = 2;
                 if (lx + label.Width > bounds.Width - 2)
                     lx = bounds.Width - 2 - label.Width;
+                var glow = GetCachedLabel(info.Label, labelSize, glowBrush);
+                for (var dx = -1; dx <= 1; dx++)
+                for (var dy = -1; dy <= 1; dy++)
+                    ctx.DrawText(glow, new Point(lx + dx, ly + dy));
                 ctx.DrawText(label, new Point(lx, ly));
             }
         }

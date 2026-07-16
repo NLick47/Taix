@@ -38,7 +38,7 @@
                         <Border Grid.Column="2" />
                     </Grid>
 
-                    <!-- 数据行（可滚动，虚拟化） -->
+                    <!-- 数据行 -->
                     <ScrollViewer Grid.Row="1"
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">

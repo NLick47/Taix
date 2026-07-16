@@ -136,20 +136,21 @@
                         <StackPanel>
                             <StackPanel.Styles>
                                 <Style Selector="Grid.shortcut-row">
-                                    <Setter Property="Margin" Value="20,16" />
+                                    <Setter Property="Margin" Value="15,16" />
                                 </Style>
                                 <Style Selector="Border.shortcut-divider">
                                     <Setter Property="Height" Value="1" />
-                                    <Setter Property="Margin" Value="20,0" />
+                                    <Setter Property="Margin" Value="15,0" />
                                     <Setter Property="Background" Value="{DynamicResource SettingPanelBorderBrush}" />
                                 </Style>
                                 <Style Selector="TextBlock.shortcut-title">
-                                    <Setter Property="FontSize" Value="13" />
-                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                    <Setter Property="FontSize" Value="14" />
+                                    <Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
                                 </Style>
                                 <Style Selector="TextBlock.shortcut-desc">
                                     <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
-                                    <Setter Property="FontSize" Value="11" />
+                                    <Setter Property="FontSize" Value="12" />
+                                    <Setter Property="Margin" Value="0,4,0,0" />
                                 </Style>
                             </StackPanel.Styles>
 
