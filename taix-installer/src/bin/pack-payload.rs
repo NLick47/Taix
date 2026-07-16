@@ -22,10 +22,8 @@ fn main() -> Result<()> {
 
 fn pack_payload(source_dir: &Path, output_path: &Path) -> Result<()> {
     // 使用 7z 极限压缩
-    // -t7z 输出 7z 格式
     // -mx=9 最高压缩级别
-    // -m0=lzma2:d=128m:fb=273 LZMA2 算法，128MB字典，273 fast bytes
-    // -mf=BCJ2 可执行文件过滤器（比 BCJ 更强）
+    // -mf=BCJ2 可执行文件过滤器
     let temp_7z = output_path.with_extension("7z");
 
     // 尝试多个可能的 7z 路径
@@ -45,7 +43,6 @@ fn pack_payload(source_dir: &Path, output_path: &Path) -> Result<()> {
                 "a",
                 "-t7z",
                 "-mx=9",
-                "-m0=lzma2:d=128m:fb=273",
                 "-mf=BCJ2",
                 &format!("{}", temp_7z.display()),
                 &format!("{}\\*", source_dir.display()),

@@ -70,7 +70,7 @@ jobs:
       - name: Build and Publish .NET Client
         run: |
           Write-Host "Publishing with AOT enabled"
-          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false -p:AssemblyTitle=Taix -p:Product=Taix Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
+          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false -p:IlcGenerateStackTraceData=false -p:DebuggerSupport=false -p:StartupHookSupport=false -p:StackTraceSupport=false -p:HttpActivityPropagationSupport=false -p:MetadataUpdaterSupport=false -p:EnableUnsafeUTF7Encoding=false -p:EventSourceSupport=false -p:MetricsSupport=false -p:UseSystemResourceKeys=true -p:Http3Support=false -p:AssemblyTitle=Taix -p:Product=Taix Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
 
       - name: Copy Rust binaries
         shell: pwsh
@@ -102,13 +102,6 @@ jobs:
           # 确保 7z 命令可用
           7z | Out-Null
           Write-Host "7-Zip installed successfully"
-
-      - name: Install UPX for installer compression
-        shell: pwsh
-        run: |
-          choco install upx -y
-          upx --version
-          Write-Host "UPX installed successfully"
 
       - name: Build Installer
         shell: bash
@@ -191,7 +184,10 @@ jobs:
         run: |
           dotnet publish Taix.Client/Taix.Client.csproj \
             -c Release -r osx-arm64 --self-contained true \
-            -p:PublishAot=true -p:StripSymbols=true \
+            -p:PublishAot=true -p:StripSymbols=true -p:IlcGenerateStackTraceData=false \
+            -p:DebuggerSupport=false -p:StartupHookSupport=false -p:StackTraceSupport=false \
+            -p:HttpActivityPropagationSupport=false -p:MetadataUpdaterSupport=false -p:EnableUnsafeUTF7Encoding=false \
+            -p:EventSourceSupport=false             -p:MetricsSupport=false -p:UseSystemResourceKeys=true -p:Http3Support=false \
             -p:AssemblyTitle=Taix -p:Product=Taix \
             -o ./output/macos
 
