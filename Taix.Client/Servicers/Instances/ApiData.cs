@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MiniExcelLibs;
 using Taix.Client.Librarys.Api;
+using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Models.Data;
@@ -132,22 +133,15 @@ public class ApiData : IData
         var rangePart = $"{start.ToString("yyyyMMdd")}_{end.ToString("yyyyMMdd")}";
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
-        var excelPath = Path.Combine(dir, $"{prefix}_application_data_{rangePart}_{timestamp}.xlsx");
-        var sheets = new Dictionary<string, object>
-        {
-            [ResourceStrings.ExportDaily] = dailyRows,
-            [ResourceStrings.ExportSummary] = summaryRows,
-            [ResourceStrings.ExportDailySummary] = dailySummaryRows
-        };
-        MiniExcel.SaveAs(excelPath, sheets);
-
         // CSV: daily
         var dailyCsvPath = Path.Combine(dir, $"{prefix}_application_daily_{rangePart}_{timestamp}.csv");
-        MiniExcel.SaveAs(dailyCsvPath, dailyRows, excelType: MiniExcelLibs.ExcelType.CSV);
+        CsvHelper.WriteCsv(dailyCsvPath, dailyRows, r => $"{CsvHelper.EscapeCsv(r.Date)},{CsvHelper.EscapeCsv(r.App)},{CsvHelper.EscapeCsv(r.Description)},{CsvHelper.EscapeCsv(r.Duration)},{CsvHelper.EscapeCsv(r.Category)}",
+            "Date,App,Description,Duration,Category");
 
         // CSV: summary
         var summaryCsvPath = Path.Combine(dir, $"{prefix}_application_summary_{rangePart}_{timestamp}.csv");
-        MiniExcel.SaveAs(summaryCsvPath, summaryRows, excelType: MiniExcelLibs.ExcelType.CSV);
+        CsvHelper.WriteCsv(summaryCsvPath, summaryRows, r => $"{CsvHelper.EscapeCsv(r.App)},{CsvHelper.EscapeCsv(r.Description)},{CsvHelper.EscapeCsv(r.TotalDuration)},{CsvHelper.EscapeCsv(r.Category)},{CsvHelper.EscapeCsv(r.Percentage)}",
+            "App,Description,TotalDuration,Category,Percentage");
     }
 
     private static string FormatDuration(int seconds)

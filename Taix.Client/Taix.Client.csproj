@@ -33,6 +33,7 @@
 
         <OptimizationPreference>Size</OptimizationPreference>
         <IlcInstructionSet>base</IlcInstructionSet>
+        <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
     </PropertyGroup>
 
     <ItemGroup>
@@ -42,7 +43,6 @@
         <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.0" />
         <PackageReference Include="Avalonia.Themes.Simple" Version="$(AvaloniaVersion)" />
         <PackageReference Include="Jab" Version="0.10.2" />
-        <PackageReference Include="MiniExcel" Version="1.41.0" />
         <PackageReference Include="ReactiveUI.Avalonia" Version="12.0.1" />
         <PackageReference Include="Xaml.Behaviors.Avalonia" Version="12.0.0" />
     </ItemGroup>

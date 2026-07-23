@@ -91,7 +91,7 @@
     <system:String x:Key="ExportData">Export Data</system:String>
     <system:String x:Key="Export">Export</system:String>
     <system:String x:Key="Version">Version</system:String>
-    <system:String x:Key="ExportTo">Export as xlsx and csv formats</system:String>
+    <system:String x:Key="ExportTo">Export as CSV file</system:String>
     <system:String x:Key="CheckUpdate">Check for Updates</system:String>
     <system:String x:Key="Discuss">Discuss</system:String>
     <system:String x:Key="PlugIn">Browser Statistics Plugin</system:String>

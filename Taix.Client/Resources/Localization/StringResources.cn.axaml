@@ -93,7 +93,7 @@
     <system:String x:Key="ExportData">导出数据</system:String>
     <system:String x:Key="Export">导出</system:String>
     <system:String x:Key="Version">版本号</system:String>
-    <system:String x:Key="ExportTo">导出为xlsx和csv格式</system:String>
+    <system:String x:Key="ExportTo">导出为csv格式</system:String>
     <system:String x:Key="CheckUpdate">检查更新</system:String>
     <system:String x:Key="Discuss">讨论</system:String>
     <system:String x:Key="PlugIn">浏览器统计插件</system:String>

@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MiniExcelLibs;
 using Taix.Client.Librarys.Api;
+using Taix.Client.Shared.Helpers;
 using Taix.Client.Shared.Models.Data;
 using Taix.Client.Shared.Models.Web;
 using Taix.Client.Shared.Models.WebPage;
@@ -188,13 +188,10 @@ public class ApiWebData : IWebData
         var rangePart = $"{start.ToString("yyyyMMdd")}_{end.ToString("yyyyMMdd")}";
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
-        // Excel
-        var excelPath = Path.Combine(dir, $"{prefix}_web_data_{rangePart}_{timestamp}.xlsx");
-        MiniExcel.SaveAs(excelPath, rows);
-
         // CSV
         var csvPath = Path.Combine(dir, $"{prefix}_web_data_{rangePart}_{timestamp}.csv");
-        MiniExcel.SaveAs(csvPath, rows, excelType: MiniExcelLibs.ExcelType.CSV);
+        CsvHelper.WriteCsv(csvPath, rows, r => $"{CsvHelper.EscapeCsv(r.Time)},{CsvHelper.EscapeCsv(r.Title)},{CsvHelper.EscapeCsv(r.Website)},{CsvHelper.EscapeCsv(r.Duration)},{CsvHelper.EscapeCsv(r.Category)}",
+            "Time,Title,Website,Duration,Category");
     }
 
     private static string FormatDuration(int seconds)
