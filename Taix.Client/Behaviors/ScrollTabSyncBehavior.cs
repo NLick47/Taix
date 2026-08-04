@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Xaml.Interactivity;
 using Taix.Client.Controls;
 using TabbarControl = Taix.Client.Controls.Tabbar.Tabbar;
@@ -21,6 +22,19 @@ public class ScrollTabSyncBehavior : Behavior<Control>
 
     public static readonly StyledProperty<string?> ScrollViewerNameProperty =
         AvaloniaProperty.Register<ScrollTabSyncBehavior, string?>(nameof(ScrollViewerName));
+
+    // Sticky header 属性
+    public static readonly StyledProperty<string?> StickyHeaderNameProperty =
+        AvaloniaProperty.Register<ScrollTabSyncBehavior, string?>(nameof(StickyHeaderName));
+
+    public static readonly StyledProperty<string?> StickyTitleTextNameProperty =
+        AvaloniaProperty.Register<ScrollTabSyncBehavior, string?>(nameof(StickyTitleTextName));
+
+    public static readonly StyledProperty<double> StickyActivationThresholdProperty =
+        AvaloniaProperty.Register<ScrollTabSyncBehavior, double>(nameof(StickyActivationThreshold), 60);
+
+    public static readonly StyledProperty<double> StickyHeaderHeightProperty =
+        AvaloniaProperty.Register<ScrollTabSyncBehavior, double>(nameof(StickyHeaderHeight), 40);
 
     public string TabbarName
     {
@@ -46,7 +60,35 @@ public class ScrollTabSyncBehavior : Behavior<Control>
         set => SetValue(ScrollViewerNameProperty, value);
     }
 
+    public string? StickyHeaderName
+    {
+        get => GetValue(StickyHeaderNameProperty);
+        set => SetValue(StickyHeaderNameProperty, value);
+    }
+
+    public string? StickyTitleTextName
+    {
+        get => GetValue(StickyTitleTextNameProperty);
+        set => SetValue(StickyTitleTextNameProperty, value);
+    }
+
+    public double StickyActivationThreshold
+    {
+        get => GetValue(StickyActivationThresholdProperty);
+        set => SetValue(StickyActivationThresholdProperty, value);
+    }
+
+    public double StickyHeaderHeight
+    {
+        get => GetValue(StickyHeaderHeightProperty);
+        set => SetValue(StickyHeaderHeightProperty, value);
+    }
+
     private ScrollSectionNavigator? _navigator;
+    private ScrollViewer? _scrollViewer;
+    private TabbarControl? _tabbar;
+    private Border? _stickyHeader;
+    private TextBlock? _stickyTitleText;
 
     protected override void OnAttached()
     {
@@ -78,11 +120,47 @@ public class ScrollTabSyncBehavior : Behavior<Control>
 
         if (scrollViewer is null || tabbar is null || sections.Count == 0) return;
 
+        _scrollViewer = scrollViewer;
+        _tabbar = tabbar;
+
+        // 粘性标题
+        if (!string.IsNullOrEmpty(StickyHeaderName))
+            _stickyHeader = FindNamedControl<Border>(AssociatedObject, StickyHeaderName);
+        if (!string.IsNullOrEmpty(StickyTitleTextName))
+            _stickyTitleText = FindNamedControl<TextBlock>(AssociatedObject, StickyTitleTextName);
+
         _navigator = new ScrollSectionNavigator(
             scrollViewer,
             tabbar,
             sections,
-            new ScrollSectionNavigator.Options(ActivationThresholdRatio));
+            new ScrollSectionNavigator.Options(ActivationThresholdRatio),
+            _stickyHeader is not null ? OnActiveIndexChanged : null,
+            StickyHeaderHeight);
+    }
+
+    private void OnActiveIndexChanged(int activeIndex)
+    {
+        if (_stickyHeader is null || _scrollViewer is null || _tabbar is null) return;
+
+        if (_stickyTitleText is not null)
+        {
+            var title = GetTabTitle(activeIndex);
+            if (!string.IsNullOrEmpty(title))
+                _stickyTitleText.Text = title;
+        }
+
+        var scrollOffset = _scrollViewer.Offset.Y;
+        var shouldShow = scrollOffset > StickyActivationThreshold;
+
+        _stickyHeader.Opacity = shouldShow ? 1 : 0;
+        _stickyHeader.RenderTransform = new TranslateTransform(0, shouldShow ? 0 : -8);
+    }
+
+    private string? GetTabTitle(int index)
+    {
+        if (_tabbar?.Data == null || index < 0 || index >= _tabbar.Data.Count)
+            return null;
+        return _tabbar.Data[index];
     }
 
     private static ScrollViewer? FindParentScrollViewer(Control control)
@@ -116,7 +194,6 @@ public class ScrollTabSyncBehavior : Behavior<Control>
         }
 
         if (result.Count > 0) return result;
-
 
         var fallbackNames = new[] { "GeneralSection", "BehaviorSection", "DataSection", "AboutSection" };
         foreach (var name in fallbackNames)

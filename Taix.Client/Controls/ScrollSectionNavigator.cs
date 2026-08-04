@@ -15,6 +15,8 @@ public sealed class ScrollSectionNavigator : IDisposable
     private readonly TabbarControl _tabbar;
     private readonly IReadOnlyList<Control> _sections;
     private readonly Options _options;
+    private readonly Action<int>? _activeIndexChanged;
+    private readonly double _stickyHeaderHeight;
     private bool _isUpdatingFromScroll;
     private bool _disposed;
 
@@ -22,12 +24,16 @@ public sealed class ScrollSectionNavigator : IDisposable
         ScrollViewer scrollViewer,
         TabbarControl tabbar,
         IReadOnlyList<Control> sections,
-        Options? options = null)
+        Options? options = null,
+        Action<int>? activeIndexChanged = null,
+        double stickyHeaderHeight = 0)
     {
         _scrollViewer = scrollViewer ?? throw new ArgumentNullException(nameof(scrollViewer));
         _tabbar = tabbar ?? throw new ArgumentNullException(nameof(tabbar));
         _sections = sections ?? throw new ArgumentNullException(nameof(sections));
         _options = options ?? new Options();
+        _activeIndexChanged = activeIndexChanged;
+        _stickyHeaderHeight = Math.Max(0, stickyHeaderHeight);
 
         if (_sections.Count == 0)
             throw new ArgumentException("Sections list cannot be empty.", nameof(sections));
@@ -42,6 +48,9 @@ public sealed class ScrollSectionNavigator : IDisposable
 
         var activeIndex = CalculateActiveSection();
         if (activeIndex < 0 || activeIndex >= _sections.Count) return;
+
+        _activeIndexChanged?.Invoke(activeIndex);
+
         if (activeIndex == _tabbar.SelectedIndex) return;
 
         _isUpdatingFromScroll = true;
@@ -68,22 +77,19 @@ public sealed class ScrollSectionNavigator : IDisposable
         var content = _scrollViewer.Content as Visual;
         if (content == null) return 0;
 
+        var threshold = _scrollViewer.Bounds.Height * _options.ActivationThresholdRatio;
+
+        var activeIndex = 0;
         for (int i = 0; i < _sections.Count; i++)
         {
             var sectionTop = GetSectionTopRelativeToContent(_sections[i], content);
             if (!sectionTop.HasValue) continue;
 
-            var sectionHeight = _sections[i].Bounds.Height;
-            if (double.IsNaN(sectionHeight) || sectionHeight < 0)
-                sectionHeight = 0;
-
-            var sectionBottom = sectionTop.Value + sectionHeight;
-
-            if (sectionBottom > scrollOffset)
-                return i;
+            if (sectionTop.Value <= scrollOffset + threshold)
+                activeIndex = i;
         }
 
-        return _sections.Count - 1;
+        return activeIndex;
     }
 
     private void ScrollToSection(int index)
@@ -94,7 +100,8 @@ public sealed class ScrollSectionNavigator : IDisposable
         var targetTop = GetSectionTopRelativeToContent(_sections[index], content);
         if (!targetTop.HasValue) return;
 
-        var targetY = Math.Max(0, targetTop.Value);
+        // 补偿吸附标题高度，使分区顶部完整露出在最顶层内容之下
+        var targetY = Math.Max(0, targetTop.Value - _stickyHeaderHeight);
         _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, targetY);
     }
 

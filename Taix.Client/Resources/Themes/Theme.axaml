@@ -113,7 +113,10 @@
             <!--设置面板-->
             <Color x:Key="SettingPanelBgColor">#2A2A30</Color>
             <SolidColorBrush x:Key="SettingPanelBgBrush" Color="{StaticResource SettingPanelBgColor}" />
-            <SolidColorBrush x:Key="SettingPanelBorderBrush" Color="#FFFFFF" Opacity="0.05" />
+            <SolidColorBrush x:Key="SettingPanelBorderBrush" Color="#FFFFFF" Opacity="0.04" />
+            <SolidColorBrush x:Key="SettingPanelHoverBrush" Color="#ffffff" Opacity="0.05" />
+            <SolidColorBrush x:Key="SettingPanelAccentBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.45" />
+            <SolidColorBrush x:Key="SettingGroupTitleBrush" Color="{StaticResource TextSecondary}" />
             <Color x:Key="SettingPanelSpliteLineColor">#45454D</Color>
             <SolidColorBrush x:Key="SettingPanelSpliteLineBrush" Color="{StaticResource SettingPanelSpliteLineColor}" />
 
@@ -410,8 +413,11 @@
             <!--设置面板-->
             <Color x:Key="SettingPanelBgColor">#ffffff</Color>
             <SolidColorBrush x:Key="SettingPanelBgBrush" Color="{StaticResource SettingPanelBgColor}" />
-            <SolidColorBrush x:Key="SettingPanelBorderBrush" Color="#000000" Opacity="0.06" />
-            <Color x:Key="SettingPanelSpliteLineColor">#ededed</Color>
+            <SolidColorBrush x:Key="SettingPanelBorderBrush" Color="#000000" Opacity="0.04" />
+            <SolidColorBrush x:Key="SettingPanelHoverBrush" Color="#f7f6f4" />
+            <SolidColorBrush x:Key="SettingPanelAccentBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.35" />
+            <SolidColorBrush x:Key="SettingGroupTitleBrush" Color="#7e7e7e" />
+            <Color x:Key="SettingPanelSpliteLineColor">#f0eeec</Color>
             <SolidColorBrush x:Key="SettingPanelSpliteLineBrush" Color="{StaticResource SettingPanelSpliteLineColor}" />
 
             <!--白色背景文字颜色-->

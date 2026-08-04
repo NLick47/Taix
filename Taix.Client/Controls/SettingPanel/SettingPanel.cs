@@ -277,10 +277,11 @@ public class SettingPanel : TemplatedControl
 
                 if (i != sortList.Count - 1)
                 {
-                    //  添加分割线
+                    //  添加分割线（与其它卡片内分隔线一致：SpliteLine + 0.5 透明度）
                     var spliteLine = new Border();
                     spliteLine.Height = 1;
                     spliteLine.Background = SpliteLineBrush;
+                    spliteLine.Opacity = 0.5;
                     itemContainer.Children.Add(spliteLine);
                 }
             }
@@ -293,19 +294,22 @@ public class SettingPanel : TemplatedControl
     private StackPanel GetCreateGroupContainer(Control item, string groupName = null)
     {
         var container = new StackPanel();
-        container.Margin = new Thickness(0, 10, 0, 20);
+        container.Margin = new Thickness(0, 8, 0, 16);
         if (groupName != null)
         {
             var groupNameControl = new TextBlock();
             groupNameControl.Text = groupName;
-            groupNameControl.FontSize = 14;
-            groupNameControl.Margin = new Thickness(0, 0, 0, 10);
+            groupNameControl.FontSize = 13;
+            groupNameControl.FontWeight = FontWeight.SemiBold;
+            groupNameControl.Margin = new Thickness(2, 0, 0, 8);
+            groupNameControl.Foreground = (IBrush)Application.Current?.FindResource("SettingGroupTitleBrush");
             container.Children.Add(groupNameControl);
         }
 
         var border = new Border();
         border.Background = Background;
-        border.CornerRadius = new CornerRadius(6);
+        border.CornerRadius =
+            ((CornerRadius?)Application.Current?.FindResource("RadiusLarge")) ?? new CornerRadius(16);
         border.BorderBrush = BorderBrush;
         //border.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ededed"));
         border.BorderThickness = new Thickness(1);
@@ -665,7 +669,7 @@ public class SettingPanel : TemplatedControl
         var description = new TextBlock();
         description.Text = configAttribute.Description;
         description.Margin = new Thickness(10, 10, 10, 0);
-        description.Foreground = new SolidColorBrush(Color.Parse("#989CA1"));
+        description.Foreground = (IBrush)(Application.Current?.FindResource("SubTextBrush") ?? new SolidColorBrush(Color.Parse("#989CA1")));
         var container = new StackPanel();
 
         var head = new Grid();

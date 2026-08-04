@@ -6,10 +6,17 @@
 
     <ControlTheme x:Key="{x:Type controls:SettingPanelItem}" TargetType="controls:SettingPanelItem">
         <Setter Property="Background" Value="Transparent" />
+
+        <Styles>
+            <Style Selector="controls|SettingPanelItem:pointerover /template/ Border#Border">
+                <Setter Property="Background" Value="{DynamicResource SettingPanelHoverBrush}" />
+            </Style>
+        </Styles>
+
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Background="{TemplateBinding Background}" Margin="15,16"
-                        x:Name="Border">
+                <Border Background="{TemplateBinding Background}" Padding="15,14"
+                        x:Name="Border" Classes="setting-panel-item">
 
                     <Grid>
                         <Grid.ColumnDefinitions>

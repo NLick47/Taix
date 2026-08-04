@@ -22,6 +22,9 @@ public class Tabbar : TemplatedControl
     public static readonly StyledProperty<int> SelectedIndexProperty =
         AvaloniaProperty.Register<Tabbar, int>(nameof(SelectedIndex));
 
+    public static readonly StyledProperty<double> ItemSpacingProperty =
+        AvaloniaProperty.Register<Tabbar, double>(nameof(ItemSpacing), 32);
+
     public static readonly DirectProperty<Tabbar, ObservableCollection<string>> DataProperty =
         AvaloniaProperty.RegisterDirect<Tabbar, ObservableCollection<string>>(
             nameof(Data),
@@ -51,6 +54,12 @@ public class Tabbar : TemplatedControl
     {
         get => GetValue(SelectedIndexProperty);
         set => SetValue(SelectedIndexProperty, value);
+    }
+
+    public double ItemSpacing
+    {
+        get => GetValue(ItemSpacingProperty);
+        set => SetValue(ItemSpacingProperty, value);
     }
 
     public ObservableCollection<string> Data
@@ -151,7 +160,7 @@ public class Tabbar : TemplatedControl
             {
                 var item = Data[i];
                 ItemsContainer.ColumnDefinitions.Add(
-                    new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
+                    new ColumnDefinition { Width = GridLength.Auto }
                 );
                 AddItem(item, i);
             }
@@ -165,7 +174,8 @@ public class Tabbar : TemplatedControl
             var control = new TextBlock();
             control.TextAlignment = TextAlignment.Center;
             control.Text = item;
-            control.Margin = new Thickness(0, 0, 10, 0);
+            var isLast = Data.IndexOf(item) == Data.Count - 1;
+            control.Margin = new Thickness(0, 0, isLast ? 0 : ItemSpacing, 0);
             control.FontSize = 16;
             control.Cursor = new Cursor(StandardCursorType.Hand);
             control.Foreground = new SolidColorBrush(Color.Parse("#1F1F1F"));
@@ -176,7 +186,7 @@ public class Tabbar : TemplatedControl
                 var index = int.Parse(((Control)e).Tag?.ToString());
                 if (SelectedIndex != index) SelectedIndex = index;
             };
-            if (Data.IndexOf(item) == Data.Count - 1)
+            if (isLast)
                 control.Loaded += (e, c) =>
                 {
                     ActiveBlock.Width = control.Bounds.Width;
