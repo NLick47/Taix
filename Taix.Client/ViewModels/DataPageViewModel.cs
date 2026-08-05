@@ -61,6 +61,8 @@ public partial class DataPageViewModel : DataPageModel
         ToDetailCommand = ReactiveCommand.Create<object>(OnToDetail);
         RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync);
         RefreshCommand.DisposeWith(Disposables);
+        ToggleHeaderCommand = ReactiveCommand.Create(() => { IsHeaderExpanded = !IsHeaderExpanded; });
+        ToggleHeaderCommand.DisposeWith(Disposables);
         Initialize();
 
         _appEventService.AppChanged
@@ -78,6 +80,7 @@ public partial class DataPageViewModel : DataPageModel
 
     public ICommand ToDetailCommand { get; }
     public ReactiveCommand<object, Unit> RefreshCommand { get; }
+    public ReactiveCommand<Unit, Unit> ToggleHeaderCommand { get; }
 
     public override void Dispose()
     {

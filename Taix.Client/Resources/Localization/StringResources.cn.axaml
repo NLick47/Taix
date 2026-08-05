@@ -14,6 +14,8 @@
     <system:String x:Key="SideDetails">详细</system:String>
     <system:String x:Key="SideSort">分类</system:String>
     <system:String x:Key="SideSetting">设置</system:String>
+    <system:String x:Key="ExpandHeader">展开筛选栏</system:String>
+    <system:String x:Key="CollapseHeader">收起筛选栏</system:String>
     <system:String x:Key="Website">网站</system:String>
     <system:String x:Key="App">应用</system:String>
     <system:String x:Key="Refresh">刷新</system:String>

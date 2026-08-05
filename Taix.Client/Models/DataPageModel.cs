@@ -26,6 +26,8 @@ public partial class DataPageModel : ModelBase
     private int _tabbarSelectedIndex;
     private SelectItemModel? _selectedPeriod;
 
+    private bool _isHeaderExpanded = true;
+
     private List<ChartsDataModel> _yearData;
     private DateTime _yearDate;
     private List<ChartsDataModel> _weekData;
@@ -177,6 +179,20 @@ public partial class DataPageModel : ModelBase
         set
         {
             _tabbarSelectedIndex = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// 头部筛选栏是否展开
+    /// </summary>
+    [PageState]
+    public bool IsHeaderExpanded
+    {
+        get => _isHeaderExpanded;
+        set
+        {
+            _isHeaderExpanded = value;
             OnPropertyChanged();
         }
     }

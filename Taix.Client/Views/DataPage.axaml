@@ -3,13 +3,14 @@
                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="650"
-               xmlns:Charts="using:Taix.Client.Controls.Charts"
-               xmlns:select="using:Taix.Client.Controls.Select"
-               xmlns:base="using:Taix.Client.Controls.Base"
-               xmlns:timeline="using:Taix.Client.Controls.Timeline"
-               xmlns:control="using:Taix.Client.Controls"
-               xmlns:converters="using:Taix.Client.Controls.Converters"
-               xmlns:vm="using:Taix.Client.ViewModels"
+xmlns:Charts="using:Taix.Client.Controls.Charts"
+                xmlns:select="using:Taix.Client.Controls.Select"
+                xmlns:base="using:Taix.Client.Controls.Base"
+                xmlns:Button="using:Taix.Client.Controls.Button"
+                xmlns:timeline="using:Taix.Client.Controls.Timeline"
+                xmlns:control="using:Taix.Client.Controls"
+                xmlns:converters="using:Taix.Client.Controls.Converters"
+                xmlns:vm="using:Taix.Client.ViewModels"
                x:DataType="vm:DataPageViewModel"
                IsFillPage="True"
                x:Class="Taix.Client.Views.DataPage">
@@ -18,7 +19,34 @@
             <MenuItem Header="{DynamicResource Refresh}" Command="{Binding RefreshCommand}" />
         </ContextMenu>
     </control:TPage.ContextMenu>
-    <Grid Margin="20">
+    <control:TPage.Resources>
+        <converters:BoolToThicknessConverter x:Key="PageMarginConverter"
+                                             TrueValue="20,20,20,20"
+                                             FalseValue="20,0,20,20" />
+        <converters:BoolToThicknessConverter x:Key="ContentMarginConverter"
+                                             TrueValue="0,13,0,0"
+                                             FalseValue="0,0,0,0" />
+        <converters:BoolToDoubleConverter x:Key="HeaderMaxHeightConverter"
+                                          TrueValue="120"
+                                          FalseValue="0" />
+        <converters:BoolToDoubleConverter x:Key="BoolToOpacityConverter"
+                                          TrueValue="1"
+                                          FalseValue="0" />
+        <converters:BoolToDoubleConverter x:Key="InverseOpacityConverter"
+                                          TrueValue="0"
+                                          FalseValue="1" />
+    </control:TPage.Resources>
+    <Grid>
+    <Grid Margin="{Binding IsHeaderExpanded, Converter={StaticResource PageMarginConverter}}">
+        <Grid.Transitions>
+            <Transitions>
+                <ThicknessTransition Property="Margin" Duration="0:0:0.22">
+                    <ThicknessTransition.Easing>
+                        <CubicEaseInOut />
+                    </ThicknessTransition.Easing>
+                </ThicknessTransition>
+            </Transitions>
+        </Grid.Transitions>
         <Grid.Styles>
             <Style Selector="select|TabSwitch#ColorModeSwitch select|TabOption">
                 <Setter Property="Padding" Value="10,3" />
@@ -31,9 +59,28 @@
         </Grid.RowDefinitions>
 
         <!-- ═══ Row 0：标题 · 应用/网站切换 · 日期 · 周期 ═══ -->
-        <Grid ColumnDefinitions="Auto,*,Auto">
+        <Border MaxHeight="{Binding IsHeaderExpanded, Converter={StaticResource HeaderMaxHeightConverter}}"
+                Opacity="{Binding IsHeaderExpanded, Converter={StaticResource BoolToOpacityConverter}}"
+                IsHitTestVisible="{Binding IsHeaderExpanded}"
+                ClipToBounds="True">
+            <Border.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="MaxHeight" Duration="0:0:0.22">
+                        <DoubleTransition.Easing>
+                            <CubicEaseInOut />
+                        </DoubleTransition.Easing>
+                    </DoubleTransition>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.22">
+                        <DoubleTransition.Easing>
+                            <CubicEaseInOut />
+                        </DoubleTransition.Easing>
+                    </DoubleTransition>
+                </Transitions>
+            </Border.Transitions>
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+              Margin="0,5,0,20">
             <StackPanel Grid.Column="0" Orientation="Horizontal"
-                        VerticalAlignment="Center" Margin="0,5,0,20">
+                        VerticalAlignment="Center">
                 <TextBlock Text="{DynamicResource SideDetails}"
                            FontSize="18"
                            VerticalAlignment="Center" />
@@ -45,7 +92,7 @@
             </StackPanel>
 
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10"
-                        VerticalAlignment="Center" Margin="0,5,0,20">
+                        VerticalAlignment="Center">
                 <!-- 日期选择 -->
                 <Grid VerticalAlignment="Center">
                     <base:View Condition="0" Value="{Binding TabbarSelectedIndex}">
@@ -70,15 +117,34 @@
                                   SelectedItem="{Binding SelectedPeriod,Mode=TwoWay}"
                                   Options="{Binding PeriodOptions}" />
             </StackPanel>
+
+            <!-- 收起筛选栏 -->
+            <StackPanel Grid.Column="3" Orientation="Horizontal"
+                        VerticalAlignment="Center" Margin="10,0,0,0">
+                <Button:IconButton Width="30" Height="30" FontSize="14"
+                                   Icon="ChevronUpMed"
+                                   ToolTip.Tip="{DynamicResource CollapseHeader}"
+                                   Command="{Binding ToggleHeaderCommand}" />
+            </StackPanel>
         </Grid>
+        </Border>
 
         <TabControl
             Grid.Row="1"
             SelectedIndex="{Binding TabbarSelectedIndex}"
             BorderThickness="0"
-            Margin="0,13,0,0"
+            Margin="{Binding IsHeaderExpanded, Converter={StaticResource ContentMarginConverter}}"
             Padding="0"
             Background="Transparent">
+            <TabControl.Transitions>
+                <Transitions>
+                    <ThicknessTransition Property="Margin" Duration="0:0:0.22">
+                        <ThicknessTransition.Easing>
+                            <CubicEaseInOut />
+                        </ThicknessTransition.Easing>
+                    </ThicknessTransition>
+                </Transitions>
+            </TabControl.Transitions>
             <TabControl.Styles>
                 <Style Selector="TabItem">
                     <Setter Property="Template">
@@ -213,6 +279,33 @@
                                ClickCommand="{Binding ToDetailCommand}" />
             </TabItem>
         </TabControl>
+    </Grid>
 
+    <!-- 悬浮展开按钮：头部收起时悬浮在页面右上角留白处，不占用布局、不遮挡内容 -->
+    <Border HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            Margin="0,4,4,0"
+            Padding="1"
+            CornerRadius="11"
+            Background="{DynamicResource SettingPanelBgBrush}"
+            BorderBrush="{DynamicResource SettingPanelBorderBrush}"
+            BorderThickness="1"
+            ZIndex="50"
+            Opacity="{Binding IsHeaderExpanded, Converter={StaticResource InverseOpacityConverter}}"
+            IsHitTestVisible="{Binding !IsHeaderExpanded}">
+        <Border.Transitions>
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.22">
+                    <DoubleTransition.Easing>
+                        <CubicEaseInOut />
+                    </DoubleTransition.Easing>
+                </DoubleTransition>
+            </Transitions>
+        </Border.Transitions>
+        <Button:IconButton Width="18" Height="18" FontSize="9"
+                           Icon="ChevronDownMed"
+                           ToolTip.Tip="{DynamicResource ExpandHeader}"
+                           Command="{Binding ToggleHeaderCommand}" />
+    </Border>
     </Grid>
 </control:TPage>

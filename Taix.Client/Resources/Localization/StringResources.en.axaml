@@ -14,6 +14,8 @@
     <system:String x:Key="SideDetails">Details</system:String>
     <system:String x:Key="SideSort">Category</system:String>
     <system:String x:Key="SideSetting">Setting</system:String>
+    <system:String x:Key="ExpandHeader">Expand Filters</system:String>
+    <system:String x:Key="CollapseHeader">Collapse Filters</system:String>
     <system:String x:Key="Website">Website</system:String>
     <system:String x:Key="App">App</system:String>
     <system:String x:Key="Refresh">Refresh</system:String>
