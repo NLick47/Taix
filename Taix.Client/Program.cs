@@ -1,6 +1,5 @@
 using System;
 using Avalonia;
-using ReactiveUI.Avalonia;
 
 namespace Taix.Client;
 
@@ -16,8 +15,7 @@ internal sealed class Program
     public static AppBuilder BuildAvaloniaApp()
     {
         var builder = AppBuilder.Configure<App>()
-            .UsePlatformDetect()
-            .UseReactiveUI(_ => { });
+            .UsePlatformDetect();
 
 #if DEBUG
         builder.WithDeveloperTools();

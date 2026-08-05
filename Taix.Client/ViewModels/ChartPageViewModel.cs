@@ -1,17 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables.Fluent;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Avalonia;
-using ReactiveUI;
-using ReactiveUI.Avalonia;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Events;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Librarys;
 using Taix.Client.Models;
 using Taix.Client.Models.Navigation;
@@ -56,28 +54,19 @@ public partial class ChartPageViewModel : ChartPageModel
         _config = appConfig.GetConfig();
         _appEventService = appEventService;
 
-        ToDetailCommand = ReactiveCommand.Create<object>(OnToDetail);
-        RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync);
-        ToDetailCommand.DisposeWith(Disposables);
-        RefreshCommand.DisposeWith(Disposables);
+        ToDetailCommand = AsyncRelayCommand.Create<object>(OnToDetail).DisposeWith(Disposables);
+        RefreshCommand = AsyncRelayCommand.CreateFromTask<object>(OnRefreshAsync).DisposeWith(Disposables);
 
         Initialize();
 
-        _appEventService.AppChanged
-            .Throttle(TimeSpan.FromMilliseconds(100))
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(async _ => await RefreshAsync())
-            .DisposeWith(Disposables);
-
-        _appEventService.WebSiteChanged
-            .Throttle(TimeSpan.FromMilliseconds(100))
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(async _ => await RefreshAsync())
-            .DisposeWith(Disposables);
+        RefreshOnChange(
+            _appEventService.AppChanged,
+            _appEventService.WebSiteChanged,
+            RefreshAsync);
     }
 
-    public ReactiveCommand<object, Unit> ToDetailCommand { get; }
-    public ReactiveCommand<object, Unit> RefreshCommand { get; }
+    public ICommand ToDetailCommand { get; }
+    public ICommand RefreshCommand { get; }
 
     private void Initialize()
     {
@@ -105,9 +94,9 @@ public partial class ChartPageViewModel : ChartPageModel
         WhenPropertyChanged(this, x => x.MonthDate, _ => OnMonthDateChangedAsync());
         WhenPropertyChanged(this, x => x.YearDate, _ => OnYearDateChangedAsync());
         WhenPropertyChanged(this, x => x.ShowType, _ => OnShowTypeChangedAsync());
-        this.WhenAnyValue(x => x.ColumnSelectedIndex)
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Select(_ => Observable.FromAsync(async ct => await LoadSelectedColDataAsync(ct)))
+        ObservablePropertyChangedExtensions.WhenPropertyChanged(this, x => x.ColumnSelectedIndex)
+            .ObserveOn(AvaloniaContextScheduler.Instance)
+            .Select(_ => RxObservable.FromAsync(async ct => await LoadSelectedColDataAsync(ct)))
             .Switch()
             .Subscribe()
             .DisposeWith(Disposables);
@@ -118,23 +107,28 @@ public partial class ChartPageViewModel : ChartPageModel
             if (p != null) TabbarSelectedIndex = p.Id;
             return Task.CompletedTask;
         });
-        this.WhenAnyValue(x => x.WebColSelectedIndex)
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Select(_ => Observable.FromAsync(async ct => await LoadWebSitesColSelectedDataAsync(ct)))
+        ObservablePropertyChangedExtensions.WhenPropertyChanged(this, x => x.WebColSelectedIndex)
+            .ObserveOn(AvaloniaContextScheduler.Instance)
+            .Select(_ => RxObservable.FromAsync(async ct => await LoadWebSitesColSelectedDataAsync(ct)))
             .Switch()
             .Subscribe()
             .DisposeWith(Disposables);
     }
 
-    public override async Task OnNavigatedToAsync()
+    public override Task OnNavigatedToAsync()
     {
-        TryRestoreState(_navigationService, _stateService);
-        await ExecuteAsync(LoadDataAsync);
+        var restored = TryRestoreState(_navigationService, _stateService);
+        return RestoreCachedDataOrLoadAsync(
+            restored,
+            _stateService,
+            _appEventService,
+            () => ExecuteAsync(LoadDataAsync));
     }
 
     public override void OnNavigatedFrom()
     {
         SaveState(_stateService);
+        SaveCachedDataVersion(_stateService, _appEventService);
         base.OnNavigatedFrom();
     }
 

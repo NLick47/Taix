@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
+using Taix.Client.Foundation.Rx;
 
 namespace Taix.Client.Behaviors;
 

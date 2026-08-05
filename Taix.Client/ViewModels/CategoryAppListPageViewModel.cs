@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables.Fluent;
-using System.Reactive.Linq;
 using System.Threading.Tasks;
-using ReactiveUI;
-using ReactiveUI.Avalonia;
+using System.Windows.Input;
 using Taix.Client.Events;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Models;
 using Taix.Client.Models.CategoryAppList;
 using Taix.Client.Servicers;
@@ -41,19 +39,17 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         _appUpdateService = appUpdateService;
         _appEventService = appEventService;
 
-        ShowChooseCommand = ReactiveCommand.CreateFromTask<object>(OnShowChooseAsync).DisposeWith(Disposables);
-        ChoosedCommand = ReactiveCommand.CreateFromTask<object>(OnChoosed).DisposeWith(Disposables);
-        GotoDetailCommand = ReactiveCommand.Create<object>(OnGotoDetail).DisposeWith(Disposables);
-        SearchCommand = ReactiveCommand.CreateFromTask<object>(OnSearchAsync).DisposeWith(Disposables);
-        ChooseCloseCommand = ReactiveCommand.Create<object>(OnChooseClose).DisposeWith(Disposables);
-        DelCommand = ReactiveCommand.CreateFromTask<object>(OnDel).DisposeWith(Disposables);
+        ShowChooseCommand = AsyncRelayCommand.CreateFromTask<object>(OnShowChooseAsync).DisposeWith(Disposables);
+        ChoosedCommand = AsyncRelayCommand.CreateFromTask<object>(OnChoosed).DisposeWith(Disposables);
+        GotoDetailCommand = AsyncRelayCommand.Create<object>(OnGotoDetail).DisposeWith(Disposables);
+        SearchCommand = AsyncRelayCommand.CreateFromTask<object>(OnSearchAsync).DisposeWith(Disposables);
+        ChooseCloseCommand = AsyncRelayCommand.Create<object>(OnChooseClose).DisposeWith(Disposables);
+        DelCommand = AsyncRelayCommand.CreateFromTask<object>(OnDel).DisposeWith(Disposables);
 
-        _appEventService.AppChanged
-            .Where(e => e.ChangeType.HasFlag(AppChangeType.Category))
-            .Throttle(TimeSpan.FromMilliseconds(100))
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(async _ => await RefreshAsync())
-            .DisposeWith(Disposables);
+        RefreshOnChange(
+            _appEventService.AppChanged
+                .Where(e => e.ChangeType.HasFlag(AppChangeType.Category)),
+            RefreshAsync);
 
         PropertyChanged += (_, e) =>
         {
@@ -62,12 +58,12 @@ public class CategoryAppListPageViewModel : CategoryAppListPageModel
         };
     }
 
-    public ReactiveCommand<object, Unit> ShowChooseCommand { get; }
-    public ReactiveCommand<object, Unit> ChoosedCommand { get; }
-    public ReactiveCommand<object, Unit> GotoDetailCommand { get; }
-    public ReactiveCommand<object, Unit> SearchCommand { get; }
-    public ReactiveCommand<object, Unit> ChooseCloseCommand { get; }
-    public ReactiveCommand<object, Unit> DelCommand { get; }
+    public ICommand ShowChooseCommand { get; }
+    public ICommand ChoosedCommand { get; }
+    public ICommand GotoDetailCommand { get; }
+    public ICommand SearchCommand { get; }
+    public ICommand ChooseCloseCommand { get; }
+    public ICommand DelCommand { get; }
 
     public override void Dispose()
     {

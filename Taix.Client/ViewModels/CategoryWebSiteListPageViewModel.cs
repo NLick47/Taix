@@ -2,17 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables.Fluent;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ReactiveUI;
-using ReactiveUI.Avalonia;
+using System.Windows.Input;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Select;
 using Taix.Client.Controls.Window;
 using Taix.Client.Events;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Models;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Servicers.Interfaces;
@@ -47,24 +45,22 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
         _appEventService = appEventService;
         Category = _navigationData.Data as WebSiteCategoryModel ?? new WebSiteCategoryModel();
 
-        ShowChooseCommand = ReactiveCommand.CreateFromTask<object>(OnShowChooseAsync).DisposeWith(Disposables);
-        ChoosedCommand = ReactiveCommand.Create<object>(OnChoosed).DisposeWith(Disposables);
-        GotoDetailCommand = ReactiveCommand.Create<object>(OnGotoDetail).DisposeWith(Disposables);
-        ChooseCloseCommand = ReactiveCommand.Create<object>(OnChooseClose).DisposeWith(Disposables);
-        DelCommand = ReactiveCommand.CreateFromTask<object>(OnDelAsync).DisposeWith(Disposables);
+        ShowChooseCommand = AsyncRelayCommand.CreateFromTask<object>(OnShowChooseAsync).DisposeWith(Disposables);
+        ChoosedCommand = AsyncRelayCommand.Create<object>(OnChoosed).DisposeWith(Disposables);
+        GotoDetailCommand = AsyncRelayCommand.Create<object>(OnGotoDetail).DisposeWith(Disposables);
+        ChooseCloseCommand = AsyncRelayCommand.Create<object>(OnChooseClose).DisposeWith(Disposables);
+        DelCommand = AsyncRelayCommand.CreateFromTask<object>(OnDelAsync).DisposeWith(Disposables);
 
-        _searchSubscription = this.WhenAnyValue(x => x.SearchInput)
+        _searchSubscription = ObservablePropertyChangedExtensions.WhenPropertyChanged(this, x => x.SearchInput)
             .Throttle(TimeSpan.FromMilliseconds(500))
-            .ObserveOn(AvaloniaScheduler.Instance)
+            .ObserveOn(AvaloniaContextScheduler.Instance)
             .Subscribe(DoSearch);
         _searchSubscription.DisposeWith(Disposables);
 
-        _appEventService.WebSiteChanged
-            .Where(e => e.ChangeType.HasFlag(AppChangeType.WebSiteCategory))
-            .Throttle(TimeSpan.FromMilliseconds(100))
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(async _ => await RefreshAsync())
-            .DisposeWith(Disposables);
+        RefreshOnChange(
+            _appEventService.WebSiteChanged
+                .Where(e => e.ChangeType.HasFlag(AppChangeType.WebSiteCategory)),
+            RefreshAsync);
     }
 
     public override Task OnNavigatedToAsync()
@@ -75,11 +71,11 @@ public class CategoryWebSiteListPageViewModel : CategoryWebSiteListPageModel
 
     public override Task RefreshAsync() => ExecuteAsync(LoadDataCoreAsync);
 
-    public ReactiveCommand<object, Unit> ShowChooseCommand { get; }
-    public ReactiveCommand<object, Unit> ChoosedCommand { get; }
-    public ReactiveCommand<object, Unit> GotoDetailCommand { get; }
-    public ReactiveCommand<object, Unit> ChooseCloseCommand { get; }
-    public ReactiveCommand<object, Unit> DelCommand { get; }
+    public ICommand ShowChooseCommand { get; }
+    public ICommand ChoosedCommand { get; }
+    public ICommand GotoDetailCommand { get; }
+    public ICommand ChooseCloseCommand { get; }
+    public ICommand DelCommand { get; }
 
     private async Task LoadDataCoreAsync(CancellationToken cancellationToken)
     {

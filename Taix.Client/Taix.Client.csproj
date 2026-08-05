@@ -9,7 +9,6 @@
         <Version>$(APP_VERSION)</Version>
         <ApplicationIcon>Resources\Icons\tai.ico</ApplicationIcon>
         <AvaloniaVersion>12.0.2</AvaloniaVersion>
-        <AvaloniaReactiveUIVersion>11.2.8</AvaloniaReactiveUIVersion>
         <AvaloniaXamlBehaviorsVersion>11.3.0.1</AvaloniaXamlBehaviorsVersion>
         <NoWarn>$(NoWarn);CS0108;IL2026;IL3050;IL2075;AVLN5001</NoWarn>
     </PropertyGroup>
@@ -43,7 +42,6 @@
         <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.0" />
         <PackageReference Include="Avalonia.Themes.Simple" Version="$(AvaloniaVersion)" />
         <PackageReference Include="Jab" Version="0.10.2" />
-        <PackageReference Include="ReactiveUI.Avalonia" Version="12.0.1" />
         <PackageReference Include="Xaml.Behaviors.Avalonia" Version="12.0.0" />
     </ItemGroup>
 

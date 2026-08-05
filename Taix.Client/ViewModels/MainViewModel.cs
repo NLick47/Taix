@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Reactive;
-using System.Reactive.Disposables;
-using System.Reactive.Disposables.Fluent;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia.Threading;
-using ReactiveUI;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Navigation.Models;
 using Taix.Client.Controls.Window;
@@ -48,8 +45,8 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
         _apiClient = apiClient;
         ServiceProvider = serviceProvider;
 
-        OnSelectedCommand = ReactiveCommand.Create<object>(OnSelectedCommandHandle);
-        GotoPageCommand = ReactiveCommand.Create<object>(OnGotoPageCommand);
+        OnSelectedCommand = AsyncRelayCommand.Create<object>(OnSelectedCommandHandle);
+        GotoPageCommand = AsyncRelayCommand.Create<object>(OnGotoPageCommand);
 
 #if !DEBUG
         Title = "Taix";
@@ -57,7 +54,7 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
         Title = "Taix -Debug";
 #endif
 
-        this.WhenAnyValue(x => x.Uri)
+        ObservablePropertyChangedExtensions.WhenPropertyChanged(this, x => x.Uri)
             .Where(uri => uri == nameof(IndexPage))
             .Subscribe(_ => Data = null)
             .DisposeWith(_disposables);
@@ -131,7 +128,7 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
         }
     }
 
-    public ReactiveCommand<object, Unit> OnSelectedCommand { get; }
+    public ICommand OnSelectedCommand { get; }
     public ICommand GotoPageCommand { get; }
 
     private void OnGotoPageCommand(object obj)

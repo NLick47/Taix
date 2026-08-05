@@ -1,12 +1,12 @@
 using System;
 using System.Linq;
-using System.Reactive;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Platform.Storage;
-using ReactiveUI;
+using Taix.Client.Foundation;
 
 namespace Taix.Client.Controls.Select;
 
@@ -37,7 +37,7 @@ public class ImageSelect : TemplatedControl
 
     public ImageSelect()
     {
-        SelectCommand = ReactiveCommand.CreateFromTask<object>(OnSelect);
+        SelectCommand = AsyncRelayCommand.CreateFromTask<object>(OnSelect);
     }
 
     public string URL
@@ -64,7 +64,7 @@ public class ImageSelect : TemplatedControl
         set => SetValue(ImageHeightProperty, value);
     }
 
-    public ReactiveCommand<object, Unit> SelectCommand { get; }
+    public ICommand SelectCommand { get; }
 
 
     protected override Type StyleKeyOverride => typeof(ImageSelect);

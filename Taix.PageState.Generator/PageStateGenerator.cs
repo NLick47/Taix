@@ -382,17 +382,6 @@ public sealed class PageStateGenerator : IIncrementalGenerator
             sb.AppendLine($"        var state = stateService.Get<string, {classInfo.ClassName}State>(StateKey);");
             sb.AppendLine("        System.Diagnostics.Debug.WriteLine($\"[{nameof(" + classInfo.ClassName + ")}] State from cache: {(state == null ? \"null\" : \"found\")}\");");
             sb.AppendLine("        if (state == null) return false;");
-            sb.AppendLine();
-            sb.AppendLine("        IsRestoringState = true;");
-            sb.AppendLine("        try");
-            sb.AppendLine("        {");
-            sb.AppendLine("            ApplyState(state);");
-            sb.AppendLine("        }");
-            sb.AppendLine("        finally");
-            sb.AppendLine("        {");
-            sb.AppendLine("            IsRestoringState = false;");
-            sb.AppendLine("        }");
-            sb.AppendLine("        System.Diagnostics.Debug.WriteLine($\"[{nameof(" + classInfo.ClassName + ")}] ApplyState completed\");");
         }
 
         if (classInfo.DataProperties.Count > 0)
@@ -413,6 +402,21 @@ public sealed class PageStateGenerator : IIncrementalGenerator
             sb.AppendLine("            }");
             sb.AppendLine("            System.Diagnostics.Debug.WriteLine($\"[{nameof(" + classInfo.ClassName + ")}] ApplyData completed\");");
             sb.AppendLine("        }");
+        }
+
+        if (classInfo.StateProperties.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("        IsRestoringState = true;");
+            sb.AppendLine("        try");
+            sb.AppendLine("        {");
+            sb.AppendLine("            ApplyState(state);");
+            sb.AppendLine("        }");
+            sb.AppendLine("        finally");
+            sb.AppendLine("        {");
+            sb.AppendLine("            IsRestoringState = false;");
+            sb.AppendLine("        }");
+            sb.AppendLine("        System.Diagnostics.Debug.WriteLine($\"[{nameof(" + classInfo.ClassName + ")}] ApplyState completed\");");
         }
 
         sb.AppendLine();

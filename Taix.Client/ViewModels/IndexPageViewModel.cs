@@ -1,18 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables.Fluent;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
-using ReactiveUI;
-using ReactiveUI.Avalonia;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Events;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Librarys;
 using Taix.Client.Models;
 using Taix.Client.Models.Navigation;
@@ -50,28 +48,19 @@ public partial class IndexPageViewModel : IndexPageModel
         _stateService = stateService;
         _appEventService = appEventService;
 
-        ToDetailCommand = ReactiveCommand.Create<object>(OnToDetail);
-        RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync);
+        ToDetailCommand = AsyncRelayCommand.Create<object>(OnToDetail).DisposeWith(Disposables);
+        RefreshCommand = AsyncRelayCommand.CreateFromTask<object>(OnRefreshAsync).DisposeWith(Disposables);
 
         InitializeStaticData();
 
-        _appEventService.AppChanged
-            .Throttle(TimeSpan.FromMilliseconds(100))
-            .DistinctUntilChanged()
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(async _ => await LoadDataAsync())
-            .DisposeWith(Disposables);
-
-        _appEventService.WebSiteChanged
-            .Throttle(TimeSpan.FromMilliseconds(100))
-            .DistinctUntilChanged()
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(async _ => await LoadDataAsync())
-            .DisposeWith(Disposables);
+        RefreshOnChange(
+            _appEventService.AppChanged,
+            _appEventService.WebSiteChanged,
+            LoadDataAsync);
     }
 
-    public ReactiveCommand<object, Unit> ToDetailCommand { get; }
-    public ReactiveCommand<object, Unit> RefreshCommand { get; }
+    public ICommand ToDetailCommand { get; }
+    public ICommand RefreshCommand { get; }
 
 
     private void InitializeStaticData()
@@ -97,12 +86,6 @@ public partial class IndexPageViewModel : IndexPageModel
 
         WhenPropertyChanged(this, x => x.TabbarSelectedIndex, _ => LoadDataAsync());
 
-        WhenPropertyChanged(this, x => x.SelectedPeriod, p =>
-        {
-            if (p != null) TabbarSelectedIndex = p.Id;
-            return Task.CompletedTask;
-        });
-
         MoreTypeOptions =
         [
             new SelectItemModel
@@ -119,15 +102,17 @@ public partial class IndexPageViewModel : IndexPageModel
         MoreType = MoreTypeOptions[0];
     }
 
-    public override async Task OnNavigatedToAsync()
+    public override Task OnNavigatedToAsync()
     {
-        TryRestoreState(_navigationService, _stateService);
-        await LoadDataAsync();
+        var restored = TryRestoreState(_navigationService, _stateService);
+        return RestoreCachedDataOrLoadAsync(
+            restored, _stateService, _appEventService, LoadDataAsync);
     }
 
     public override void OnNavigatedFrom()
     {
         SaveState(_stateService);
+        SaveCachedDataVersion(_stateService, _appEventService);
         base.OnNavigatedFrom();
     }
 
@@ -213,8 +198,6 @@ public partial class IndexPageViewModel : IndexPageModel
 
     public override void Dispose()
     {
-        (ToDetailCommand as IDisposable).Dispose();
-        (RefreshCommand as IDisposable).Dispose();
         WeekData = [];
         AppFrequentUseData = [];
         AppMoreData = [];
@@ -222,4 +205,5 @@ public partial class IndexPageViewModel : IndexPageModel
         WebMoreData = [];
         base.Dispose();
     }
+
 }

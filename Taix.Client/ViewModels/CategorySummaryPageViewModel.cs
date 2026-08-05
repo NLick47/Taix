@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables.Fluent;
 using System.Threading.Tasks;
-using ReactiveUI;
+using System.Windows.Input;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Models;
 using Taix.Client.Models.Navigation;
 using Taix.Client.Servicers.Interfaces;
@@ -85,8 +85,8 @@ public class CategorySummaryPageViewModel : ModelBase
         _webData = webData;
         _navigationData = navigationData;
 
-        BackCommand = ReactiveCommand.Create<object?>(OnBack).DisposeWith(Disposables);
-        SwitchCategoryCommand = ReactiveCommand.CreateFromTask<CategoryChip>(OnSwitchCategoryAsync).DisposeWith(Disposables);
+        BackCommand = AsyncRelayCommand.Create<object?>(OnBack).DisposeWith(Disposables);
+        SwitchCategoryCommand = AsyncRelayCommand.CreateFromTask<CategoryChip>(OnSwitchCategoryAsync).DisposeWith(Disposables);
 
         Categories = new ObservableCollection<CategoryChip>();
         DailyTrend = new ObservableCollection<DailyPointModel>();
@@ -110,8 +110,8 @@ public class CategorySummaryPageViewModel : ModelBase
         WhenPropertyChanged(this, x => x.SelectedDate, _ => LoadAsync());
     }
 
-    public ReactiveCommand<object?, Unit> BackCommand { get; }
-    public ReactiveCommand<CategoryChip, Unit> SwitchCategoryCommand { get; }
+    public ICommand BackCommand { get; }
+    public ICommand SwitchCategoryCommand { get; }
 
     public ObservableCollection<CategoryChip> Categories { get; }
 

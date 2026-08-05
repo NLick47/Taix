@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables.Fluent;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
-using ReactiveUI;
+using System.Windows.Input;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Window;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Logging;
 using Taix.Client.Models;
 using Taix.Client.Servicers.Interfaces;
@@ -55,19 +55,19 @@ public class CategoryPageViewModel : CategoryPageModel
         EditDirectories = new ObservableCollection<string>();
         EditUrlPatterns = new ObservableCollection<string>();
 
-        GotoListCommand = ReactiveCommand.Create<object>(OnGotoList).DisposeWith(Disposables);
-        EditCommand = ReactiveCommand.Create<object>(OnEdit).DisposeWith(Disposables);
-        EditDoneCommand = ReactiveCommand.CreateFromTask<object>(OnEditDoneAsync).DisposeWith(Disposables);
-        EditCloseCommand = ReactiveCommand.Create<object>(OnEditClose).DisposeWith(Disposables);
-        DelCommand = ReactiveCommand.CreateFromTask<object>(OnDelAsync).DisposeWith(Disposables);
-        RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync).DisposeWith(Disposables);
-        AddDirectoryCommand = ReactiveCommand.CreateFromTask<object>(OnAddDirectoryAsync).DisposeWith(Disposables);
-        DirectoriesCommand = ReactiveCommand.Create<object>(OnDirectoriesCommand).DisposeWith(Disposables);
-        AddUrlPatternCommand = ReactiveCommand.CreateFromTask<object>(OnAddUrlPatternAsync).DisposeWith(Disposables);
-        UrlPatternsCommand = ReactiveCommand.Create<object>(OnUrlPatternsCommand).DisposeWith(Disposables);
-        RestoreSystemCategoryCommand = ReactiveCommand.CreateFromTask<object>(OnRestoreSystemCategoryAsync).DisposeWith(Disposables);
-        ApplyDirectoryMatchCommand = ReactiveCommand.CreateFromTask<object>(OnApplyDirectoryMatchAsync).DisposeWith(Disposables);
-        ApplyUrlMatchCommand = ReactiveCommand.CreateFromTask<object>(OnApplyUrlMatchAsync).DisposeWith(Disposables);
+        GotoListCommand = AsyncRelayCommand.Create<object>(OnGotoList).DisposeWith(Disposables);
+        EditCommand = AsyncRelayCommand.Create<object>(OnEdit).DisposeWith(Disposables);
+        EditDoneCommand = AsyncRelayCommand.CreateFromTask<object>(OnEditDoneAsync).DisposeWith(Disposables);
+        EditCloseCommand = AsyncRelayCommand.Create<object>(OnEditClose).DisposeWith(Disposables);
+        DelCommand = AsyncRelayCommand.CreateFromTask<object>(OnDelAsync).DisposeWith(Disposables);
+        RefreshCommand = AsyncRelayCommand.CreateFromTask<object>(OnRefreshAsync).DisposeWith(Disposables);
+        AddDirectoryCommand = AsyncRelayCommand.CreateFromTask<object>(OnAddDirectoryAsync).DisposeWith(Disposables);
+        DirectoriesCommand = AsyncRelayCommand.Create<object>(OnDirectoriesCommand).DisposeWith(Disposables);
+        AddUrlPatternCommand = AsyncRelayCommand.CreateFromTask<object>(OnAddUrlPatternAsync).DisposeWith(Disposables);
+        UrlPatternsCommand = AsyncRelayCommand.Create<object>(OnUrlPatternsCommand).DisposeWith(Disposables);
+        RestoreSystemCategoryCommand = AsyncRelayCommand.CreateFromTask<object>(OnRestoreSystemCategoryAsync).DisposeWith(Disposables);
+        ApplyDirectoryMatchCommand = AsyncRelayCommand.CreateFromTask<object>(OnApplyDirectoryMatchAsync).DisposeWith(Disposables);
+        ApplyUrlMatchCommand = AsyncRelayCommand.CreateFromTask<object>(OnApplyUrlMatchAsync).DisposeWith(Disposables);
         WhenPropertyChanged(this, x => x.ShowType, _ => ExecuteAsync(LoadDataCoreAsync)).DisposeWith(Disposables);
     }
 
@@ -83,19 +83,19 @@ public class CategoryPageViewModel : CategoryPageModel
         base.OnNavigatedFrom();
     }
 
-    public ReactiveCommand<object, Unit> GotoListCommand { get; }
-    public ReactiveCommand<object, Unit> EditCommand { get; }
-    public ReactiveCommand<object, Unit> EditDoneCommand { get; }
-    public ReactiveCommand<object, Unit> EditCloseCommand { get; }
-    public ReactiveCommand<object, Unit> DelCommand { get; }
-    public ReactiveCommand<object, Unit> RefreshCommand { get; }
-    public ReactiveCommand<object, Unit> AddDirectoryCommand { get; }
-    public ReactiveCommand<object, Unit> DirectoriesCommand { get; }
-    public ReactiveCommand<object, Unit> AddUrlPatternCommand { get; }
-    public ReactiveCommand<object, Unit> UrlPatternsCommand { get; }
-    public ReactiveCommand<object, Unit> RestoreSystemCategoryCommand { get; }
-    public ReactiveCommand<object, Unit> ApplyDirectoryMatchCommand { get; }
-    public ReactiveCommand<object, Unit> ApplyUrlMatchCommand { get; }
+    public ICommand GotoListCommand { get; }
+    public ICommand EditCommand { get; }
+    public ICommand EditDoneCommand { get; }
+    public ICommand EditCloseCommand { get; }
+    public ICommand DelCommand { get; }
+    public ICommand RefreshCommand { get; }
+    public ICommand AddDirectoryCommand { get; }
+    public ICommand DirectoriesCommand { get; }
+    public ICommand AddUrlPatternCommand { get; }
+    public ICommand UrlPatternsCommand { get; }
+    public ICommand RestoreSystemCategoryCommand { get; }
+    public ICommand ApplyDirectoryMatchCommand { get; }
+    public ICommand ApplyUrlMatchCommand { get; }
 
 
     private bool _hasDirectoryMatchCategory;

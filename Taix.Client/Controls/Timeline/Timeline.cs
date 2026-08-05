@@ -358,7 +358,7 @@ public class Timeline : Control
         {
             if (change.Property == UsageItemsProperty)
             {
-                ResetSelection();
+                if (IsDefaultVisibleRange()) ResetSelection();
                 FitToData();
             }
             if ((change.Property == VisibleStartHourProperty
@@ -420,6 +420,13 @@ public class Timeline : Control
         var pad = 0.5;
         VisibleStartHour = Math.Max(0, Math.Floor((dataStart - pad) * 12) / 12);
         VisibleEndHour = Math.Min(maxHour, Math.Ceiling((dataEnd + pad) * 12) / 12);
+    }
+
+    private bool IsDefaultVisibleRange()
+    {
+        var maxHour = (double)MaxDaySeconds / HourSeconds;
+        return Math.Abs(VisibleStartHour) < 0.001
+            && Math.Abs(VisibleEndHour - maxHour) < 0.001;
     }
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)

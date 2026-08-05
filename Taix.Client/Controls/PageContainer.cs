@@ -8,8 +8,8 @@ using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
-using ReactiveUI;
 using Taix.Client.Controls.Models;
+using Taix.Client.Foundation;
 using Taix.Client.Models;
 using Taix.Client.Servicers.Interfaces;
 
@@ -64,7 +64,7 @@ public class PageContainer : TemplatedControl
         Historys = new List<string>();
         ScrollPositions = new Dictionary<string, double>();
         NavigationDatas = new Dictionary<string, object?>();
-        BackCommand = ReactiveCommand.Create<object>(OnBackCommand);
+        BackCommand = AsyncRelayCommand.Create<object>(OnBackCommand);
     }
 
     public List<string> IndexUriList

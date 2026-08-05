@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Specialized;
+using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
-using ReactiveUI;
 using Taix.Client.Controls;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Models;
 using Taix.Client.Models.Category;
 using Taix.Client.ViewModels;
@@ -20,6 +22,8 @@ public partial class CategoryPage : TPage
     private readonly IDisposable _editIsDirectoryMatchSubscription;
     private readonly IDisposable _editIsUrlMatchSubscription;
     private readonly IDisposable _editUrlPatternsSubscription;
+    private ObservableCollection<string>? _observedEditDirectories;
+    private ObservableCollection<string>? _observedEditUrlPatterns;
     private CategoryPageViewModel _model;
 
     public CategoryPage()
@@ -28,19 +32,25 @@ public partial class CategoryPage : TPage
         var model = ServiceLocator.GetRequiredService<CategoryPageViewModel>();
         _model = model;
         DataContext = model;
-        _editIsDirectoryMatchSubscription = this.WhenAnyValue(x => x._model.EditIsDirectoryMatch)
+        _editIsDirectoryMatchSubscription = ObservablePropertyChangedExtensions.WhenPropertyChanged(model, x => x.EditIsDirectoryMatch)
             .Subscribe(HandleEditIsDirectoryMatchChange);
 
-        _editDirectoriesSubscription = this.WhenAnyValue(x => x._model.EditDirectories).Subscribe(val =>
+        _editDirectoriesSubscription = ObservablePropertyChangedExtensions.WhenPropertyChanged(model, x => x.EditDirectories).Subscribe(val =>
         {
+            if (_observedEditDirectories != null)
+                _observedEditDirectories.CollectionChanged -= OnEditDirectoriesCollectionChanged;
+            _observedEditDirectories = val;
             val.CollectionChanged += OnEditDirectoriesCollectionChanged;
         });
 
-        _editIsUrlMatchSubscription = this.WhenAnyValue(x => x._model.EditIsUrlMatch)
+        _editIsUrlMatchSubscription = ObservablePropertyChangedExtensions.WhenPropertyChanged(model, x => x.EditIsUrlMatch)
             .Subscribe(HandleEditIsUrlMatchChange);
 
-        _editUrlPatternsSubscription = this.WhenAnyValue(x => x._model.EditUrlPatterns).Subscribe(val =>
+        _editUrlPatternsSubscription = ObservablePropertyChangedExtensions.WhenPropertyChanged(model, x => x.EditUrlPatterns).Subscribe(val =>
         {
+            if (_observedEditUrlPatterns != null)
+                _observedEditUrlPatterns.CollectionChanged -= OnEditUrlPatternsCollectionChanged;
+            _observedEditUrlPatterns = val;
             val.CollectionChanged += OnEditUrlPatternsCollectionChanged;
         });
     }
@@ -68,14 +78,12 @@ public partial class CategoryPage : TPage
         _editDirectoriesSubscription.Dispose();
         _editIsUrlMatchSubscription.Dispose();
         _editUrlPatternsSubscription.Dispose();
-        if (_model?.EditDirectories != null)
-        {
-            _model.EditDirectories.CollectionChanged -= OnEditDirectoriesCollectionChanged;
-        }
-        if (_model?.EditUrlPatterns != null)
-        {
-            _model.EditUrlPatterns.CollectionChanged -= OnEditUrlPatternsCollectionChanged;
-        }
+        if (_observedEditDirectories != null)
+            _observedEditDirectories.CollectionChanged -= OnEditDirectoriesCollectionChanged;
+        if (_observedEditUrlPatterns != null)
+            _observedEditUrlPatterns.CollectionChanged -= OnEditUrlPatternsCollectionChanged;
+        _observedEditDirectories = null;
+        _observedEditUrlPatterns = null;
         _model = null;
     }
 

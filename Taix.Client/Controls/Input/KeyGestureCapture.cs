@@ -6,7 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using ReactiveUI;
+using Taix.Client.Foundation;
 
 namespace Taix.Client.Controls.Input;
 
@@ -56,8 +56,8 @@ public class KeyGestureCapture : TemplatedControl
 
     public KeyGestureCapture()
     {
-        _resetCommand = ReactiveCommand.Create(() => { Value = DefaultValue; });
-        _clearCommand = ReactiveCommand.Create(() => { Value = string.Empty; });
+        _resetCommand = AsyncRelayCommand.Create(() => { Value = DefaultValue; });
+        _clearCommand = AsyncRelayCommand.Create(() => { Value = string.Empty; });
         UpdateKeyParts();
     }
 

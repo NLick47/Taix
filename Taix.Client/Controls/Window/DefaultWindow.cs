@@ -1,8 +1,8 @@
 using System;
 using System.Linq;
-using System.Reactive;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -11,9 +11,10 @@ using Avalonia.Media;
 using Avalonia.Media.Transformation;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using ReactiveUI;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Input;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Models;
 using Taix.Client.Servicers.Interfaces;
 
@@ -80,6 +81,7 @@ public class DefaultWindow : Avalonia.Controls.Window
     private int ActionDialogResult = -1;
     private Border? _statusDot;
     private EventHandler? _onLoadPagedHandler;
+    private readonly IDisposable _windowStateSubscription;
 
 
     private Grid titleBar;
@@ -91,10 +93,13 @@ public class DefaultWindow : Avalonia.Controls.Window
     {
         ApplyWindowChromeMode();
 
-        this.WhenAnyValue(x => x.MaximizeVisible, x => x.WindowState)
-            .Subscribe(values =>
+        _windowStateSubscription = RxObservable.Merge(
+                ObservablePropertyChangedExtensions.WhenPropertyChanged(this, x => x.MaximizeVisible).Select(_ => true),
+                this.GetObservable(Avalonia.Controls.Window.WindowStateProperty).Select(_ => true)
+            )
+            .Subscribe(_ =>
             {
-                var (maximizeVisible, windowState) = values;
+                var windowState = WindowState;
                 switch (windowState)
                 {
                     case WindowState.Normal:
@@ -108,15 +113,15 @@ public class DefaultWindow : Avalonia.Controls.Window
                 }
             });
 
-        MinimizeWindowCommand = ReactiveCommand.Create(() => { WindowState = WindowState.Minimized; });
+        MinimizeWindowCommand = AsyncRelayCommand.Create(() => { WindowState = WindowState.Minimized; });
 
-        RestoreWindowCommand = ReactiveCommand.Create(() => { WindowState = WindowState.Normal; });
+        RestoreWindowCommand = AsyncRelayCommand.Create(() => { WindowState = WindowState.Normal; });
 
-        MaximizeWindowCommand = ReactiveCommand.Create(() => { WindowState = WindowState.Maximized; });
+        MaximizeWindowCommand = AsyncRelayCommand.Create(() => { WindowState = WindowState.Maximized; });
 
-        CloseWindowCommand = ReactiveCommand.Create(() => { RequestClose?.Invoke(this, EventArgs.Empty); });
+        CloseWindowCommand = AsyncRelayCommand.Create(() => { RequestClose?.Invoke(this, EventArgs.Empty); });
 
-        BackCommand = ReactiveCommand.Create(() =>
+        BackCommand = AsyncRelayCommand.Create(() =>
         {
             // 使用 INavigationService.GoBack() 以正确设置 IsNavigatingBack 标记
             var navigationService = ServiceLocator.GetService<INavigationService>();
@@ -603,6 +608,7 @@ public class DefaultWindow : Avalonia.Controls.Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _windowStateSubscription.Dispose();
         base.OnClosed(e);
         IsWindowClosed = true;
     }
@@ -630,12 +636,12 @@ public class DefaultWindow : Avalonia.Controls.Window
 
     #region sys command
 
-    public static ReactiveCommand<Unit, Unit> MinimizeWindowCommand { get; private set; }
-    public static ReactiveCommand<Unit, Unit> RestoreWindowCommand { get; private set; }
-    public static ReactiveCommand<Unit, Unit> MaximizeWindowCommand { get; private set; }
-    public static ReactiveCommand<Unit, Unit> CloseWindowCommand { get; private set; }
-    public static ReactiveCommand<Unit, Unit> LogoButtonClickCommand { get; private set; }
-    public static ReactiveCommand<Unit, Unit> BackCommand { get; private set; }
+    public static ICommand MinimizeWindowCommand { get; private set; }
+    public static ICommand RestoreWindowCommand { get; private set; }
+    public static ICommand MaximizeWindowCommand { get; private set; }
+    public static ICommand CloseWindowCommand { get; private set; }
+    public static ICommand LogoButtonClickCommand { get; private set; }
+    public static ICommand BackCommand { get; private set; }
 
     #endregion
 }

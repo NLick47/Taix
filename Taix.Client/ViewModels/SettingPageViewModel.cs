@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Reactive;
-using System.Reactive.Disposables;
-using System.Reactive.Disposables.Fluent;
 using System.Threading.Tasks;
-using ReactiveUI;
+using System.Windows.Input;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Select;
 using Taix.Client.Controls.Window;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Logging;
 using Taix.Client.Models;
 using Taix.Client.Platform.Abstractions.Primitives;
@@ -50,10 +49,10 @@ public class SettingPageViewModel : SettingPageModel
         _updateCheckerService = updateCheckerService;
         _config = appConfig.GetConfig();
 
-        OpenURL = ReactiveCommand.Create<object>(OnOpenURL).DisposeWith(Disposables);
-        DelDataCommand = ReactiveCommand.CreateFromTask<object>(OnDelDataAsync).DisposeWith(Disposables);
-        ExportDataCommand = ReactiveCommand.CreateFromTask<object>(OnExportDataAsync).DisposeWith(Disposables);
-        CheckUpdate = ReactiveCommand.CreateFromTask(OnCheckUpdateAsync).DisposeWith(Disposables);
+        OpenURL = AsyncRelayCommand.Create<object>(OnOpenURL).DisposeWith(Disposables);
+        DelDataCommand = AsyncRelayCommand.CreateFromTask<object>(OnDelDataAsync).DisposeWith(Disposables);
+        ExportDataCommand = AsyncRelayCommand.CreateFromTask<object>(OnExportDataAsync).DisposeWith(Disposables);
+        CheckUpdate = AsyncRelayCommand.CreateFromTask(OnCheckUpdateAsync).DisposeWith(Disposables);
 
         appConfig.ConfigChanged += OnConfigChanged;
 
@@ -213,10 +212,10 @@ public class SettingPageViewModel : SettingPageModel
         OnPropertyChanged(nameof(SelectedRetentionOption));
     }
 
-    public ReactiveCommand<object, Unit> OpenURL { get; }
-    public ReactiveCommand<Unit, Unit> CheckUpdate { get; }
-    public ReactiveCommand<object, Unit> DelDataCommand { get; }
-    public ReactiveCommand<object, Unit> ExportDataCommand { get; }
+    public ICommand OpenURL { get; }
+    public ICommand CheckUpdate { get; }
+    public ICommand DelDataCommand { get; }
+    public ICommand ExportDataCommand { get; }
 
     private void OnConfigChanged(object? sender, ConfigChangedEventArgs e)
     {

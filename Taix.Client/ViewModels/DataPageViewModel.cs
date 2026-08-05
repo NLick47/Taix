@@ -1,21 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables.Fluent;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Styling;
 using Avalonia.Threading;
-using ReactiveUI;
-using ReactiveUI.Avalonia;
 using Taix.Client.Base.Color;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Timeline;
 using Taix.Client.Events;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Librarys;
 using Taix.Client.Models;
 using Taix.Client.Models.Navigation;
@@ -32,7 +29,6 @@ namespace Taix.Client.ViewModels;
 public partial class DataPageViewModel : DataPageModel
 {
     private readonly IWebData _webDataService;
-    private readonly IAppConfig _appConfig;
     private readonly IData _dataService;
     private readonly INavigationService _navigationService;
     private readonly IStateService _stateService;
@@ -45,46 +41,35 @@ public partial class DataPageViewModel : DataPageModel
 
     public DataPageViewModel(
         IData data,
-        IAppConfig appConfig,
         IWebData webData,
         INavigationService navigationService,
         IStateService stateService,
         IAppEventService appEventService)
     {
         _dataService = data;
-        _appConfig = appConfig;
         _webDataService = webData;
         _navigationService = navigationService;
         _stateService = stateService;
         _appEventService = appEventService;
 
-        ToDetailCommand = ReactiveCommand.Create<object>(OnToDetail);
-        RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync);
-        RefreshCommand.DisposeWith(Disposables);
-        ToggleHeaderCommand = ReactiveCommand.Create(() => { IsHeaderExpanded = !IsHeaderExpanded; });
-        ToggleHeaderCommand.DisposeWith(Disposables);
+        ToDetailCommand = AsyncRelayCommand.Create<object>(OnToDetail).DisposeWith(Disposables);
+        RefreshCommand = AsyncRelayCommand.CreateFromTask<object>(OnRefreshAsync).DisposeWith(Disposables);
+        ToggleHeaderCommand = AsyncRelayCommand.Create(() => { IsHeaderExpanded = !IsHeaderExpanded; })
+            .DisposeWith(Disposables);
         Initialize();
 
-        _appEventService.AppChanged
-            .Throttle(TimeSpan.FromMilliseconds(100))
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(async _ => await RefreshAsync())
-            .DisposeWith(Disposables);
-
-        _appEventService.WebSiteChanged
-            .Throttle(TimeSpan.FromMilliseconds(100))
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(async _ => await RefreshAsync())
-            .DisposeWith(Disposables);
+        RefreshOnChange(
+            _appEventService.AppChanged,
+            _appEventService.WebSiteChanged,
+            RefreshAsync);
     }
 
     public ICommand ToDetailCommand { get; }
-    public ReactiveCommand<object, Unit> RefreshCommand { get; }
-    public ReactiveCommand<Unit, Unit> ToggleHeaderCommand { get; }
+    public ICommand RefreshCommand { get; }
+    public ICommand ToggleHeaderCommand { get; }
 
     public override void Dispose()
     {
-        (ToDetailCommand as IDisposable)?.Dispose();
         base.Dispose();
     }
 
@@ -174,15 +159,20 @@ public partial class DataPageViewModel : DataPageModel
     }
 
 
-    public override async Task OnNavigatedToAsync()
+    public override Task OnNavigatedToAsync()
     {
-        TryRestoreState(_navigationService, _stateService);
-        await LoadDataAsync(DayDate, 0);
+        var restored = TryRestoreState(_navigationService, _stateService);
+        return RestoreCachedDataOrLoadAsync(
+            restored,
+            _stateService,
+            _appEventService,
+            () => LoadDataAsync(DayDate, 0));
     }
 
     public override void OnNavigatedFrom()
     {
         SaveState(_stateService);
+        SaveCachedDataVersion(_stateService, _appEventService);
         base.OnNavigatedFrom();
     }
 
