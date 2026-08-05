@@ -36,19 +36,6 @@
             </Style>
 
             <Style Selector="controls|DefaultWindow">
-                <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
-                <Setter Property="Transitions">
-                    <Transitions>
-                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.35" Easing="BackEaseOut" />
-                    </Transitions>
-                </Setter>
-            </Style>
-
-            <Style Selector="controls|DefaultWindow[WindowState=Minimized]">
-                <Setter Property="RenderTransform" Value="scale(0.7)" />
-            </Style>
-
-            <Style Selector="controls|DefaultWindow">
                 <Style Selector="^ /template/ button|IconButton#BackBtn">
                     <Setter Property="Transitions">
                         <Transitions>
@@ -97,8 +84,7 @@
                         CornerRadius="{StaticResource RadiusXLarge}"
                         BoxShadow="0 12 40 0 #28000000"
                         ClipToBounds="False"
-                        Margin="16"
-                        RenderTransformOrigin="0.5,0.5">
+                        Margin="16">
                     <Border x:Name="ContentBorder"
                         CornerRadius="{StaticResource RadiusXLarge}"
                         BorderThickness="1"
