@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:servicers="using:Taix.Client.Servicers">
 
     <!-- 圆角 -->
     <CornerRadius x:Key="RadiusSmall">8</CornerRadius>
@@ -621,5 +622,12 @@
             <SolidColorBrush x:Key="ColorModeToggleUncheckedTextBrush" Color="#8A8A96" />
             <SolidColorBrush x:Key="ColorModeToggleHoverTextBrush" Color="#4A4A54" />
         </ResourceDictionary>
+
+        <ResourceDictionary x:Key="{x:Static servicers:ThemeServicer.Azure}">
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Resources/Themes/Azure.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

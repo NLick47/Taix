@@ -74,7 +74,7 @@
                             </StackPanel.Styles>
 
                             <!-- 数据保留天数 -->
-                            <Border Classes="data-row">
+                            <Border Classes="data-row" CornerRadius="16,16,0,0">
                                 <Border.Styles>
                                     <Style Selector="Border.data-row:pointerover">
                                         <Setter Property="Background" Value="{DynamicResource SettingPanelHoverBrush}" />
@@ -132,7 +132,7 @@
                             <Border Classes="data-divider" />
 
                             <!-- 导出数据 -->
-                            <Border Classes="data-row">
+                            <Border Classes="data-row" CornerRadius="0,0,16,16">
                                 <Border.Styles>
                                     <Style Selector="Border.data-row:pointerover">
                                         <Setter Property="Background" Value="{DynamicResource SettingPanelHoverBrush}" />
@@ -194,7 +194,7 @@
                             </StackPanel.Styles>
 
                             <!-- 行 1：刷新 -->
-                            <Border Classes="shortcut-row">
+                            <Border Classes="shortcut-row" CornerRadius="16,16,0,0">
                                 <Border.Styles>
                                     <Style Selector="Border.shortcut-row:pointerover">
                                         <Setter Property="Background" Value="{DynamicResource SettingPanelHoverBrush}" />
@@ -244,7 +244,7 @@
                             <Border Classes="shortcut-divider" />
 
                             <!-- 行 3：返回上一页 -->
-                            <Border Classes="shortcut-row">
+                            <Border Classes="shortcut-row" CornerRadius="0,0,16,16">
                                 <Border.Styles>
                                     <Style Selector="Border.shortcut-row:pointerover">
                                         <Setter Property="Background" Value="{DynamicResource SettingPanelHoverBrush}" />

@@ -28,6 +28,7 @@
         <Setter Property="MinWidth" Value="44" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="SelectedTextColor" Value="{DynamicResource ThemeColor}" />
+        <Setter Property="UnselectedTextColor" Value="{DynamicResource TabOptionTextColor}" />
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid Background="{TemplateBinding Background}">

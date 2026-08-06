@@ -16,12 +16,21 @@ public class SettingPanelItem : ContentControl
     public static readonly StyledProperty<bool> IsBetaProperty =
         AvaloniaProperty.Register<SettingPanelItem, bool>(nameof(IsBetaProperty));
 
+    public static readonly StyledProperty<CornerRadius> CornerRadiusProperty =
+        AvaloniaProperty.Register<SettingPanelItem, CornerRadius>(nameof(CornerRadius));
+
     private string _description = string.Empty;
 
     public string Description
     {
         get => _description;
         set => SetAndRaise(DescriptionProperty, ref _description, value);
+    }
+
+    public CornerRadius CornerRadius
+    {
+        get => GetValue(CornerRadiusProperty);
+        set => SetValue(CornerRadiusProperty, value);
     }
 
     /// <summary>

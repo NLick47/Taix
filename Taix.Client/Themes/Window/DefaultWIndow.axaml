@@ -10,6 +10,7 @@
     <ControlTheme x:Key="{x:Type controls:DefaultWindow}"
                   TargetType="controls:DefaultWindow">
         <Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
+        <Setter Property="Background" Value="{DynamicResource WindowBackground}" />
         <Setter Property="UseLayoutRounding" Value="True" />
 
         <Styles>

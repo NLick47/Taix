@@ -1,17 +1,36 @@
+using System;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Taix.Client.Shared.Event;
+using Taix.Client.Shared.Models.Config;
 using Taix.Client.Shared.Servicers.Interfaces;
-using Taix.Client.Views;
 using Colors = Taix.Client.Base.Color.Colors;
 
 namespace Taix.Client.Servicers;
 
 public class ThemeServicer : IThemeServicer
 {
+
+    public static readonly ThemeVariant Azure = new("Azure", ThemeVariant.Light);
+
+    private sealed record ThemeDefinition(
+        ThemeVariant Variant,
+        string? LockedAccent,
+        Color? SolidBackground);
+
+    private static readonly ThemeDefinition[] Definitions =
+    {
+        new(ThemeVariant.Default, null, null),
+        new(ThemeVariant.Light, null, null),
+        new(ThemeVariant.Dark, null, null),
+        new(Azure, "#2F9BFF", Color.Parse("#FF4FA8E8")),
+    };
+
+    private static readonly Color LightSolid = Color.Parse("#ededf0");
+    private static readonly Color DarkSolid = Color.Parse("#131315");
+
     private readonly IAppConfig _appConfig;
-    private readonly ThemeVariant[] _themeOptions = { ThemeVariant.Default, ThemeVariant.Light, ThemeVariant.Dark };
 
     public ThemeServicer(IAppConfig appConfig)
     {
@@ -21,18 +40,17 @@ public class ThemeServicer : IThemeServicer
 
     public void Init()
     {
-        LoadTheme(_themeOptions[_appConfig.GetConfig().General.Theme]);
-        UpdateWindowBackground();
+        LoadTheme(GetTheme(_appConfig.GetConfig().General.Theme));
     }
 
-    public void LoadTheme(ThemeVariant theme, bool isRefresh = false)
+    public void LoadTheme(AppTheme theme)
     {
+        var definition = Definitions[(int)theme];
+
         void Apply()
         {
-            if (Application.Current != null)
-                Application.Current.RequestedThemeVariant = theme;
-            UpdateThemeColor();
-            UpdateWindowBackground(theme);
+            if (Application.Current == null) return;
+            ApplyTheme(definition);
         }
 
         if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
@@ -45,72 +63,70 @@ public class ThemeServicer : IThemeServicer
         }
     }
 
-    public void SetMainWindow(MainWindow mainWindow)
+    public void SetMainWindow(Views.MainWindow mainWindow)
     {
     }
 
     private void OnConfigChanged(object? sender, ConfigChangedEventArgs e)
     {
-        if (e.HasChange("General.Theme"))
+        if (e.HasChange("General.Theme") ||
+            e.HasChange("General.ThemeColor") ||
+            e.HasChange("General.WindowGradientScheme"))
         {
-            LoadTheme(_themeOptions[e.NewConfig.General.Theme]);
-        }
-
-        if (e.HasChange("General.ThemeColor"))
-        {
-            LoadTheme(_themeOptions[e.NewConfig.General.Theme], true);
-        }
-
-        if (e.HasChange("General.WindowGradientScheme"))
-        {
-            UpdateWindowBackground();
+            LoadTheme(GetTheme(e.NewConfig.General.Theme));
         }
     }
 
-    private void UpdateThemeColor()
+    private void ApplyTheme(ThemeDefinition definition)
     {
+        var app = Application.Current!;
         var config = _appConfig.GetConfig();
-        if (string.IsNullOrEmpty(config.General.ThemeColor))
+
+        // 切换变体，ThemeDictionaries 自动选对应字典
+        app.RequestedThemeVariant = definition.Variant;
+
+        // 主题色
+        var accent = definition.LockedAccent ?? config.General.ThemeColor;
+        if (string.IsNullOrEmpty(accent))
         {
-            StateData.ThemeColor = Application.Current?.Resources["ThemeColor"]?.ToString() ?? "#FFFF1BBC";
+            accent = app.Resources.TryGetResource("ThemeColor", definition.Variant, out var value)
+                ? value?.ToString()
+                : "#FFFF1BBC";
+        }
+        StateData.ThemeColor = accent!;
+        app.Resources["ThemeColor"] = Color.Parse(accent!);
+        app.Resources["ThemeBrush"] = Colors.GetFromString(accent!);
+
+        // 窗口背景与边框
+        if (definition.SolidBackground is { } solid)
+        {
+            app.Resources["WindowBackground"] = new SolidColorBrush(solid);
             return;
         }
 
-        StateData.ThemeColor = config.General.ThemeColor;
-        if (Application.Current != null)
+        var isLight = definition.Variant == ThemeVariant.Light ||
+                      (definition.Variant == ThemeVariant.Default && app.ActualThemeVariant != ThemeVariant.Dark);
+
+        var gradientKey = config.General.WindowGradientScheme switch
         {
-            Application.Current.Resources["ThemeColor"] = Color.Parse(config.General.ThemeColor);
-            Application.Current.Resources["ThemeBrush"] = Colors.GetFromString(config.General.ThemeColor);
+            1 => "WindowBackgroundModern",
+            2 => "WindowBackgroundClassic",
+            3 => "WindowBackgroundOriginal",
+            _ => null,
+        };
+
+        if (gradientKey != null &&
+            app.Resources.TryGetResource(gradientKey, definition.Variant, out var gradient) &&
+            gradient is IBrush gradientBrush)
+        {
+            app.Resources["WindowBackground"] = gradientBrush;
+        }
+        else
+        {
+            app.Resources["WindowBackground"] = new SolidColorBrush(isLight ? LightSolid : DarkSolid);
         }
     }
 
-    private void UpdateWindowBackground(ThemeVariant? targetTheme = null)
-    {
-        var config = _appConfig.GetConfig();
-        if (Application.Current == null) return;
-
-        var themeVariant = targetTheme ?? Application.Current.ActualThemeVariant;
-        var isLight = themeVariant == ThemeVariant.Light;
-
-        switch (config.General.WindowGradientScheme)
-        {
-            case 0:
-                // 禁用
-                var color = isLight ? Color.Parse("#ededf0") : Color.Parse("#131315");
-                Application.Current.Resources["WindowBackground"] = new SolidColorBrush(color);
-                break;
-            case 1:
-                if (Application.Current.Resources.TryGetResource("WindowBackgroundModern", themeVariant, out var v1) && v1 is IBrush b1)
-                    Application.Current.Resources["WindowBackground"] = b1;
-                break;
-            case 2:
-                if (Application.Current.Resources.TryGetResource("WindowBackgroundClassic", themeVariant, out var v2) && v2 is IBrush b2)
-                    Application.Current.Resources["WindowBackground"] = b2;
-                break;
-            case 3:
-                if (Application.Current.Resources.TryGetResource("WindowBackgroundOriginal", themeVariant, out var v3) && v3 is IBrush b3)
-                    Application.Current.Resources["WindowBackground"] = b3;
-                break;
-        }
-    }
+    private static AppTheme GetTheme(int index) =>
+        index >= 0 && index < Definitions.Length ? (AppTheme)index : AppTheme.System;
 }

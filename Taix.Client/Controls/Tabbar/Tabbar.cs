@@ -19,6 +19,9 @@ public class Tabbar : TemplatedControl
     public static readonly StyledProperty<Color> SelectedTextColorProperty =
         AvaloniaProperty.Register<Tabbar, Color>(nameof(SelectedTextColor));
 
+    public static readonly StyledProperty<Color> UnselectedTextColorProperty =
+        AvaloniaProperty.Register<Tabbar, Color>(nameof(UnselectedTextColor), Color.Parse("#CCCCCC"));
+
     public static readonly StyledProperty<int> SelectedIndexProperty =
         AvaloniaProperty.Register<Tabbar, int>(nameof(SelectedIndex));
 
@@ -48,6 +51,12 @@ public class Tabbar : TemplatedControl
     {
         get => GetValue(SelectedTextColorProperty);
         set => SetValue(SelectedTextColorProperty, value);
+    }
+
+    public Color UnselectedTextColor
+    {
+        get => GetValue(UnselectedTextColorProperty);
+        set => SetValue(UnselectedTextColorProperty, value);
     }
 
     public int SelectedIndex
@@ -178,7 +187,7 @@ public class Tabbar : TemplatedControl
             control.Margin = new Thickness(0, 0, isLast ? 0 : ItemSpacing, 0);
             control.FontSize = 16;
             control.Cursor = new Cursor(StandardCursorType.Hand);
-            control.Foreground = new SolidColorBrush(Color.Parse("#1F1F1F"));
+            control.Foreground = new SolidColorBrush(UnselectedTextColor);
             control.Tag = col;
             control.VerticalAlignment = VerticalAlignment.Bottom;
             control.PointerPressed += (e, c) =>
@@ -205,7 +214,7 @@ public class Tabbar : TemplatedControl
             if (item != ItemsContainer.Children[SelectedIndex])
             {
                 var text = item as TextBlock;
-                text.Foreground = Client.Base.Color.Colors.GetFromString("#ccc");
+                text.Foreground = new SolidColorBrush(UnselectedTextColor);
             }
     }
 }

@@ -266,6 +266,9 @@ public class SettingPanel : TemplatedControl
         var itemContainer = new StackPanel();
 
         var sortList = configList.OrderBy(m => m.Attribute.Index).ToList();
+        var cornerRadius =
+            ((CornerRadius?)Application.Current?.FindResource("RadiusLarge")) ?? new CornerRadius(16);
+        var isOnlyOne = sortList.Count == 1;
         for (var i = 0; i < sortList.Count; i++)
         {
             var config = sortList[i];
@@ -273,6 +276,15 @@ public class SettingPanel : TemplatedControl
             var control = RenderConfigItem(config.Attribute, config.PropertyInfo);
             if (control != null)
             {
+                if (control is SettingPanelItem item)
+                    item.CornerRadius = isOnlyOne
+                        ? cornerRadius
+                        : i == 0
+                            ? new CornerRadius(cornerRadius.TopLeft, cornerRadius.TopRight, 0, 0)
+                            : i == sortList.Count - 1
+                                ? new CornerRadius(0, 0, cornerRadius.BottomRight, cornerRadius.BottomLeft)
+                                : new CornerRadius(0);
+
                 itemContainer.Children.Add(control);
 
                 if (i != sortList.Count - 1)

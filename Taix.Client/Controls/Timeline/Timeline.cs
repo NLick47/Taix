@@ -290,7 +290,7 @@ public class Timeline : Control
         _selectionLabelBgBrush = FindBrush("TimelineSelectionLabelBgBrush");
         _selectionLabelTextBrush = FindBrush("TimelineSelectionLabelTextBrush");
 
-        var isLight = this.ActualThemeVariant == ThemeVariant.Light;
+        var isLight = this.ActualThemeVariant != ThemeVariant.Dark;
         _hoverHighlightBrush = new ImmutableSolidColorBrush(isLight
             ? Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF)
             : Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
@@ -1052,7 +1052,7 @@ public class Timeline : Control
 
         var dayStart = Date.Date;
         var dayEnd = dayStart.AddDays(1);
-        var isLight = this.ActualThemeVariant == ThemeVariant.Light;
+        var isLight = this.ActualThemeVariant != ThemeVariant.Dark;
 
         // 1. 柔和暗化非高亮色块
         var dimBrush = new ImmutableSolidColorBrush(isLight
