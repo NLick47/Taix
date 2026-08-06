@@ -48,6 +48,7 @@ public class CardChart : TemplatedControl
     private double _iconSize = 32;
     private WrapPanel _cardContainer;
     private double _maxValue;
+    private int _menuRequestSeq;
 
     public event EventHandler? OnItemClick;
 
@@ -123,6 +124,7 @@ public class CardChart : TemplatedControl
         _maxValue = MaxValueLimit > 0 ? MaxValueLimit : list.Max(m => m.Value);
         var data = list;
 
+        CloseAllChildMenus();
         _cardContainer.Children.Clear();
         foreach (var item in data)
         {
@@ -158,12 +160,37 @@ public class CardChart : TemplatedControl
 
     private async void ShowContextMenu(ChartsDataModel data, Control target, PointerPressedEventArgs e)
     {
+        var seq = ++_menuRequestSeq;
         var menu = await CreateMenuForDataAsync(data);
-        if (menu == null) return;
+        if (menu == null || seq != _menuRequestSeq) return;
 
+        CloseExistingMenu(target);
         target.ContextMenu = menu;
         menu.Closed += OnCardContextMenuClosed;
         menu.Open(target);
+    }
+
+    private void CloseExistingMenu(Control target)
+    {
+        if (target.ContextMenu is { } existing)
+        {
+            existing.Closed -= OnCardContextMenuClosed;
+            if (existing.IsOpen) existing.Close();
+            target.ContextMenu = null;
+        }
+    }
+
+    private void CloseAllChildMenus()
+    {
+        foreach (var child in _cardContainer.Children)
+        {
+            if (child is Control control && control.ContextMenu is { } menu)
+            {
+                menu.Closed -= OnCardContextMenuClosed;
+                if (menu.IsOpen) menu.Close();
+                control.ContextMenu = null;
+            }
+        }
     }
 
     private void OnCardContextMenuClosed(object? sender, RoutedEventArgs e)
@@ -171,7 +198,7 @@ public class CardChart : TemplatedControl
         if (sender is ContextMenu menu)
         {
             menu.Closed -= OnCardContextMenuClosed;
-            if (menu.PlacementTarget is Control target)
+            if (menu.PlacementTarget is Control target && ReferenceEquals(target.ContextMenu, menu))
                 target.ContextMenu = null;
         }
     }

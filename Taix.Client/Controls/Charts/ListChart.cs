@@ -77,6 +77,7 @@ public class ListChart : TemplatedControl
     private DispatcherTimer _searchTimer;
     private bool _templateApplied;
     private bool _handlersAttached;
+    private int _menuRequestSeq;
 
     public event EventHandler? OnItemClick;
 
@@ -357,12 +358,24 @@ public class ListChart : TemplatedControl
     {
         if (e.Source is ChartsItemTypeList { Data: { } data })
         {
+            var seq = ++_menuRequestSeq;
             var menu = await CreateMenuForDataAsync(data);
-            if (menu == null) return;
+            if (menu == null || seq != _menuRequestSeq) return;
 
+            CloseExistingMenu();
             _listView.ContextMenu = menu;
             menu.Closed += OnContextMenuClosed;
             menu.Open(_listView);
+        }
+    }
+
+    private void CloseExistingMenu()
+    {
+        if (_listView.ContextMenu is { } existing)
+        {
+            existing.Closed -= OnContextMenuClosed;
+            if (existing.IsOpen) existing.Close();
+            _listView.ContextMenu = null;
         }
     }
 
@@ -371,7 +384,8 @@ public class ListChart : TemplatedControl
         if (sender is ContextMenu menu)
         {
             menu.Closed -= OnContextMenuClosed;
-            _listView.ContextMenu = null;
+            if (ReferenceEquals(_listView.ContextMenu, menu))
+                _listView.ContextMenu = null;
         }
     }
 
