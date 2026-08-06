@@ -1,5 +1,4 @@
 use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, Timelike, Utc};
-use chrono_tz::OffsetComponents;
 use sqlx::SqlitePool;
 use std::collections::HashMap;
 use tracing::{debug, info};
@@ -7,12 +6,15 @@ use tracing::{debug, info};
 use crate::error::AppError;
 use crate::models::app::{AppModel, AppModelRow};
 use crate::models::category::CategoryModel;
-use crate::services::category::CategoryService;
-use crate::services::config::ConfigService;
 use crate::models::log::{
     AppSessionModel, ColumnDataModel, DailyLogModel, ExportDataResult, HoursLogModel,
 };
-use crate::utils::{last_day_of_month, parse_timezone, tz_date_range_to_utc_date_range, tz_date_to_utc_range, tz_naive_to_utc};
+use crate::services::category::CategoryService;
+use crate::services::config::ConfigService;
+use crate::utils::{
+    last_day_of_month, parse_timezone, tz_date_range_to_utc_date_range, tz_date_to_utc_range,
+    tz_naive_to_utc,
+};
 
 pub struct DataService;
 
@@ -26,7 +28,10 @@ impl DataService {
         tz_id: &str,
         config_service: &ConfigService,
     ) -> Result<Vec<DailyLogModel>, AppError> {
-        debug!("get_date_range_log_list: start={} end={} take={} skip={}", start, end, take, skip);
+        debug!(
+            "get_date_range_log_list: start={} end={} take={} skip={}",
+            start, end, take, skip
+        );
         let limit = if take > 0 { take } else { -1 };
         let offset = if skip > 0 { skip } else { 0 };
 
@@ -39,40 +44,40 @@ impl DataService {
         let excluded_vec: Vec<i64> = excluded.into_iter().collect();
         let has_excluded = !excluded_vec.is_empty();
 
-        let mut groups: HashMap<(i64, NaiveDate), i64> = HashMap::new();
+        let mut groups: HashMap<i64, i64> = HashMap::new();
         if days <= 31 {
             let utc_start = tz_date_to_utc_range(start, &tz).0;
             let utc_end = tz_date_to_utc_range(end, &tz).1;
-            // 计算时区偏移秒数（UTC+8 = 28800）
-            let offset_secs: i64 = Utc::now().with_timezone(&tz).offset().base_utc_offset().num_seconds() as i64;
 
-            let rows: Vec<(i64, i64, NaiveDate)> = if !has_excluded {
+            let rows: Vec<(i64, i64)> = if !has_excluded {
                 sqlx::query_as(
                     r#"
-                    SELECT AppModelID, SUM(Time) as total, date(DataTime, '+' || ? || ' seconds') as local_date
+                    SELECT AppModelID, SUM(Time) as total
                     FROM HoursLogModels
                     WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0
-                    GROUP BY AppModelID, local_date
+                    GROUP BY AppModelID
                     "#,
                 )
-                .bind(offset_secs)
                 .bind(utc_start)
                 .bind(utc_end)
                 .fetch_all(pool)
                 .await?
             } else {
-                let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+                let placeholders = excluded_vec
+                    .iter()
+                    .map(|_| "?")
+                    .collect::<Vec<_>>()
+                    .join(",");
                 let sql = format!(
                     r#"
-                    SELECT AppModelID, SUM(Time) as total, date(DataTime, '+' || ? || ' seconds') as local_date
+                    SELECT AppModelID, SUM(Time) as total
                     FROM HoursLogModels
                     WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0 AND AppModelID NOT IN ({})
-                    GROUP BY AppModelID, local_date
+                    GROUP BY AppModelID
                     "#,
                     placeholders
                 );
-                let mut query = sqlx::query_as::<_, (i64, i64, NaiveDate)>(&sql)
-                    .bind(offset_secs)
+                let mut query = sqlx::query_as::<_, (i64, i64)>(&sql)
                     .bind(utc_start)
                     .bind(utc_end);
                 for id in &excluded_vec {
@@ -81,11 +86,9 @@ impl DataService {
                 query.fetch_all(pool).await?
             };
 
-            for (app_id, time, local_date) in rows {
-                let key = (app_id, local_date);
-                *groups.entry(key).or_insert(0) += time;
+            for (app_id, time) in rows {
+                *groups.entry(app_id).or_insert(0) += time;
             }
-
         } else {
             let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
 
@@ -98,7 +101,11 @@ impl DataService {
                 .fetch_all(pool)
                 .await?
             } else {
-                let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+                let placeholders = excluded_vec
+                    .iter()
+                    .map(|_| "?")
+                    .collect::<Vec<_>>()
+                    .join(",");
                 let sql = format!(
                     "SELECT * FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0 AND AppModelID NOT IN ({})",
                     placeholders
@@ -113,8 +120,7 @@ impl DataService {
             };
 
             for log in logs {
-                let key = (log.app_model_id, log.date);
-                *groups.entry(key).or_insert(0) += log.time;
+                *groups.entry(log.app_model_id).or_insert(0) += log.time;
             }
         }
 
@@ -133,14 +139,19 @@ impl DataService {
         let mut sorted_groups: Vec<_> = groups.into_iter().collect();
         sorted_groups.sort_by(|a, b| b.1.cmp(&a.1));
         let offset_usize = offset as usize;
-        let limit_usize = if limit > 0 { limit as usize } else { usize::MAX };
-        let sorted_groups: Vec<_> = sorted_groups.into_iter()
+        let limit_usize = if limit > 0 {
+            limit as usize
+        } else {
+            usize::MAX
+        };
+        let sorted_groups: Vec<_> = sorted_groups
+            .into_iter()
             .skip(offset_usize)
             .take(limit_usize)
             .collect();
 
         let mut result = Vec::new();
-        for ((app_id, date), time) in sorted_groups {
+        for (app_id, time) in sorted_groups {
             let app_model = app_map.get(&app_id).cloned().map(|a| {
                 let category = category_map.get(&a.category_id).cloned();
                 AppModel {
@@ -158,7 +169,7 @@ impl DataService {
 
             result.push(DailyLogModel {
                 id: 0,
-                date,
+                date: start,
                 app_model_id: app_id,
                 time,
                 app_model,
@@ -174,11 +185,15 @@ impl DataService {
         month: NaiveDate,
         tz_id: &str,
     ) -> Result<Vec<DailyLogModel>, AppError> {
-        debug!("get_process_month_log_list: app_id={} month={}", app_id, month);
+        debug!(
+            "get_process_month_log_list: app_id={} month={}",
+            app_id, month
+        );
         let tz = parse_timezone(tz_id);
         let month_start = NaiveDate::from_ymd_opt(month.year(), month.month(), 1).unwrap();
         let month_end_day = last_day_of_month(month.year(), month.month());
-        let month_end = NaiveDate::from_ymd_opt(month.year(), month.month(), month_end_day).unwrap();
+        let month_end =
+            NaiveDate::from_ymd_opt(month.year(), month.month(), month_end_day).unwrap();
         let utc_start = tz_date_to_utc_range(month_start, &tz).0;
         let utc_end = tz_date_to_utc_range(month_end, &tz).1;
 
@@ -189,7 +204,7 @@ impl DataService {
             FROM HoursLogModels
             WHERE AppModelID = ? AND DataTime >= ? AND DataTime < ?
             GROUP BY DataTime
-            "#
+            "#,
         )
         .bind(app_id)
         .bind(utc_start)
@@ -205,7 +220,8 @@ impl DataService {
             }
         }
 
-        let mut result: Vec<DailyLogModel> = groups.into_iter()
+        let mut result: Vec<DailyLogModel> = groups
+            .into_iter()
             .map(|(date, time)| DailyLogModel {
                 id: 0,
                 date,
@@ -229,11 +245,12 @@ impl DataService {
             let tz = parse_timezone(tz_id);
             let month_start = NaiveDate::from_ymd_opt(month.year(), month.month(), 1).unwrap();
             let month_end_day = last_day_of_month(month.year(), month.month());
-            let month_end = NaiveDate::from_ymd_opt(month.year(), month.month(), month_end_day).unwrap();
+            let month_end =
+                NaiveDate::from_ymd_opt(month.year(), month.month(), month_end_day).unwrap();
             let (utc_start, utc_end) = tz_date_range_to_utc_date_range(month_start, month_end, &tz);
 
             sqlx::query(
-                "DELETE FROM DailyLogModels WHERE AppModelID = ? AND Date >= ? AND Date <= ?"
+                "DELETE FROM DailyLogModels WHERE AppModelID = ? AND Date >= ? AND Date <= ?",
             )
             .bind(app_id)
             .bind(utc_start)
@@ -353,7 +370,8 @@ impl DataService {
             .fetch_all(pool)
             .await?;
 
-        let app_refs: Vec<(i64, &str, Option<&str>)> = apps.iter()
+        let app_refs: Vec<(i64, &str, Option<&str>)> = apps
+            .iter()
             .map(|a| (a.id, a.name.as_deref().unwrap_or(""), a.file.as_deref()))
             .collect();
         let excluded_ids = config_service.get_excluded_app_ids(&app_refs).await;
@@ -362,10 +380,8 @@ impl DataService {
             apps.into_iter().map(|a| (a.id, a)).collect();
 
         let categories = CategoryService::get_categories(pool).await?;
-        let category_map: HashMap<i64, CategoryModel> = categories
-            .into_iter()
-            .map(|c| (c.id, c))
-            .collect();
+        let category_map: HashMap<i64, CategoryModel> =
+            categories.into_iter().map(|c| (c.id, c)).collect();
 
         let mut result = Vec::new();
         for log in logs {
@@ -419,7 +435,8 @@ impl DataService {
             .fetch_all(pool)
             .await?;
 
-        let app_refs: Vec<(i64, &str, Option<&str>)> = apps.iter()
+        let app_refs: Vec<(i64, &str, Option<&str>)> = apps
+            .iter()
             .map(|a| (a.id, a.name.as_deref().unwrap_or(""), a.file.as_deref()))
             .collect();
         let excluded_ids = config_service.get_excluded_app_ids(&app_refs).await;
@@ -428,10 +445,8 @@ impl DataService {
             apps.into_iter().map(|a| (a.id, a)).collect();
 
         let categories = CategoryService::get_categories(pool).await?;
-        let category_map: HashMap<i64, CategoryModel> = categories
-            .into_iter()
-            .map(|c| (c.id, c))
-            .collect();
+        let category_map: HashMap<i64, CategoryModel> =
+            categories.into_iter().map(|c| (c.id, c)).collect();
 
         let mut result = Vec::new();
         for log in logs {
@@ -485,13 +500,18 @@ impl DataService {
                 .bind(utc_start).bind(utc_end)
                 .fetch_all(pool).await?
             } else {
-                let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+                let placeholders = excluded_vec
+                    .iter()
+                    .map(|_| "?")
+                    .collect::<Vec<_>>()
+                    .join(",");
                 let sql = format!(
                     "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID NOT IN ({}) GROUP BY DataTime",
                     placeholders
                 );
                 let mut query = sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
-                    .bind(utc_start).bind(utc_end);
+                    .bind(utc_start)
+                    .bind(utc_end);
                 for id in &excluded_vec {
                     query = query.bind(*id);
                 }
@@ -521,13 +541,18 @@ impl DataService {
                 .bind(utc_start).bind(utc_end)
                 .fetch_all(pool).await?
             } else {
-                let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+                let placeholders = excluded_vec
+                    .iter()
+                    .map(|_| "?")
+                    .collect::<Vec<_>>()
+                    .join(",");
                 let sql = format!(
                     "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID NOT IN ({}) GROUP BY DataTime",
                     placeholders
                 );
                 let mut query = sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
-                    .bind(utc_start).bind(utc_end);
+                    .bind(utc_start)
+                    .bind(utc_end);
                 for id in &excluded_vec {
                     query = query.bind(*id);
                 }
@@ -571,13 +596,18 @@ impl DataService {
             .bind(utc_start).bind(utc_end)
             .fetch_all(pool).await?
         } else {
-            let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let placeholders = excluded_vec
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(",");
             let sql = format!(
                 "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID NOT IN ({}) GROUP BY DataTime",
                 placeholders
             );
             let mut query = sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
-                .bind(utc_start).bind(utc_end);
+                .bind(utc_start)
+                .bind(utc_end);
             for id in &excluded_vec {
                 query = query.bind(*id);
             }
@@ -603,7 +633,10 @@ impl DataService {
         tz_id: &str,
         config_service: &ConfigService,
     ) -> Result<i64, AppError> {
-        debug!("get_date_range_app_count: start={} end={} tz={}", start, end, tz_id);
+        debug!(
+            "get_date_range_app_count: start={} end={} tz={}",
+            start, end, tz_id
+        );
         let excluded = config_service.get_excluded_app_id_set(pool).await;
         let excluded_vec: Vec<i64> = excluded.into_iter().collect();
         let has_excluded = !excluded_vec.is_empty();
@@ -619,13 +652,18 @@ impl DataService {
             .bind(utc_start).bind(utc_end)
             .fetch_all(pool).await?
         } else {
-            let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let placeholders = excluded_vec
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(",");
             let sql = format!(
                 "SELECT DISTINCT AppModelID FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0 AND AppModelID NOT IN ({})",
                 placeholders
             );
             let mut query = sqlx::query_scalar::<_, i64>(&sql)
-                .bind(utc_start).bind(utc_end);
+                .bind(utc_start)
+                .bind(utc_end);
             for id in &excluded_vec {
                 query = query.bind(*id);
             }
@@ -659,10 +697,16 @@ impl DataService {
                 GROUP BY a.CategoryID, h.DataTime
                 "#,
             )
-            .bind(utc_start).bind(utc_end)
-            .fetch_all(pool).await?
+            .bind(utc_start)
+            .bind(utc_end)
+            .fetch_all(pool)
+            .await?
         } else {
-            let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let placeholders = excluded_vec
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(",");
             let sql = format!(
                 r#"
                 SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
@@ -674,7 +718,8 @@ impl DataService {
                 placeholders
             );
             let mut query = sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
-                .bind(utc_start).bind(utc_end);
+                .bind(utc_start)
+                .bind(utc_end);
             for id in &excluded_vec {
                 query = query.bind(*id);
             }
@@ -728,10 +773,16 @@ impl DataService {
                 GROUP BY a.CategoryID, h.DataTime
                 "#,
             )
-            .bind(utc_start).bind(utc_end)
-            .fetch_all(pool).await?
+            .bind(utc_start)
+            .bind(utc_end)
+            .fetch_all(pool)
+            .await?
         } else {
-            let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let placeholders = excluded_vec
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(",");
             let sql = format!(
                 r#"
                 SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
@@ -743,7 +794,8 @@ impl DataService {
                 placeholders
             );
             let mut query = sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
-                .bind(utc_start).bind(utc_end);
+                .bind(utc_start)
+                .bind(utc_end);
             for id in &excluded_vec {
                 query = query.bind(*id);
             }
@@ -756,7 +808,9 @@ impl DataService {
         for (cat_id, utc_dt, total) in rows {
             let local_date = utc_dt.with_timezone(&tz).date_naive();
             if local_date >= start && local_date <= end {
-                let entry = map.entry(cat_id).or_insert_with(|| vec![0.0; days as usize]);
+                let entry = map
+                    .entry(cat_id)
+                    .or_insert_with(|| vec![0.0; days as usize]);
                 let index = (local_date - start).num_days() as usize;
                 entry[index] += total as f64;
             }
@@ -801,10 +855,16 @@ impl DataService {
                 GROUP BY a.CategoryID, h.DataTime
                 "#,
             )
-            .bind(utc_start).bind(utc_end)
-            .fetch_all(pool).await?
+            .bind(utc_start)
+            .bind(utc_end)
+            .fetch_all(pool)
+            .await?
         } else {
-            let placeholders = excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let placeholders = excluded_vec
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(",");
             let sql = format!(
                 r#"
                 SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
@@ -816,7 +876,8 @@ impl DataService {
                 placeholders
             );
             let mut query = sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
-                .bind(utc_start).bind(utc_end);
+                .bind(utc_start)
+                .bind(utc_end);
             for id in &excluded_vec {
                 query = query.bind(*id);
             }
@@ -894,7 +955,10 @@ impl DataService {
         end: NaiveDate,
         tz_id: &str,
     ) -> Result<Vec<ColumnDataModel>, AppError> {
-        debug!("get_app_range_data: app_id={} start={} end={}", app_id, start, end);
+        debug!(
+            "get_app_range_data: app_id={} start={} end={}",
+            app_id, start, end
+        );
         let tz = parse_timezone(tz_id);
         let utc_start = tz_date_to_utc_range(start, &tz).0;
         let utc_end = tz_date_to_utc_range(end, &tz).1;
@@ -984,10 +1048,16 @@ impl DataService {
         const MAX_EXPORT_DAYS: i64 = 366;
         let days = (end - start).num_days() + 1;
         if days > MAX_EXPORT_DAYS {
-            return Err(AppError::Business(format!("导出范围不能超过 {} 天", MAX_EXPORT_DAYS)));
+            return Err(AppError::Business(format!(
+                "导出范围不能超过 {} 天",
+                MAX_EXPORT_DAYS
+            )));
         }
         let tz = parse_timezone(tz_id);
-        let (utc_start, utc_end) = (tz_date_to_utc_range(start, &tz).0, tz_date_to_utc_range(end, &tz).1);
+        let (utc_start, utc_end) = (
+            tz_date_to_utc_range(start, &tz).0,
+            tz_date_to_utc_range(end, &tz).1,
+        );
 
         let hours_logs: Vec<HoursLogModel> = sqlx::query_as(
             "SELECT * FROM HoursLogModels WHERE DataTime >= ? AND DataTime <= ? AND AppModelID != 0",
@@ -1001,7 +1071,8 @@ impl DataService {
             .fetch_all(pool)
             .await?;
 
-        let app_refs: Vec<(i64, &str, Option<&str>)> = apps.iter()
+        let app_refs: Vec<(i64, &str, Option<&str>)> = apps
+            .iter()
             .map(|a| (a.id, a.name.as_deref().unwrap_or(""), a.file.as_deref()))
             .collect();
         let excluded_ids = config_service.get_excluded_app_ids(&app_refs).await;
@@ -1019,7 +1090,9 @@ impl DataService {
         for log in &hours_logs {
             let local_date = log.data_time.with_timezone(&tz).date_naive();
             if local_date >= start && local_date <= end {
-                *daily_groups.entry((local_date, log.app_model_id)).or_insert(0) += log.time;
+                *daily_groups
+                    .entry((local_date, log.app_model_id))
+                    .or_insert(0) += log.time;
             }
         }
 
@@ -1027,18 +1100,16 @@ impl DataService {
             .into_iter()
             .filter(|((_, app_id), _)| !excluded_set.contains(app_id))
             .map(|((date, app_id), time)| {
-                let app_model = app_map.get(&app_id).cloned().map(|app_row| {
-                    AppModel {
-                        id: app_row.id,
-                        name: app_row.name,
-                        alias: app_row.alias,
-                        description: app_row.description,
-                        file: app_row.file,
-                        category_id: app_row.category_id,
-                        icon_file: app_row.icon_file,
-                        total_time: app_row.total_time,
-                        category: category_map.get(&app_row.category_id).cloned(),
-                    }
+                let app_model = app_map.get(&app_id).cloned().map(|app_row| AppModel {
+                    id: app_row.id,
+                    name: app_row.name,
+                    alias: app_row.alias,
+                    description: app_row.description,
+                    file: app_row.file,
+                    category_id: app_row.category_id,
+                    icon_file: app_row.icon_file,
+                    total_time: app_row.total_time,
+                    category: category_map.get(&app_row.category_id).cloned(),
                 });
                 DailyLogModel {
                     id: 0,
@@ -1052,8 +1123,16 @@ impl DataService {
 
         daily_logs.sort_by(|a, b| {
             a.date.cmp(&b.date).then_with(|| {
-                let a_name = a.app_model.as_ref().and_then(|m| m.alias.as_deref().or(m.name.as_deref())).unwrap_or("");
-                let b_name = b.app_model.as_ref().and_then(|m| m.alias.as_deref().or(m.name.as_deref())).unwrap_or("");
+                let a_name = a
+                    .app_model
+                    .as_ref()
+                    .and_then(|m| m.alias.as_deref().or(m.name.as_deref()))
+                    .unwrap_or("");
+                let b_name = b
+                    .app_model
+                    .as_ref()
+                    .and_then(|m| m.alias.as_deref().or(m.name.as_deref()))
+                    .unwrap_or("");
                 a_name.cmp(b_name)
             })
         });
@@ -1086,8 +1165,16 @@ impl DataService {
 
         hours_logs.sort_by(|a, b| {
             a.data_time.cmp(&b.data_time).then_with(|| {
-                let a_name = a.app_model.as_ref().and_then(|m| m.alias.as_deref().or(m.name.as_deref())).unwrap_or("");
-                let b_name = b.app_model.as_ref().and_then(|m| m.alias.as_deref().or(m.name.as_deref())).unwrap_or("");
+                let a_name = a
+                    .app_model
+                    .as_ref()
+                    .and_then(|m| m.alias.as_deref().or(m.name.as_deref()))
+                    .unwrap_or("");
+                let b_name = b
+                    .app_model
+                    .as_ref()
+                    .and_then(|m| m.alias.as_deref().or(m.name.as_deref()))
+                    .unwrap_or("");
                 a_name.cmp(b_name)
             })
         });
@@ -1132,10 +1219,7 @@ impl DataService {
                 if s.end_time > utc_end {
                     s.end_time = utc_end;
                 }
-                s.duration = s
-                    .end_time
-                    .signed_duration_since(s.start_time)
-                    .num_seconds();
+                s.duration = s.end_time.signed_duration_since(s.start_time).num_seconds();
                 s
             })
             .collect();
@@ -1144,7 +1228,8 @@ impl DataService {
             .fetch_all(pool)
             .await?;
 
-        let app_refs: Vec<(i64, &str, Option<&str>)> = apps.iter()
+        let app_refs: Vec<(i64, &str, Option<&str>)> = apps
+            .iter()
             .map(|a| (a.id, a.name.as_deref().unwrap_or(""), a.file.as_deref()))
             .collect();
         let excluded_ids = config_service.get_excluded_app_ids(&app_refs).await;
@@ -1153,10 +1238,8 @@ impl DataService {
         let app_map: HashMap<i64, AppModelRow> = apps.into_iter().map(|a| (a.id, a)).collect();
 
         let categories = CategoryService::get_categories(pool).await?;
-        let category_map: HashMap<i64, CategoryModel> = categories
-            .into_iter()
-            .map(|c| (c.id, c))
-            .collect();
+        let category_map: HashMap<i64, CategoryModel> =
+            categories.into_iter().map(|c| (c.id, c)).collect();
 
         let mut result = Vec::new();
         for mut session in sessions {
@@ -1184,9 +1267,7 @@ impl DataService {
 
         Ok(result)
     }
-
 }
-
 
 fn merge_and_filter_sessions(sessions: Vec<AppSessionModel>) -> Vec<AppSessionModel> {
     const OVERLAP_TRIM_SECS: i64 = 2;
