@@ -1,20 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables;
-using System.Reactive.Disposables.Fluent;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using ReactiveUI;
 using Taix.Client.Controls.Charts;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Events;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Librarys;
 using Taix.Client.Logging;
 using Taix.Client.Models;
@@ -71,20 +69,17 @@ public class DetailPageViewModel : DetailPageModel
         _appEventService = appEventService;
         _appUpdateService = appUpdateService;
 
-        BlockActionCommand = ReactiveCommand.CreateFromTask<object>(OnBlockActionAsync);
-        ClearSelectMonthDataCommand = ReactiveCommand.CreateFromTask<object>(OnClearSelectMonthDataAsync);
-        RefreshCommand = ReactiveCommand.CreateFromTask<object>(OnRefreshAsync);
-
-        BlockActionCommand.DisposeWith(Disposables);
-        ClearSelectMonthDataCommand.DisposeWith(Disposables);
-        RefreshCommand.DisposeWith(Disposables);
+        BlockActionCommand = AsyncRelayCommand.CreateFromTask<object>(OnBlockActionAsync).DisposeWith(Disposables);
+        ClearSelectMonthDataCommand = AsyncRelayCommand.CreateFromTask<object>(OnClearSelectMonthDataAsync)
+            .DisposeWith(Disposables);
+        RefreshCommand = AsyncRelayCommand.CreateFromTask<object>(OnRefreshAsync).DisposeWith(Disposables);
 
         Initialize();
     }
 
-    public ReactiveCommand<object, Unit> BlockActionCommand { get; }
-    public ReactiveCommand<object, Unit> ClearSelectMonthDataCommand { get; }
-    public ReactiveCommand<object, Unit> RefreshCommand { get; }
+    public ICommand BlockActionCommand { get; }
+    public ICommand ClearSelectMonthDataCommand { get; }
+    public ICommand RefreshCommand { get; }
 
     private void Initialize()
     {

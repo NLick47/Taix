@@ -3,8 +3,8 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using ReactiveUI;
 using Taix.Client.Controls;
+using Taix.Client.Foundation;
 using Taix.Client.Logging;
 using Taix.Client.Models;
 using Taix.Client.Servicers.Interfaces;
@@ -89,9 +89,9 @@ public class ShortcutService : IShortcutService
 
         var shortcut = _appConfig.GetConfig().Shortcut ?? new ShortcutModel();
 
-        TryBind(shortcut.Refresh, ReactiveCommand.CreateFromTask(TriggerRefreshAsync));
-        TryBind(shortcut.Search, ReactiveCommand.CreateFromTask(TriggerSearchAsync));
-        TryBind(shortcut.NavigateBack, ReactiveCommand.CreateFromTask(TriggerNavigateBackAsync));
+        TryBind(shortcut.Refresh, AsyncRelayCommand.CreateFromTask(TriggerRefreshAsync));
+        TryBind(shortcut.Search, AsyncRelayCommand.CreateFromTask(TriggerSearchAsync));
+        TryBind(shortcut.NavigateBack, AsyncRelayCommand.CreateFromTask(TriggerNavigateBackAsync));
     }
 
     private void TryBind(string? gestureText, System.Windows.Input.ICommand command)

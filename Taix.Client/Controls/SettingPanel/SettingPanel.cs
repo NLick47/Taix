@@ -12,13 +12,13 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using System.Text.Json;
-using ReactiveUI;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Button;
 using Taix.Client.Controls.Input;
 using Taix.Client.Controls.List;
 using Taix.Client.Controls.Select;
 using Taix.Client.Controls.Window;
+using Taix.Client.Foundation;
 using Taix.Client.Logging;
 using Taix.Client.Servicers;
 using Taix.Client.Shared.Helpers;
@@ -209,7 +209,7 @@ public class SettingPanel : TemplatedControl
                 Data = newList;
             }
         };
-        panel.OnRemoveAction = ReactiveCommand.Create(() =>
+        panel.OnRemoveAction = AsyncRelayCommand.Create(() =>
         {
             cacheList.Remove(id);
             var newList = AotTypeFactory.CreateList(panel.Data.GetType());

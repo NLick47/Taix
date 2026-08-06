@@ -6,11 +6,11 @@ using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using ReactiveUI;
 using Taix.Client.Controls.Base;
 using Taix.Client.Controls.Button;
 using Taix.Client.Controls.Input;
 using Taix.Client.Controls.List;
+using Taix.Client.Foundation;
 using Taix.Client.Shared.Models.Config;
 
 namespace Taix.Client.Controls.SettingPanel;
@@ -129,7 +129,7 @@ public class SettingPanelMultiItem : TemplatedControl
         Container = e.NameScope.Get<StackPanel>("Container");
         FoldBtn = e.NameScope.Find<IconButton>("FoldBtn");
 
-        OnFoldAction = ReactiveCommand.Create<object>(FoldAction);
+        OnFoldAction = AsyncRelayCommand.Create<object>(FoldAction);
         Render();
     }
 

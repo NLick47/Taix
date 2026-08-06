@@ -9,7 +9,8 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using ReactiveUI;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 
 namespace Taix.Client.Controls.Base;
 
@@ -92,9 +93,9 @@ public class ColorSelect : TemplatedControl
     public ColorSelect()
     {
         this.GetObservable(IsOpenProperty).Subscribe(OnIsOpenChanged);
-        ShowSelectCommand = ReactiveCommand.Create<object>(OnShowSelect);
-        ToggleCustomModeCommand = ReactiveCommand.Create<object>(OnToggleCustomMode);
-        SelectionChangedCommand = ReactiveCommand.Create<string>(OnSelectionChanged);
+        ShowSelectCommand = AsyncRelayCommand.Create<object>(OnShowSelect);
+        ToggleCustomModeCommand = AsyncRelayCommand.Create<object>(OnToggleCustomMode);
+        SelectionChangedCommand = AsyncRelayCommand.Create<string>(OnSelectionChanged);
         LoadColors();
     }
 

@@ -9,7 +9,8 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
-using ReactiveUI;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 
 namespace Taix.Client.Controls.Base;
 
@@ -44,8 +45,8 @@ public class IconSelect : TemplatedControl
     {
         Focusable = true;
         URL = "avares://Taix/Resources/Emoji/(1).png";
-        ShowSelectCommand = ReactiveCommand.Create(OnToggleSelect);
-        FileSelectCommand = ReactiveCommand.CreateFromTask(OnFileSelect);
+        ShowSelectCommand = AsyncRelayCommand.Create(OnToggleSelect);
+        FileSelectCommand = AsyncRelayCommand.CreateFromTask(OnFileSelect);
         LoadIcons();
     }
 

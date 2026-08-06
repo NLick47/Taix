@@ -1,12 +1,10 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Reactive;
-using System.Reactive.Disposables;
-using System.Reactive.Disposables.Fluent;
-using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using ReactiveUI;
-using ReactiveUI.Avalonia;
+using System.Windows.Input;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Models;
 using Taix.Client.Shared.Models.Search;
 using Taix.Client.Shared.Servicers.Interfaces;
@@ -23,29 +21,36 @@ public class SearchPaletteViewModel : ModelBase
     private bool _isShowingDefault = true;
     private string _statusText = string.Empty;
     private string _resultsCountText = string.Empty;
+    private int _searchGeneration;
 
     public SearchPaletteViewModel(ISearchService searchService)
     {
         _searchService = searchService;
         Results = new ObservableCollection<SearchResultItem>();
 
-        CloseCommand = ReactiveCommand.Create(() => CloseRequested?.Invoke());
-        ClearKeywordCommand = ReactiveCommand.Create(() => { Keyword = string.Empty; });
+        CloseCommand = AsyncRelayCommand.Create(() => CloseRequested?.Invoke());
+        ClearKeywordCommand = AsyncRelayCommand.Create(() => { Keyword = string.Empty; });
 
         // 节流 150ms 触发搜索
-        this.WhenAnyValue(x => x.Keyword)
+        ObservablePropertyChangedExtensions.WhenPropertyChanged(this, x => x.Keyword)
+            .Skip(1)
             .Throttle(TimeSpan.FromMilliseconds(150))
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Select(kw => Observable.FromAsync(_ => OnKeywordChangedAsync(kw)))
+            .ObserveOn(AvaloniaContextScheduler.Instance)
+            .Select(kw =>
+            {
+                var generation = Interlocked.Increment(ref _searchGeneration);
+                return RxObservable.FromAsync(_ => OnKeywordChangedAsync(kw, generation));
+            })
             .Switch()
             .Subscribe()
             .DisposeWith(_disposables);
 
-        _ = LoadDefaultAsync();
+        var initialGeneration = Interlocked.Increment(ref _searchGeneration);
+        _ = LoadDefaultAsync(initialGeneration);
     }
 
-    public ReactiveCommand<Unit, Unit> CloseCommand { get; }
-    public ReactiveCommand<Unit, Unit> ClearKeywordCommand { get; }
+    public ICommand CloseCommand { get; }
+    public ICommand ClearKeywordCommand { get; }
 
     // 已展开的分类卡片 → (展开起始位置, 子项数量)
     private readonly System.Collections.Generic.Dictionary<SearchResultItem, (int startIndex, int childCount)> _expanded = new();
@@ -275,46 +280,51 @@ public class SearchPaletteViewModel : ModelBase
         }
     }
 
-    private async Task LoadDefaultAsync()
+    private async Task LoadDefaultAsync(int generation)
     {
         try
         {
             var list = await _searchService.GetTodayHighlightsAsync();
-            ApplyResults(list, isDefault: true, keywordIsEmpty: true);
+            if (generation == Volatile.Read(ref _searchGeneration))
+                ApplyResults(list, isDefault: true, keywordIsEmpty: true);
         }
         catch
         {
-            ApplyResults(Array.Empty<SearchResultItem>(), isDefault: true, keywordIsEmpty: true);
+            if (generation == Volatile.Read(ref _searchGeneration))
+                ApplyResults(Array.Empty<SearchResultItem>(), isDefault: true, keywordIsEmpty: true);
         }
     }
 
     public async Task RefreshAsync()
     {
+        var generation = Interlocked.Increment(ref _searchGeneration);
         var keyword = (Keyword ?? string.Empty).Trim();
         if (keyword.Length == 0)
-            await LoadDefaultAsync();
+            await LoadDefaultAsync(generation);
         else
-            await OnKeywordChangedAsync(keyword);
+            await OnKeywordChangedAsync(keyword, generation);
     }
 
-    private async Task OnKeywordChangedAsync(string keyword)
+    private async Task OnKeywordChangedAsync(string keyword, int generation)
     {
         keyword = keyword?.Trim() ?? string.Empty;
 
         if (keyword.Length == 0)
         {
-            await LoadDefaultAsync();
+            await LoadDefaultAsync(generation);
             return;
         }
 
         try
         {
             var list = await _searchService.SearchAsync(keyword);
-            ApplyResults(list, isDefault: false, keywordIsEmpty: false);
+            if (generation == Volatile.Read(ref _searchGeneration))
+                ApplyResults(list, isDefault: false, keywordIsEmpty: false);
         }
         catch
         {
-            ApplyResults(Array.Empty<SearchResultItem>(), isDefault: false, keywordIsEmpty: false);
+            if (generation == Volatile.Read(ref _searchGeneration))
+                ApplyResults(Array.Empty<SearchResultItem>(), isDefault: false, keywordIsEmpty: false);
         }
     }
 

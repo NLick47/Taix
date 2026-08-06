@@ -8,6 +8,7 @@ public interface IAppEventService
 {
     IObservable<AppChangedEvent> AppChanged { get; }
     IObservable<WebSiteChangedEvent> WebSiteChanged { get; }
+    long ChangeVersion { get; }
     
     void PublishAppChanged(AppModel app, AppChangeType changeType);
     void PublishWebSiteChanged(WebSiteModel site, AppChangeType changeType);

@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls.Primitives;
-using ReactiveUI;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 
 namespace Taix.Client.Controls.Select;
 
@@ -76,13 +77,14 @@ public class DateSelect : TemplatedControl
 
     public DateSelect()
     {
-        ShowSelectCommand = ReactiveCommand.Create(OnShowSelect);
-        SetYearCommand = ReactiveCommand.Create<object>(OnSetYear);
-        SetMonthCommand = ReactiveCommand.Create<object>(OnSetMonth);
-        SelectDayCommand = ReactiveCommand.Create<DayModel>(OnSelectDay);
-        DoneCommand = ReactiveCommand.Create<object>(OnDone);
-        GoPreviousCommand = ReactiveCommand.Create(OnGoPrevious);
-        GoNextCommand = ReactiveCommand.Create(OnGoNext, this.WhenAnyValue(x => x.CanGoNext));
+        ShowSelectCommand = AsyncRelayCommand.Create(OnShowSelect);
+        SetYearCommand = AsyncRelayCommand.Create<object>(OnSetYear);
+        SetMonthCommand = AsyncRelayCommand.Create<object>(OnSetMonth);
+        SelectDayCommand = AsyncRelayCommand.Create<DayModel>(OnSelectDay);
+        DoneCommand = AsyncRelayCommand.Create<object>(OnDone);
+        GoPreviousCommand = AsyncRelayCommand.Create(OnGoPrevious);
+        GoNextCommand = AsyncRelayCommand.Create(OnGoNext)
+            .WithCanExecute(ObservablePropertyChangedExtensions.WhenPropertyChanged(this, x => x.CanGoNext));
         _year = _date.Year;
         _month = _date.Month;
         UpdateCanGoNext();

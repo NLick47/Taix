@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Reactive.Disposables;
-using System.Reactive.Disposables.Fluent;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ReactiveUI;
-using ReactiveUI.Avalonia;
 using Taix.Client.Controls.Select;
+using Taix.Client.Events;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Logging;
 using Taix.Client.Servicers.Interfaces;
 
@@ -21,7 +19,10 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
     private int _loadingCount;
     private bool _isRestoringState;
     protected readonly CompositeDisposable Disposables = new();
+    private readonly object _loadCtsGate = new();
+    private readonly List<CancellationTokenSource> _retiredLoadCts = [];
     private CancellationTokenSource _loadCts = new();
+    private bool _disposed;
 
     public ModelBase()
     {
@@ -77,23 +78,45 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
         }
     ];
 
-    protected CancellationToken LoadToken => _loadCts.Token;
+    protected CancellationToken LoadToken
+    {
+        get
+        {
+            lock (_loadCtsGate) return _loadCts.Token;
+        }
+    }
 
     protected void CancelAndResetLoadToken()
     {
-        _loadCts.Cancel();
-        _loadCts.Dispose();
-        _loadCts = new CancellationTokenSource();
+        CancellationTokenSource previous;
+        lock (_loadCtsGate)
+        {
+            if (_disposed) return;
+            previous = _loadCts;
+            _loadCts = new CancellationTokenSource();
+            _retiredLoadCts.Add(previous);
+        }
+        previous.Cancel();
     }
 
     protected async Task ExecuteAsync(Func<CancellationToken, Task> action, bool trackLoading = true)
     {
         if (trackLoading) Interlocked.Increment(ref _loadingCount);
         IsLoading = _loadingCount > 0;
-        var capturedCts = _loadCts;
+        CancellationToken token;
+        lock (_loadCtsGate)
+        {
+            if (_disposed)
+            {
+                if (trackLoading) Interlocked.Decrement(ref _loadingCount);
+                IsLoading = _loadingCount > 0;
+                return;
+            }
+            token = _loadCts.Token;
+        }
         try
         {
-            await action(capturedCts.Token);
+            await action(token);
         }
         catch (OperationCanceledException)
         {
@@ -116,18 +139,15 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
         Func<TProperty, Task> handler,
         bool skipInitial = true) where TSource : ModelBase
     {
-        var observable = source.WhenAnyValue(property);
+        var observable = ObservablePropertyChangedExtensions.WhenPropertyChanged(source, property);
         if (skipInitial) observable = observable.Skip(1);
 
         return observable
-            .ObserveOn(AvaloniaScheduler.Instance)
+            .Where(_ => !source.IsRestoringState)
+            .ObserveOn(AvaloniaContextScheduler.Instance)
             .Do(_ => source.CancelAndResetLoadToken())
-            .Select(value => Observable.FromAsync(async _ =>
+            .Select(value => RxObservable.FromAsync(async _ =>
             {
-                // 状态恢复期间跳过执行
-                if (source.IsRestoringState) return;
-
-                var cts = source._loadCts;
                 try
                 {
                     await handler(value);
@@ -146,6 +166,62 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
             .DisposeWith(source.Disposables);
     }
 
+    /// <summary>属性或数据变更后，在 UI 线程合并连续通知并取消上一轮刷新。</summary>
+    protected void RefreshOnChange<T>(IObservable<T> source, Func<Task> refreshAsync)
+    {
+        SubscribeRefresh(source.Select(_ => Unit.Default), refreshAsync);
+    }
+
+    /// <summary>合并两个数据变更源，连续通知只触发一次刷新。</summary>
+    protected void RefreshOnChange<TFirst, TSecond>(
+        IObservable<TFirst> first,
+        IObservable<TSecond> second,
+        Func<Task> refreshAsync)
+    {
+        SubscribeRefresh(
+            RxObservable.Merge(
+                first.Select(_ => Unit.Default),
+                second.Select(_ => Unit.Default)),
+            refreshAsync);
+    }
+
+    private void SubscribeRefresh(IObservable<Unit> source, Func<Task> refreshAsync)
+    {
+        source
+            .Throttle(TimeSpan.FromMilliseconds(100))
+            .ObserveOn(AvaloniaContextScheduler.Instance)
+            .Do(_ => CancelAndResetLoadToken())
+            .Select(_ => RxObservable.FromAsync(_ => refreshAsync()))
+            .Switch()
+            .Subscribe()
+            .DisposeWith(Disposables);
+    }
+
+    /// <summary>
+    /// 返回导航时优先使用页面数据缓存；离开期间数据发生变化或缓存缺失时重新加载。
+    /// </summary>
+    protected Task RestoreCachedDataOrLoadAsync(
+        bool restored,
+        IStateService stateService,
+        IAppEventService eventService,
+        Func<Task> loadAsync)
+    {
+        var cachedVersion = stateService.Get<string, CachedDataVersion>(GetDataVersionKey());
+        return restored && cachedVersion?.Version == eventService.ChangeVersion
+            ? Task.CompletedTask
+            : loadAsync();
+    }
+
+    /// <summary>记录当前页面数据缓存对应的全局数据版本。</summary>
+    protected void SaveCachedDataVersion(IStateService stateService, IAppEventService eventService)
+    {
+        stateService.Set(GetDataVersionKey(), new CachedDataVersion(eventService.ChangeVersion));
+    }
+
+    private string GetDataVersionKey() => $"{GetType().FullName}:DataVersion";
+
+    private sealed record CachedDataVersion(long Version);
+
     public virtual void OnNavigatedFrom()
     {
         CancelAndResetLoadToken();
@@ -163,7 +239,16 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
 
     public virtual void Dispose()
     {
-        CancelAndResetLoadToken();
+        List<CancellationTokenSource> sources;
+        lock (_loadCtsGate)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            sources = [.. _retiredLoadCts, _loadCts];
+            _retiredLoadCts.Clear();
+        }
+        foreach (var source in sources) source.Cancel();
         Disposables.Dispose();
+        foreach (var source in sources) source.Dispose();
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using Avalonia;
 using Avalonia.Controls.Primitives;
+using Taix.Client.Foundation.Rx;
 
 namespace Taix.Client.Controls.Base;
 

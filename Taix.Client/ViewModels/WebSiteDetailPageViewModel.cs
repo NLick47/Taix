@@ -1,19 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables.Fluent;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
-using ReactiveUI;
 using Taix.Client.Controls.Charts;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Events;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
 using Taix.Client.Models;
 using Taix.Client.Models.Navigation;
 using Taix.Client.Servicers;
@@ -59,13 +58,12 @@ public class WebSiteDetailPageViewModel : WebSiteDetailPageModel
         _contextMenuService = contextMenuService;
         _appEventService = appEventService;
 
-        PageCommand = ReactiveCommand.CreateFromTask<object>(OnPageCommandAsync);
-        PageCommand.DisposeWith(Disposables);
+        PageCommand = AsyncRelayCommand.CreateFromTask<object>(OnPageCommandAsync).DisposeWith(Disposables);
 
         Initialize();
     }
 
-    public ReactiveCommand<object, Unit> PageCommand { get; private set; }
+    public ICommand PageCommand { get; private set; }
 
     private void Initialize()
     {

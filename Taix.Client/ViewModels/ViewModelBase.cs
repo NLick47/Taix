@@ -1,10 +1,11 @@
 using System;
-using System.Reactive.Disposables;
-using ReactiveUI;
+using Taix.Client.Foundation;
+using Taix.Client.Foundation.Rx;
+using Taix.Client.Models;
 
 namespace Taix.Client.ViewModels;
 
-public class ViewModelBase : ReactiveObject, IDisposable
+public class ViewModelBase : UINotifyPropertyChanged, IDisposable
 {
     protected readonly CompositeDisposable Disposables = new();
 
