@@ -424,9 +424,8 @@ public class Timeline : Control
 
     private bool IsDefaultVisibleRange()
     {
-        var maxHour = (double)MaxDaySeconds / HourSeconds;
         return Math.Abs(VisibleStartHour) < 0.001
-            && Math.Abs(VisibleEndHour - maxHour) < 0.001;
+            && Math.Abs(VisibleEndHour - 24.0) < 0.001;
     }
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
