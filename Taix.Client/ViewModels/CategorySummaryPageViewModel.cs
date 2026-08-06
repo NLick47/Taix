@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Taix.Client.Controls.Charts;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.Foundation;
@@ -12,6 +13,7 @@ using Taix.Client.Models;
 using Taix.Client.Models.Navigation;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Librarys;
+using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Models.Category;
 using Taix.Client.Shared.Servicers.Interfaces;
 
@@ -22,6 +24,7 @@ public class CategorySummaryPageViewModel : ModelBase
     private readonly ICategorySummaryData _summaryData;
     private readonly ICategorys _categorys;
     private readonly IWebData _webData;
+    private readonly IAppData _appData;
     private readonly INavigationDataService _navigationData;
 
     // 内部存储分类列表
@@ -78,11 +81,13 @@ public class CategorySummaryPageViewModel : ModelBase
         ICategorySummaryData summaryData,
         ICategorys categorys,
         IWebData webData,
+        IAppData appData,
         INavigationDataService navigationData)
     {
         _summaryData = summaryData;
         _categorys = categorys;
         _webData = webData;
+        _appData = appData;
         _navigationData = navigationData;
 
         BackCommand = AsyncRelayCommand.Create<object?>(OnBack).DisposeWith(Disposables);
@@ -171,6 +176,10 @@ public class CategorySummaryPageViewModel : ModelBase
     public bool IsAppKind => Kind == CategorySummaryKind.App;
     public bool IsWebKind => Kind == CategorySummaryKind.Web;
 
+    /// <summary>成员列表右键菜单类型，跟随分类类型</summary>
+    public ContextMenuType MembersMenuType =>
+        Kind == CategorySummaryKind.App ? ContextMenuType.App : ContextMenuType.WebSite;
+
     public List<SelectItemModel> RangeOptions { get; }
 
     public SelectItemModel SelectedRange
@@ -247,6 +256,7 @@ public class CategorySummaryPageViewModel : ModelBase
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsAppKind));
             OnPropertyChanged(nameof(IsWebKind));
+            OnPropertyChanged(nameof(MembersMenuType));
             // 同步 TabSwitch 选中项
             if (KindOptions != null && _selectedKind?.Id != (int)value)
             {
@@ -825,6 +835,22 @@ public class CategorySummaryPageViewModel : ModelBase
         {
             var members = await _summaryData.GetMembersAsync(Kind, CategoryId, subStart, subEnd, ct).ConfigureAwait(false);
 
+            // 解析成员完整模型（供右键菜单操作使用），id == -1 为"其他"聚合行，无对应模型
+            Dictionary<int, object>? modelMap = null;
+            if (members.Any(m => m.Id > 0))
+            {
+                if (Kind == CategorySummaryKind.App)
+                {
+                    var apps = await _appData.GetAppsByCategoryIDAsync(CategoryId, ct).ConfigureAwait(false);
+                    modelMap = apps.Where(a => a.ID > 0).ToDictionary(a => a.ID, a => (object)a);
+                }
+                else
+                {
+                    var sites = await _webData.GetWebSitesAsync(CategoryId, ct).ConfigureAwait(false);
+                    modelMap = sites.Where(s => s.ID > 0).ToDictionary(s => s.ID, s => (object)s);
+                }
+            }
+
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
                 var list = new List<ChartsDataModel>();
@@ -836,6 +862,7 @@ public class CategorySummaryPageViewModel : ModelBase
                         Value = m.Seconds,
                         Icon = m.IconFile,
                         Tag = m.Seconds > 0 ? Time.ToString((int)Math.Min(m.Seconds, int.MaxValue)) : string.Empty,
+                        Data = m.Id > 0 && modelMap != null && modelMap.TryGetValue(m.Id, out var model) ? model : null,
                     });
                 }
                 SelectedMembers = list;

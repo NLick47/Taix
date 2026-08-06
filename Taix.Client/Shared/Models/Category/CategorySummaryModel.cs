@@ -31,6 +31,8 @@ public record DailyPointModel
 
 public record CategoryMemberModel
 {
+    public int Id { get; init; }
+
     public string Name { get; init; } = string.Empty;
 
     public string? IconFile { get; init; }

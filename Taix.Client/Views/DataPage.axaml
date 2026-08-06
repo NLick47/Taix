@@ -35,6 +35,7 @@ xmlns:Charts="using:Taix.Client.Controls.Charts"
         <converters:BoolToDoubleConverter x:Key="InverseOpacityConverter"
                                           TrueValue="0"
                                           FalseValue="1" />
+        <converters:ShowTypeToContextMenuTypeConverter x:Key="ShowTypeToContextMenuTypeConverter" />
     </control:TPage.Resources>
     <Grid>
     <Grid Margin="{Binding IsHeaderExpanded, Converter={StaticResource PageMarginConverter}}">
@@ -258,7 +259,7 @@ xmlns:Charts="using:Taix.Client.Controls.Charts"
             <TabItem>
                 <Charts:ListChart IsShowBadge="True"
                                IsSearch="True"
-                               MenuType="App"
+                               MenuType="{Binding ShowType.Id, Converter={StaticResource ShowTypeToContextMenuTypeConverter}}"
                                Data="{Binding WeekData}"
                                Margin="0,20,0,0"
                                ClickCommand="{Binding ToDetailCommand}" />
@@ -266,14 +267,14 @@ xmlns:Charts="using:Taix.Client.Controls.Charts"
             <TabItem>
                 <Charts:ListChart IsShowBadge="True"
                                IsSearch="True"
-                               MenuType="App"
+                               MenuType="{Binding ShowType.Id, Converter={StaticResource ShowTypeToContextMenuTypeConverter}}"
                                Data="{Binding MonthData}"
                                Margin="0,20,0,0"
                                ClickCommand="{Binding ToDetailCommand}" />
             </TabItem>
             <TabItem>
                 <Charts:ListChart IsShowBadge="True" IsSearch="True"
-                               MenuType="App"
+                               MenuType="{Binding ShowType.Id, Converter={StaticResource ShowTypeToContextMenuTypeConverter}}"
                                Data="{Binding YearData}"
                                Margin="0,20,0,0"
                                ClickCommand="{Binding ToDetailCommand}" />
