@@ -35,6 +35,23 @@
         <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
     </PropertyGroup>
 
+    <!-- PoC: 静态链接 Skia/ANGLE/HarfBuzz（仅 win-x64 AOT） -->
+    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+        <PackageReference Include="2ndLAB.SkiaSharp.Static" Version="3.119.0-10.0.26100.0-1.1c7d845" />
+        <PackageReference Include="2ndLAB.ANGLE.Static" Version="7151.0.0-10.0.26100.0-1.79e529b" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'win-x64' And '$(PublishAot)' == 'true'">
+        <DirectPInvoke Include="libSkiaSharp" />
+        <DirectPInvoke Include="libHarfBuzzSharp" />
+        <DirectPInvoke Include="av_libglesv2" />
+        <LinkerArg Include="d3d9.lib;dxguid.lib" />
+        <LinkerArg Include="dxgi.lib" />
+        <LinkerArg Include="Gdi32.lib;User32.lib" />
+        <LinkerArg Include="synchronization.lib" />
+        <LinkerArg Include="fontsub.lib;Ole32.lib;USP10.lib" />
+        <LinkerArg Include="d3d12.lib;d3dcompiler.lib" />
+    </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
         <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
