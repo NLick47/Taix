@@ -115,6 +115,17 @@ public class Tabbar : TemplatedControl
     {
         base.OnPropertyChanged(change);
         if (change.Property == SelectedIndexProperty) OnSelectedItemChanged(change);
+        if (change.Property == SelectedTextColorProperty ||
+            change.Property == UnselectedTextColorProperty)
+            RefreshItemColors();
+    }
+
+    private void RefreshItemColors()
+    {
+        if (ItemsContainer == null || ItemsDictionary.Count == 0) return;
+        for (var i = 0; i < ItemsDictionary.Count; i++)
+            ItemsDictionary[i].Foreground = new SolidColorBrush(
+                i == SelectedIndex ? SelectedTextColor : UnselectedTextColor);
     }
 
     private static void OnSelectedItemChanged(AvaloniaPropertyChangedEventArgs change)
