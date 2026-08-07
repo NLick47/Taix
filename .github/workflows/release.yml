@@ -316,5 +316,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
+          omitBodyDuringUpdate: true
           artifacts: ./artifacts/*
           body: ${{ steps.release-notes.outputs.content }}
