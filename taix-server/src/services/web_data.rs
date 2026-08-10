@@ -11,7 +11,7 @@ use crate::constants;
 use crate::error::AppError;
 use crate::models::request::{AddUrlBrowseTimeRequest, UpdateSitesCategoryRequest};
 use crate::models::log::{ColumnDataModel, InfrastructureDataModel};
-use crate::models::web::{WebBrowseLogModel, WebSiteCategoryModel, WebSiteModel, WebUrlModel};
+use crate::models::web::{WebBrowseLogModel, WebSiteCategoryModel, WebSiteJoinCols, WebSiteModel, WebUrlModel, WEB_SITE_JOIN_COLS_SQL};
 use crate::services::config::ConfigService;
 use crate::utils::{parse_timezone, tz_naive_to_utc};
 
@@ -248,16 +248,36 @@ impl WebDataService {
 
     pub async fn get_web_sites(pool: &SqlitePool, category_id: Option<i64>, config_service: &ConfigService) -> Result<Vec<WebSiteModel>, AppError> {
         debug!("get_web_sites: category_id={:?}", category_id);
-        let rows = if let Some(cat_id) = category_id {
-            sqlx::query_as::<_, WebSiteModel>("SELECT * FROM WebSiteModels WHERE CategoryID = ?")
-                .bind(cat_id).fetch_all(pool).await?
+        // 前置 s.Duration 列，供 WebSiteModel.duration（站点静态累计时长）
+        let cols = format!("s.Duration AS site_duration,\n{}", WEB_SITE_JOIN_COLS_SQL);
+        let sql = format!(
+            "SELECT {cols} FROM WebSiteModels s \
+             LEFT JOIN WebSiteCategoryModels c ON s.CategoryID = c.ID {where}",
+            cols = cols,
+            where = if category_id.is_some() {
+                "WHERE s.CategoryID = ?"
+            } else {
+                ""
+            }
+        );
+        let rows: Vec<WebSiteJoinCols> = if let Some(cat_id) = category_id {
+            sqlx::query_as(&sql)
+                .bind(cat_id)
+                .fetch_all(pool)
+                .await?
         } else {
-            sqlx::query_as::<_, WebSiteModel>("SELECT * FROM WebSiteModels").fetch_all(pool).await?
+            sqlx::query_as(&sql)
+                .fetch_all(pool)
+                .await?
         };
-        let domains: Vec<&str> = rows.iter().filter_map(|r| r.domain.as_deref()).collect();
+        let domains: Vec<&str> = rows.iter().filter_map(|r| r.site_domain.as_deref()).collect();
         let excluded = config_service.get_excluded_domains(&domains).await;
         let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();
-        Ok(rows.into_iter().filter(|r| r.domain.as_ref().map_or(true, |d| !excluded_set.contains(d))).collect())
+        Ok(rows
+            .into_iter()
+            .filter_map(|r| r.to_site_model())
+            .filter(|r| r.domain.as_ref().map_or(true, |d| !excluded_set.contains(d)))
+            .collect())
     }
 
     pub async fn get_web_site_categories(pool: &SqlitePool) -> Result<Vec<WebSiteCategoryModel>, AppError> {
@@ -450,12 +470,24 @@ impl WebDataService {
             Some((id,)) => id,
             None => return Ok(Vec::new()),
         };
-        let sites: Vec<WebSiteModel> = sqlx::query_as("SELECT * FROM WebSiteModels WHERE CategoryID = ?")
+        // 前置 s.Duration 列，供 WebSiteModel.duration（站点静态累计时长）
+        let cols = format!("s.Duration AS site_duration,\n{}", WEB_SITE_JOIN_COLS_SQL);
+        let sql = format!(
+            "SELECT {cols} FROM WebSiteModels s \
+             LEFT JOIN WebSiteCategoryModels c ON s.CategoryID = c.ID \
+             WHERE s.CategoryID = ?",
+            cols = cols
+        );
+        let sites: Vec<WebSiteJoinCols> = sqlx::query_as(&sql)
             .bind(category_id).fetch_all(pool).await?;
-        let domains: Vec<&str> = sites.iter().filter_map(|r| r.domain.as_deref()).collect();
+        let domains: Vec<&str> = sites.iter().filter_map(|r| r.site_domain.as_deref()).collect();
         let excluded = config_service.get_excluded_domains(&domains).await;
         let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();
-        Ok(sites.into_iter().filter(|r| r.domain.as_ref().map_or(true, |d| !excluded_set.contains(d))).collect())
+        Ok(sites
+            .into_iter()
+            .filter_map(|r| r.to_site_model())
+            .filter(|r| r.domain.as_ref().map_or(true, |d| !excluded_set.contains(d)))
+            .collect())
     }
 
     pub async fn clear_web_data(pool: &SqlitePool, start: Option<NaiveDate>, end: Option<NaiveDate>, site_id: Option<i64>, tz_id: &str) -> Result<(), AppError> {
@@ -501,40 +533,25 @@ impl WebDataService {
         let utc_start = tz_naive_to_utc(start, &parse_timezone(tz_id));
         let utc_end = tz_naive_to_utc(end, &parse_timezone(tz_id));
 
-        // 内存过滤后分页
-        let rows: Vec<(i64, i64)> = sqlx::query_as(
-            r#"SELECT SiteId, SUM(Duration) as duration FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ? AND SiteId != 0 GROUP BY SiteId ORDER BY duration DESC"#
-        )
-        .bind(utc_start).bind(utc_end).fetch_all(pool).await?;
+        // site_duration 由 SUM 提供（共享片段不含 s.Duration，无重名列）
+        let sql = format!(
+            r#"SELECT {cols}, SUM(wbl.Duration) AS site_duration
+            FROM WebBrowseLogModels wbl
+            LEFT JOIN WebSiteModels s ON wbl.SiteId = s.ID
+            LEFT JOIN WebSiteCategoryModels c ON s.CategoryID = c.ID
+            WHERE wbl.LogTime >= ? AND wbl.LogTime <= ? AND wbl.SiteId != 0
+            GROUP BY wbl.SiteId
+            ORDER BY site_duration DESC"#,
+            cols = WEB_SITE_JOIN_COLS_SQL
+        );
+        let rows: Vec<WebSiteJoinCols> = sqlx::query_as(&sql)
+            .bind(utc_start).bind(utc_end).fetch_all(pool).await?;
 
-        if rows.is_empty() {
-            return Ok(Vec::new());
-        }
+        let result: Vec<WebSiteModel> = rows
+            .into_iter()
+            .filter_map(|r| r.to_site_model())
+            .collect();
 
-        let mut builder = sqlx::QueryBuilder::new("SELECT * FROM WebSiteModels WHERE ID IN (");
-        let mut separated = builder.separated(", ");
-        for (sid, _) in &rows {
-            separated.push_bind(*sid);
-        }
-        separated.push_unseparated(")");
-        let sites: Vec<WebSiteModel> = builder.build_query_as().fetch_all(pool).await?;
-
-        let categories = Self::get_web_site_categories(pool).await?;
-        let category_map: std::collections::HashMap<i64, WebSiteCategoryModel> =
-            categories.into_iter().map(|c| (c.id, c)).collect();
-
-        let mut site_map: std::collections::HashMap<i64, WebSiteModel> =
-            sites.into_iter().map(|s| (s.id, s)).collect();
-
-        let mut result = Vec::new();
-        for (sid, dur) in rows {
-            if let Some(mut s) = site_map.remove(&sid) {
-                s.duration = dur;
-                // 填充分类信息
-                s.category = category_map.get(&s.category_id).cloned();
-                result.push(s);
-            }
-        }
         let domains: Vec<&str> = result.iter().filter_map(|r| r.domain.as_deref()).collect();
         let excluded = config_service.get_excluded_domains(&domains).await;
         let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();
@@ -930,10 +947,13 @@ impl WebDataService {
         let mut query = String::from(
             r#"SELECT wbl.ID, wbl.UrlId, wbl.LogTime, wbl.Duration, wbl.SiteId,
             ws.Domain, ws.Title AS WsTitle, ws.IconFile AS WsIconFile, ws.CategoryID AS WsCategoryID,
+            wsc.ID AS WscID, wsc.Name AS WscName, wsc.IconFile AS WscIconFile, wsc.Color AS WscColor,
+            wsc.IsUrlMatch AS WscIsUrlMatch, wsc.UrlPatterns AS WscUrlPatterns, wsc.IsSystem AS WscIsSystem,
             wu.Url, wu.Title AS WuTitle, wu.IconFile AS WuIconFile
             FROM WebBrowseLogModels wbl
             JOIN WebUrlModels wu ON wbl.UrlId = wu.ID
             JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
+            LEFT JOIN WebSiteCategoryModels wsc ON ws.CategoryID = wsc.ID
             WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?"#
         );
         if site_id > 0 {
@@ -953,6 +973,13 @@ impl WebDataService {
             WsTitle: Option<String>,
             WsIconFile: Option<String>,
             WsCategoryID: i64,
+            WscID: Option<i64>,
+            WscName: Option<String>,
+            WscIconFile: Option<String>,
+            WscColor: Option<String>,
+            WscIsUrlMatch: Option<bool>,
+            WscUrlPatterns: Option<String>,
+            WscIsSystem: Option<bool>,
             Url: String,
             WuTitle: Option<String>,
             WuIconFile: Option<String>,
@@ -966,12 +993,6 @@ impl WebDataService {
         }
         let rows = sql_query.fetch_all(pool).await?;
 
-        let web_categories = Self::get_web_site_categories(pool).await?;
-        let category_map: HashMap<i64, WebSiteCategoryModel> = web_categories
-            .into_iter()
-            .map(|c| (c.id, c))
-            .collect();
-
         let domains: Vec<&str> = rows.iter().map(|r| r.Domain.as_str()).collect();
         let excluded = config_service.get_excluded_domains(&domains).await;
         let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();
@@ -981,7 +1002,15 @@ impl WebDataService {
             if excluded_set.contains(&row.Domain) {
                 continue;
             }
-            let category = category_map.get(&row.WsCategoryID).cloned();
+            let category = row.WscID.map(|id| WebSiteCategoryModel {
+                id,
+                name: row.WscName.unwrap_or_default(),
+                icon_file: row.WscIconFile,
+                color: row.WscColor,
+                is_url_match: row.WscIsUrlMatch.unwrap_or(false),
+                url_patterns: row.WscUrlPatterns,
+                is_system: row.WscIsSystem.unwrap_or(false),
+            });
             result.push(WebBrowseLogModel {
                 id: row.ID,
                 url_id: row.UrlId,
@@ -1015,41 +1044,28 @@ impl WebDataService {
         let end_date = NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23,59,59).unwrap());
         let utc_start = tz_naive_to_utc(start_date, &parse_timezone(tz_id));
         let utc_end = tz_naive_to_utc(end_date, &parse_timezone(tz_id));
-        let rows: Vec<(i64, Option<String>, Option<String>, Option<String>, Option<String>, i64, i64)> = sqlx::query_as(
-            r#"SELECT wbl.SiteId, MAX(ws.Title), MAX(ws.Domain), MAX(ws.IconFile), MAX(ws.Alias), COALESCE(MAX(ws.CategoryID), 0), SUM(wbl.Duration) as duration
+        // site_duration 由 SUM 提供（共享片段不含 s.Duration，无重名列）
+        let sql = format!(
+            r#"SELECT {cols}, SUM(wbl.Duration) AS site_duration
             FROM WebBrowseLogModels wbl
-            LEFT JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
+            LEFT JOIN WebSiteModels s ON wbl.SiteId = s.ID
+            LEFT JOIN WebSiteCategoryModels c ON s.CategoryID = c.ID
             WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?
-            GROUP BY wbl.SiteId"#
-        ).bind(utc_start).bind(utc_end).fetch_all(pool).await?;
+            GROUP BY wbl.SiteId"#,
+            cols = WEB_SITE_JOIN_COLS_SQL
+        );
+        let rows: Vec<WebSiteJoinCols> = sqlx::query_as(&sql)
+            .bind(utc_start).bind(utc_end).fetch_all(pool).await?;
 
-        let web_categories = Self::get_web_site_categories(pool).await?;
-        let category_map: HashMap<i64, WebSiteCategoryModel> = web_categories
-            .into_iter()
-            .map(|c| (c.id, c))
-            .collect();
-
-        let domains: Vec<&str> = rows.iter().filter_map(|r| r.2.as_deref()).collect();
+        let domains: Vec<&str> = rows.iter().filter_map(|r| r.site_domain.as_deref()).collect();
         let excluded = config_service.get_excluded_domains(&domains).await;
         let excluded_set: std::collections::HashSet<String> = excluded.into_iter().collect();
 
-        let mut result = Vec::new();
-        for (site_id, title, domain, icon_file, alias, category_id, duration) in rows {
-            if domain.as_ref().map_or(false, |d| excluded_set.contains(d)) {
-                continue;
-            }
-            result.push(WebSiteModel {
-                id: site_id,
-                title,
-                domain: Some(domain.unwrap_or_default()),
-                alias,
-                category_id,
-                icon_file,
-                duration,
-                category: category_map.get(&category_id).cloned(),
-            });
-        }
-        Ok(result)
+        Ok(rows
+            .into_iter()
+            .filter(|r| r.site_domain.as_ref().map_or(false, |d| !excluded_set.contains(d)))
+            .filter_map(|r| r.to_site_model())
+            .collect())
     }
 
     pub async fn get_web_export_data(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, tz_id: &str, config_service: &ConfigService) -> Result<crate::models::web::WebExportDataResult, AppError> {

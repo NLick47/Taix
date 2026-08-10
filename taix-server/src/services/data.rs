@@ -4,12 +4,10 @@ use std::collections::HashMap;
 use tracing::{debug, info};
 
 use crate::error::AppError;
-use crate::models::app::{AppModel, AppModelRow};
-use crate::models::category::CategoryModel;
+use crate::models::app::{AppJoinCols, AppModel, APP_JOIN_COLS_SQL};
 use crate::models::log::{
     AppSessionModel, ColumnDataModel, DailyLogModel, ExportDataResult, HoursLogModel,
 };
-use crate::services::category::CategoryService;
 use crate::services::config::ConfigService;
 use crate::utils::{
     last_day_of_month, parse_timezone, tz_date_range_to_utc_date_range, tz_date_to_utc_range,
@@ -17,6 +15,104 @@ use crate::utils::{
 };
 
 pub struct DataService;
+
+const HOURS_LOG_BY_HOUR_SQL: &str = r#"
+SELECT h.ID, h.DataTime, h.AppModelID, h.Time, {cols}
+FROM HoursLogModels h
+LEFT JOIN AppModels a ON h.AppModelID = a.ID
+LEFT JOIN CategoryModels c ON a.CategoryID = c.ID
+WHERE h.DataTime = ?
+"#;
+
+const HOURS_LOG_RANGE_SQL: &str = r#"
+SELECT h.ID, h.DataTime, h.AppModelID, h.Time, {cols}
+FROM HoursLogModels h
+LEFT JOIN AppModels a ON h.AppModelID = a.ID
+LEFT JOIN CategoryModels c ON a.CategoryID = c.ID
+WHERE h.DataTime >= ? AND h.DataTime <= ?
+"#;
+
+const HOURS_LOG_RANGE_NZ_SQL: &str = r#"
+SELECT h.ID, h.DataTime, h.AppModelID, h.Time, {cols}
+FROM HoursLogModels h
+LEFT JOIN AppModels a ON h.AppModelID = a.ID
+LEFT JOIN CategoryModels c ON a.CategoryID = c.ID
+WHERE h.DataTime >= ? AND h.DataTime <= ? AND h.AppModelID != 0
+"#;
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+struct AggJoinRow {
+    #[sqlx(rename = "AppModelID")]
+    app_model_id: i64,
+    #[sqlx(rename = "total")]
+    total: i64,
+    #[sqlx(flatten)]
+    app: AppJoinCols,
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+struct HoursLogJoinRow {
+    #[sqlx(rename = "ID")]
+    id: i64,
+    #[sqlx(rename = "DataTime")]
+    data_time: DateTime<Utc>,
+    #[sqlx(rename = "AppModelID")]
+    app_model_id: i64,
+    #[sqlx(rename = "Time")]
+    time: i64,
+    #[sqlx(flatten)]
+    app: AppJoinCols,
+}
+
+impl HoursLogJoinRow {
+    fn into_hours_log_model(self) -> HoursLogModel {
+        HoursLogModel {
+            id: self.id,
+            data_time: self.data_time,
+            app_model_id: self.app_model_id,
+            time: self.time,
+            app_model: self.app.to_app_model(),
+        }
+    }
+}
+
+const SESSION_RANGE_SQL: &str = r#"
+SELECT s.ID, s.AppModelID, s.StartTime, s.EndTime, s.Duration, {cols}
+FROM AppSessions s
+LEFT JOIN AppModels a ON s.AppModelID = a.ID
+LEFT JOIN CategoryModels c ON a.CategoryID = c.ID
+WHERE s.StartTime >= ? AND s.StartTime < ? AND s.EndTime > ?
+ORDER BY s.StartTime ASC
+"#;
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+struct SessionJoinRow {
+    #[sqlx(rename = "ID")]
+    id: i64,
+    #[sqlx(rename = "AppModelID")]
+    app_model_id: i64,
+    #[sqlx(rename = "StartTime")]
+    start_time: DateTime<Utc>,
+    #[sqlx(rename = "EndTime")]
+    end_time: DateTime<Utc>,
+    #[sqlx(rename = "Duration")]
+    duration: i64,
+    #[sqlx(flatten)]
+    app: AppJoinCols,
+}
+
+impl SessionJoinRow {
+    fn into_session_model(self) -> AppSessionModel {
+        AppSessionModel {
+            id: self.id,
+            app_model_id: self.app_model_id,
+            start_time: self.start_time,
+            end_time: self.end_time,
+            duration: self.duration,
+            app_model: self.app.to_app_model(),
+        }
+    }
+}
 
 impl DataService {
     pub async fn get_date_range_log_list(
@@ -44,100 +140,54 @@ impl DataService {
         let excluded_vec: Vec<i64> = excluded.into_iter().collect();
         let has_excluded = !excluded_vec.is_empty();
 
-        let mut groups: HashMap<i64, i64> = HashMap::new();
-        if days <= 31 {
+        let agg_rows: Vec<AggJoinRow> = if days <= 31 {
             let utc_start = tz_date_to_utc_range(start, &tz).0;
             let utc_end = tz_date_to_utc_range(end, &tz).1;
 
-            let rows: Vec<(i64, i64)> = if !has_excluded {
-                sqlx::query_as(
-                    r#"
-                    SELECT AppModelID, SUM(Time) as total
-                    FROM HoursLogModels
-                    WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0
-                    GROUP BY AppModelID
-                    "#,
-                )
+            let sql = format!(
+                "SELECT h.AppModelID, SUM(h.Time) AS total, {cols} \
+                 FROM HoursLogModels h \
+                 LEFT JOIN AppModels a ON h.AppModelID = a.ID \
+                 LEFT JOIN CategoryModels c ON a.CategoryID = c.ID \
+                 WHERE h.DataTime >= ? AND h.DataTime < ? AND h.AppModelID != 0 \
+                 {excl} \
+                 GROUP BY h.AppModelID",
+                cols = APP_JOIN_COLS_SQL,
+                excl = if has_excluded { "AND h.AppModelID NOT IN ({})".replace("{}", &excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",")) } else { String::new() },
+            );
+            let mut query = sqlx::query_as::<_, AggJoinRow>(&sql)
                 .bind(utc_start)
-                .bind(utc_end)
-                .fetch_all(pool)
-                .await?
-            } else {
-                let placeholders = excluded_vec
-                    .iter()
-                    .map(|_| "?")
-                    .collect::<Vec<_>>()
-                    .join(",");
-                let sql = format!(
-                    r#"
-                    SELECT AppModelID, SUM(Time) as total
-                    FROM HoursLogModels
-                    WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0 AND AppModelID NOT IN ({})
-                    GROUP BY AppModelID
-                    "#,
-                    placeholders
-                );
-                let mut query = sqlx::query_as::<_, (i64, i64)>(&sql)
-                    .bind(utc_start)
-                    .bind(utc_end);
-                for id in &excluded_vec {
-                    query = query.bind(*id);
-                }
-                query.fetch_all(pool).await?
-            };
-
-            for (app_id, time) in rows {
-                *groups.entry(app_id).or_insert(0) += time;
+                .bind(utc_end);
+            for id in &excluded_vec {
+                query = query.bind(*id);
             }
+            query.fetch_all(pool).await?
         } else {
             let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
 
-            let logs: Vec<DailyLogModel> = if !has_excluded {
-                sqlx::query_as(
-                    "SELECT * FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0"
-                )
+            let sql = format!(
+                "SELECT d.AppModelID, SUM(d.Time) AS total, {cols} \
+                 FROM DailyLogModels d \
+                 LEFT JOIN AppModels a ON d.AppModelID = a.ID \
+                 LEFT JOIN CategoryModels c ON a.CategoryID = c.ID \
+                 WHERE d.Date >= ? AND d.Date <= ? AND d.AppModelID != 0 \
+                 {excl} \
+                 GROUP BY d.AppModelID",
+                cols = APP_JOIN_COLS_SQL,
+                excl = if has_excluded { "AND d.AppModelID NOT IN ({})".replace("{}", &excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",")) } else { String::new() },
+            );
+            let mut query = sqlx::query_as::<_, AggJoinRow>(&sql)
                 .bind(utc_start)
-                .bind(utc_end)
-                .fetch_all(pool)
-                .await?
-            } else {
-                let placeholders = excluded_vec
-                    .iter()
-                    .map(|_| "?")
-                    .collect::<Vec<_>>()
-                    .join(",");
-                let sql = format!(
-                    "SELECT * FROM DailyLogModels WHERE Date >= ? AND Date <= ? AND AppModelID != 0 AND AppModelID NOT IN ({})",
-                    placeholders
-                );
-                let mut query = sqlx::query_as::<_, DailyLogModel>(&sql)
-                    .bind(utc_start)
-                    .bind(utc_end);
-                for id in &excluded_vec {
-                    query = query.bind(*id);
-                }
-                query.fetch_all(pool).await?
-            };
-
-            for log in logs {
-                *groups.entry(log.app_model_id).or_insert(0) += log.time;
+                .bind(utc_end);
+            for id in &excluded_vec {
+                query = query.bind(*id);
             }
-        }
+            query.fetch_all(pool).await?
+        };
 
-        let apps: Vec<AppModelRow> = sqlx::query_as("SELECT * FROM AppModels")
-            .fetch_all(pool)
-            .await?;
-
-        let app_map: std::collections::HashMap<i64, AppModelRow> =
-            apps.into_iter().map(|a| (a.id, a)).collect();
-
-        let categories = CategoryService::get_categories(pool).await?;
-        let category_map: std::collections::HashMap<i64, CategoryModel> =
-            categories.into_iter().map(|c| (c.id, c)).collect();
-
-        // 已在 SQL 层过滤排除应用，直接排序分页
-        let mut sorted_groups: Vec<_> = groups.into_iter().collect();
-        sorted_groups.sort_by(|a, b| b.1.cmp(&a.1));
+        // 已在 SQL 层聚合并过滤排除应用，直接排序分页
+        let mut sorted_groups: Vec<AggJoinRow> = agg_rows;
+        sorted_groups.sort_by(|a, b| b.total.cmp(&a.total));
         let offset_usize = offset as usize;
         let limit_usize = if limit > 0 {
             limit as usize
@@ -151,28 +201,13 @@ impl DataService {
             .collect();
 
         let mut result = Vec::new();
-        for (app_id, time) in sorted_groups {
-            let app_model = app_map.get(&app_id).cloned().map(|a| {
-                let category = category_map.get(&a.category_id).cloned();
-                AppModel {
-                    id: a.id,
-                    name: a.name,
-                    alias: a.alias,
-                    description: a.description,
-                    file: a.file,
-                    category_id: a.category_id,
-                    icon_file: a.icon_file,
-                    total_time: a.total_time,
-                    category,
-                }
-            });
-
+        for row in sorted_groups {
             result.push(DailyLogModel {
                 id: 0,
                 date: start,
-                app_model_id: app_id,
-                time,
-                app_model,
+                app_model_id: row.app_model_id,
+                time: row.total,
+                app_model: row.app.to_app_model(),
             });
         }
 
@@ -360,54 +395,20 @@ impl DataService {
         );
         let utc_hour = tz_naive_to_utc(local_hour, &parse_timezone(tz_id));
 
-        let logs: Vec<HoursLogModel> =
-            sqlx::query_as("SELECT * FROM HoursLogModels WHERE DataTime = ?")
-                .bind(utc_hour)
-                .fetch_all(pool)
-                .await?;
-
-        let apps: Vec<AppModelRow> = sqlx::query_as("SELECT * FROM AppModels")
+        let logs: Vec<HoursLogJoinRow> = sqlx::query_as::<_, HoursLogJoinRow>(
+            &HOURS_LOG_BY_HOUR_SQL.replace("{cols}", APP_JOIN_COLS_SQL),
+        )
+            .bind(utc_hour)
             .fetch_all(pool)
             .await?;
 
-        let app_refs: Vec<(i64, &str, Option<&str>)> = apps
-            .iter()
-            .map(|a| (a.id, a.name.as_deref().unwrap_or(""), a.file.as_deref()))
+        let excluded = config_service.get_excluded_app_id_set(pool).await;
+
+        let result: Vec<HoursLogModel> = logs
+            .into_iter()
+            .filter(|row| !excluded.contains(&row.app_model_id))
+            .map(HoursLogJoinRow::into_hours_log_model)
             .collect();
-        let excluded_ids = config_service.get_excluded_app_ids(&app_refs).await;
-        let excluded_set: std::collections::HashSet<i64> = excluded_ids.into_iter().collect();
-        let app_map: std::collections::HashMap<i64, AppModelRow> =
-            apps.into_iter().map(|a| (a.id, a)).collect();
-
-        let categories = CategoryService::get_categories(pool).await?;
-        let category_map: HashMap<i64, CategoryModel> =
-            categories.into_iter().map(|c| (c.id, c)).collect();
-
-        let mut result = Vec::new();
-        for log in logs {
-            if excluded_set.contains(&log.app_model_id) {
-                continue;
-            }
-            let app_model = app_map.get(&log.app_model_id).cloned().map(|a| AppModel {
-                id: a.id,
-                name: a.name,
-                alias: a.alias,
-                description: a.description,
-                file: a.file,
-                category_id: a.category_id,
-                icon_file: a.icon_file,
-                total_time: a.total_time,
-                category: category_map.get(&a.category_id).cloned(),
-            });
-
-            result.push(HoursLogModel {
-                id: log.id,
-                data_time: log.data_time,
-                app_model_id: log.app_model_id,
-                time: log.time,
-                app_model,
-            });
-        }
 
         Ok(result)
     }
@@ -424,55 +425,21 @@ impl DataService {
         let utc_start = tz_naive_to_utc(start, &tz);
         let utc_end = tz_naive_to_utc(end, &tz);
 
-        let logs: Vec<HoursLogModel> =
-            sqlx::query_as("SELECT * FROM HoursLogModels WHERE DataTime >= ? AND DataTime <= ?")
-                .bind(utc_start)
-                .bind(utc_end)
-                .fetch_all(pool)
-                .await?;
-
-        let apps: Vec<AppModelRow> = sqlx::query_as("SELECT * FROM AppModels")
+        let logs: Vec<HoursLogJoinRow> = sqlx::query_as::<_, HoursLogJoinRow>(
+            &HOURS_LOG_RANGE_SQL.replace("{cols}", APP_JOIN_COLS_SQL),
+        )
+            .bind(utc_start)
+            .bind(utc_end)
             .fetch_all(pool)
             .await?;
 
-        let app_refs: Vec<(i64, &str, Option<&str>)> = apps
-            .iter()
-            .map(|a| (a.id, a.name.as_deref().unwrap_or(""), a.file.as_deref()))
+        let excluded = config_service.get_excluded_app_id_set(pool).await;
+
+        let result: Vec<HoursLogModel> = logs
+            .into_iter()
+            .filter(|row| !excluded.contains(&row.app_model_id))
+            .map(HoursLogJoinRow::into_hours_log_model)
             .collect();
-        let excluded_ids = config_service.get_excluded_app_ids(&app_refs).await;
-        let excluded_set: std::collections::HashSet<i64> = excluded_ids.into_iter().collect();
-        let app_map: std::collections::HashMap<i64, AppModelRow> =
-            apps.into_iter().map(|a| (a.id, a)).collect();
-
-        let categories = CategoryService::get_categories(pool).await?;
-        let category_map: HashMap<i64, CategoryModel> =
-            categories.into_iter().map(|c| (c.id, c)).collect();
-
-        let mut result = Vec::new();
-        for log in logs {
-            if excluded_set.contains(&log.app_model_id) {
-                continue;
-            }
-            let app_model = app_map.get(&log.app_model_id).cloned().map(|a| AppModel {
-                id: a.id,
-                name: a.name,
-                alias: a.alias,
-                description: a.description,
-                file: a.file,
-                category_id: a.category_id,
-                icon_file: a.icon_file,
-                total_time: a.total_time,
-                category: category_map.get(&a.category_id).cloned(),
-            });
-
-            result.push(HoursLogModel {
-                id: log.id,
-                data_time: log.data_time,
-                app_model_id: log.app_model_id,
-                time: log.time,
-                app_model,
-            });
-        }
 
         Ok(result)
     }
@@ -1059,65 +1026,40 @@ impl DataService {
             tz_date_to_utc_range(end, &tz).1,
         );
 
-        let hours_logs: Vec<HoursLogModel> = sqlx::query_as(
-            "SELECT * FROM HoursLogModels WHERE DataTime >= ? AND DataTime <= ? AND AppModelID != 0",
+        let hours_logs: Vec<HoursLogJoinRow> = sqlx::query_as::<_, HoursLogJoinRow>(
+            &HOURS_LOG_RANGE_NZ_SQL.replace("{cols}", APP_JOIN_COLS_SQL),
         )
         .bind(utc_start)
         .bind(utc_end)
         .fetch_all(pool)
         .await?;
 
-        let apps: Vec<AppModelRow> = sqlx::query_as("SELECT * FROM AppModels")
-            .fetch_all(pool)
-            .await?;
+        let excluded = config_service.get_excluded_app_id_set(pool).await;
 
-        let app_refs: Vec<(i64, &str, Option<&str>)> = apps
-            .iter()
-            .map(|a| (a.id, a.name.as_deref().unwrap_or(""), a.file.as_deref()))
-            .collect();
-        let excluded_ids = config_service.get_excluded_app_ids(&app_refs).await;
-        let excluded_set: std::collections::HashSet<i64> = excluded_ids.into_iter().collect();
-        let app_map: std::collections::HashMap<i64, AppModelRow> =
-            apps.into_iter().map(|a| (a.id, a)).collect();
-        let categories: Vec<CategoryModel> = sqlx::query_as("SELECT * FROM CategoryModels")
-            .fetch_all(pool)
-            .await?;
-        let category_map: std::collections::HashMap<i64, CategoryModel> =
-            categories.into_iter().map(|c| (c.id, c)).collect();
-
-        // 内存聚合 daily_groups
-        let mut daily_groups: HashMap<(NaiveDate, i64), i64> = HashMap::new();
+        // 内存聚合 daily_groups，保留 JOIN 到的应用信息
+        let mut daily_groups: HashMap<(NaiveDate, i64), (i64, Option<AppModel>)> = HashMap::new();
         for log in &hours_logs {
+            if excluded.contains(&log.app_model_id) {
+                continue;
+            }
             let local_date = log.data_time.with_timezone(&tz).date_naive();
             if local_date >= start && local_date <= end {
-                *daily_groups
+                let entry = daily_groups
                     .entry((local_date, log.app_model_id))
-                    .or_insert(0) += log.time;
+                    .or_insert_with(|| (0, None));
+                entry.0 += log.time;
+                entry.1 = entry.1.take().or_else(|| log.app.to_app_model());
             }
         }
 
         let mut daily_logs: Vec<DailyLogModel> = daily_groups
             .into_iter()
-            .filter(|((_, app_id), _)| !excluded_set.contains(app_id))
-            .map(|((date, app_id), time)| {
-                let app_model = app_map.get(&app_id).cloned().map(|app_row| AppModel {
-                    id: app_row.id,
-                    name: app_row.name,
-                    alias: app_row.alias,
-                    description: app_row.description,
-                    file: app_row.file,
-                    category_id: app_row.category_id,
-                    icon_file: app_row.icon_file,
-                    total_time: app_row.total_time,
-                    category: category_map.get(&app_row.category_id).cloned(),
-                });
-                DailyLogModel {
-                    id: 0,
-                    date,
-                    app_model_id: app_id,
-                    time,
-                    app_model,
-                }
+            .map(|((date, app_id), (time, app_model))| DailyLogModel {
+                id: 0,
+                date,
+                app_model_id: app_id,
+                time,
+                app_model,
             })
             .collect();
 
@@ -1140,27 +1082,12 @@ impl DataService {
         // Filter hours_logs by local date and fill app/category
         let mut hours_logs: Vec<HoursLogModel> = hours_logs
             .into_iter()
-            .filter(|log| !excluded_set.contains(&log.app_model_id))
+            .filter(|log| !excluded.contains(&log.app_model_id))
             .filter(|log| {
                 let local_date = log.data_time.with_timezone(&tz).date_naive();
                 local_date >= start && local_date <= end
             })
-            .map(|mut log| {
-                if let Some(app_row) = app_map.get(&log.app_model_id).cloned() {
-                    log.app_model = Some(AppModel {
-                        id: app_row.id,
-                        name: app_row.name,
-                        alias: app_row.alias,
-                        description: app_row.description,
-                        file: app_row.file,
-                        category_id: app_row.category_id,
-                        icon_file: app_row.icon_file,
-                        total_time: app_row.total_time,
-                        category: category_map.get(&app_row.category_id).cloned(),
-                    });
-                }
-                log
-            })
+            .map(HoursLogJoinRow::into_hours_log_model)
             .collect();
 
         hours_logs.sort_by(|a, b| {
@@ -1197,12 +1124,8 @@ impl DataService {
         let utc_start = tz_naive_to_utc(start, &tz);
         let utc_end = tz_naive_to_utc(end, &tz);
 
-        let sessions: Vec<AppSessionModel> = sqlx::query_as(
-            r#"
-            SELECT s.* FROM AppSessions s
-            WHERE s.StartTime >= ? AND s.StartTime < ? AND s.EndTime > ?
-            ORDER BY s.StartTime ASC
-            "#,
+        let sessions: Vec<SessionJoinRow> = sqlx::query_as::<_, SessionJoinRow>(
+            &SESSION_RANGE_SQL.replace("{cols}", APP_JOIN_COLS_SQL),
         )
         .bind(utc_start - chrono::Duration::days(1))
         .bind(utc_end)
@@ -1210,57 +1133,22 @@ impl DataService {
         .fetch_all(pool)
         .await?;
 
-        let sessions: Vec<AppSessionModel> = sessions
+        let excluded = config_service.get_excluded_app_id_set(pool).await;
+
+        let mut result: Vec<AppSessionModel> = sessions
             .into_iter()
-            .map(|mut s| {
-                if s.start_time < utc_start {
-                    s.start_time = utc_start;
+            .filter(|row| !excluded.contains(&row.app_model_id))
+            .map(|mut row| {
+                if row.start_time < utc_start {
+                    row.start_time = utc_start;
                 }
-                if s.end_time > utc_end {
-                    s.end_time = utc_end;
+                if row.end_time > utc_end {
+                    row.end_time = utc_end;
                 }
-                s.duration = s.end_time.signed_duration_since(s.start_time).num_seconds();
-                s
+                row.duration = row.end_time.signed_duration_since(row.start_time).num_seconds();
+                row.into_session_model()
             })
             .collect();
-
-        let apps: Vec<AppModelRow> = sqlx::query_as("SELECT * FROM AppModels")
-            .fetch_all(pool)
-            .await?;
-
-        let app_refs: Vec<(i64, &str, Option<&str>)> = apps
-            .iter()
-            .map(|a| (a.id, a.name.as_deref().unwrap_or(""), a.file.as_deref()))
-            .collect();
-        let excluded_ids = config_service.get_excluded_app_ids(&app_refs).await;
-        let excluded_set: std::collections::HashSet<i64> = excluded_ids.into_iter().collect();
-
-        let app_map: HashMap<i64, AppModelRow> = apps.into_iter().map(|a| (a.id, a)).collect();
-
-        let categories = CategoryService::get_categories(pool).await?;
-        let category_map: HashMap<i64, CategoryModel> =
-            categories.into_iter().map(|c| (c.id, c)).collect();
-
-        let mut result = Vec::new();
-        for mut session in sessions {
-            if excluded_set.contains(&session.app_model_id) {
-                continue;
-            }
-            if let Some(app_row) = app_map.get(&session.app_model_id) {
-                session.app_model = Some(AppModel {
-                    id: app_row.id,
-                    name: app_row.name.clone(),
-                    alias: app_row.alias.clone(),
-                    description: app_row.description.clone(),
-                    file: app_row.file.clone(),
-                    category_id: app_row.category_id,
-                    icon_file: app_row.icon_file.clone(),
-                    total_time: app_row.total_time,
-                    category: category_map.get(&app_row.category_id).cloned(),
-                });
-            }
-            result.push(session);
-        }
 
         // 合并相邻 session（间隔 <=30s），过滤 <3s
         result = merge_and_filter_sessions(result);

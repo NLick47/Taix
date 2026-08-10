@@ -2,8 +2,7 @@ use sqlx::SqlitePool;
 use tracing::{debug, info, warn};
 
 use crate::error::AppError;
-use crate::models::app::{AppModel, AppModelRow};
-use crate::models::category::CategoryModel;
+use crate::models::app::{AppJoinCols, AppModel, APP_JOIN_COLS_SQL};
 use crate::models::request::{CreateAppRequest, UpdateAppRequest};
 use crate::services::category::CategoryService;
 
@@ -12,80 +11,34 @@ pub struct AppDataService;
 impl AppDataService {
     pub async fn get_all_apps(pool: &SqlitePool) -> Result<Vec<AppModel>, AppError> {
         debug!("get_all_apps");
-        let rows: Vec<AppModelRow> = sqlx::query_as(
-            r#"
-            SELECT a.* FROM AppModels a
-            ORDER BY a.ID
-            "#,
-        )
-        .fetch_all(pool)
-        .await?;
+        let sql = format!(
+            "SELECT {cols} FROM AppModels a \
+             LEFT JOIN CategoryModels c ON a.CategoryID = c.ID \
+             ORDER BY a.ID",
+            cols = APP_JOIN_COLS_SQL
+        );
+        let rows: Vec<AppJoinCols> = sqlx::query_as(&sql).fetch_all(pool).await?;
 
-        let categories: Vec<CategoryModel> = sqlx::query_as("SELECT * FROM CategoryModels")
-            .fetch_all(pool)
-            .await?;
-        let category_map: std::collections::HashMap<i64, CategoryModel> =
-            categories.into_iter().map(|c| (c.id, c)).collect();
-
-        let mut apps = Vec::with_capacity(rows.len());
-        for row in rows {
-            let category = if row.category_id > 0 {
-                category_map.get(&row.category_id).cloned()
-            } else {
-                None
-            };
-
-            apps.push(AppModel {
-                id: row.id,
-                name: row.name,
-                alias: row.alias,
-                description: row.description,
-                file: row.file,
-                category_id: row.category_id,
-                icon_file: row.icon_file,
-                total_time: row.total_time,
-                category,
-            });
-        }
-
-        Ok(apps)
+        Ok(rows
+            .iter()
+            .filter_map(AppJoinCols::to_app_model)
+            .collect())
     }
 
     pub async fn get_app(pool: &SqlitePool, id: i64) -> Result<Option<AppModel>, AppError> {
         debug!("get_app: id={}", id);
-        let row: Option<AppModelRow> =
-            sqlx::query_as("SELECT * FROM AppModels WHERE ID = ?")
-                .bind(id)
-                .fetch_optional(pool)
-                .await?;
+        let sql = format!(
+            "SELECT {cols} FROM AppModels a \
+             LEFT JOIN CategoryModels c ON a.CategoryID = c.ID \
+             WHERE a.ID = ?",
+            cols = APP_JOIN_COLS_SQL
+        );
+        let row: Option<AppJoinCols> = sqlx::query_as(&sql)
+            .bind(id)
+            .fetch_optional(pool)
+            .await?;
 
-        match row {
-            Some(row) => {
-                let category = if row.category_id > 0 {
-                    sqlx::query_as::<_, CategoryModel>(
-                        "SELECT * FROM CategoryModels WHERE ID = ?",
-                    )
-                    .bind(row.category_id)
-                    .fetch_optional(pool)
-                    .await?
-                } else {
-                    None
-                };
-
-                Ok(Some(AppModel {
-                    id: row.id,
-                    name: row.name,
-                    alias: row.alias,
-                    description: row.description,
-                    file: row.file,
-                    category_id: row.category_id,
-                    icon_file: row.icon_file,
-                    total_time: row.total_time,
-                    category,
-                }))
-            }
-            None => Ok(None),
-        }
+        Ok(row.and_then(|r| r.to_app_model()))
     }
 
     pub async fn get_app_by_name(
@@ -93,39 +46,18 @@ impl AppDataService {
         name: &str,
     ) -> Result<Option<AppModel>, AppError> {
         debug!("get_app_by_name: name={}", name);
-        let row: Option<AppModelRow> =
-            sqlx::query_as("SELECT * FROM AppModels WHERE Name = ?")
-                .bind(name)
-                .fetch_optional(pool)
-                .await?;
+        let sql = format!(
+            "SELECT {cols} FROM AppModels a \
+             LEFT JOIN CategoryModels c ON a.CategoryID = c.ID \
+             WHERE a.Name = ?",
+            cols = APP_JOIN_COLS_SQL
+        );
+        let row: Option<AppJoinCols> = sqlx::query_as(&sql)
+            .bind(name)
+            .fetch_optional(pool)
+            .await?;
 
-        match row {
-            Some(row) => {
-                let category = if row.category_id > 0 {
-                    sqlx::query_as::<_, CategoryModel>(
-                        "SELECT * FROM CategoryModels WHERE ID = ?",
-                    )
-                    .bind(row.category_id)
-                    .fetch_optional(pool)
-                    .await?
-                } else {
-                    None
-                };
-
-                Ok(Some(AppModel {
-                    id: row.id,
-                    name: row.name,
-                    alias: row.alias,
-                    description: row.description,
-                    file: row.file,
-                    category_id: row.category_id,
-                    icon_file: row.icon_file,
-                    total_time: row.total_time,
-                    category,
-                }))
-            }
-            None => Ok(None),
-        }
+        Ok(row.and_then(|r| r.to_app_model()))
     }
 
     pub async fn create_app(
@@ -220,37 +152,20 @@ impl AppDataService {
         category_id: i64,
     ) -> Result<Vec<AppModel>, AppError> {
         debug!("get_apps_by_category: category_id={}", category_id);
-        let rows: Vec<AppModelRow> =
-            sqlx::query_as("SELECT * FROM AppModels WHERE CategoryID = ?")
-                .bind(category_id)
-                .fetch_all(pool)
-                .await?;
+        let sql = format!(
+            "SELECT {cols} FROM AppModels a \
+             LEFT JOIN CategoryModels c ON a.CategoryID = c.ID \
+             WHERE a.CategoryID = ?",
+            cols = APP_JOIN_COLS_SQL
+        );
+        let rows: Vec<AppJoinCols> = sqlx::query_as(&sql)
+            .bind(category_id)
+            .fetch_all(pool)
+            .await?;
 
-        let categories: Vec<CategoryModel> = CategoryService::get_categories(pool).await?;
-        let category_map: std::collections::HashMap<i64, CategoryModel> =
-            categories.into_iter().map(|c| (c.id, c)).collect();
-
-        let mut apps = Vec::with_capacity(rows.len());
-        for row in rows {
-            let category = if row.category_id > 0 {
-                category_map.get(&row.category_id).cloned()
-            } else {
-                None
-            };
-
-            apps.push(AppModel {
-                id: row.id,
-                name: row.name,
-                alias: row.alias,
-                description: row.description,
-                file: row.file,
-                category_id: row.category_id,
-                icon_file: row.icon_file,
-                total_time: row.total_time,
-                category,
-            });
-        }
-
-        Ok(apps)
+        Ok(rows
+            .iter()
+            .filter_map(AppJoinCols::to_app_model)
+            .collect())
     }
 }
