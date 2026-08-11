@@ -3,6 +3,7 @@
 mod constants;
 mod db;
 mod error;
+mod migrations;
 mod models;
 mod pipe;
 mod response;

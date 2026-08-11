@@ -13,6 +13,10 @@ use crate::models::request::{AddUrlBrowseTimeRequest, UpdateSitesCategoryRequest
 use crate::models::log::{ColumnDataModel, InfrastructureDataModel};
 use crate::models::web::{WebBrowseLogModel, WebSiteCategoryModel, WebSiteJoinCols, WebSiteModel, WebUrlModel, WEB_SITE_JOIN_COLS_SQL};
 use crate::services::config::ConfigService;
+use crate::services::web_domain::{
+    clean_title, extract_domain, extract_domain_scheme, extract_site_name, host_without_port,
+    is_loopback_site_domain, is_placeholder_site_title,
+};
 use crate::utils::{parse_timezone, tz_naive_to_utc};
 
 static WEB_CATEGORY_CACHE: std::sync::OnceLock<RwLock<Option<Vec<WebSiteCategoryModel>>>> = std::sync::OnceLock::new();
@@ -157,9 +161,18 @@ impl WebDataService {
             let site_title = extract_site_name(&domain, current_req.title.as_deref());
 
             let site_id: i64 = {
-                let existing: Option<(i64,)> = sqlx::query_as("SELECT ID FROM WebSiteModels WHERE Domain = ?")
+                let existing: Option<(i64, Option<String>)> = sqlx::query_as("SELECT ID, Title FROM WebSiteModels WHERE Domain = ?")
                     .bind(&domain).fetch_optional(&mut *tx).await?;
-                if let Some((id,)) = existing { id } else {
+                if let Some((id, existing_title)) = existing {
+                    if is_loopback_site_domain(&domain)
+                        && site_title != domain
+                        && existing_title.as_deref().is_some_and(|t| is_placeholder_site_title(t, &domain))
+                    {
+                        sqlx::query("UPDATE WebSiteModels SET Title = ? WHERE ID = ?")
+                            .bind(&site_title).bind(id).execute(&mut *tx).await?;
+                    }
+                    id
+                } else {
                     let matched_category_id = match_url_for_new_site(&domain).await;
                     let category_id = matched_category_id.unwrap_or(get_system_category_id_cached().await);
                     sqlx::query("INSERT INTO WebSiteModels (Title, Domain, CategoryID) VALUES (?, ?, ?)")
@@ -1253,18 +1266,6 @@ impl WebDataService {
 
 }
 
-fn extract_domain(url: &str) -> String {
-    url.trim_start_matches("http://")
-        .trim_start_matches("https://")
-        .split('/')
-        .next()
-        .unwrap_or(url)
-        .split(':')
-        .next()
-        .unwrap_or(url)
-        .to_string()
-}
-
 async fn save_icon(icon_url: &str, favicons_dir: &Path, site_id: i64, url_id: i64, pool: &SqlitePool) -> Result<(), AppError> {
     if icon_url.starts_with("data:") {
         return Ok(());
@@ -1393,83 +1394,6 @@ fn convert_svg_to_png(svg_bytes: &[u8]) -> Result<Vec<u8>, AppError> {
 
     pixmap.encode_png()
         .map_err(|e| AppError::Internal(format!("PNG encode error: {}", e)))
-}
-
-/// 从 URL 字符串提取 scheme 和 domain
-fn extract_domain_scheme(url_str: &str) -> Option<(String, String)> {
-    let stripped = url_str.strip_prefix("https://")
-        .or_else(|| url_str.strip_prefix("http://"))?;
-    let domain = stripped.split('/').next()?;
-    let scheme = if url_str.starts_with("https") {
-        "https".to_string()
-    } else {
-        "http".to_string()
-    };
-    Some((scheme, domain.to_string()))
-}
-
-/// 清洗 HTML title，提取核心品牌名（去掉常见分隔符后的标语后缀）
-fn clean_title(title: &str) -> Option<String> {
-    let title = title.trim();
-    if title.is_empty() {
-        return None;
-    }
-
-    let separators = [" - ", " | ", " — ", " – ", " _ ", " · ", " • "];
-    let mut result = title;
-    for sep in &separators {
-        if let Some(idx) = result.find(sep) {
-            result = &result[..idx];
-        }
-    }
-
-    let result = result.trim();
-    if result.is_empty() {
-        None
-    } else {
-        Some(result.to_string())
-    }
-}
-
-/// 提取站点显示名称：直接从域名推断
-fn extract_site_name(domain: &str, _raw_title: Option<&str>) -> String {
-    infer_name_from_domain(domain)
-}
-
-/// 从域名推断站点名称：取主品牌名，如有有意义的子域名则附加在后
-fn infer_name_from_domain(domain: &str) -> String {
-    let lower = domain.to_lowercase();
-
-    let without_prefix = lower.trim_start_matches("www.");
-
-    let parts: Vec<&str> = without_prefix.split('.').collect();
-    if parts.len() >= 2 {
-        let brand = parts[parts.len() - 2];
-        if brand.len() > 1 {
-            let brand_name = capitalize_first(brand);
-
-            // 如有额外子域名（非品牌部分），将其作为后缀，排除常见无意义前缀
-            if parts.len() > 2 {
-                let subdomain = parts[0];
-                let meaningless = ["m", "app", "chat", "web", "my", "account", "login", "mail"];
-                if !meaningless.contains(&subdomain) && subdomain != brand {
-                    return format!("{} {}", brand_name, capitalize_first(subdomain));
-                }
-            }
-
-            return brand_name;
-        }
-    }
-
-    domain.to_string()
-}
-
-fn capitalize_first(s: &str) -> String {
-    let mut chars = s.chars();
-    match chars.next() {
-        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-        None => s.to_string(),
-    }
 }
 
 /// 过滤浏览器内置页面（新标签页、空白页等）
@@ -1677,7 +1601,15 @@ async fn match_url_for_new_site(domain: &str) -> Option<i64> {
     let cache = url_match_cache().read().await;
     if let Some(rules) = cache.as_ref() {
         if !rules.is_empty() {
-            return match_url_against_rules(rules, domain);
+            if let Some(id) = match_url_against_rules(rules, domain) {
+                return Some(id);
+            }
+            // 含端口域名未命中时，回退到纯 host 匹配（兼容旧规则）
+            let host = host_without_port(domain);
+            if host != domain {
+                return match_url_against_rules(rules, host);
+            }
+            return None;
         }
     }
 

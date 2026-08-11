@@ -5,3 +5,4 @@ pub mod category_summary;
 pub mod config;
 pub mod data;
 pub mod web_data;
+pub mod web_domain;
