@@ -1,0 +1,28 @@
+name: PoC Static Link
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish-win-x64:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Build and Publish .NET Client (static link)
+        run: |
+          dotnet publish -c Release -r win-x64 --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false -p:IlcGenerateStackTraceData=false -p:DebuggerSupport=false -p:StartupHookSupport=false -p:StackTraceSupport=false -p:HttpActivityPropagationSupport=false -p:MetadataUpdaterSupport=false -p:EnableUnsafeUTF7Encoding=false -p:EventSourceSupport=false -p:MetricsSupport=false -p:UseSystemResourceKeys=true -p:Http3Support=false -p:AssemblyTitle=Taix -p:Product=Taix Taix.Client/Taix.Client.csproj -o ./output/win-x64
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: taix-static-win-x64
+          path: ./output/win-x64
