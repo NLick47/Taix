@@ -70,7 +70,16 @@ jobs:
       - name: Build and Publish .NET Client
         run: |
           Write-Host "Publishing with AOT enabled"
-          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false -p:IlcGenerateStackTraceData=false -p:DebuggerSupport=false -p:StartupHookSupport=false -p:StackTraceSupport=false -p:HttpActivityPropagationSupport=false -p:MetadataUpdaterSupport=false -p:EnableUnsafeUTF7Encoding=false -p:EventSourceSupport=false -p:MetricsSupport=false -p:UseSystemResourceKeys=true -p:Http3Support=false -p:AssemblyTitle=Taix -p:Product=Taix Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}
+          dotnet publish -c Release -r win-${{ matrix.cpu }} --self-contained true -p:PublishAot=true -p:DebugType=None -p:DebugSymbols=false -p:IlcGenerateStackTraceData=false -p:DebuggerSupport=false -p:StartupHookSupport=false -p:StackTraceSupport=false -p:HttpActivityPropagationSupport=false -p:MetadataUpdaterSupport=false -p:EnableUnsafeUTF7Encoding=false -p:EventSourceSupport=false -p:MetricsSupport=false -p:UseSystemResourceKeys=true -p:Http3Support=false -p:AssemblyTitle=Taix -p:Product=Taix Taix.Client/Taix.Client.csproj -o ./output/${{ matrix.cpu }}/dotnet
+
+      - name: Extract single-file executable
+        shell: pwsh
+        run: |
+          $publishDir = "./output/${{ matrix.cpu }}"
+          # 静态单文件发布：仅提取 Taix.exe，丢弃 lib/lib/dll/pdb 等构建残留
+          Copy-Item "$publishDir/dotnet/Taix.exe" -Destination $publishDir -Force
+          Remove-Item "$publishDir/dotnet" -Recurse -Force
+          Write-Host "Published single file: $(Get-Item "$publishDir/Taix.exe" | Select-Object -ExpandProperty Length) bytes"
 
       - name: Copy Rust binaries
         shell: pwsh
@@ -85,15 +94,6 @@ jobs:
 
           # Remove macOS-only files
           Get-ChildItem -Path "$publishDir/resources" -Recurse -Include "*.icns" -File | Remove-Item -Force
-
-      - name: Remove debug symbol files
-        shell: pwsh
-        run: |
-          $publishDir = "./output/${{ matrix.cpu }}"
-          Get-ChildItem -Path $publishDir -Recurse -Include "*.pdb" -File | ForEach-Object {
-            Remove-Item $_.FullName -Force
-            Write-Host "Removed PDB: $($_.FullName)"
-          }
 
       - name: Install 7-Zip for ultra compression
         shell: pwsh
