@@ -132,15 +132,6 @@ struct Writer {
     sync: bool,
     stdout: bool,
     max_log_files: u32,
-    last_flush: u64,
-}
-
-const FLUSH_INTERVAL_MS: u64 = 1000;
-const FLUSH_BUFFER_BYTES: usize = 64 * 1024;
-
-fn now_ms() -> u64 {
-    let (s, ms) = now();
-    s * 1000 + ms as u64
 }
 
 impl Writer {
@@ -153,7 +144,6 @@ impl Writer {
         let w = Writer {
             file: BufWriter::new(file), log_dir: dir.to_owned(),
             prefix: name.to_owned(), day, sync, stdout, max_log_files,
-            last_flush: now_ms(),
         };
         if max_log_files > 0 { w.cleanup(); }
         w
@@ -161,21 +151,11 @@ impl Writer {
     fn rotate(&mut self, day_now: u64, ds: &str) {
         if day_now != self.day {
             self.day = day_now;
-            let _ = self.file.flush();
             let path = self.log_dir.join(format!("{}.{}.log", self.prefix, ds));
             if let Ok(f) = OpenOptions::new().create(true).append(true).open(&path) {
                 self.file = BufWriter::new(f);
             }
             if self.max_log_files > 0 { self.cleanup(); }
-        }
-    }
-    /// sync 模式下按间隔或缓冲阈值落盘，避免每行 fsync 阻塞调用线程
-    fn flush_if_needed(&mut self) {
-        if !self.sync { return; }
-        let elapsed = now_ms().saturating_sub(self.last_flush);
-        if elapsed >= FLUSH_INTERVAL_MS || self.file.buffer().len() >= FLUSH_BUFFER_BYTES {
-            self.last_flush = now_ms();
-            let _ = self.file.flush();
         }
     }
     fn cleanup(&self) {
@@ -254,7 +234,7 @@ impl tracing::Subscriber for Sub {
     fn record_follows_from(&self, _: &tracing::Id, _: &tracing::Id) {}
     fn enter(&self, _: &tracing::Id) {}
     fn exit(&self, _: &tracing::Id) {}
-    fn clone_span(&self, _id: &tracing::Id) -> tracing::Id { self.next_id() }
+    fn clone_span(&self, id: &tracing::Id) -> tracing::Id { self.next_id() }
     fn drop_span(&self, _: tracing::Id) {}
     fn register_callsite(&self, _: &'static tracing::Metadata<'static>) -> tracing::subscriber::Interest {
         tracing::subscriber::Interest::sometimes()
@@ -275,7 +255,7 @@ impl tracing::Subscriber for Sub {
             { let mut v = Visitor(buf); ev.record(&mut v); }
             buf.push(b'\n');
             let _ = w.file.write_all(buf);
-            w.flush_if_needed();
+            if w.sync { let _ = w.file.flush(); }
             if w.stdout {
                 let _ = std::io::stdout().lock().write_all(buf);
             }

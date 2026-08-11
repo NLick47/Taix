@@ -51,14 +51,7 @@ pub async fn init_db(db_path: &str, tz_id: &str) -> anyhow::Result<SqlitePool> {
     let opts = SqliteConnectOptions::from_str(&format!("sqlite:{}", db_path))?
         .journal_mode(SqliteJournalMode::Wal);
     let pool = SqlitePoolOptions::new()
-        .max_connections(2)
-        // 每条连接 acquire 时收紧 page cache（默认 2MB/连接），降低空闲内存
-        .before_acquire(|conn, _| {
-            Box::pin(async move {
-                let _ = sqlx::query("PRAGMA cache_size = -1000").execute(&mut *conn).await;
-                Ok(true)
-            })
-        })
+        .max_connections(4)
         .connect_with(opts)
         .await?;
 

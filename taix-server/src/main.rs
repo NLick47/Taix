@@ -27,7 +27,7 @@ use services::category::CategoryService;
 use services::config::ConfigService;
 use services::web_data::WebDataService;
 
-#[tokio::main(worker_threads = 2)]
+#[tokio::main]
 async fn main() {
     let exe_dir = std::env::current_exe()
         .ok()
