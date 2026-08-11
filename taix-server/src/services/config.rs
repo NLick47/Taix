@@ -23,6 +23,7 @@ struct CompiledFilters {
     app_ignore: Option<RegexSet>,
     app_whitelist: Option<RegexSet>,
     url_ignore: Option<RegexSet>,
+    url_literals: HashSet<String>,
 }
 
 impl ConfigService {
@@ -35,6 +36,7 @@ impl ConfigService {
                 app_ignore: None,
                 app_whitelist: None,
                 url_ignore: None,
+                url_literals: HashSet::new(),
             }),
             excluded_apps_cache: RwLock::new(None),
         }
@@ -167,16 +169,9 @@ impl ConfigService {
 
     /// 批量匹配应排除的域名
     pub async fn get_excluded_domains(&self, domains: &[&str]) -> Vec<String> {
-        let Ok(config) = self.get_or_load().await else {
+        if self.get_or_load().await.is_err() {
             return Vec::new();
-        };
-
-        // 缓存字面量模式
-        let literal_patterns: Vec<String> = config.behavior.ignore_url_list
-            .iter()
-            .map(|p| p.trim().to_lowercase())
-            .filter(|p| !p.is_empty())
-            .collect();
+        }
 
         let filters = self.filters.read().await;
 
@@ -186,26 +181,33 @@ impl ConfigService {
             if domain.is_empty() {
                 continue;
             }
-            let domain_lower = domain.to_lowercase();
-            let full_url = format!("https://{}", domain);
 
             let mut ignored = false;
-            for p in &literal_patterns {
-                if p.eq_ignore_ascii_case(&domain_lower) {
-                    ignored = true;
-                    break;
-                }
 
-                if domain_lower.ends_with(&format!(".{}", p)) {
-                    ignored = true;
-                    break;
+            {
+                let domain_lower = domain.to_lowercase();
+                let mut suffix = domain_lower.as_str();
+                loop {
+                    if filters.url_literals.contains(suffix) {
+                        ignored = true;
+                        break;
+                    }
+                    match suffix.find('.') {
+                        Some(i) => suffix = &suffix[i + 1..],
+                        None => break,
+                    }
                 }
             }
 
             if !ignored {
                 if let Some(set) = &filters.url_ignore {
-                    if set.is_match(&full_url) || set.is_match(domain) {
+                    if set.is_match(domain) {
                         ignored = true;
+                    } else {
+                        let full_url = format!("https://{}", domain);
+                        if set.is_match(&full_url) {
+                            ignored = true;
+                        }
                     }
                 }
             }
@@ -224,6 +226,9 @@ impl ConfigService {
         filters.app_ignore = compile_patterns(&behavior.ignore_process_list);
         filters.app_whitelist = compile_patterns(&behavior.process_white_list);
         filters.url_ignore = compile_patterns(&behavior.ignore_url_list);
+        // 纯字面量条目（不含通配符）进哈希集合供 O 后缀匹配；
+        // 含通配符的条目语义上只能靠正则命中，不放进集合
+        filters.url_literals = compile_url_literals(&behavior.ignore_url_list);
 
         info!(
             "Filters recompiled: app_ignore={}, app_whitelist={}, url_ignore={}",
@@ -305,6 +310,15 @@ impl ConfigService {
 
         Ok(())
     }
+}
+
+/// 从 ignore_url_list 提取纯字面量条目（无通配符，小写去空），供 O(层级) 后缀匹配
+fn compile_url_literals(patterns: &[String]) -> HashSet<String> {
+    patterns
+        .iter()
+        .map(|p| p.trim().to_lowercase())
+        .filter(|p| !p.is_empty() && !p.contains('*') && !p.contains('?'))
+        .collect()
 }
 
 fn compile_patterns(patterns: &[String]) -> Option<RegexSet> {
