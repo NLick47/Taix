@@ -27,22 +27,36 @@
         <Style Selector="Button.cat-chip /template/ ContentPresenter">
             <Setter Property="CornerRadius" Value="14" />
             <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.25" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.25" />
+                </Transitions>
+            </Setter>
         </Style>
         <Style Selector="Button.cat-chip TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource SubTextBrush}" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.25" />
+                </Transitions>
+            </Setter>
         </Style>
         <Style Selector="Button.cat-chip:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
         </Style>
+        <Style Selector="Button.cat-chip:pointerover TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource DefaultTextBrush}" />
+        </Style>
         <Style Selector="Button.cat-chip.active /template/ ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource DefaultTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource ThemeBrush}" />
         </Style>
         <Style Selector="Button.cat-chip.active">
-            <Setter Property="BorderBrush" Value="{DynamicResource DefaultTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush}" />
         </Style>
         <Style Selector="Button.cat-chip.active TextBlock">
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{DynamicResource Background}" />
+            <Setter Property="Foreground" Value="White" />
         </Style>
 
         <Style Selector="Border.diff-pill">
