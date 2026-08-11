@@ -3,7 +3,7 @@ use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
 use sqlx::SqlitePool;
 use std::path::Path;
 use std::str::FromStr;
-use tracing::info;
+use tracing::{info, warn};
 
 pub(crate) const DEFAULT_CATEGORY: &str = "未分类";
 pub(crate) const DEFAULT_ICON: &str = "avares://Taix/Resources/Icons/tai.ico";
@@ -27,6 +27,15 @@ pub async fn init_db(db_path: &str, tz_id: &str) -> anyhow::Result<SqlitePool> {
     let needs_backup = migrations::has_pending_migrations(&pool).await;
 
     if needs_backup && path.exists() && tokio::fs::metadata(path).await?.len() > 0 {
+        // WAL 模式下未 checkpoint 的数据仍在 data.db-wal 中，直接复制主文件会丢失最近写入
+        // 备份前先同步 WAL 到主库，保证备份完整
+        if let Err(e) = sqlx::query("PRAGMA wal_checkpoint(TRUNCATE)")
+            .execute(&pool)
+            .await
+        {
+            warn!("备份前 WAL checkpoint 失败，备份可能不完整: {}", e);
+        }
+
         let backup = format!(
             "{}.backup.{}",
             db_path,
