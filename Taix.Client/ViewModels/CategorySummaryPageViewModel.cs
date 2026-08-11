@@ -63,9 +63,6 @@ public class CategorySummaryPageViewModel : ModelBase
     private DateTime _rangeStart;
     private DateTime _rangeEnd;
 
-    // 切换 range/kind 重置选中列时短暂置位，避免 WhenPropertyChanged 重复触发加载
-    private bool _suppressMemberLoad;
-
     // 环比
     private long _previousTotalSeconds;
     private string? _vsLabel = string.Empty;
@@ -96,9 +93,13 @@ public class CategorySummaryPageViewModel : ModelBase
         Categories = new ObservableCollection<CategoryChip>();
         DailyTrend = new ObservableCollection<DailyPointModel>();
 
-        // 点击柱状图列加载子区间成员，-1 为全选
-        WhenPropertyChanged(this, x => x.ColumnSelectedIndex,
-            _ => _suppressMemberLoad ? System.Threading.Tasks.Task.CompletedTask : LoadMembersAsync());
+        ObservablePropertyChangedExtensions.WhenPropertyChanged(this, x => x.ColumnSelectedIndex)
+            .Skip(1)
+            .ObserveOn(AvaloniaContextScheduler.Instance)
+            .Select(_ => RxObservable.FromAsync(_ => LoadMembersAsync()))
+            .Switch()
+            .Subscribe()
+            .DisposeWith(Disposables);
 
         RangeOptions = BuildRangeOptions();
         _selectedRange = RangeOptions[0]; // 默认今日
@@ -416,7 +417,12 @@ public class CategorySummaryPageViewModel : ModelBase
     public int ColumnSelectedIndex
     {
         get => _columnSelectedIndex;
-        set { _columnSelectedIndex = value; OnPropertyChanged(); }
+        set
+        {
+            if (_columnSelectedIndex == value) return;
+            _columnSelectedIndex = value;
+            OnPropertyChanged();
+        }
     }
 
     public bool IsCanColumnSelect
@@ -581,10 +587,8 @@ public class CategorySummaryPageViewModel : ModelBase
         VsLabel = vsLabel;
         _rangeStart = start;
         _rangeEnd = end;
-        // 切换 range/kind 时重置为全选；_suppress 避免重置触发重复加载，summary 完成后显式加载全区间
-        _suppressMemberLoad = true;
+        // 切换 range/kind 时重置为全选
         ColumnSelectedIndex = -1;
-        _suppressMemberLoad = false;
         SelectedMembers = new();
         SelectedColumnLabel = null;
 
