@@ -44,6 +44,18 @@ pub fn run_install(
     cli::show_extracting();
     sfx::extract_to(&dest)?;
 
+    // 删除旧版遗留的动态库文件
+    #[cfg(target_os = "windows")]
+    {
+        let legacy_dlls = ["libSkiaSharp.dll", "libHarfBuzzSharp.dll", "av_libglesv2.dll"];
+        for dll in legacy_dlls {
+            let path = dest.join(dll);
+            if path.exists() {
+                let _ = std::fs::remove_file(&path);
+            }
+        }
+    }
+
     cli::show_step(3, 4, "创建快捷方式...");
     let client_exe = dest.join("Taix.exe");
     let start_menu_dir = <() as Platform>::start_menu_dir();
@@ -124,6 +136,9 @@ pub fn run_uninstall(install_dir: Option<PathBuf>, _silent: bool) -> Result<()> 
         "taix-shell.exe",
         "taix-server.exe",
         "taix-monitor-windows.exe",
+        "libSkiaSharp.dll",
+        "libHarfBuzzSharp.dll",
+        "av_libglesv2.dll",
     ];
 
     for exe in exe_files {
