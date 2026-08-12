@@ -1,12 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Taix.Client.Controls.Charts;
+using Taix.Client.Controls.Charts.Model;
+using Taix.Client.Servicers;
 
 namespace Taix.Client.Controls.Timeline;
 
@@ -23,6 +28,7 @@ public class MultiTrackTimeline : TemplatedControl
     private ItemsControl? _itemsControl;
     private DispatcherTimer? _nowTimer;
     private double? _nowLinePosition;
+    private int _menuRequestSeq;
 
     public static readonly DirectProperty<MultiTrackTimeline, double?> NowLinePositionProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackTimeline, double?>(
@@ -116,7 +122,27 @@ public class MultiTrackTimeline : TemplatedControl
     {
         _nowTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
         _nowTimer.Tick += OnNowTimerTick;
+        AddHandler(InputElement.ContextRequestedEvent, OnContextRequested);
         UpdateNowLinePosition();
+    }
+
+
+
+    private void OnContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        if (e.Handled) return;
+
+        var visual = e.Source as Visual;
+        while (visual != null)
+        {
+            if (visual is Border { DataContext: MultiTrackTimelineItem item } row)
+            {
+                ShowContextMenuAsync(item, row);
+                e.Handled = true;
+                return;
+            }
+            visual = visual.GetVisualParent();
+        }
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -175,19 +201,69 @@ public class MultiTrackTimeline : TemplatedControl
 
     private void OnItemsControlPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (e.InitialPressMouseButton != MouseButton.Left || ClickCommand is not { } cmd)
-            return;
+        if (e.InitialPressMouseButton != MouseButton.Left) return;
 
-        var visual = e.Source as Visual;
+        if (ClickCommand is { } cmd && FindRowAt(e.Source as Visual) is { DataContext: MultiTrackTimelineItem item })
+        {
+            if (cmd.CanExecute(item))
+                cmd.Execute(item);
+        }
+    }
+
+    private static Border? FindRowAt(Visual? visual)
+    {
         while (visual != null)
         {
-            if (visual is Border { DataContext: MultiTrackTimelineItem item })
-            {
-                if (cmd.CanExecute(item))
-                    cmd.Execute(item);
-                return;
-            }
+            if (visual is Border { DataContext: MultiTrackTimelineItem } row)
+                return row;
             visual = visual.GetVisualParent();
+        }
+        return null;
+    }
+
+    private async void ShowContextMenuAsync(MultiTrackTimelineItem item, Border row)
+    {
+        var seq = ++_menuRequestSeq;
+        var menu = await CreateMenuAsync(item);
+        if (menu == null || seq != _menuRequestSeq) return;
+
+        CloseExistingMenu(row);
+        row.ContextMenu = menu;
+        menu.Closed += OnContextMenuClosed;
+        menu.Open(row);
+    }
+
+    private async Task<ContextMenu?> CreateMenuAsync(MultiTrackTimelineItem item)
+    {
+        if (item.AppModel is not { } appModel) return null;
+        if (ServiceLocator.GetService<IContextMenuServicer>() is not { } servicer) return null;
+
+        var data = new ChartsDataModel
+        {
+            Name = item.Name,
+            Icon = item.Icon,
+            Data = appModel
+        };
+        return await servicer.CreateContextMenuAsync(ContextMenuType.App, data);
+    }
+
+    private void CloseExistingMenu(Border row)
+    {
+        if (row.ContextMenu is { } existing)
+        {
+            existing.Closed -= OnContextMenuClosed;
+            if (existing.IsOpen) existing.Close();
+            row.ContextMenu = null;
+        }
+    }
+
+    private void OnContextMenuClosed(object? sender, RoutedEventArgs e)
+    {
+        if (sender is ContextMenu menu)
+        {
+            menu.Closed -= OnContextMenuClosed;
+            if (menu.PlacementTarget is Control target && ReferenceEquals(target.ContextMenu, menu))
+                target.ContextMenu = null;
         }
     }
 }
