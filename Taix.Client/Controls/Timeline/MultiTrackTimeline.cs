@@ -20,7 +20,7 @@ public class MultiTrackTimeline : TemplatedControl
     private double _visibleEndHour = 24.0;
     private double _frameStartHour = 0.0;
     private double _frameEndHour = 24.0;
-    private ListBox? _listBox;
+    private ItemsControl? _itemsControl;
     private DispatcherTimer? _nowTimer;
     private double? _nowLinePosition;
 
@@ -164,16 +164,16 @@ public class MultiTrackTimeline : TemplatedControl
     {
         base.OnApplyTemplate(e);
 
-        if (_listBox != null)
-            _listBox.PointerReleased -= OnListBoxPointerReleased;
+        if (_itemsControl != null)
+            _itemsControl.PointerReleased -= OnItemsControlPointerReleased;
 
-        _listBox = e.NameScope.Find<ListBox>("PART_ItemsControl");
+        _itemsControl = e.NameScope.Find<ItemsControl>("PART_ItemsControl");
 
-        if (_listBox != null)
-            _listBox.PointerReleased += OnListBoxPointerReleased;
+        if (_itemsControl != null)
+            _itemsControl.PointerReleased += OnItemsControlPointerReleased;
     }
 
-    private void OnListBoxPointerReleased(object? sender, PointerReleasedEventArgs e)
+    private void OnItemsControlPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (e.InitialPressMouseButton != MouseButton.Left || ClickCommand is not { } cmd)
             return;
@@ -181,7 +181,7 @@ public class MultiTrackTimeline : TemplatedControl
         var visual = e.Source as Visual;
         while (visual != null)
         {
-            if (visual is ListBoxItem { DataContext: MultiTrackTimelineItem item })
+            if (visual is Border { DataContext: MultiTrackTimelineItem item })
             {
                 if (cmd.CanExecute(item))
                     cmd.Execute(item);

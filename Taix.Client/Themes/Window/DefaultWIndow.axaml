@@ -22,9 +22,6 @@
             <Style Selector="controls|DefaultWindow[WindowState=Maximized] /template/ Border#ContentBorder">
                 <Setter Property="CornerRadius" Value="0" />
             </Style>
-            <Style Selector="controls|DefaultWindow[WindowState=Maximized] /template/ Border#GlassHighlightBorder">
-                <Setter Property="CornerRadius" Value="0" />
-            </Style>
 
             <Style Selector="controls|DefaultWindow[UseCustomWindowChrome=False] /template/ Border#WindowBorder">
                 <Setter Property="Margin" Value="0" />
@@ -33,7 +30,6 @@
             </Style>
             <Style Selector="controls|DefaultWindow[UseCustomWindowChrome=False] /template/ Border#ContentBorder">
                 <Setter Property="CornerRadius" Value="0" />
-                <Setter Property="BorderThickness" Value="0" />
             </Style>
 
             <Style Selector="controls|DefaultWindow">
@@ -88,9 +84,7 @@
                         Margin="16">
                     <Border x:Name="ContentBorder"
                         CornerRadius="{StaticResource RadiusXLarge}"
-                        BorderThickness="1"
                         ClipToBounds="True"
-                        BorderBrush="{DynamicResource WindowBorderBrush}"
                         Background="{DynamicResource WindowBackground}">
                         <Grid>
                             <Grid x:Name="WindowContent">
@@ -211,8 +205,6 @@
                                     MaxWidth="340"
                                     x:Name="ToastBorder"
                                     Background="{DynamicResource WindowContentBackground}"
-                                    BorderBrush="{DynamicResource WindowBorderBrush}"
-                                    BorderThickness="1"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Top" ZIndex="99999">
                                     <Border.RenderTransform>
@@ -408,12 +400,6 @@
                             WindowDecorationProperties.ElementRole="ResizeSE"/>
                 </Panel>
                             </Grid>
-
-                            <Border x:Name="GlassHighlightBorder"
-                                    CornerRadius="{StaticResource RadiusXLarge}"
-                                    BorderThickness="1,1,0,0"
-                                    BorderBrush="{DynamicResource WindowGlassHighlightBrush}"
-                                    IsHitTestVisible="False" />
                         </Grid>
                     </Border>
                 </Border>

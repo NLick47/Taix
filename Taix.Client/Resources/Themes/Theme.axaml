@@ -88,7 +88,6 @@
             <SolidColorBrush x:Key="WindowContentBackground" Color="{StaticResource Surface3}" Opacity="0.6" />
             <SolidColorBrush x:Key="WindowContentBorder" Color="{StaticResource BorderSubtle}" />
             <SolidColorBrush x:Key="CardBorder" Color="Transparent" />
-            <SolidColorBrush x:Key="WindowGlassHighlightBrush" Color="#ffffff" Opacity="0.08" />
             <SolidColorBrush x:Key="WindowBackgroundSolid" Color="{StaticResource Surface1}" />
 
             <!--导航栏-->
@@ -143,6 +142,9 @@
             <SolidColorBrush x:Key="ListItemSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.16" />
             <SolidColorBrush x:Key="ListItemSelectedHoverBrush" Color="{DynamicResource ThemeColor}" Opacity="0.24" />
             <SolidColorBrush x:Key="ListItemAccentBrush" Color="{DynamicResource ThemeColor}" Opacity="0.85" />
+            <!-- 分类页列表卡片悬停：与卡片背景 Surface4(#383840) 预合成的实色，避免亮紫边框频闪 -->
+            <SolidColorBrush x:Key="ListItemCardHoverBgBrush" Color="#403F52" />
+            <SolidColorBrush x:Key="ListItemCardHoverBorderBrush" Color="#4C4A5C" />
 
             <!--全局搜索徽标（暗色：背景半透明，前景接近主题色但更亮以保证对比度）-->
             <SolidColorBrush x:Key="ThemeBadgeBgBrush" Color="{DynamicResource ThemeColor}" Opacity="0.22" />
@@ -173,6 +175,13 @@
             <!--上下文菜单-->
             <Color x:Key="ContextBorderColor">#3A3A42</Color>
             <SolidColorBrush x:Key="ContextBorderBrush" Color="{StaticResource ContextBorderColor}" />
+            <!-- 与弹出层背景 #222228 预合成的不透明实色，避免悬浮过渡动画的半透明叠加残留闪动 -->
+            <SolidColorBrush x:Key="ContextMenuItemHoverBrush" Color="#36363B" />
+            <SolidColorBrush x:Key="ContextMenuItemHoverBorderBrush" Color="#414146" />
+            <SolidColorBrush x:Key="ContextMenuItemPressedBrush" Color="#45454A" />
+            <SolidColorBrush x:Key="ContextMenuItemPressedBorderBrush" Color="#535357" />
+            <SolidColorBrush x:Key="ContextMenuSubmenuBgBrush" Color="{StaticResource PopupBackgroundColor}" />
+            <SolidColorBrush x:Key="ContextMenuSubmenuBorderBrush" Color="{StaticResource PopupBorderColor}" />
 
             <!--图表边框-->
             <Color x:Key="ChartColBorderColor">#505058</Color>
@@ -263,6 +272,8 @@
             <SolidColorBrush x:Key="OptionUncheckedBorderBrush" Color="#FFFFFF" Opacity="0.15" />
             <SolidColorBrush x:Key="OptionCheckedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.50" />
             <SolidColorBrush x:Key="OptionCheckedBackgroundBrush" Color="{DynamicResource ThemeColor}" Opacity="0.20" />
+            <!-- Option 悬停：与选择弹窗背景(#222228)预合成的实色，避免悬停过渡残留闪动 -->
+            <SolidColorBrush x:Key="OptionHoverBrush" Color="#343439" />
 
             <!-- 时间轴 -->
             <SolidColorBrush x:Key="TimelineBgBrush" Color="#0E0E12" />
@@ -332,7 +343,7 @@
             <!--主题颜色笔刷-->
             <SolidColorBrush x:Key="ThemeBrush" Color="{StaticResource ThemeColor}" />
             <!---鼠标经过背景颜色-->
-            <SolidColorBrush x:Key="HoverBackgroundBrush" Color="{StaticResource HoverBackgroundColor}" />
+            <SolidColorBrush x:Key="HoverBackgroundBrush" Color="#000000" Opacity="0.06" />
             <!--标准背景颜色-->
             <SolidColorBrush x:Key="StandardBackgroundBrush" Color="#ffffff" />
             <SolidColorBrush x:Key="StandardBackgroundBrush2" Color="#ffffff" />
@@ -388,7 +399,6 @@
             <SolidColorBrush x:Key="WindowContentBackground" Color="#f9f9f9" />
             <SolidColorBrush x:Key="WindowContentBorder" Color="#ccc" />
             <SolidColorBrush x:Key="CardBorder" Color="#ccc" />
-            <SolidColorBrush x:Key="WindowGlassHighlightBrush" Color="#ffffff" Opacity="0.35" />
             <SolidColorBrush x:Key="WindowBackgroundSolid" Color="#ededf0" />
 
             <!--导航栏-->
@@ -443,6 +453,8 @@
             <SolidColorBrush x:Key="ListItemSelectedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.10" />
             <SolidColorBrush x:Key="ListItemSelectedHoverBrush" Color="{DynamicResource ThemeColor}" Opacity="0.16" />
             <SolidColorBrush x:Key="ListItemAccentBrush" Color="{DynamicResource ThemeColor}" Opacity="0.90" />
+            <SolidColorBrush x:Key="ListItemCardHoverBgBrush" Color="#F0F7FE" />
+            <SolidColorBrush x:Key="ListItemCardHoverBorderBrush" Color="#E9E8FD" />
 
             <!--全局搜索徽标（浅色：更浅背景，文字饱和便于阅读）-->
             <SolidColorBrush x:Key="ThemeBadgeBgBrush" Color="{DynamicResource ThemeColor}" Opacity="0.14" />
@@ -473,6 +485,12 @@
             <!--上下文菜单-->
             <Color x:Key="ContextBorderColor">#c4c4c4</Color>
             <SolidColorBrush x:Key="ContextBorderBrush" Color="{StaticResource ContextBorderColor}" />
+            <SolidColorBrush x:Key="ContextMenuItemHoverBrush" Color="{DynamicResource ThemeColor}" Opacity="0.08" />
+            <SolidColorBrush x:Key="ContextMenuItemHoverBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.18" />
+            <SolidColorBrush x:Key="ContextMenuItemPressedBrush" Color="{DynamicResource ThemeColor}" Opacity="0.16" />
+            <SolidColorBrush x:Key="ContextMenuItemPressedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.30" />
+            <SolidColorBrush x:Key="ContextMenuSubmenuBgBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ContextMenuSubmenuBorderBrush" Color="{StaticResource PopupBorderColor}" />
 
             <!--图表边框-->
             <Color x:Key="ChartColBorderColor">#eeeef2</Color>
@@ -565,6 +583,7 @@
             <SolidColorBrush x:Key="OptionUncheckedBorderBrush" Color="#c8c8d0" />
             <SolidColorBrush x:Key="OptionCheckedBorderBrush" Color="{DynamicResource ThemeColor}" Opacity="0.80" />
             <SolidColorBrush x:Key="OptionCheckedBackgroundBrush" Color="{DynamicResource ThemeColor}" Opacity="0.15" />
+            <SolidColorBrush x:Key="OptionHoverBrush" Color="#F7F7F7" />
 
             <!-- 时间轴 -->
             <SolidColorBrush x:Key="TimelineBgBrush" Color="#ffffff" />

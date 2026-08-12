@@ -58,7 +58,6 @@
                 <Border x:Name="ContentBorder"
                         CornerRadius="10"
                         BorderThickness="1"
-                        BorderBrush="{DynamicResource WindowBorderBrush}"
                         Background="{DynamicResource WindowBackground}">
                     <Grid x:Name="WindowContent">
                         <Grid
@@ -128,8 +127,6 @@
                             MaxWidth="340"
                             x:Name="ToastBorder"
                             Background="{DynamicResource WindowContentBackground}"
-                            BorderBrush="{DynamicResource WindowBorderBrush}"
-                            BorderThickness="1"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Top" ZIndex="99999">
                             <Border.RenderTransform>

@@ -35,7 +35,7 @@
                     </Style>
                 </Style>
                 <Style Selector="^:pointerover">
-                    <Setter Property="Background" Value="{DynamicResource NavHoverGlassBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource OptionHoverBrush}" />
                 </Style>
 
             </Style>
@@ -43,11 +43,6 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Border CornerRadius="10" Background="{TemplateBinding Background}" Padding="10,8">
-                    <Border.Transitions>
-                        <Transitions>
-                            <BrushTransition Property="Background" Duration="0:0:0.15" />
-                        </Transitions>
-                    </Border.Transitions>
                     <Border>
                         <Grid>
                             <Grid.ColumnDefinitions>

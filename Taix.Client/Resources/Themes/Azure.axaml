@@ -10,17 +10,16 @@
     <SolidColorBrush x:Key="SubTextBrush" Color="#4A4A4A" />
     <SolidColorBrush x:Key="WhiteBgTextBrush" Color="#4F728A" />
     <SolidColorBrush x:Key="StandardBackgroundBrush" Color="#D8ECFF" />
-    <SolidColorBrush x:Key="StandardBackgroundBrush2" Color="#D0E4FF" />
+    <SolidColorBrush x:Key="StandardBackgroundBrush2" Color="{StaticResource PopupBackgroundColor}" />
     <SolidColorBrush x:Key="ButtonBorderBrush" Color="#A9D8F3" />
     <Color x:Key="HoverBackgroundColor">#CCE0FF</Color>
-    <SolidColorBrush x:Key="HoverBackgroundBrush" Color="#CCE0FF" />
+    <SolidColorBrush x:Key="HoverBackgroundBrush" Color="#FFFFFF" Opacity="0.15" />
 
-    <SolidColorBrush x:Key="WindowBackground" Color="#4FA8E8" />
-    <SolidColorBrush x:Key="WindowBorderBrush" Color="#2E86C1" />
+    <SolidColorBrush x:Key="WindowBackground" Color="#BAD7F0" />
+    <SolidColorBrush x:Key="WindowBorderBrush" Color="#BAD7F0" />
     <SolidColorBrush x:Key="WindowContentBackground" Color="#CBE6FF" />
     <SolidColorBrush x:Key="WindowContentBorder" Color="#66B4E8" />
     <SolidColorBrush x:Key="CardBorder" Color="#ABD8EF" />
-    <SolidColorBrush x:Key="WindowGlassHighlightBrush" Color="#FFFFFF" Opacity="0.65" />
 
     <SolidColorBrush x:Key="NavGlassBackgroundBrush" Color="#D0ECFF" Opacity="0.82" />
     <SolidColorBrush x:Key="NavGlassBorderBrush" Color="#B0D8F2" Opacity="0.9" />
@@ -28,6 +27,7 @@
     <SolidColorBrush x:Key="NavSelectedGlassBrush" Color="#C8E8FF" Opacity="0.78" />
     <SolidColorBrush x:Key="NavSelectedGlassBorderBrush" Color="#65BFF2" Opacity="0.55" />
     <SolidColorBrush x:Key="NavHoverGlassBrush" Color="#B8DDFF" Opacity="0.45" />
+    <SolidColorBrush x:Key="OptionHoverBrush" Color="#CAE5FF" />
     <Color x:Key="NavUnselectedTextColor">#397292</Color>
     <SolidColorBrush x:Key="NavUnselectedTextBrush" Color="#397292" />
 
@@ -55,6 +55,13 @@
     <SolidColorBrush x:Key="PopupBorderBrush" Color="#9FD1ED" />
     <Color x:Key="ContextBorderColor">#9FD1ED</Color>
     <SolidColorBrush x:Key="ContextBorderBrush" Color="#9FD1ED" />
+    <SolidColorBrush x:Key="ContextMenuItemHoverBrush" Color="#2F9BFF" Opacity="0.16" />
+    <SolidColorBrush x:Key="ContextMenuItemHoverBorderBrush" Color="#2F9BFF" Opacity="0.45" />
+    <SolidColorBrush x:Key="ContextMenuItemPressedBrush" Color="#2F9BFF" Opacity="0.30" />
+    <SolidColorBrush x:Key="ContextMenuItemPressedBorderBrush" Color="#2F9BFF" Opacity="0.60" />
+    <SolidColorBrush x:Key="ContextMenuSubmenuBgBrush" Color="#E0F1FF" />
+    <SolidColorBrush x:Key="ContextMenuSubmenuBorderBrush" Color="#A8D6EE" />
+    <SolidColorBrush x:Key="SeparatorBrush" Color="#CCE2F4" />
 
     <Color x:Key="InputBoxBgColor">#D4E8FF</Color>
     <SolidColorBrush x:Key="InputBoxBgBrush" Color="#D4E8FF" />
@@ -72,6 +79,8 @@
     <SolidColorBrush x:Key="ListItemSelectedBrush" Color="#2F9BFF" Opacity="0.16" />
     <SolidColorBrush x:Key="ListItemSelectedHoverBrush" Color="#2F9BFF" Opacity="0.23" />
     <SolidColorBrush x:Key="ListItemAccentBrush" Color="#2F9BFF" />
+    <SolidColorBrush x:Key="ListItemCardHoverBgBrush" Color="#C0DDFF" />
+    <SolidColorBrush x:Key="ListItemCardHoverBorderBrush" Color="#A0CEFF" />
 
     <SolidColorBrush x:Key="CategoryCardGlassBgBrush" Color="#D8ECFF" Opacity="0.90" />
     <SolidColorBrush x:Key="CategoryCardGlassBorderBrush" Color="#9FD4F0" />
@@ -86,7 +95,6 @@
     <SolidColorBrush x:Key="DatePickerGlassBorderBrush" Color="#A8D8F1" />
     <SolidColorBrush x:Key="DatePickerHoverGlassBrush" Color="#2F9BFF" Opacity="0.13" />
 
-    <SolidColorBrush x:Key="SeparatorBrush" Color="#C6E4F3" />
     <SolidColorBrush x:Key="ScrollBarBrush" Color="#54ACE0" />
 
     <SolidColorBrush x:Key="TabSwitchBgBrush" Color="#CCE0FF" Opacity="0.5" />
@@ -98,7 +106,7 @@
     <SolidColorBrush x:Key="TabOptionSelectedBorderBrush" Color="#5AA8FF" />
 
     <SolidColorBrush x:Key="MultiTrackRowBgBrush" Color="#D8ECFF" />
-    <SolidColorBrush x:Key="MultiTrackRowBorderBrush" Color="#B8DEF2" />
+    <SolidColorBrush x:Key="MultiTrackRowBorderBrush" Color="#9FD1ED" />
     <SolidColorBrush x:Key="MultiTrackRowHoverBgBrush" Color="#C4DDFF" />
     <SolidColorBrush x:Key="MultiTrackIconBgBrush" Color="#CEE0FF" />
     <SolidColorBrush x:Key="MultiTrackTrackBgBrush" Color="#C0D8F0" />

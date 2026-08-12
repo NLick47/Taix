@@ -195,7 +195,8 @@
                         </Style>
 
                         <Style Selector="^:pointerover /template/ Grid Border">
-                            <Setter Property="BorderBrush" Value="{DynamicResource ThemeColor}" />
+                            <Setter Property="Background" Value="{DynamicResource ListItemCardHoverBgBrush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource ListItemCardHoverBorderBrush}" />
                         </Style>
                         <Style Selector="^:selected /template/ Grid Border ContentPresenter">
                             <Setter Property="Background" Value="Transparent" />

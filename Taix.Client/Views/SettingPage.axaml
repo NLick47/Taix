@@ -269,52 +269,75 @@
                     </Border>
                 </StackPanel>
 
-                <StackPanel x:Name="Section4" Margin="0,44,0,0">
-                    <Border Background="{DynamicResource SettingPanelBgBrush}" Padding="20" CornerRadius="{StaticResource RadiusLarge}"
-                            BorderBrush="{DynamicResource SettingPanelBorderBrush}" BorderThickness="1">
-                        <StackPanel HorizontalAlignment="Left">
-                            <Image Width="25" Source="/Resources/Icons/tai.ico" HorizontalAlignment="Left" />
-                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                <TextBlock VerticalAlignment="Center">
-                                    <Run Text="Taix" />
-                                    <Run Text="{DynamicResource Version}" />
-                                    <Run Text="{Binding Version}" />
-                                </TextBlock>
-                                <Btn:Button IsVisible="{Binding CheckUpdateBtnVisibility}"
-                                            Command="{Binding CheckUpdate}"
-                                            Margin="20,0,0,0"
-                                            VerticalAlignment="Center" Width="120"
-                                            Icon="SetlockScreen" Content="{DynamicResource CheckUpdate}" />
-                            </StackPanel>
-                            <TextBlock Margin="0,30,0,0">
+<StackPanel x:Name="Section4" Margin="0,44,0,0">
+                    <Border Background="{DynamicResource SettingPanelBgBrush}"
+                            CornerRadius="{StaticResource RadiusLarge}"
+                            BorderBrush="{DynamicResource SettingPanelBorderBrush}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <!-- 应用信息 -->
+                            <Border Padding="15,14" CornerRadius="16,16,0,0">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                                    <Image Width="32" Source="/Resources/Icons/tai.ico"
+                                           VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                        <TextBlock Text="Taix" FontSize="14"
+                                                   Foreground="{DynamicResource StandardTextBrush}" />
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="{DynamicResource Version}" FontSize="12"
+                                                       Foreground="{DynamicResource SubTextBrush}" />
+                                            <TextBlock Text="{Binding Version}" FontSize="12" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <Btn:Button Grid.Column="2"
+                                                IsVisible="{Binding CheckUpdateBtnVisibility}"
+                                                Command="{Binding CheckUpdate}"
+                                                VerticalAlignment="Center" Width="110"
+                                                Icon="SetlockScreen" Content="{DynamicResource CheckUpdate}" />
+                                </Grid>
+                            </Border>
 
+                            <Border Height="1" Opacity="0.5"
+                                    Background="{DynamicResource SettingPanelSpliteLineBrush}" />
+
+                            <!-- 插件 -->
+                            <Border Padding="15,14">
                                 <HyperlinkButton Command="{Binding OpenURL}"
                                                  CommandParameter="https://github.com/Planshit/Tai/discussions/279"
                                                  Content="{DynamicResource PlugIn}" />
-                            </TextBlock>
-                            <TextBlock Margin="0,15,0,0">
-                                <Run Text="{DynamicResource OpenSource}" />
-                                <HyperlinkButton Command="{Binding OpenURL}"
-                                                 CommandParameter="https://github.com/NLick47/Taix">
-                                    https://github.com/NLick47/Taix
-                                </HyperlinkButton>
-                            </TextBlock>
-                            <TextBlock Margin="0,5,0,0">
-                                <Run Text="{DynamicResource Discuss}" />
-                                <HyperlinkButton Command="{Binding OpenURL}"
-                                                 CommandParameter="https://github.com/NLick47/Taix/discussions">
-                                    https://github.com/NLick47/Taix/discussions
-                                </HyperlinkButton>
-                            </TextBlock>
+                            </Border>
 
-                            <TextBlock Margin="0,10,0,0">
-                                <Run Text="{DynamicResource ExternalDeclaration}" />
-                            </TextBlock>
-                            <TextBlock Foreground="{DynamicResource SubTextBrush}" Margin="0,5,0,0">
-                                <Run Text="Icon" />
-                                <Run Text="{DynamicResource FromMicrosoft}" />
-                                <Run Text="Emoji}" />
-                            </TextBlock>
+                            <Border Height="1" Opacity="0.5"
+                                    Background="{DynamicResource SettingPanelSpliteLineBrush}" />
+
+                            <!-- 开源 -->
+                            <Border Padding="15,14">
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="{DynamicResource OpenSource}" FontSize="14"
+                                               Foreground="{DynamicResource StandardTextBrush}" />
+                                    <HyperlinkButton Command="{Binding OpenURL}"
+                                                     CommandParameter="https://github.com/NLick47/Taix"
+                                                     FontSize="12">
+                                        https://github.com/NLick47/Taix
+                                    </HyperlinkButton>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Height="1" Opacity="0.5"
+                                    Background="{DynamicResource SettingPanelSpliteLineBrush}" />
+
+                            <!-- 讨论 -->
+                            <Border Padding="15,14" CornerRadius="0,0,16,16">
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="{DynamicResource Discuss}" FontSize="14"
+                                               Foreground="{DynamicResource StandardTextBrush}" />
+                                    <HyperlinkButton Command="{Binding OpenURL}"
+                                                     CommandParameter="https://github.com/NLick47/Taix/issues"
+                                                     FontSize="12">
+                                        https://github.com/NLick47/Taix/issues
+                                    </HyperlinkButton>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </Border>
                 </StackPanel>

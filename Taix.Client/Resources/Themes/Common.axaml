@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=System.Runtime">
     <ControlTheme x:Key="{x:Type ContextMenu}" TargetType="ContextMenu">
-        <Setter Property="Background" Value="White" />
+        <Setter Property="Background" Value="{DynamicResource PopupBackgroundBrush}" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Template">
             <ControlTemplate>
@@ -20,6 +20,7 @@
                             BorderThickness="1"
                             Padding="5"
                             Margin="10"
+                            MinWidth="150"
                             CornerRadius="8">
                         <ScrollViewer Focusable="false" Padding="0">
                             <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}"
@@ -56,13 +57,15 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Foreground" Value="{DynamicResource StandardTextBrush}" />
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Name="root"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
-                        CornerRadius="{TemplateBinding CornerRadius}">
+                        CornerRadius="6">
+                    
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="20" />
@@ -101,6 +104,7 @@
                         <TextBlock x:Name="PART_InputGestureText"
                                    Grid.Column="3"
                                    VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SubTextBrush}"
                                    Text="{TemplateBinding InputGesture,
                                               Converter={StaticResource KeyGestureConverter}}" />
                         <Path Name="rightArrow"
@@ -108,23 +112,35 @@
                               Margin="10,0,0,0"
                               VerticalAlignment="Center"
                               Data="M0,0L4,3.5 0,7z"
-                              Fill="{DynamicResource ThemeForegroundBrush}" />
+                              Fill="{DynamicResource SubTextBrush}" />
                         <Popup Name="PART_Popup"
                                IsLightDismissEnabled="False"
                                IsOpen="{TemplateBinding IsSubMenuOpen,
                                             Mode=TwoWay}"
-                               Placement="RightEdgeAlignedTop">
-                            <Border Background="{DynamicResource ThemeBackgroundBrush}"
-                                    BorderBrush="{DynamicResource ThemeBorderMidBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="8">
-                                <ScrollViewer Theme="{StaticResource SimpleMenuScrollViewer}">
-                                    <ItemsPresenter Name="PART_ItemsPresenter"
-                                                    Margin="2"
-                                                    Grid.IsSharedSizeScope="True"
-                                                    ItemsPanel="{TemplateBinding ItemsPanel}" />
-                                </ScrollViewer>
-                            </Border>
+                               Placement="RightEdgeAlignedTop"
+                               VerticalOffset="-6">
+                            <Grid MinWidth="120">
+                                <Border Margin="8"
+                                        Background="{DynamicResource ContextMenuSubmenuBgBrush}"
+                                        CornerRadius="8">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="10" Opacity=".1" />
+                                    </Border.Effect>
+                                </Border>
+                                <Border Margin="8"
+                                        Padding="4"
+                                        Background="{DynamicResource ContextMenuSubmenuBgBrush}"
+                                        BorderBrush="{DynamicResource ContextMenuSubmenuBorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="8">
+                                    <ScrollViewer Theme="{StaticResource SimpleMenuScrollViewer}">
+                                        <ItemsPresenter Name="PART_ItemsPresenter"
+                                                        Margin="1"
+                                                        Grid.IsSharedSizeScope="True"
+                                                        ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Grid>
                         </Popup>
                     </Grid>
                 </Border>
@@ -134,14 +150,31 @@
         <Style Selector="^:separator">
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Separator />
+                    <Border Background="{DynamicResource SeparatorBrush}"
+                            Height="1"
+                            Margin="8,4"
+                            CornerRadius="1" />
                 </ControlTemplate>
             </Setter>
         </Style>
 
+        <Style Selector="^:pointerover /template/ Border#root">
+            <Setter Property="Background" Value="{DynamicResource ContextMenuItemHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ContextMenuItemHoverBorderBrush}" />
+        </Style>
+
+        <Style Selector="^:pressed /template/ Border#root">
+            <Setter Property="Background" Value="{DynamicResource ContextMenuItemPressedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ContextMenuItemPressedBorderBrush}" />
+        </Style>
+
         <Style Selector="^:selected /template/ Border#root">
-            <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource HoverBackgroundBrush}" />
+            <Setter Property="Background" Value="{DynamicResource ContextMenuItemHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ContextMenuItemHoverBorderBrush}" />
+        </Style>
+
+        <Style Selector="^:pointerover /template/ Path#rightArrow, ^:selected /template/ Path#rightArrow">
+            <Setter Property="Fill" Value="{DynamicResource ThemeBrush}" />
         </Style>
 
         <Style Selector="^:empty /template/ Path#rightArrow">
@@ -152,13 +185,15 @@
             <Setter Property="Opacity" Value="{DynamicResource ThemeDisabledOpacity}" />
         </Style>
 
-        <Style
-            Selector="^:toggle /template/ ContentControl#PART_ToggleIconPresenter, ^:radio /template/ ContentControl#PART_ToggleIconPresenter">
+        <Style Selector="^:toggle /template/ ContentControl#PART_ToggleIconPresenter">
             <Setter Property="IsVisible" Value="True" />
         </Style>
         <Style
             Selector="^:toggle /template/ ContentPresenter#PART_IconPresenter, ^:radio /template/ ContentPresenter#PART_IconPresenter">
             <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="^:radio /template/ ContentControl#PART_ToggleIconPresenter">
+            <Setter Property="IsVisible" Value="True" />
         </Style>
         <Style Selector="^:checked:toggle /template/ ContentControl#PART_ToggleIconPresenter">
             <Setter Property="Content">
@@ -172,11 +207,28 @@
         <Style Selector="^:checked:radio /template/ ContentControl#PART_ToggleIconPresenter">
             <Setter Property="Content">
                 <Template>
-                    <Ellipse Fill="{Binding $parent[MenuItem].Foreground}"
-                             Margin="5,0,0,0" Width="10" Height="10" />
+                    <Ellipse Fill="{DynamicResource ThemeBrush}"
+                             Width="12" Height="12"
+                             VerticalAlignment="Center"
+                             HorizontalAlignment="Center" />
                 </Template>
             </Setter>
         </Style>
+    </ControlTheme>
+
+
+    <ControlTheme x:Key="{x:Type Separator}" TargetType="Separator">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Background" Value="{DynamicResource SeparatorBrush}" />
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Margin" Value="8,4" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        Height="1"
+                        CornerRadius="1" />
+            </ControlTemplate>
+        </Setter>
     </ControlTheme>
 
 

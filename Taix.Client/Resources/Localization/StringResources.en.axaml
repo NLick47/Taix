@@ -88,17 +88,15 @@
     <system:String x:Key="From">From</system:String>
     <system:String x:Key="To">To</system:String>
     <system:String x:Key="Execute">Execute</system:String>
-    <system:String x:Key="OpenSource">Open Source</system:String>
+    <system:String x:Key="OpenSource">GitHub</system:String>
     <system:String x:Key="DeletedAndUnrecoverable">Deleted and Unrecoverable</system:String>
     <system:String x:Key="ExportData">Export Data</system:String>
     <system:String x:Key="Export">Export</system:String>
     <system:String x:Key="Version">Version</system:String>
     <system:String x:Key="ExportTo">Export as CSV file</system:String>
     <system:String x:Key="CheckUpdate">Check for Updates</system:String>
-    <system:String x:Key="Discuss">Discuss</system:String>
+    <system:String x:Key="Discuss">Feedback</system:String>
     <system:String x:Key="PlugIn">Browser Statistics Plugin</system:String>
-    <system:String x:Key="ExternalDeclaration">External Resource Declaration</system:String>
-    <system:String x:Key="FromMicrosoft">From Microsoft</system:String>
 
     <system:String x:Key="SelectiveApplication">Select App</system:String>
     <system:String x:Key="SearchApplication">Search Application</system:String>

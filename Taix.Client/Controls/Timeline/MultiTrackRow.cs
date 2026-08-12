@@ -45,6 +45,15 @@ public class MultiTrackRow : Control
         AvaloniaProperty.RegisterDirect<MultiTrackRow, double?>(
             nameof(NowLinePosition), o => o.NowLinePosition, (o, v) => o.NowLinePosition = v);
 
+    public static readonly StyledProperty<double> CornerRadiusProperty =
+        AvaloniaProperty.Register<MultiTrackRow, double>(nameof(CornerRadius));
+
+    public double CornerRadius
+    {
+        get => GetValue(CornerRadiusProperty);
+        set => SetValue(CornerRadiusProperty, value);
+    }
+
     private TimeRange? _hoveredTimeRange;
     public static readonly DirectProperty<MultiTrackRow, TimeRange?> HoveredTimeRangeProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackRow, TimeRange?>(
@@ -302,6 +311,21 @@ public class MultiTrackRow : Control
         var bounds = Bounds;
         if (bounds.Width <= 0 || bounds.Height <= 0) return;
 
+        if (CornerRadius > 0)
+        {
+            using (ctx.PushClip(new RoundedRect(new Rect(bounds.Size), CornerRadius, CornerRadius)))
+            {
+                RenderContent(ctx, bounds);
+            }
+        }
+        else
+        {
+            RenderContent(ctx, bounds);
+        }
+    }
+
+    private void RenderContent(DrawingContext ctx, Rect bounds)
+    {
         var viewStartSec = Math.Min(VisibleStartHour, VisibleEndHour) * SecondsPerHour;
         var viewEndSec = Math.Max(VisibleStartHour, VisibleEndHour) * SecondsPerHour;
         var viewDuration = viewEndSec - viewStartSec;

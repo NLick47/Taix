@@ -42,54 +42,39 @@
                     <ScrollViewer Grid.Row="1"
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
-                        <ListBox x:Name="PART_ItemsControl"
-                                 ItemsSource="{TemplateBinding DataItems}"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 Padding="0"
-                                 Focusable="False">
-                        <ListBox.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <VirtualizingStackPanel />
-                            </ItemsPanelTemplate>
-                        </ListBox.ItemsPanel>
-                        <ListBox.Styles>
-                            <Style Selector="ListBoxItem">
-                                <Setter Property="Padding" Value="0" />
-                                <Setter Property="Margin" Value="0,0,0,8" />
-                                <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="Focusable" Value="False" />
-                                <Setter Property="Cursor" Value="Hand" />
-                            </Style>
-                            <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-                                <Setter Property="Background" Value="Transparent" />
-                            </Style>
-                            <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-                                <Setter Property="Background" Value="Transparent" />
-                            </Style>
-                            <Style Selector="ListBoxItem Border.row">
-                                <Setter Property="Transitions">
-                                    <Transitions>
-                                        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
-                                        <BrushTransition Property="Background" Duration="0:0:0.15" />
-                                    </Transitions>
-                                </Setter>
-                            </Style>
-                            <Style Selector="ListBoxItem:pointerover Border.row">
-                                <Setter Property="BorderBrush" Value="{DynamicResource ChartCardHoverBorderBrush}" />
-                                <Setter Property="Background" Value="{DynamicResource MultiTrackRowHoverBgBrush}" />
-                            </Style>
-                        </ListBox.Styles>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate DataType="timeline:MultiTrackTimelineItem">
-                                <Border Height="60"
-                                        CornerRadius="10"
-                                        Background="{DynamicResource MultiTrackRowBgBrush}"
-                                        BorderBrush="{DynamicResource MultiTrackRowBorderBrush}"
-                                        BorderThickness="1"
-                                        Cursor="Hand"
-                                        ClipToBounds="False"
-                                        Classes="row">
+                        <ItemsControl x:Name="PART_ItemsControl"
+                                      ItemsSource="{TemplateBinding DataItems}"
+                                      Focusable="False">
+                            <ItemsControl.Styles>
+                                <Style Selector="Border.row">
+                                    <Setter Property="Transitions">
+                                        <Transitions>
+                                            <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                                            <BrushTransition Property="Background" Duration="0:0:0.15" />
+                                        </Transitions>
+                                    </Setter>
+                                </Style>
+                                <Style Selector="Border.row:pointerover">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource ChartCardHoverBorderBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource MultiTrackRowHoverBgBrush}" />
+                                </Style>
+                            </ItemsControl.Styles>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="timeline:MultiTrackTimelineItem">
+                                    <Border Height="60"
+                                            CornerRadius="10"
+                                            Background="{DynamicResource MultiTrackRowBgBrush}"
+                                            BorderBrush="{DynamicResource MultiTrackRowBorderBrush}"
+                                            BorderThickness="1"
+                                            Cursor="Hand"
+                                            ClipToBounds="False"
+                                            Margin="0,0,0,8"
+                                            Classes="row">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="180" />
@@ -164,6 +149,7 @@
                                                 BorderBrush="{DynamicResource MultiTrackTrackBorderBrush}"
                                                 BorderThickness="1">
                                             <timeline:MultiTrackRow
+                                                CornerRadius="8"
                                                 Segments="{Binding Segments}"
                                                 VisibleStartHour="{Binding VisibleStartHour,
                                                     RelativeSource={RelativeSource AncestorType=timeline:MultiTrackTimeline}}"
@@ -185,8 +171,8 @@
                                     </Grid>
                                 </Border>
                             </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                        </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </ScrollViewer>
                 </Grid>
             </ControlTemplate>
