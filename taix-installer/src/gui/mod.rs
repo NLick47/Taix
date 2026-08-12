@@ -20,6 +20,7 @@ use crate::platform;
 use crate::platform::restore_backup;
 use crate::sfx;
 use crate::i18n::I18n;
+use crate::install::cleanup_legacy_dlls;
 
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -414,6 +415,7 @@ fn run_install_with_progress(
     progress(2, 4, i18n.step_extract(), proxy);
     let _ = proxy.send_event(InstEvent::Extracting);
     sfx::extract_to(&dest)?;
+    let _ = cleanup_legacy_dlls(&dest);
 
     progress(3, 4, i18n.step_shortcut(), proxy);
     let client_exe = dest.join("Taix.exe");
@@ -509,6 +511,7 @@ fn run_update_with_progress(
     progress(3, 5, i18n.step_extract_update(), proxy);
     let _ = proxy.send_event(InstEvent::Extracting);
     sfx::extract_to(&install_dir)?;
+    let _ = cleanup_legacy_dlls(&install_dir);
 
     progress(4, 5, i18n.step_verify(), proxy);
     let critical_files = ["Taix.exe", "taix-shell.exe", "taix-server.exe", "taix-monitor-windows.exe"];

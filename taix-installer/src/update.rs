@@ -5,6 +5,7 @@ use std::time::Duration;
 use crate::platform::{Platform, restore_backup, PROCESSES, TASK_NAME, save_install_location};
 use crate::sfx;
 use crate::ui::cli;
+use crate::install::cleanup_legacy_dlls;
 
 pub fn run_update(install_dir: Option<PathBuf>, _silent: bool) -> Result<()> {
     if !sfx::has_payload() {
@@ -75,6 +76,9 @@ pub fn run_update(install_dir: Option<PathBuf>, _silent: bool) -> Result<()> {
     cli::show_step(3, 5, "解压更新文件...");
     cli::show_extracting();
     sfx::extract_to(&install_dir)?;
+    if let Err(e) = cleanup_legacy_dlls(&install_dir) {
+        println!("[警告] 清理旧版动态库失败: {e}");
+    }
 
     cli::show_step(4, 5, "验证安装...");
     let critical_files = ["Taix.exe", "taix-shell.exe", "taix-server.exe", "taix-monitor-windows.exe"];

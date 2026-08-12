@@ -44,16 +44,8 @@ pub fn run_install(
     cli::show_extracting();
     sfx::extract_to(&dest)?;
 
-    // 删除旧版遗留的动态库文件
-    #[cfg(target_os = "windows")]
-    {
-        let legacy_dlls = ["libSkiaSharp.dll", "libHarfBuzzSharp.dll", "av_libglesv2.dll"];
-        for dll in legacy_dlls {
-            let path = dest.join(dll);
-            if path.exists() {
-                let _ = std::fs::remove_file(&path);
-            }
-        }
+    if let Err(e) = cleanup_legacy_dlls(&dest) {
+        println!("[警告] 清理旧版动态库失败: {e}");
     }
 
     cli::show_step(3, 4, "创建快捷方式...");
@@ -159,5 +151,22 @@ pub fn run_uninstall(install_dir: Option<PathBuf>, _silent: bool) -> Result<()> 
     println!("注意: 用户数据已保留");
     cli::wait_exit();
 
+    Ok(())
+}
+
+/// 删除旧版遗留的动态库文件
+pub fn cleanup_legacy_dlls(dest: &std::path::Path) -> Result<()> {
+    #[cfg(target_os = "windows")]
+    {
+        let legacy_dlls = ["libSkiaSharp.dll", "libHarfBuzzSharp.dll", "av_libglesv2.dll"];
+        for dll in legacy_dlls {
+            let path = dest.join(dll);
+            if path.exists() {
+                std::fs::remove_file(&path).map_err(|e| {
+                    anyhow::anyhow!("删除 {} 失败: {}", path.display(), e)
+                })?;
+            }
+        }
+    }
     Ok(())
 }
