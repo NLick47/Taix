@@ -123,8 +123,7 @@
     <ItemGroup>
         <ProjectReference Include="..\Taix.PageState.Generator\Taix.PageState.Generator.csproj"
                           OutputItemType="Analyzer"
-                          ReferenceOutputAssembly="false"
-                          SkipAotCompileCheck="true" />
+                          ReferenceOutputAssembly="false" />
     </ItemGroup>
 
 </Project>
