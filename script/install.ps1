@@ -1,9 +1,26 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 
 [CmdletBinding()]
 param(
     [switch]$DesktopShortcut
 )
+
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+if (-not $isAdmin) {
+    try {
+        $argList = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$PSCommandPath`"")
+        if ($PSBoundParameters.ContainsKey("DesktopShortcut")) {
+            $argList += "-DesktopShortcut"
+        }
+        Start-Process -FilePath "powershell.exe" -Verb RunAs -ArgumentList $argList
+        exit 0
+    } catch {
+        Write-Host "需要管理员权限才能安装 Taix，但提升请求被取消。" -ForegroundColor Red
+        Read-Host "Press Enter to exit"
+        exit 1
+    }
+}
 
 $ErrorActionPreference = "Stop"
 

@@ -1,7 +1,22 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 
 [CmdletBinding()]
 param()
+
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+if (-not $isAdmin) {
+    try {
+        Start-Process -FilePath "powershell.exe" `
+            -Verb RunAs `
+            -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$PSCommandPath`""
+        exit 0
+    } catch {
+        Write-Host "需要管理员权限才能卸载 Taix，但提升请求被取消。" -ForegroundColor Red
+        Read-Host "Press Enter to exit"
+        exit 1
+    }
+}
 
 $ErrorActionPreference = "Stop"
 
