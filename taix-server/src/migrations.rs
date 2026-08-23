@@ -701,3 +701,60 @@ async fn ensure_default_categories(
 
     Ok(())
 }
+
+#[cfg(target_os = "macos")]
+pub(crate) async fn migrate_legacy_macos_icon_paths(
+    pool: &SqlitePool,
+    exe_dir: &std::path::Path,
+) -> anyhow::Result<()> {
+    use sqlx::Row;
+
+    const LEGACY_MARKER: &str = "Caches/Taix/Icons/";
+
+    let rows = sqlx::query("SELECT ID, IconFile FROM AppModels WHERE IconFile LIKE ?")
+        .bind(format!("%{LEGACY_MARKER}%"))
+        .fetch_all(pool)
+        .await?;
+
+    if rows.is_empty() {
+        return Ok(());
+    }
+
+    let icons_dir = exe_dir.join("AppIcons");
+    std::fs::create_dir_all(&icons_dir)
+        .with_context(|| format!("create icon dir {}", icons_dir.display()))?;
+
+    let mut migrated = 0usize;
+    for row in rows {
+        let id: i64 = row.get("ID");
+        let old_path = row.get::<Option<String>, _>("IconFile").unwrap_or_default();
+        let Some(file_name) = std::path::Path::new(&old_path)
+            .file_name()
+            .and_then(|n| n.to_str())
+        else {
+            continue;
+        };
+
+        let new_abs = icons_dir.join(file_name);
+        if !new_abs.exists() {
+            if let Err(e) = std::fs::copy(&old_path, &new_abs) {
+                warn!(
+                    "icon migration copy failed: {} -> {}: {}",
+                    old_path,
+                    new_abs.display(),
+                    e
+                );
+            }
+        }
+
+        sqlx::query("UPDATE AppModels SET IconFile = ? WHERE ID = ?")
+            .bind(format!("AppIcons/{file_name}"))
+            .bind(id)
+            .execute(pool)
+            .await?;
+        migrated += 1;
+    }
+
+    info!("migrated {} legacy macOS icon paths to AppIcons/", migrated);
+    Ok(())
+}

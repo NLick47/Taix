@@ -15,9 +15,11 @@ struct Configuration: Sendable {
         persistenceURL: Configuration.defaultPersistenceURL
     )
 
+    static let appIconsDirectoryName = "AppIcons"
+
     static var defaultIconCacheDirectory: URL {
-        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        return caches.appendingPathComponent("Taix/Icons", isDirectory: true)
+        let base = ProcessInfo.processInfo.environment["TAIX_EXE_DIR"] ?? "/Applications/TaixTools"
+        return URL(fileURLWithPath: base).appendingPathComponent(appIconsDirectoryName, isDirectory: true)
     }
 
     static var defaultPersistenceURL: URL {

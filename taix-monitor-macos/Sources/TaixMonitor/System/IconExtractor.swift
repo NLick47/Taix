@@ -22,7 +22,7 @@ actor IconExtractor {
         let iconURL = cacheDirectory.appendingPathComponent("\(hash).png")
 
         if FileManager.default.fileExists(atPath: iconURL.path) {
-            return iconURL.path
+            return relativeIconPath(hash: hash)
         }
 
         guard let icnsPath = findIconPath(for: executablePath),
@@ -39,11 +39,15 @@ actor IconExtractor {
         do {
             try pngData.write(to: iconURL)
             Logger.debug("Icon extracted: \(executablePath) → \(iconURL.path)")
-            return iconURL.path
+            return relativeIconPath(hash: hash)
         } catch {
             Logger.error("Icon write failed: \(error)")
             return nil
         }
+    }
+
+    private func relativeIconPath(hash: String) -> String {
+        "\(Configuration.appIconsDirectoryName)/\(hash).png"
     }
 
     private func findIconPath(for executablePath: String) -> String? {

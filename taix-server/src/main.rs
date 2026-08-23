@@ -89,6 +89,11 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
         db_path.to_str().ok_or_else(|| anyhow::anyhow!("Database path contains invalid UTF-8"))?,
         "Asia/Shanghai",
     ).await?;
+
+    #[cfg(target_os = "macos")]
+    if let Err(e) = migrations::migrate_legacy_macos_icon_paths(&pool, exe_dir).await {
+        tracing::warn!("Failed to migrate legacy macOS icon paths: {e:#}");
+    }
     let config_service = Arc::new(ConfigService::new(&data_dir));
 
     // 读取初始配置，决定 WebSocket 是否启动
