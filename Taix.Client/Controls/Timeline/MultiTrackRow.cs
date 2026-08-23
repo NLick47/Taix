@@ -127,6 +127,8 @@ public class MultiTrackRow : Control
         PointerEntered += OnPointerEntered;
         PointerExited += OnPointerExited;
         PointerMoved += OnPointerMoved;
+        PointerWheelChanged += OnRowPointerWheel;
+        PointerTouchPadGestureMagnify += OnRowMagnify;
     }
 
     private void OnPointerEntered(object? sender, PointerEventArgs e)
@@ -140,6 +142,57 @@ public class MultiTrackRow : Control
         HoveredTimeRange = null;
         PropagateHoverToTimeline(null);
         InvalidateVisual();
+    }
+
+    private MultiTrackTimeline? FindTimelineOwner()
+    {
+        var parent = this.GetVisualParent();
+        while (parent != null)
+        {
+            if (parent is MultiTrackTimeline timeline) return timeline;
+            parent = parent.GetVisualParent();
+        }
+        return null;
+    }
+
+    private void OnRowPointerWheel(object? sender, PointerWheelEventArgs e)
+    {
+        var owner = FindTimelineOwner();
+        if (owner == null) return;
+
+        var isZoomModifier = e.KeyModifiers.HasFlag(KeyModifiers.Meta)
+                             || e.KeyModifiers.HasFlag(KeyModifiers.Control);
+
+        if (!isZoomModifier && !TimelineGestures.IsHorizontalDominant(e.Delta)) return;
+
+        var pos = e.GetPosition(this);
+        var d = TimelineGestures.GetDominantDelta(e.Delta);
+
+        var next = isZoomModifier
+            ? TimelineGestures.ZoomAt(owner.VisibleStartHour, owner.VisibleEndHour,
+                pos.X, Bounds.Width, TimelineGestures.GetWheelZoomFactor(d),
+                owner.FrameStartHour, owner.FrameEndHour, TimelineGestures.MinVisibleHours)
+            : TimelineGestures.PanByWheel(owner.VisibleStartHour, owner.VisibleEndHour,
+                e.Delta, owner.FrameStartHour, owner.FrameEndHour);
+
+        owner.VisibleStartHour = next.Start;
+        owner.VisibleEndHour = next.End;
+        e.Handled = true;
+    }
+
+    private void OnRowMagnify(object? sender, PointerDeltaEventArgs e)
+    {
+        var owner = FindTimelineOwner();
+        if (owner == null) return;
+
+        var pos = e.GetPosition(this);
+        var next = TimelineGestures.ZoomAt(owner.VisibleStartHour, owner.VisibleEndHour,
+            pos.X, Bounds.Width, TimelineGestures.GetMagnifyFactor(e.Delta.Y),
+            owner.FrameStartHour, owner.FrameEndHour, TimelineGestures.MinVisibleHours);
+
+        owner.VisibleStartHour = next.Start;
+        owner.VisibleEndHour = next.End;
+        e.Handled = true;
     }
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)

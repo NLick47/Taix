@@ -245,6 +245,7 @@ public class Timeline : Control
         ClipToBounds = true;
         Height = 68;
         Focusable = true;
+        PointerTouchPadGestureMagnify += OnPointerTouchPadMagnify;
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -432,8 +433,34 @@ public class Timeline : Control
     {
         e.Handled = true;
         var px = e.GetPosition(this).X;
+        var isZoomModifier = e.KeyModifiers.HasFlag(KeyModifiers.Meta)
+                             || e.KeyModifiers.HasFlag(KeyModifiers.Control);
+
+        if (isZoomModifier)
+        {
+            ZoomAt(px, TimelineGestures.GetWheelZoomFactor(TimelineGestures.GetDominantDelta(e.Delta)));
+            return;
+        }
+
+        var panPx = TimelineGestures.PanDirection * TimelineGestures.GetDominantDelta(e.Delta)
+                    * TimelineGestures.PanPixelsPerDelta;
+        var tw = MaxDaySeconds * Pps;
+        var minOffset = Math.Min(0, Bounds.Width - tw);
+        var maxOffset = Math.Max(0, Bounds.Width - tw);
+        _offsetX = Math.Clamp(_offsetX + panPx, minOffset, maxOffset);
+        InvalidateVisual();
+    }
+
+    private void OnPointerTouchPadMagnify(object? sender, PointerDeltaEventArgs e)
+    {
+        e.Handled = true;
+        ZoomAt(e.GetPosition(this).X, TimelineGestures.GetMagnifyFactor(e.Delta.Y));
+    }
+
+    private void ZoomAt(double px, double zoomFactor)
+    {
         var oldZ = Zoom;
-        var newZ = Math.Clamp(oldZ * (e.Delta.Y > 0 ? 1.15 : 0.85), 0.3, 50);
+        var newZ = Math.Clamp(oldZ * zoomFactor, 0.3, 50);
         Zoom = newZ;
         var tw = MaxDaySeconds * Pps;
         var minOffset = Math.Min(0, Bounds.Width - tw);

@@ -16,8 +16,6 @@ namespace Taix.Client.Controls.Timeline;
 public class MultiTrackTimeRuler : Control
 {
     private const int SecondsPerHour = 3600;
-    private const double MinZoomHours = 0.25;
-    private const double ZoomFactor = 1.3;
     private const double MinDragDistance = 5;
 
     private static readonly Typeface NormalTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
@@ -103,6 +101,7 @@ public class MultiTrackTimeRuler : Control
         Cursor = Cursor.Parse("Hand");
 
         PointerWheelChanged += OnPointerWheelChanged;
+        PointerTouchPadGestureMagnify += OnPointerTouchPadMagnify;
         PointerPressed += OnPointerPressed;
         PointerMoved += OnPointerMoved;
         PointerReleased += OnPointerReleased;
@@ -314,35 +313,42 @@ public class MultiTrackTimeRuler : Control
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
         var pos = e.GetPosition(this);
-        var bounds = Bounds;
+        var d = TimelineGestures.GetDominantDelta(e.Delta);
 
-        var viewStart = Math.Min(VisibleStartHour, VisibleEndHour);
-        var viewEnd = Math.Max(VisibleStartHour, VisibleEndHour);
-        var viewDuration = viewEnd - viewStart;
-        if (viewDuration <= 0) viewDuration = 24;
+        var isZoomModifier = e.KeyModifiers.HasFlag(KeyModifiers.Meta)
+                             || e.KeyModifiers.HasFlag(KeyModifiers.Control);
 
-        var mouseHour = viewStart + (pos.X / bounds.Width) * viewDuration;
+        var next = isZoomModifier
+            ? ZoomAtCore(pos.X, TimelineGestures.GetWheelZoomFactor(d))
+            : TimelineGestures.PanByWheel(VisibleStartHour, VisibleEndHour, e.Delta, BoundStartHour, BoundEndHour);
 
-        var k = e.Delta.Y > 0 ? 1.0 / ZoomFactor : ZoomFactor;
+        ApplyRange(next.Start, next.End);
+        e.Handled = true;
+    }
+
+    private void OnPointerTouchPadMagnify(object? sender, PointerDeltaEventArgs e)
+    {
+        var pos = e.GetPosition(this);
+        var next = ZoomAtCore(pos.X, TimelineGestures.GetMagnifyFactor(e.Delta.Y));
+        ApplyRange(next.Start, next.End);
+        e.Handled = true;
+    }
+
+    private (double Start, double End) ZoomAtCore(double anchorX, double factor)
+    {
         var boundStart = Math.Min(BoundStartHour, BoundEndHour);
         var boundEnd = Math.Max(BoundStartHour, BoundEndHour);
-        var boundDuration = boundEnd - boundStart;
-        if (boundDuration <= 0) { boundStart = 0; boundEnd = 24; boundDuration = 24; }
+        if (boundEnd - boundStart <= 0) { boundStart = 0; boundEnd = 24; }
 
-        var newDuration = Math.Clamp(viewDuration * k, MinZoomHours, boundDuration);
+        return TimelineGestures.ZoomAt(VisibleStartHour, VisibleEndHour,
+            anchorX, Bounds.Width, factor, boundStart, boundEnd, TimelineGestures.MinVisibleHours);
+    }
 
-        var newStart = mouseHour - (mouseHour - viewStart) * (newDuration / viewDuration);
-        var newEnd = newStart + newDuration;
-
-        if (newStart < boundStart) { newStart = boundStart; newEnd = boundStart + newDuration; }
-        if (newEnd > boundEnd) { newEnd = boundEnd; newStart = boundEnd - newDuration; }
-        if (newStart < boundStart) { newStart = boundStart; newEnd = boundEnd; }
-
-        VisibleStartHour = newStart;
-        VisibleEndHour = newEnd;
-
-        PropagateToTimeline(newStart, newEnd);
-        e.Handled = true;
+    private void ApplyRange(double start, double end)
+    {
+        VisibleStartHour = start;
+        VisibleEndHour = end;
+        PropagateToTimeline(start, end);
     }
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
