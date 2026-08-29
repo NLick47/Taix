@@ -37,6 +37,15 @@ fn build_task_xml(exe_path: &Path, data_dir: Option<&PathBuf>, task_name: &str) 
       <Enabled>true</Enabled>
       <Delay>PT30S</Delay>
     </LogonTrigger>
+    <BootTrigger>
+      <Enabled>true</Enabled>
+      <Delay>PT30S</Delay>
+    </BootTrigger>
+    <SessionStateChangeTrigger>
+      <Enabled>true</Enabled>
+      <StateChange>SessionUnlock</StateChange>
+      <Delay>PT5S</Delay>
+    </SessionStateChangeTrigger>
   </Triggers>
   <Principals>
     <Principal id="Author">
