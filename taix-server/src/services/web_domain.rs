@@ -24,7 +24,7 @@ pub(crate) fn extract_domain(url: &str) -> String {
             }
             return format!("[{}]", host.to_ascii_lowercase());
         }
-        return host.to_string();
+        return host.to_ascii_lowercase();
     }
 
     let (host, port) = match host_part.split_once(':') {
@@ -40,7 +40,7 @@ pub(crate) fn extract_domain(url: &str) -> String {
             _ => host.to_ascii_lowercase(),
         }
     } else {
-        host.to_string()
+        host.to_ascii_lowercase()
     }
 }
 
@@ -109,7 +109,7 @@ pub(crate) fn extract_domain_scheme(url_str: &str) -> Option<(String, String)> {
     } else {
         "http".to_string()
     };
-    Some((scheme, domain.to_string()))
+    Some((scheme, domain.to_ascii_lowercase()))
 }
 
 /// 清洗 HTML title，提取核心品牌名（去掉常见分隔符后的标语后缀）

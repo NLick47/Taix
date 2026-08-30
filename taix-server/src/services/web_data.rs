@@ -104,6 +104,10 @@ impl WebDataService {
             debug!("add_url_browse_time: skip non-http url={}", req.url);
             return Ok((0, 0));
         }
+        if extract_domain(&req.url).is_empty() {
+            debug!("add_url_browse_time: skip url with empty host url={}", req.url);
+            return Ok((0, 0));
+        }
         debug!("add_url_browse_time: url={} duration={}", req.url, req.duration);
 
         // 时间戳合法性校验：拒绝明显过去或未来的时间
@@ -1412,6 +1416,17 @@ fn is_browser_internal_page(url: &str, title: Option<&str>) -> bool {
         "vivaldi://",
         "file://",
         "data:",
+        "chrome-extension://",
+        "moz-extension://",
+        "edge-extension://",
+        "brave-extension://",
+        "extension://",
+        "ms-browser-extension://",
+        "view-source:",
+        "chrome-devtools://",
+        "devtools://",
+        "read:",
+        "ms-read://",
     ];
     for prefix in &internal_prefixes {
         if url_lower.starts_with(prefix) {
