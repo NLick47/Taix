@@ -591,6 +591,7 @@ async fn convert_local_to_utc(
                 Ok(dt) => dt,
                 Err(e) => {
                     warn!("表 {} 行 {} 时间 '{}' 解析失败: {}，跳过", table, id, time_str, e);
+                    last_id = id;
                     continue;
                 }
             };
