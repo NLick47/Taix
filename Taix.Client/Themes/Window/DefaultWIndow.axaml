@@ -196,7 +196,11 @@
                                 </Grid>
                             </Grid>
 
-                            <ContentPresenter Content="{TemplateBinding Content}" Grid.Row="1" />
+                            <!-- 必须叫 PART_VisualLayerManager：TopLevel 按这个名字查找，找到才会创建
+                                 OverlayLayer 写成别的名字会静默失败，OverlayPopups 模式下弹层直接抛异常 -->
+                            <VisualLayerManager Name="PART_VisualLayerManager" Grid.Row="1">
+                                <ContentPresenter Content="{TemplateBinding Content}" />
+                            </VisualLayerManager>
 
                             <Grid ZIndex="999" x:Name="ToastGrid" IsVisible="False">
                                 <Border
