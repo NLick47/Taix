@@ -19,8 +19,7 @@
                                          SectionPrefix="Section"
                                          ScrollViewerName="ContentScrollViewer"
                                          StickyHeaderName="StickyHeader"
-                                         StickyTitleTextName="StickyTitleText"
-                                         StickyHeaderHeight="55" />
+                                         StickyTitleTextName="StickyTitleText" />
     </i:Interaction.Behaviors>
 
     <Grid Margin="20" RowDefinitions="Auto,*">
@@ -348,8 +347,8 @@
         <Border x:Name="StickyHeader"
                 Grid.Row="1"
                 VerticalAlignment="Top"
-                Height="55"
-                Opacity="0"
+                Height="40"
+                Opacity="1"
                 IsHitTestVisible="False"
                 Background="{DynamicResource SettingPanelBgBrush}"
                 Classes="sticky-header">
@@ -366,8 +365,8 @@
             <Border.RenderTransform>
                 <TranslateTransform Y="-4" />
             </Border.RenderTransform>
-            <!-- 下移 15px 与内容对齐，条体顺便遮住下方滚过的内容 -->
-            <Border Margin="0,29,0,10">
+            <!-- 标题内容垂直居中，减少上方空白 -->
+            <Border Margin="0,12,0,8">
                 <StackPanel Orientation="Horizontal">
                     <Border Width="3.5" Height="16" CornerRadius="2"
                             Background="{DynamicResource ThemeBrush}" Margin="0,0,8,0"

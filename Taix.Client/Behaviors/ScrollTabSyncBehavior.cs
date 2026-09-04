@@ -17,9 +17,6 @@ public class ScrollTabSyncBehavior : Behavior<Control>
     public static readonly StyledProperty<string> SectionPrefixProperty =
         AvaloniaProperty.Register<ScrollTabSyncBehavior, string>(nameof(SectionPrefix), "Section");
 
-    public static readonly StyledProperty<double> ActivationThresholdRatioProperty =
-        AvaloniaProperty.Register<ScrollTabSyncBehavior, double>(nameof(ActivationThresholdRatio), 0.15);
-
     public static readonly StyledProperty<string?> ScrollViewerNameProperty =
         AvaloniaProperty.Register<ScrollTabSyncBehavior, string?>(nameof(ScrollViewerName));
 
@@ -29,12 +26,6 @@ public class ScrollTabSyncBehavior : Behavior<Control>
 
     public static readonly StyledProperty<string?> StickyTitleTextNameProperty =
         AvaloniaProperty.Register<ScrollTabSyncBehavior, string?>(nameof(StickyTitleTextName));
-
-    public static readonly StyledProperty<double> StickyActivationThresholdProperty =
-        AvaloniaProperty.Register<ScrollTabSyncBehavior, double>(nameof(StickyActivationThreshold), 60);
-
-    public static readonly StyledProperty<double> StickyHeaderHeightProperty =
-        AvaloniaProperty.Register<ScrollTabSyncBehavior, double>(nameof(StickyHeaderHeight), 40);
 
     public string TabbarName
     {
@@ -46,12 +37,6 @@ public class ScrollTabSyncBehavior : Behavior<Control>
     {
         get => GetValue(SectionPrefixProperty);
         set => SetValue(SectionPrefixProperty, value);
-    }
-
-    public double ActivationThresholdRatio
-    {
-        get => GetValue(ActivationThresholdRatioProperty);
-        set => SetValue(ActivationThresholdRatioProperty, value);
     }
 
     public string? ScrollViewerName
@@ -70,18 +55,6 @@ public class ScrollTabSyncBehavior : Behavior<Control>
     {
         get => GetValue(StickyTitleTextNameProperty);
         set => SetValue(StickyTitleTextNameProperty, value);
-    }
-
-    public double StickyActivationThreshold
-    {
-        get => GetValue(StickyActivationThresholdProperty);
-        set => SetValue(StickyActivationThresholdProperty, value);
-    }
-
-    public double StickyHeaderHeight
-    {
-        get => GetValue(StickyHeaderHeightProperty);
-        set => SetValue(StickyHeaderHeightProperty, value);
     }
 
     private ScrollSectionNavigator? _navigator;
@@ -133,9 +106,10 @@ public class ScrollTabSyncBehavior : Behavior<Control>
             scrollViewer,
             tabbar,
             sections,
-            new ScrollSectionNavigator.Options(ActivationThresholdRatio),
-            _stickyHeader is not null ? OnActiveIndexChanged : null,
-            StickyHeaderHeight);
+            _stickyHeader is not null ? OnActiveIndexChanged : null);
+
+        if (_stickyHeader is not null)
+            OnActiveIndexChanged(_tabbar?.SelectedIndex ?? 0);
     }
 
     private void OnActiveIndexChanged(int activeIndex)
@@ -149,11 +123,8 @@ public class ScrollTabSyncBehavior : Behavior<Control>
                 _stickyTitleText.Text = title;
         }
 
-        var scrollOffset = _scrollViewer.Offset.Y;
-        var shouldShow = scrollOffset > StickyActivationThreshold;
-
-        _stickyHeader.Opacity = shouldShow ? 1 : 0;
-        _stickyHeader.RenderTransform = new TranslateTransform(0, shouldShow ? 0 : -8);
+        _stickyHeader.Opacity = 1;
+        _stickyHeader.RenderTransform = new TranslateTransform(0, 0);
     }
 
     private string? GetTabTitle(int index)

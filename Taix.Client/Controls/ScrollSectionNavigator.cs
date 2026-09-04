@@ -9,32 +9,33 @@ namespace Taix.Client.Controls;
 
 public sealed class ScrollSectionNavigator : IDisposable
 {
-    public sealed record Options(double ActivationThresholdRatio = 0.15);
+    private const double SnapOffset = 25.0;
+
+    private const double ActivationTolerance = 1.0;
 
     private readonly ScrollViewer _scrollViewer;
     private readonly TabbarControl _tabbar;
     private readonly IReadOnlyList<Control> _sections;
-    private readonly Options _options;
     private readonly Action<int>? _activeIndexChanged;
-    private readonly double _stickyHeaderHeight;
+
     private bool _isUpdatingFromScroll;
-    private bool _isProgrammaticScroll;
+
+    private int _programmaticTarget = -1;
+
+    private double _programmaticTargetOffset;
+
     private bool _disposed;
 
     public ScrollSectionNavigator(
         ScrollViewer scrollViewer,
         TabbarControl tabbar,
         IReadOnlyList<Control> sections,
-        Options? options = null,
-        Action<int>? activeIndexChanged = null,
-        double stickyHeaderHeight = 0)
+        Action<int>? activeIndexChanged = null)
     {
         _scrollViewer = scrollViewer ?? throw new ArgumentNullException(nameof(scrollViewer));
         _tabbar = tabbar ?? throw new ArgumentNullException(nameof(tabbar));
         _sections = sections ?? throw new ArgumentNullException(nameof(sections));
-        _options = options ?? new Options();
         _activeIndexChanged = activeIndexChanged;
-        _stickyHeaderHeight = Math.Max(0, stickyHeaderHeight);
 
         if (_sections.Count == 0)
             throw new ArgumentException("Sections list cannot be empty.", nameof(sections));
@@ -47,18 +48,27 @@ public sealed class ScrollSectionNavigator : IDisposable
     {
         if (_disposed) return;
 
-        var activeIndex = CalculateActiveSection();
-        if (activeIndex < 0 || activeIndex >= _sections.Count) return;
+        if (_programmaticTarget >= 0)
+        {
+            _activeIndexChanged?.Invoke(_programmaticTarget);
 
-        _activeIndexChanged?.Invoke(activeIndex);
+            var reachedTarget = IsAtScrollEnd()
+                || Math.Abs(_scrollViewer.Offset.Y - _programmaticTargetOffset) < ActivationTolerance;
+            if (!reachedTarget) return;
 
-        // 点击标签触发的滚动不回写选中态，否则目标位置被夹取时会弹回
-        if (_isProgrammaticScroll) return;
+            _programmaticTarget = -1;
+            return;
+        }
 
-        if (activeIndex == _tabbar.SelectedIndex) return;
+        var currentIndex = CalculateActiveSection();
+        if (currentIndex < 0 || currentIndex >= _sections.Count) return;
+
+        _activeIndexChanged?.Invoke(currentIndex);
+
+        if (currentIndex == _tabbar.SelectedIndex) return;
 
         _isUpdatingFromScroll = true;
-        _tabbar.SelectedIndex = activeIndex;
+        _tabbar.SelectedIndex = currentIndex;
         _isUpdatingFromScroll = false;
     }
 
@@ -71,15 +81,17 @@ public sealed class ScrollSectionNavigator : IDisposable
         var newIndex = e.NewValue is int index ? index : -1;
         if (newIndex < 0 || newIndex >= _sections.Count) return;
 
-        _isProgrammaticScroll = true;
-        try
-        {
-            ScrollToSection(newIndex);
-        }
-        finally
-        {
-            _isProgrammaticScroll = false;
-        }
+        _programmaticTarget = newIndex;
+        _programmaticTargetOffset = ScrollToSection(newIndex);
+
+        if (Math.Abs(_scrollViewer.Offset.Y - _programmaticTargetOffset) < ActivationTolerance)
+            _programmaticTarget = -1;
+    }
+
+    private bool IsAtScrollEnd()
+    {
+        var maxOffset = Math.Max(0, _scrollViewer.Extent.Height - _scrollViewer.Viewport.Height);
+        return _scrollViewer.Offset.Y >= maxOffset - ActivationTolerance;
     }
 
     private int CalculateActiveSection()
@@ -89,12 +101,11 @@ public sealed class ScrollSectionNavigator : IDisposable
         var content = _scrollViewer.Content as Visual;
         if (content == null) return 0;
 
-        // offset 有上限，最后一个分区永远够不到判定线；滚到底就直接选中它
+        // 兜底：已滚到底（Offset 被夹在 Extent - Viewport）时，最后一个分区无法
+        // 让「顶部越过判定线」，直接选中它。
         var maxOffset = Math.Max(0, _scrollViewer.Extent.Height - _scrollViewer.Viewport.Height);
-        if (maxOffset > 0 && scrollOffset >= maxOffset - 1)
+        if (maxOffset > 0 && scrollOffset >= maxOffset - ActivationTolerance)
             return _sections.Count - 1;
-
-        var threshold = _scrollViewer.Viewport.Height * _options.ActivationThresholdRatio;
 
         var activeIndex = 0;
         for (int i = 0; i < _sections.Count; i++)
@@ -102,24 +113,25 @@ public sealed class ScrollSectionNavigator : IDisposable
             var sectionTop = GetSectionTopRelativeToContent(_sections[i], content);
             if (!sectionTop.HasValue) continue;
 
-            if (sectionTop.Value <= scrollOffset + threshold)
+            if (sectionTop.Value <= scrollOffset + SnapOffset + ActivationTolerance)
                 activeIndex = i;
         }
 
         return activeIndex;
     }
 
-    private void ScrollToSection(int index)
+    private double ScrollToSection(int index)
     {
         var content = _scrollViewer.Content as Visual;
-        if (content == null) return;
+        if (content == null) return _scrollViewer.Offset.Y;
 
         var targetTop = GetSectionTopRelativeToContent(_sections[index], content);
-        if (!targetTop.HasValue) return;
+        if (!targetTop.HasValue) return _scrollViewer.Offset.Y;
 
-        // 补偿吸附标题高度，使分区顶部完整露出在最顶层内容之下
-        var targetY = Math.Max(0, targetTop.Value - _stickyHeaderHeight);
+        var targetY = Math.Max(0, targetTop.Value - SnapOffset);
+
         _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, targetY);
+        return targetY;
     }
 
     private static double? GetSectionTopRelativeToContent(Control section, Visual content)
