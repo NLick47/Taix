@@ -8,6 +8,8 @@
              xmlns:select="using:Taix.Client.Controls.Select"
              xmlns:base="using:Taix.Client.Controls.Base"
              xmlns:model="using:Taix.Client.ViewModels"
+             xmlns:behaviors="using:Taix.Client.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:DataType="model:ChartPageViewModel"
              x:Class="Taix.Client.Views.ChartPage">
     <UserControl.ContextMenu>
@@ -74,7 +76,7 @@
                     <TabItem TextElement.Foreground="{DynamicResource DefaultTextBrush}">
                         <StackPanel>
                             <!-- 统计卡片 -->
-                            <Grid Width="680" HorizontalAlignment="Left" Margin="0,5,0,15">
+                            <Grid Margin="0,5,0,15">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="*" />
@@ -227,14 +229,15 @@
 
                             <!-- 图表 + 雷达 + 最为频繁 -->
                             <WrapPanel Margin="-10">
-                                <Grid Margin="10,0,0,0">
+                                <i:Interaction.Behaviors>
+                                    <behaviors:RowWidthBehavior RowWidth="{Binding RowWidth, Mode=TwoWay}" />
+                                </i:Interaction.Behaviors>
+                                <Grid Margin="10,0,0,0" Width="{Binding ColumnChartWidth}">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="auto" />
                                         <RowDefinition Height="*" />
                                     </Grid.RowDefinitions>
                                     <Border Grid.Row="1" Margin="0,10,0,0"
-                                            Width="680"
-                                            HorizontalAlignment="Left"
                                             Background="{DynamicResource SettingPanelBgBrush}" Padding="20" CornerRadius="10">
                                         <StackPanel>
                                             <charts:ColumnChart IsStack="True" Height="310" ColumnSelectedIndex="{Binding ColumnSelectedIndex,Mode=TwoWay}" IsShowTotal="False" DataMaximum="{Binding DataMaximum}" NameIndexStart="{Binding NameIndexStart}" Data="{Binding Data}" IsCanColumnSelect="{Binding IsCanColumnSelect}" />
@@ -269,7 +272,7 @@
                                 </Grid>
 
                                 <!-- 雷达图 -->
-                                <Grid Margin="10,0,0,10" Width="350" Height="400"
+                                <Grid Margin="10,0,0,10" Width="{Binding RadarChartWidth}" Height="400"
                                       VerticalAlignment="Top">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="auto" />
@@ -285,7 +288,7 @@
                                 </Grid>
 
                                 <!-- 最为频繁 -->
-                                <Grid Margin="10,0,0,10" Width="320" Height="400" VerticalAlignment="Top">
+                                <Grid Margin="10,0,0,10" Width="{Binding TopListWidth}" Height="400" VerticalAlignment="Top">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="auto" />
                                         <RowDefinition Height="*" />
@@ -306,7 +309,7 @@
                     <TabItem TextElement.Foreground="{DynamicResource DefaultTextBrush}">
                         <StackPanel>
                             <!-- 统计卡片 -->
-                            <Grid Width="680" HorizontalAlignment="Left" Margin="0,5,0,0">
+                            <Grid Margin="0,5,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="*" />
@@ -428,8 +431,11 @@
 
                             <!-- 图表 + 饼图 + 最为频繁 -->
                             <WrapPanel Margin="-10,0,-10,0">
+                                <i:Interaction.Behaviors>
+                                    <behaviors:RowWidthBehavior RowWidth="{Binding RowWidth, Mode=TwoWay}" />
+                                </i:Interaction.Behaviors>
                                 <Border Margin="10,10,0,0" Background="{DynamicResource SettingPanelBgBrush}"
-                                        CornerRadius="10" Width="680" Padding="20">
+                                        CornerRadius="10" Width="{Binding ColumnChartWidth}" Padding="20">
                                     <StackPanel>
                                         <charts:ColumnChart IsCanColumnSelect="True" ColumnSelectedIndex="{Binding WebColSelectedIndex,Mode=TwoWay}" IsShowTotal="False" NameIndexStart="{Binding NameIndexStart}" IsStack="True" Height="305" Data="{Binding WebBrowseStatisticsData}" />
 
@@ -461,7 +467,7 @@
                                 </Border>
 
                                 <!-- 饼图 -->
-                                <Border Margin="10,10,0,0" Width="350" Height="300" Padding="20"
+                                <Border Margin="10,10,0,0" Width="{Binding RadarChartWidth}" Height="300" Padding="20"
                                         Background="{DynamicResource SettingPanelBgBrush}"
                                         CornerRadius="10" VerticalAlignment="Top">
                                     <Grid>
@@ -536,7 +542,7 @@
 
                                 <!-- 最为频繁 -->
                                 <Border Margin="10,10,0,0" Background="{DynamicResource SettingPanelBgBrush}"
-                                        Padding="20" CornerRadius="10" Width="320" Height="300"
+                                        Padding="20" CornerRadius="10" Width="{Binding TopListWidth}" Height="300"
                                         VerticalAlignment="Top">
                                     <Grid>
                                         <Grid.RowDefinitions>

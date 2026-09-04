@@ -12,6 +12,47 @@ namespace Taix.Client.Models;
 [GeneratePageState]
 public partial class ChartPageModel : ModelBase
 {
+    private double _rowWidth;
+
+    /// <summary>
+    /// 图表行的实际宽度，由视图行为（RowWidthBehavior）回写
+    /// </summary>
+    public double RowWidth
+    {
+        get => _rowWidth;
+        set
+        {
+            _rowWidth = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ColumnChartWidth));
+        }
+    }
+
+    /// <summary>
+    /// 雷达图宽度（macOS 内容区宽 32px，两块侧栏各分 16）
+    /// </summary>
+    public double RadarChartWidth => OperatingSystem.IsMacOS() ? 366 : 350;
+
+    /// <summary>
+    /// 「最为频繁」列表宽度
+    /// </summary>
+    public double TopListWidth => OperatingSystem.IsMacOS() ? 336 : 320;
+
+    /// <summary>
+    /// 行内柱状图宽度：空间足够（合并后 ≥560）时与雷达、最为频繁拼一行，
+    /// 否则独占一行铺满
+    /// </summary>
+    public double ColumnChartWidth
+    {
+        get
+        {
+            if (_rowWidth <= 0) return double.NaN;
+            var rest = RadarChartWidth + TopListWidth + 40; // 两块宽度 + 各自左margin + WrapPanel 外扩
+            var merged = _rowWidth - rest;
+            return merged >= 560 ? merged : _rowWidth - 20;
+        }
+    }
+
     private string _appCount;
 
     private int _columnSelectedIndex = -1;
