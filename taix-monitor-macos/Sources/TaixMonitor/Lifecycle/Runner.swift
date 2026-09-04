@@ -14,33 +14,45 @@ actor Runner {
 
     init(configuration: Configuration) {
         self.configuration = configuration
-        self.eventBus = EventBus()
-        self.transport = TransportClient(socketPath: configuration.socketPath)
-        self.persistence = Persistence(url: configuration.persistenceURL)
-        self.iconExtractor = IconExtractor(cacheDirectory: configuration.iconCacheDirectory)
-        self.appObserver = AppObserver(eventBus: eventBus, iconExtractor: iconExtractor)
-        self.gamepadMonitor = GamepadMonitor()
-        self.idleDetector = IdleDetector(
+        let eventBus = EventBus()
+        let transport = TransportClient(socketPath: configuration.socketPath)
+        let persistence = Persistence(url: configuration.persistenceURL)
+        let iconExtractor = IconExtractor(cacheDirectory: configuration.iconCacheDirectory)
+        let appObserver = AppObserver(eventBus: eventBus, iconExtractor: iconExtractor)
+        let gamepadMonitor = GamepadMonitor()
+        let idleDetector = IdleDetector(
             eventBus: eventBus,
             config: configuration.monitorConfig,
             gamepadMonitor: gamepadMonitor
         )
-        self.sessionTracker = SessionTracker(
+        let sessionTracker = SessionTracker(
             eventBus: eventBus,
             transport: transport,
             persistence: persistence,
-            tickInterval: configuration.tickInterval
+            tickInterval: configuration.tickInterval,
+            frontmostProvider: { [weak appObserver] in
+                guard let appObserver else { return nil }
+                return await appObserver.currentTrackedApp()
+            }
         )
+        self.eventBus = eventBus
+        self.transport = transport
+        self.persistence = persistence
+        self.iconExtractor = iconExtractor
+        self.appObserver = appObserver
+        self.idleDetector = idleDetector
+        self.sessionTracker = sessionTracker
+        self.gamepadMonitor = gamepadMonitor
     }
 
     func start() async {
         Logger.info("TaixMonitor starting...")
 
         await transport.start()
+        await sessionTracker.start()
         await appObserver.start()
         await idleDetector.start()
         await gamepadMonitor.start()
-        await sessionTracker.start()
 
         Logger.info("TaixMonitor is running")
 

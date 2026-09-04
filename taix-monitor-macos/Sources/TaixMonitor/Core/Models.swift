@@ -19,6 +19,8 @@ struct SessionSnapshot: Codable, Sendable {
     let startTime: Date
     let accumulatedSeconds: TimeInterval
     let appName: String?
+    let accruedSeconds: TimeInterval?
+    let savedAt: Date?
 }
 
 struct MonitorEvent: Codable, Sendable {

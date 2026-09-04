@@ -23,6 +23,10 @@ actor IdleDetector {
     // 系统睡眠通知
     private var sleepObserver: Any?
     private var wakeObserver: Any?
+    private var screenSleepObserver: Any?
+    private var screenWakeObserver: Any?
+
+    private var lastKnownIdleSeconds: TimeInterval?
 
     init(
         eventBus: EventBus,
@@ -60,6 +64,26 @@ actor IdleDetector {
             }
         }
 
+        // 显示器熄灭/点亮：熄灭即离开，立即暂停计时
+        screenSleepObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.screensDidSleepNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task {
+                await self?.handleSystemSleep()
+            }
+        }
+        screenWakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.screensDidWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task {
+                await self?.handleSystemWake()
+            }
+        }
+
         monitorTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { break }
@@ -79,16 +103,24 @@ actor IdleDetector {
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
             wakeObserver = nil
         }
+        if let observer = screenSleepObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            screenSleepObserver = nil
+        }
+        if let observer = screenWakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            screenWakeObserver = nil
+        }
         monitorTask?.cancel()
         monitorTask = nil
     }
 
     private func handleSystemSleep() async {
-        // 系统即将睡眠，立即暂停计时
+        // 系统/显示器即将休眠，立即暂停计时
         guard !isIdle else { return }
         isIdle = true
         isResumePending = true  // 标记为待恢复状态，等待唤醒后用户活动
-        Logger.info("System will sleep, pausing session timer")
+        Logger.info("System/display will sleep, pausing session timer")
         await publish(kind: .idleDetected)
     }
 
@@ -144,20 +176,24 @@ actor IdleDetector {
 
         let userActive = idleSeconds < config.inactiveThresholdSecs || gamepadActive
 
-        if !userActive && audioPlaying {
+        // 音频处理：无输入但有持续声音视为活跃；超 maxSoundDurationSecs 仍无输入则强制转 idle
+        if !isIdle && !userActive && audioPlaying {
             if soundStart == nil {
                 soundStart = Date()
-                Logger.debug("Sound started while idle, tracking duration")
+                Logger.debug("Sound playing without user input, tracking duration")
             }
-            if let start = soundStart, Date().timeIntervalSince(start) < config.maxSoundDurationSecs {
+            if let start = soundStart, Date().timeIntervalSince(start) >= config.maxSoundDurationSecs {
+                Logger.info("Sound duration exceeded \(config.maxSoundDurationSecs)s without user input, entering idle state")
+                soundStart = nil
+                isIdle = true
+                await publish(kind: .idleDetected)
                 lastIdleTime = idleSeconds
                 return
             }
-            // 声音持续播放超过阈值，转为 Sleep 状态
-            Logger.info("Sound duration exceeded \(config.maxSoundDurationSecs)s, entering idle state")
-            soundStart = nil
-        } else if userActive {
-            // 用户活跃时重置声音追踪
+            lastIdleTime = idleSeconds
+            return
+        } else if userActive || isIdle {
+            // 用户活跃或已 idle 时清空声音追踪
             soundStart = nil
         }
 
@@ -197,16 +233,19 @@ actor IdleDetector {
 
         guard result == KERN_SUCCESS else {
             Logger.error("Failed to get IORegistry properties: \(result)")
-            return config.inactiveThresholdSecs // 返回阈值，避免误判为活动状态
+            // 读取失败时沿用上次成功读数（或 0），不返回阈值以免把活跃用户误判为 idle
+            return lastKnownIdleSeconds ?? 0
         }
 
         guard let dict = properties?.takeRetainedValue() as? [String: Any],
               let idleTime = dict["HIDIdleTime"] as? Int64 else {
             Logger.error("Failed to get HIDIdleTime from registry")
-            return config.inactiveThresholdSecs
+            return lastKnownIdleSeconds ?? 0
         }
 
-        return Double(idleTime) / 1_000_000_000 // nanoseconds to seconds
+        let idle = Double(idleTime) / 1_000_000_000 // nanoseconds to seconds
+        lastKnownIdleSeconds = idle
+        return idle
     }
 
     private func publish(kind: MonitorEvent.EventKind) async {

@@ -15,6 +15,8 @@ actor AppObserver {
     private let iconExtractor: IconExtractor
     private var frontmostApp: NSRunningApplication?
     private var observation: Any?
+    private var lastEmittedApp: AppInfo?
+    private var lastEmittedPID: pid_t?
 
     init(eventBus: EventBus, iconExtractor: IconExtractor) {
         self.eventBus = eventBus
@@ -53,8 +55,16 @@ actor AppObserver {
 
         // 检查是否为排除的系统应用
         guard !isExcluded(application) else {
-            // 如果之前有正常应用在运行，需要结束它的会话
+            // 锁屏/屏保等系统界面接管前台 → 立即结束正在统计的会话
             Logger.debug("App ignored (system): \(application.localizedName ?? "Unknown") [\(application.bundleIdentifier ?? "no-bundle-id")]")
+            let idle = MonitorEvent(
+                kind: .idleDetected,
+                timestamp: Date(),
+                app: nil,
+                duration: nil,
+                window: nil
+            )
+            await eventBus.publish(idle)
             return
         }
 
@@ -78,6 +88,9 @@ actor AppObserver {
 
         Logger.info("App switched: \(previous) → \(appInfo.name) [\(appInfo.bundleIdentifier ?? "no-bundle-id")]")
 
+        lastEmittedApp = appInfo
+        lastEmittedPID = application.processIdentifier
+
         let event = MonitorEvent(
             kind: .foregroundChanged,
             timestamp: Date(),
@@ -87,6 +100,22 @@ actor AppObserver {
         )
 
         await eventBus.publish(event)
+    }
+
+    func currentTrackedApp() async -> AppInfo? {
+        guard let app = NSWorkspace.shared.frontmostApplication, !isExcluded(app) else { return nil }
+        if let last = lastEmittedApp, let pid = lastEmittedPID, pid == app.processIdentifier {
+            return last
+        }
+        let path = app.bundleURL?.path ?? ""
+        let display = getDisplayName(from: app.bundleURL)
+        return AppInfo(
+            name: app.localizedName ?? "Unknown",
+            bundleIdentifier: app.bundleIdentifier,
+            executablePath: path,
+            iconPath: nil,
+            displayName: display
+        )
     }
 
     private func isExcluded(_ application: NSRunningApplication) -> Bool {
