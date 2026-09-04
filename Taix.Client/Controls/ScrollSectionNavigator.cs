@@ -18,6 +18,7 @@ public sealed class ScrollSectionNavigator : IDisposable
     private readonly Action<int>? _activeIndexChanged;
     private readonly double _stickyHeaderHeight;
     private bool _isUpdatingFromScroll;
+    private bool _isProgrammaticScroll;
     private bool _disposed;
 
     public ScrollSectionNavigator(
@@ -51,6 +52,9 @@ public sealed class ScrollSectionNavigator : IDisposable
 
         _activeIndexChanged?.Invoke(activeIndex);
 
+        // 点击标签触发的滚动不回写选中态，否则目标位置被夹取时会弹回
+        if (_isProgrammaticScroll) return;
+
         if (activeIndex == _tabbar.SelectedIndex) return;
 
         _isUpdatingFromScroll = true;
@@ -67,7 +71,15 @@ public sealed class ScrollSectionNavigator : IDisposable
         var newIndex = e.NewValue is int index ? index : -1;
         if (newIndex < 0 || newIndex >= _sections.Count) return;
 
-        ScrollToSection(newIndex);
+        _isProgrammaticScroll = true;
+        try
+        {
+            ScrollToSection(newIndex);
+        }
+        finally
+        {
+            _isProgrammaticScroll = false;
+        }
     }
 
     private int CalculateActiveSection()
@@ -77,7 +89,12 @@ public sealed class ScrollSectionNavigator : IDisposable
         var content = _scrollViewer.Content as Visual;
         if (content == null) return 0;
 
-        var threshold = _scrollViewer.Bounds.Height * _options.ActivationThresholdRatio;
+        // offset 有上限，最后一个分区永远够不到判定线；滚到底就直接选中它
+        var maxOffset = Math.Max(0, _scrollViewer.Extent.Height - _scrollViewer.Viewport.Height);
+        if (maxOffset > 0 && scrollOffset >= maxOffset - 1)
+            return _sections.Count - 1;
+
+        var threshold = _scrollViewer.Viewport.Height * _options.ActivationThresholdRatio;
 
         var activeIndex = 0;
         for (int i = 0; i < _sections.Count; i++)
