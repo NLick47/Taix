@@ -9,10 +9,6 @@ namespace Taix.Client.Servicers.Instances;
 
 public class WindowStateService : IWindowStateService
 {
-    public double WindowWidth { get; set; }
-    public double WindowHeight { get; set; }
-    public bool IsMaximized { get; set; }
-
     private static string CacheFilePath
     {
         get
@@ -29,9 +25,7 @@ public class WindowStateService : IWindowStateService
         }
     }
 
-    public WindowStateService()
-    {
-    }
+    public WindowSnapshot? Last { get; private set; }
 
     public Task LoadAsync()
     {
@@ -41,32 +35,34 @@ public class WindowStateService : IWindowStateService
             {
                 var json = File.ReadAllText(CacheFilePath);
                 var state = JsonSerializer.Deserialize(json, ClientJsonContext.Default.WindowStateModel);
-                if (state != null)
-                {
-                    WindowWidth = state.WindowWidth;
-                    WindowHeight = state.WindowHeight;
-                    IsMaximized = state.IsMaximized;
-                }
+                Last = Read(state);
             }
         }
         catch
         {
-            // Ignore load errors, use defaults
+            // 缓存损坏时退回默认值，不应该影响启动
+            Last = null;
         }
 
         return Task.CompletedTask;
     }
 
-    public Task SaveAsync()
+    public Task SaveAsync(WindowSnapshot snapshot)
     {
+        Last = snapshot;
+
         try
         {
             var state = new WindowStateModel
             {
-                WindowWidth = WindowWidth,
-                WindowHeight = WindowHeight,
-                IsMaximized = IsMaximized
+                HasValue = true,
+                State = snapshot.State,
+                X = snapshot.X,
+                Y = snapshot.Y,
+                Width = snapshot.Width,
+                Height = snapshot.Height
             };
+
             var json = JsonSerializer.Serialize(state, ClientJsonContext.Default.WindowStateModel);
 
             var directory = Path.GetDirectoryName(CacheFilePath);
@@ -83,5 +79,25 @@ public class WindowStateService : IWindowStateService
         }
 
         return Task.CompletedTask;
+    }
+
+    private static WindowSnapshot? Read(WindowStateModel? state)
+    {
+        if (state == null) return null;
+
+        var snapshot = state.HasValue
+            ? new WindowSnapshot(state.X, state.Y, state.Width, state.Height, state.State)
+            : Migrate(state);
+
+        return snapshot.IsValid ? snapshot : null;
+    }
+
+    /// <summary>
+    /// 迁移旧版本缓存
+    /// </summary>
+    private static WindowSnapshot Migrate(WindowStateModel state)
+    {
+        var kind = state.IsMaximized == true ? WindowStateKind.Maximized : WindowStateKind.Normal;
+        return new WindowSnapshot(null, null, state.WindowWidth, state.WindowHeight, kind);
     }
 }

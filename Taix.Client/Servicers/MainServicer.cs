@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using Taix.Client.Platform.Abstractions.Primitives;
+using Taix.Client.Servicers.Instances;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.ViewModels;
 using Taix.Client.Views;
@@ -19,12 +20,12 @@ public class MainServicer : IMainServicer
     private readonly IShutdownService _shutdownService;
     private readonly IThemeServicer _themeServicer;
     private readonly IWebData _webData;
-    private readonly IWindowStateService _windowStateService;
+    private readonly WindowStateTracker _windowStateTracker;
 
     public MainServicer(
         IThemeServicer themeServicer,
         IContextMenuServicer contextMenuServicer,
-        IWindowStateService windowStateService,
+        WindowStateTracker windowStateTracker,
         IAppConfig config,
         IShutdownService shutdownService,
         ICategorys categorys,
@@ -32,7 +33,7 @@ public class MainServicer : IMainServicer
     {
         _themeServicer = themeServicer;
         _contextMenuServicer = contextMenuServicer;
-        _windowStateService = windowStateService;
+        _windowStateTracker = windowStateTracker;
         _config = config;
         _shutdownService = shutdownService;
         _categorys = categorys;
@@ -45,10 +46,9 @@ public class MainServicer : IMainServicer
 
         // 缓存命中时两者都是同步返回，直接顺序触发，省掉 WhenAll 的状态机开销
         var configLoad = _config.LoadAsync();
-        var windowLoad = _windowStateService.LoadAsync();
-        if (!configLoad.IsCompleted || !windowLoad.IsCompleted)
+        if (!configLoad.IsCompleted)
         {
-            await Task.WhenAll(configLoad, windowLoad);
+            await configLoad;
         }
 
         var language = (CultureCode)_config.GetConfig().General.Language;
@@ -88,30 +88,9 @@ public class MainServicer : IMainServicer
         var desk = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
         if (desk == null) return;
 
-
         var mainWindow = new MainWindow();
         var mainVM = ServiceLocator.GetService<MainViewModel>();
 
-        var config = _config.GetConfig();
-
-        if (config.General.IsSaveWindowSize
-            && _windowStateService.WindowWidth > 0
-            && _windowStateService.WindowHeight > 0)
-        {
-            mainWindow.Width = _windowStateService.WindowWidth;
-            mainWindow.Height = _windowStateService.WindowHeight;
-        }
-
-        mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-
-        if (config.General.IsSaveWindowSize && _windowStateService.IsMaximized)
-        {
-            mainWindow.WindowState = WindowState.Maximized;
-        }
-        else
-        {
-            mainWindow.WindowState = WindowState.Normal;
-        }
         mainWindow.DataContext = mainVM;
 
         mainWindow.Opened += (_, _) =>
@@ -126,6 +105,8 @@ public class MainServicer : IMainServicer
             }
         };
 
+        _windowStateTracker.Attach(mainWindow);
+
         // 先挂 MainWindow 再设可见：部分 Avalonia 逻辑依赖 MainWindow 就绪（关闭策略、Activate 路径）
         desk.MainWindow = mainWindow;
         mainWindow.IsVisible = true;
@@ -133,32 +114,6 @@ public class MainServicer : IMainServicer
 
     private async Task OnShuttingDown()
     {
-        var desk = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
-        if (desk?.MainWindow is not MainWindow mainWindow) return;
-
-        var cfg = _config.GetConfig();
-        if (cfg.General.IsSaveWindowSize)
-        {
-            _windowStateService.IsMaximized = mainWindow.WindowState == WindowState.Maximized;
-
-            // 最大化时先恢复 Normal 取实际尺寸，再还原状态
-            if (_windowStateService.IsMaximized)
-            {
-                var prev = mainWindow.WindowState;
-                mainWindow.WindowState = WindowState.Normal;
-                _windowStateService.WindowWidth = mainWindow.Width;
-                _windowStateService.WindowHeight = mainWindow.Height;
-                mainWindow.WindowState = prev;
-            }
-            else
-            {
-                _windowStateService.WindowWidth = mainWindow.Width;
-                _windowStateService.WindowHeight = mainWindow.Height;
-            }
-
-            await _windowStateService.SaveAsync();
-        }
-
         await _config.SaveAsync();
     }
 }

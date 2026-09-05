@@ -24,6 +24,7 @@ namespace Taix.Client;
 [Singleton(typeof(ICategorySummaryData), typeof(ApiCategorySummaryData))]
 [Singleton(typeof(IAppConfig), typeof(ApiAppConfig))]
 [Singleton(typeof(IWindowStateService), typeof(WindowStateService))]
+[Singleton(typeof(WindowStateTracker))]
 [Singleton(typeof(IUIServicer), typeof(UIServicer))]
 [Singleton(typeof(IDialogService), Factory = nameof(CreateDialogService))]
 [Singleton(typeof(IClipboardService), typeof(ClipboardService))]
