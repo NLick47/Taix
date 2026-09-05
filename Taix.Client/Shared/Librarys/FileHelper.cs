@@ -26,4 +26,14 @@ public class FileHelper
 #endif
         return _rootDirectory;
     }
+
+    public static string GetIconsDirectory()
+    {
+#if MACOS
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        return Path.Combine(home, "Library", "Application Support", "Taix");
+#else
+        return AppContext.BaseDirectory;
+#endif
+    }
 }

@@ -36,6 +36,11 @@ actor IconExtractor {
             return nil
         }
 
+        try? FileManager.default.createDirectory(
+            at: cacheDirectory,
+            withIntermediateDirectories: true
+        )
+
         do {
             try pngData.write(to: iconURL)
             Logger.debug("Icon extracted: \(executablePath) → \(iconURL.path)")

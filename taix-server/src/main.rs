@@ -75,7 +75,11 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
     let _single_instance = single_instance::try_acquire("Global\\TaixServerSingleInstance")
         .ok_or_else(|| anyhow::anyhow!("Another instance of taix-server is already running"))?;
 
-    let web_favicons_dir = exe_dir.join("WebFavicons");
+    let web_favicons_dir = if cfg!(target_os = "macos") {
+        constants::default_data_dir().join("WebFavicons")
+    } else {
+        exe_dir.join("WebFavicons")
+    };
 
     let db_path = std::env::var("TAIX_DB_PATH")
         .map(PathBuf::from)
@@ -90,10 +94,6 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
         "Asia/Shanghai",
     ).await?;
 
-    #[cfg(target_os = "macos")]
-    if let Err(e) = migrations::migrate_legacy_macos_icon_paths(&pool, exe_dir).await {
-        tracing::warn!("Failed to migrate legacy macOS icon paths: {e:#}");
-    }
     let config_service = Arc::new(ConfigService::new(&data_dir));
 
     // 读取初始配置，决定 WebSocket 是否启动

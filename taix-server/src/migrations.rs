@@ -8,7 +8,7 @@ use sqlx::SqlitePool;
 use std::collections::HashMap;
 use tracing::{info, warn};
 
-pub(crate) const MIGRATION_STEPS: [&str; 16] = [
+pub(crate) const MIGRATION_STEPS: [&str; 18] = [
     "baseline",
     "add_columns",
     "rename_columns",
@@ -25,6 +25,8 @@ pub(crate) const MIGRATION_STEPS: [&str; 16] = [
     "app_sessions",
     "web_category_url_match",
     "web_localhost_split",
+    "macos_icon_paths",
+    "web_favicons_dir",
 ];
 
 const BASELINE_SQL: &str = r#"
@@ -322,6 +324,19 @@ pub(crate) async fn run(pool: &SqlitePool, tz_id: &str) -> anyhow::Result<()> {
     if !is_done(&mut tx, "web_localhost_split").await? {
         split_localhost_sites(&mut tx).await?;
         mark_done(&mut tx, "web_localhost_split").await?;
+    }
+
+    // macOS 图标路径规范化（迁到 Application Support，只执行一次）
+    if !is_done(&mut tx, "macos_icon_paths").await? {
+        #[cfg(target_os = "macos")]
+        migrate_legacy_macos_icon_paths(&mut tx).await?;
+        mark_done(&mut tx, "macos_icon_paths").await?;
+    }
+
+    if !is_done(&mut tx, "web_favicons_dir").await? {
+        #[cfg(target_os = "macos")]
+        migrate_legacy_web_favicons_dir().await?;
+        mark_done(&mut tx, "web_favicons_dir").await?;
     }
 
     tx.commit().await.context("提交迁移事务失败")?;
@@ -704,58 +719,122 @@ async fn ensure_default_categories(
 }
 
 #[cfg(target_os = "macos")]
-pub(crate) async fn migrate_legacy_macos_icon_paths(
-    pool: &SqlitePool,
-    exe_dir: &std::path::Path,
+async fn migrate_legacy_macos_icon_paths(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
 ) -> anyhow::Result<()> {
     use sqlx::Row;
+    use std::path::Path;
 
-    const LEGACY_MARKER: &str = "Caches/Taix/Icons/";
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        .unwrap_or_else(|| std::path::PathBuf::from("/Applications/TaixTools"));
 
-    let rows = sqlx::query("SELECT ID, IconFile FROM AppModels WHERE IconFile LIKE ?")
-        .bind(format!("%{LEGACY_MARKER}%"))
-        .fetch_all(pool)
-        .await?;
-
-    if rows.is_empty() {
-        return Ok(());
-    }
-
-    let icons_dir = exe_dir.join("AppIcons");
+    let icons_dir = crate::constants::default_data_dir().join("AppIcons");
     std::fs::create_dir_all(&icons_dir)
         .with_context(|| format!("create icon dir {}", icons_dir.display()))?;
 
-    let mut migrated = 0usize;
-    for row in rows {
+    let legacy_sources = [
+        exe_dir.join("AppIcons"),
+        dirs::cache_dir()
+            .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
+            .join("Taix")
+            .join("Icons"),
+    ];
+
+    let rows = sqlx::query(
+        "SELECT ID, IconFile FROM AppModels \
+         WHERE IconFile LIKE 'AppIcons/%' OR IconFile LIKE '%Caches/Taix/Icons/%'",
+    )
+    .fetch_all(&mut **tx)
+    .await?;
+
+    let mut normalized = 0usize;
+    let mut cleared = 0usize;
+    for row in &rows {
         let id: i64 = row.get("ID");
-        let old_path = row.get::<Option<String>, _>("IconFile").unwrap_or_default();
-        let Some(file_name) = std::path::Path::new(&old_path)
+        let icon_file: String = row.get("IconFile");
+
+        let Some(file_name) = Path::new(&icon_file)
             .file_name()
             .and_then(|n| n.to_str())
+            .filter(|n| n.ends_with(".png"))
         else {
             continue;
         };
 
-        let new_abs = icons_dir.join(file_name);
-        if !new_abs.exists() {
-            if let Err(e) = std::fs::copy(&old_path, &new_abs) {
-                warn!(
-                    "icon migration copy failed: {} -> {}: {}",
-                    old_path,
-                    new_abs.display(),
-                    e
-                );
+        let target = icons_dir.join(file_name);
+        if !target.exists() {
+            let mut recovered = false;
+            for src in &legacy_sources {
+                let candidate = src.join(file_name);
+                if candidate.exists() && std::fs::copy(&candidate, &target).is_ok() {
+                    recovered = true;
+                    break;
+                }
+            }
+            if !recovered {
+                sqlx::query("UPDATE AppModels SET IconFile = NULL WHERE ID = ?")
+                    .bind(id)
+                    .execute(&mut **tx)
+                    .await?;
+                cleared += 1;
+                continue;
             }
         }
 
-        sqlx::query("UPDATE AppModels SET IconFile = ? WHERE ID = ?")
-            .bind(format!("AppIcons/{file_name}"))
-            .bind(id)
-            .execute(pool)
-            .await?;
-        migrated += 1;
+        let normalized_path = format!("AppIcons/{file_name}");
+        if normalized_path != icon_file {
+            sqlx::query("UPDATE AppModels SET IconFile = ? WHERE ID = ?")
+                .bind(&normalized_path)
+                .bind(id)
+                .execute(&mut **tx)
+                .await?;
+        }
+        normalized += 1;
     }
 
-    info!("migrated {} legacy macOS icon paths to AppIcons/", migrated);
+    info!(
+        "normalized {} macOS icon paths (cleared {} unrecoverable)",
+        normalized, cleared
+    );
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+async fn migrate_legacy_web_favicons_dir() -> anyhow::Result<()> {
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        .unwrap_or_else(|| std::path::PathBuf::from("/Applications/TaixTools"));
+
+    let legacy_dir = exe_dir.join("WebFavicons");
+    if !legacy_dir.is_dir() {
+        return Ok(());
+    }
+
+    let target_dir = crate::constants::default_data_dir().join("WebFavicons");
+    std::fs::create_dir_all(&target_dir)
+        .with_context(|| format!("create favicons dir {}", target_dir.display()))?;
+
+    let mut copied = 0usize;
+    for entry in std::fs::read_dir(&legacy_dir)
+        .with_context(|| format!("read legacy favicons dir {}", legacy_dir.display()))?
+    {
+        let entry = entry?;
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        let target = target_dir.join(file_name);
+        if !target.exists() && std::fs::copy(&path, &target).is_ok() {
+            copied += 1;
+        }
+    }
+
+    info!("migrated {copied} web favicons to Application Support");
     Ok(())
 }

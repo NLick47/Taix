@@ -171,7 +171,7 @@ public class Imager
 
         var fullPath = Path.IsPathRooted(normalizedPath)
             ? normalizedPath
-            : Path.Combine(FileHelper.GetRootDirectory(), normalizedPath);
+            : Path.Combine(FileHelper.GetIconsDirectory(), normalizedPath);
 
         return File.Exists(fullPath) ? fullPath : null;
     }
