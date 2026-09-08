@@ -318,7 +318,9 @@ public class MultiTrackTimeRuler : Control
         var isZoomModifier = e.KeyModifiers.HasFlag(KeyModifiers.Meta)
                              || e.KeyModifiers.HasFlag(KeyModifiers.Control);
 
-        var next = isZoomModifier
+        var isZoom = isZoomModifier || !TimelineGestures.IsHorizontalDominant(e.Delta);
+
+        var next = isZoom
             ? ZoomAtCore(pos.X, TimelineGestures.GetWheelZoomFactor(d))
             : TimelineGestures.PanByWheel(VisibleStartHour, VisibleEndHour, e.Delta, BoundStartHour, BoundEndHour);
 

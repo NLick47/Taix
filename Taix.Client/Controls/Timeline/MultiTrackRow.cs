@@ -163,12 +163,12 @@ public class MultiTrackRow : Control
         var isZoomModifier = e.KeyModifiers.HasFlag(KeyModifiers.Meta)
                              || e.KeyModifiers.HasFlag(KeyModifiers.Control);
 
-        if (!isZoomModifier && !TimelineGestures.IsHorizontalDominant(e.Delta)) return;
+        var isZoom = isZoomModifier || !TimelineGestures.IsHorizontalDominant(e.Delta);
 
         var pos = e.GetPosition(this);
         var d = TimelineGestures.GetDominantDelta(e.Delta);
 
-        var next = isZoomModifier
+        var next = isZoom
             ? TimelineGestures.ZoomAt(owner.VisibleStartHour, owner.VisibleEndHour,
                 pos.X, Bounds.Width, TimelineGestures.GetWheelZoomFactor(d),
                 owner.FrameStartHour, owner.FrameEndHour, TimelineGestures.MinVisibleHours)

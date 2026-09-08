@@ -436,7 +436,7 @@ public class Timeline : Control
         var isZoomModifier = e.KeyModifiers.HasFlag(KeyModifiers.Meta)
                              || e.KeyModifiers.HasFlag(KeyModifiers.Control);
 
-        if (isZoomModifier)
+        if (isZoomModifier || !TimelineGestures.IsHorizontalDominant(e.Delta))
         {
             ZoomAt(px, TimelineGestures.GetWheelZoomFactor(TimelineGestures.GetDominantDelta(e.Delta)));
             return;
