@@ -3,18 +3,19 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use windows::core::PCWSTR;
-use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Shell::{
-    Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE,
-    NOTIFYICONDATAW,
+    Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE, NOTIFYICONDATAW,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyIcon, DestroyWindow, DispatchMessageW,
-    GetWindowLongPtrW, PeekMessageW, PostQuitMessage, RegisterClassW, RegisterWindowMessageW,
-    SetWindowLongPtrW, TranslateMessage, CREATESTRUCTW, CW_USEDEFAULT, GWLP_USERDATA, HICON,
-    IMAGE_ICON, LR_DEFAULTSIZE, LR_LOADFROMFILE, LoadImageW, MSG, PM_REMOVE, WM_DESTROY,
-    WM_LBUTTONDOWN, WM_NCCREATE, WM_USER, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE,
+    AppendMenuW, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyIcon, DestroyWindow,
+    DispatchMessageW, GetCursorPos, GetWindowLongPtrW, LoadImageW, PeekMessageW, PostMessageW,
+    PostQuitMessage, RegisterClassW, RegisterWindowMessageW, SetForegroundWindow,
+    SetWindowLongPtrW, TrackPopupMenu, TranslateMessage, CREATESTRUCTW, CW_USEDEFAULT,
+    GWLP_USERDATA, HICON, IMAGE_ICON, LR_DEFAULTSIZE, LR_LOADFROMFILE, MF_SEPARATOR, MF_STRING,
+    MSG, PM_REMOVE, TPM_LEFTBUTTON, TPM_NONOTIFY, WM_COMMAND, WM_DESTROY, WM_LBUTTONDOWN,
+    WM_NCCREATE, WM_RBUTTONUP, WM_USER, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE,
     WS_EX_TOOLWINDOW, WS_EX_TRANSPARENT, WS_OVERLAPPED,
 };
 
@@ -24,10 +25,14 @@ use crate::platform::TrayCmd;
 const WM_TRAYICON: u32 = WM_USER + 1;
 const ID_TRAYICON: u32 = 1;
 
+const ID_SHOW: u32 = 1001;
+const ID_QUIT: u32 = 1002;
+
 /// 存储于 GWLP_USERDATA 的托盘数据
 struct TrayUserData {
     cmd_tx: std::sync::mpsc::SyncSender<TrayCmd>,
     icon: HICON,
+    shutdown: Arc<AtomicBool>,
 }
 
 /// 延迟获取 TaskbarCreated 已注册消息 ID
@@ -40,6 +45,44 @@ fn taskbar_restart_msg() -> u32 {
     })
 }
 
+unsafe fn show_context_menu(hwnd: HWND) {
+    let menu = match CreatePopupMenu() {
+        Ok(m) => m,
+        Err(_) => return,
+    };
+
+    let show_text: Vec<u16> = "显示 Taix\0".encode_utf16().collect();
+    let quit_text: Vec<u16> = "退出\0".encode_utf16().collect();
+
+    let _ = AppendMenuW(
+        menu,
+        MF_STRING,
+        ID_SHOW as usize,
+        PCWSTR::from_raw(show_text.as_ptr()),
+    );
+    let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
+    let _ = AppendMenuW(
+        menu,
+        MF_STRING,
+        ID_QUIT as usize,
+        PCWSTR::from_raw(quit_text.as_ptr()),
+    );
+
+    let mut point = POINT::default();
+    let _ = GetCursorPos(&mut point);
+
+    let _ = SetForegroundWindow(hwnd);
+    let _ = TrackPopupMenu(
+        menu,
+        TPM_LEFTBUTTON | TPM_NONOTIFY,
+        point.x,
+        point.y,
+        Some(0),
+        hwnd,
+        None,
+    );
+    let _ = PostMessageW(Some(hwnd), WM_USER, WPARAM(0), LPARAM(0));
+}
 
 unsafe extern "system" fn tray_wnd_proc(
     hwnd: HWND,
@@ -78,9 +121,29 @@ unsafe extern "system" fn tray_wnd_proc(
     // 处理托盘图标回调消息
     if userdata != 0 && msg == WM_TRAYICON {
         let event = lparam.0 as u32;
-        if event == WM_LBUTTONDOWN {
-            let data = &*(userdata as *const TrayUserData);
-            let _ = data.cmd_tx.try_send(TrayCmd::LaunchClient);
+        match event {
+            WM_LBUTTONDOWN => {
+                let data = &*(userdata as *const TrayUserData);
+                let _ = data.cmd_tx.try_send(TrayCmd::LaunchClient);
+            }
+            WM_RBUTTONUP => {
+                show_context_menu(hwnd);
+            }
+            _ => {}
+        }
+        return LRESULT(0);
+    }
+
+    if userdata != 0 && msg == WM_COMMAND {
+        let data = &*(userdata as *const TrayUserData);
+        match (wparam.0 & 0xFFFF) as u32 {
+            ID_SHOW => {
+                let _ = data.cmd_tx.try_send(TrayCmd::LaunchClient);
+            }
+            ID_QUIT => {
+                data.shutdown.store(true, Ordering::Relaxed);
+            }
+            _ => {}
         }
         return LRESULT(0);
     }
@@ -116,6 +179,7 @@ pub fn run_tray(
     let userdata = Box::new(TrayUserData {
         cmd_tx: cmd_tx.clone(),
         icon,
+        shutdown: shutdown.clone(),
     });
     let userdata_ptr = Box::into_raw(userdata);
 

@@ -9,6 +9,16 @@ mod service_manager;
 
 use std::path::PathBuf;
 
+#[cfg(target_os = "windows")]
+fn set_dpi_awareness() {
+    use windows::Win32::UI::HiDpi::{
+        SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
+    };
+    unsafe {
+        let _ = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+    }
+}
+
 fn parse_data_dir(args: &[String]) -> Option<PathBuf> {
     for i in 0..args.len() {
         if args[i] == "--data-dir" && i + 1 < args.len() {
@@ -26,6 +36,9 @@ fn print_usage(program: &str) {
 }
 
 fn main() {
+    #[cfg(target_os = "windows")]
+    set_dpi_awareness();
+
     let args: Vec<String> = std::env::args().collect();
     let program = args.first().map(|s| s.as_str()).unwrap_or("taix-shell.exe");
 

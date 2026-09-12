@@ -14,7 +14,9 @@ OUTPUT_DIR="${3:-.}"
 # 获取脚本所在目录作为 INSTALLER_DIR
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 INSTALLER_DIR="$SCRIPT_DIR"
-PACK_PAYLOAD_PATH="$INSTALLER_DIR/target/release/pack-payload.exe"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PACK_PAYLOAD_CRATE="$REPO_ROOT/taix-installer-pack-payload"
+PACK_PAYLOAD_PATH="$PACK_PAYLOAD_CRATE/target/release/pack-payload.exe"
 
 TEMP_DIR="/tmp/taix-build-$VERSION"
 
@@ -41,6 +43,7 @@ echo "[1/3] 复制文件..."
 cp -r "$SOURCE_DIR"/* "$TEMP_DIR/"
 
 echo "[2/3] 编译安装器并打包 payload..."
+cargo build --release --manifest-path "$PACK_PAYLOAD_CRATE/Cargo.toml"
 cargo build --release --manifest-path "$INSTALLER_DIR/Cargo.toml"
 
 # 检查编译结果
