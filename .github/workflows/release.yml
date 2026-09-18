@@ -41,7 +41,6 @@ jobs:
             taix-monitor-windows
             taix-shell
             taix-installer
-            taix-installer-pack-payload
 
       - name: Set APP_VERSION environment variable
         shell: pwsh
