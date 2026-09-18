@@ -3,10 +3,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 use std::time::Duration;
 
-use crate::constants::CLIENT_EXE_NAME;
-
 #[cfg(target_os = "windows")]
-use crate::constants::CLIENT_PIPE_NAME;
+use crate::constants::{CLIENT_EXE_NAME, CLIENT_PIPE_NAME};
 
 static IS_LAUNCHING: AtomicBool = AtomicBool::new(false);
 
@@ -31,24 +29,46 @@ fn cache_client_exe_path() -> Option<PathBuf> {
 }
 
 pub fn warm_client_exe_path() {
-    if let Some(path) = cache_client_exe_path() {
-        let _ = CLIENT_EXE_PATH.set(path);
+    match cache_client_exe_path() {
+        Some(path) => {
+            tracing::debug!(target: "taix_shell::client", "client exe path resolved to {:?}", path);
+            let _ = CLIENT_EXE_PATH.set(path);
+        }
+        None => tracing::warn!(target: "taix_shell::client", "failed to resolve client exe path"),
     }
 }
 
 pub fn launch_or_wake() -> anyhow::Result<()> {
-    if is_client_running() {
+    let running = is_client_running();
+    tracing::debug!(target: "taix_shell::client", "is_client_running={}", running);
+
+    if running {
         if try_wake_existing() {
+            tracing::info!(target: "taix_shell::client", "woke the running client over IPC");
             return Ok(());
         }
+
+        tracing::warn!(
+            target: "taix_shell::client",
+            "client appears to be running but did not answer the wake-up call; doing nothing"
+        );
         return Ok(());
     }
 
     if IS_LAUNCHING.swap(true, Ordering::SeqCst) {
+        tracing::info!(
+            target: "taix_shell::client",
+            "a launch is already in flight within the debounce window; skipping"
+        );
         return Ok(());
     }
 
+    tracing::info!(target: "taix_shell::client", "client is not running; spawning a new process");
     let result = spawn_new_process();
+    match &result {
+        Ok(()) => tracing::info!(target: "taix_shell::client", "client process spawned"),
+        Err(e) => tracing::error!(target: "taix_shell::client", "failed to spawn client error={:#}", e),
+    }
 
     std::thread::spawn(|| {
         std::thread::sleep(Duration::from_millis(LAUNCH_DEBOUNCE_MS));

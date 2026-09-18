@@ -115,8 +115,9 @@ public class ThemeServicer : IThemeServicer
             _ => null,
         };
 
+        var actualVariant = app.ActualThemeVariant;
         if (gradientKey != null &&
-            app.Resources.TryGetResource(gradientKey, definition.Variant, out var gradient) &&
+            app.Resources.TryGetResource(gradientKey, actualVariant, out var gradient) &&
             gradient is IBrush gradientBrush)
         {
             app.Resources["WindowBackground"] = gradientBrush;

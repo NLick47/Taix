@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use crate::constants::default_data_dir;
+use crate::shutdown::Shutdown;
 
 #[derive(Debug, Clone)]
 pub struct MonitorConfig {
@@ -48,9 +48,18 @@ impl ServiceManager {
         }
     }
 
-    pub fn run(self, shutdown: std::sync::Arc<AtomicBool>) {
+    pub fn run(self, shutdown: Shutdown) {
         let monitor_config = crate::config::load_monitor_config(&self.data_dir);
         let monitor_args = build_monitor_args(&monitor_config);
+
+        tracing::info!(
+            target: "taix_shell::service",
+            "service supervisor starting data_dir={:?} monitor(inactive_threshold={} max_sound_duration={} sleep_watch={})",
+            self.data_dir,
+            monitor_config.inactive_threshold,
+            monitor_config.max_sound_duration,
+            monitor_config.sleep_watch
+        );
 
         let self_clone = self.clone();
         let shutdown_clone = shutdown.clone();
@@ -61,6 +70,7 @@ impl ServiceManager {
                 shutdown_clone,
             );
         });
+        tracing::debug!(target: "taix_shell::service", "monitor supervisor thread spawned");
 
         self.supervise(
             crate::constants::SERVER_EXE_NAME,
@@ -69,22 +79,34 @@ impl ServiceManager {
         );
 
         let _ = monitor_handle.join();
+        tracing::info!(target: "taix_shell::service", "service supervisor exiting; both supervise loops done");
     }
 
     fn supervise(
         &self,
         exe_name: &'static str,
         args: &[String],
-        shutdown: std::sync::Arc<AtomicBool>,
+        shutdown: Shutdown,
     ) {
         #[cfg(target_os = "windows")]
         let job = crate::platform::job_object::JobObject::new();
+
+        #[cfg(target_os = "windows")]
+        match &job {
+            Ok(_) => tracing::debug!(target: "taix_shell::service", "{}: job object created", exe_name),
+            Err(e) => tracing::warn!(
+                target: "taix_shell::service",
+                "{}: job object creation failed ({:#}); children will not be killed with this shell",
+                exe_name, e
+            ),
+        }
 
         let mut backoff = Backoff::new();
         let mut missing_retries: u32 = 0;
 
         loop {
-            if shutdown.load(Ordering::Relaxed) {
+            if shutdown.is_requested() {
+                tracing::info!(target: "taix_shell::service", "{}: shutdown observed; supervise loop exiting", exe_name);
                 return;
             }
 
@@ -93,37 +115,93 @@ impl ServiceManager {
                 None => {
                     missing_retries += 1;
                     if missing_retries > Self::MAX_MISSING_RETRIES {
+                        tracing::error!(
+                            target: "taix_shell::service",
+                            "{}: executable not found after {} attempts; giving up supervision",
+                            exe_name, Self::MAX_MISSING_RETRIES
+                        );
                         return;
                     }
                     let delay = backoff.next_delay().max(Duration::from_secs(5));
-                    std::thread::sleep(delay);
+                    tracing::warn!(
+                        target: "taix_shell::service",
+                        "{}: executable not found (attempt {}/{}), retrying in {:?}",
+                        exe_name, missing_retries, Self::MAX_MISSING_RETRIES, delay
+                    );
+                    if !shutdown.wait_for(delay) {
+                        tracing::info!(
+                            target: "taix_shell::service",
+                            "{}: shutdown during not-found backoff; supervise loop exiting",
+                            exe_name
+                        );
+                        return;
+                    }
                     continue;
                 }
             };
 
             if missing_retries > 0 {
+                tracing::info!(
+                    target: "taix_shell::service",
+                    "{}: executable found again after {} misses; resetting backoff",
+                    exe_name, missing_retries
+                );
                 missing_retries = 0;
                 backoff = Backoff::new();
             }
 
             let delay = backoff.next_delay();
             if delay > Duration::ZERO {
-                let start = std::time::Instant::now();
-                while start.elapsed() < delay {
-                    if shutdown.load(Ordering::Relaxed) {
-                        return;
-                    }
-                    std::thread::sleep(Duration::from_millis(500));
+                tracing::info!(
+                    target: "taix_shell::service",
+                    "{}: waiting {:?} before respawn (failures={})",
+                    exe_name, delay, backoff.failures
+                );
+                if !shutdown.wait_for(delay) {
+                    tracing::info!(
+                        target: "taix_shell::service",
+                        "{}: shutdown during respawn backoff; supervise loop exiting",
+                        exe_name
+                    );
+                    return;
                 }
             }
 
-            #[cfg(target_os = "windows")]
+            // 已经有一个同名进程在跑 —— 通常是上一个 shell 崩溃后残留的 —— 等它自己
+            // 退出后再重新拉起。两端都必须等：残留的 server 占着端口/单实例资源，
+            // 新起的那个起来就挂，监督循环会陷入无意义的重启风暴。
             if let Some(pid) = find_existing_process(exe_name) {
+                tracing::warn!(
+                    target: "taix_shell::service",
+                    "{}: found a pre-existing pid={} (likely orphaned by a previous shell); waiting for it to exit",
+                    exe_name, pid
+                );
+                #[cfg(target_os = "windows")]
+                if let Ok(job) = &job {
+                    match job.assign_process(pid) {
+                        Ok(()) => tracing::info!(
+                            target: "taix_shell::service",
+                            "{}: adopted pid={} into this shell's job object",
+                            exe_name, pid
+                        ),
+                        Err(e) => tracing::warn!(
+                            target: "taix_shell::service",
+                            "{}: failed to adopt pid={} into job object ({:#}); it may outlive this shell",
+                            exe_name, pid, e
+                        ),
+                    }
+                }
                 loop {
-                    if shutdown.load(Ordering::Relaxed) {
+                    if shutdown.is_requested() {
+                        tracing::warn!(
+                            target: "taix_shell::service",
+                            "{}: shutdown while waiting for pre-existing pid={}; leaving it running (it is not ours to kill)",
+                            exe_name, pid
+                        );
                         return;
                     }
                     if !crate::platform::is_process_alive(pid) {
+                        tracing::info!(target: "taix_shell::service", "{}: pre-existing pid={} exited", exe_name, pid);
                         break;
                     }
                     std::thread::sleep(Duration::from_secs(1));
@@ -134,49 +212,121 @@ impl ServiceManager {
             let args = build_args(args);
             let mut child = match spawn_process(&exe_path, &args) {
                 Ok(c) => c,
-                Err(_) => {
+                Err(e) => {
+                    tracing::warn!(
+                        target: "taix_shell::service",
+                        "{}: spawn failed exe={:?} error={}",
+                        exe_name, exe_path, e
+                    );
                     backoff.record_failure();
                     continue;
                 }
             };
+            let pid = child.id();
+            tracing::info!(
+                target: "taix_shell::service",
+                "{}: spawned pid={} exe={:?} args={:?}",
+                exe_name, pid, exe_path, args
+            );
 
             #[cfg(target_os = "windows")]
-            if let (pid, Ok(ref job)) = (child.id(), &job) {
-                let _ = job.assign_process(pid);
+            if let Ok(ref job) = &job {
+                match job.assign_process(pid) {
+                    Ok(()) => tracing::debug!(
+                        target: "taix_shell::service",
+                        "{}: pid={} assigned to job object",
+                        exe_name, pid
+                    ),
+                    Err(e) => tracing::warn!(
+                        target: "taix_shell::service",
+                        "{}: failed to assign pid={} to job object ({:#})",
+                        exe_name, pid, e
+                    ),
+                }
             }
 
-            std::thread::sleep(Duration::from_secs(2));
-            let pid = child.id();
+            // 给子进程一点启动时间再确认它没立刻挂掉
+            if !shutdown.wait_for(Duration::from_secs(2)) {
+                tracing::info!(
+                    target: "taix_shell::service",
+                    "{}: shutdown during startup grace period; killing pid={}",
+                    exe_name, pid
+                );
+                let _ = child.kill();
+                let _ = child.wait();
+                return;
+            }
             if !crate::platform::is_process_alive(pid) {
+                tracing::warn!(
+                    target: "taix_shell::service",
+                    "{}: pid={} died within the 2s startup grace period; will retry",
+                    exe_name, pid
+                );
                 backoff.record_failure();
                 continue;
             }
+            tracing::debug!(target: "taix_shell::service", "{}: pid={} alive after grace period", exe_name, pid);
 
+            let started = std::time::Instant::now();
             loop {
-                if shutdown.load(Ordering::Relaxed) {
+                if shutdown.is_requested() {
+                    tracing::info!(
+                        target: "taix_shell::service",
+                        "{}: shutdown observed; killing pid={} (uptime {:?})",
+                        exe_name, pid, started.elapsed()
+                    );
                     let _ = child.kill();
                     let _ = child.wait();
                     return;
                 }
                 match child.try_wait() {
-                    Ok(Some(_)) => break,
+                    Ok(Some(status)) => {
+                        tracing::warn!(
+                            target: "taix_shell::service",
+                            "{}: pid={} exited ({} uptime={:?})",
+                            exe_name, pid, describe_status(&status), started.elapsed()
+                        );
+                        break;
+                    }
                     Ok(None) => {
                         std::thread::sleep(Duration::from_secs(1));
                     }
-                    Err(_) => break,
+                    Err(e) => {
+                        tracing::warn!(
+                            target: "taix_shell::service",
+                            "{}: try_wait failed for pid={} ({}); assuming it is gone",
+                            exe_name, pid, e
+                        );
+                        break;
+                    }
                 }
             }
 
             backoff.record_failure();
+            tracing::info!(
+                target: "taix_shell::service",
+                "{}: failure #{} recorded; restarting soon",
+                exe_name, backoff.failures
+            );
 
-            let start = std::time::Instant::now();
-            while start.elapsed() < Duration::from_secs(5) {
-                if shutdown.load(Ordering::Relaxed) {
-                    return;
-                }
-                std::thread::sleep(Duration::from_millis(500));
+            if !shutdown.wait_for(Duration::from_secs(5)) {
+                tracing::info!(
+                    target: "taix_shell::service",
+                    "{}: shutdown during post-exit delay; supervise loop exiting",
+                    exe_name
+                );
+                return;
             }
         }
+    }
+}
+
+/// 把 `ExitStatus` 拼成可读文本。Unix 下被信号杀死时 `code()` 返回 `None` ——
+/// 这正是区分「自己崩了」和「被 shell 杀了」的关键信息。
+fn describe_status(status: &std::process::ExitStatus) -> String {
+    match status.code() {
+        Some(code) => format!("exit code {code}"),
+        None => "terminated by signal".to_owned(),
     }
 }
 

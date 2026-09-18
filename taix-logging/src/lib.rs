@@ -234,7 +234,7 @@ impl tracing::Subscriber for Sub {
     fn record_follows_from(&self, _: &tracing::Id, _: &tracing::Id) {}
     fn enter(&self, _: &tracing::Id) {}
     fn exit(&self, _: &tracing::Id) {}
-    fn clone_span(&self, id: &tracing::Id) -> tracing::Id { self.next_id() }
+    fn clone_span(&self, _id: &tracing::Id) -> tracing::Id { self.next_id() }
     fn drop_span(&self, _: tracing::Id) {}
     fn register_callsite(&self, _: &'static tracing::Metadata<'static>) -> tracing::subscriber::Interest {
         tracing::subscriber::Interest::sometimes()
