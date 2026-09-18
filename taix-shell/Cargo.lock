@@ -321,6 +321,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "taix-logging"
+version = "0.1.0"
+dependencies = [
+ "tracing",
+]
+
+[[package]]
 name = "taix-shell"
 version = "0.1.0"
 dependencies = [
@@ -333,6 +340,7 @@ dependencies = [
  "objc_id",
  "serde",
  "serde_json",
+ "taix-logging",
  "tracing",
  "windows",
 ]

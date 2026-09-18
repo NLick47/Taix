@@ -4,9 +4,6 @@ pub const CLIENT_PIPE_NAME: &str = r"\\.\pipe\TaixClient";
 #[cfg(target_os = "windows")]
 pub const CLIENT_EXE_NAME: &str = "Taix.exe";
 
-#[cfg(target_os = "macos")]
-pub const CLIENT_EXE_NAME: &str = "Taix";
-
 #[cfg(target_os = "windows")]
 pub const MONITOR_EXE_NAME: &str = "taix-monitor-windows.exe";
 

@@ -1,38 +1,92 @@
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use std::time::Duration;
 
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Shell::{
-    Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE, NOTIFYICONDATAW,
+    Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_STATE, NIF_TIP, NIM_ADD, NIM_DELETE, NIM_MODIFY,
+    NIS_HIDDEN, NOTIFYICONDATAW,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    AppendMenuW, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyIcon, DestroyWindow,
-    DispatchMessageW, GetCursorPos, GetWindowLongPtrW, LoadImageW, PeekMessageW, PostMessageW,
-    PostQuitMessage, RegisterClassW, RegisterWindowMessageW, SetForegroundWindow,
+    AppendMenuW, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyIcon, DestroyMenu,
+    DestroyWindow, DispatchMessageW, GetCursorPos, GetWindowLongPtrW, LoadImageW, PeekMessageW,
+    PostMessageW, PostQuitMessage, RegisterClassW, RegisterWindowMessageW, SetForegroundWindow,
     SetWindowLongPtrW, TrackPopupMenu, TranslateMessage, CREATESTRUCTW, CW_USEDEFAULT,
     GWLP_USERDATA, HICON, IMAGE_ICON, LR_DEFAULTSIZE, LR_LOADFROMFILE, MF_SEPARATOR, MF_STRING,
-    MSG, PM_REMOVE, TPM_LEFTBUTTON, TPM_NONOTIFY, WM_COMMAND, WM_DESTROY, WM_LBUTTONDOWN,
-    WM_NCCREATE, WM_RBUTTONUP, WM_USER, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE,
+    MSG, PM_REMOVE, TPM_LEFTBUTTON, TPM_NONOTIFY, TPM_RETURNCMD, WM_DESTROY, WM_LBUTTONDOWN,
+    WM_NCCREATE, WM_NULL, WM_RBUTTONUP, WM_USER, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE,
     WS_EX_TOOLWINDOW, WS_EX_TRANSPARENT, WS_OVERLAPPED,
 };
 
 use crate::config::TrayConfig;
+use crate::i18n::{menu_texts, MenuTexts};
 use crate::platform::TrayCmd;
+use crate::shutdown::Shutdown;
 
 const WM_TRAYICON: u32 = WM_USER + 1;
 const ID_TRAYICON: u32 = 1;
 
-const ID_SHOW: u32 = 1001;
-const ID_QUIT: u32 = 1002;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TrayAction {
+    Show,
+    Exit,
+}
+
+impl TrayAction {
+    const SHOW: u32 = 1001;
+    const EXIT: u32 = 1002;
+
+    const ALL: [Self; 2] = [Self::Show, Self::Exit];
+
+    fn id(self) -> u32 {
+        match self {
+            Self::Show => Self::SHOW,
+            Self::Exit => Self::EXIT,
+        }
+    }
+
+    fn from_id(id: u32) -> Option<Self> {
+        Self::ALL.into_iter().find(|action| action.id() == id)
+    }
+
+    fn label(self, texts: &MenuTexts) -> &'static str {
+        match self {
+            Self::Show => texts.show,
+            Self::Exit => texts.quit,
+        }
+    }
+}
+
+fn dispatch(action: TrayAction, data: &TrayUserData) {
+    tracing::info!(target: "taix_shell::tray", "dispatching tray action {:?}", action);
+    match action {
+        TrayAction::Show => {
+            if data.cmd_tx.try_send(TrayCmd::LaunchClient).is_err() {
+                tracing::warn!(target: "taix_shell::tray", "client launch queue full, dropping request");
+            } else {
+                tracing::debug!(target: "taix_shell::tray", "LaunchClient handed to the action thread");
+            }
+        }
+        TrayAction::Exit => {
+            tracing::info!(target: "taix_shell::tray", "exit requested from the tray menu");
+            data.shutdown.request();
+        }
+    }
+}
 
 /// 存储于 GWLP_USERDATA 的托盘数据
 struct TrayUserData {
     cmd_tx: std::sync::mpsc::SyncSender<TrayCmd>,
     icon: HICON,
-    shutdown: Arc<AtomicBool>,
+    shutdown: Shutdown,
+    texts: &'static MenuTexts,
+}
+
+impl TrayUserData {
+    unsafe fn from_userdata(hwnd: HWND) -> Option<&'static Self> {
+        let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+        if ptr == 0 { None } else { Some(&*(ptr as *const Self)) }
+    }
 }
 
 /// 延迟获取 TaskbarCreated 已注册消息 ID
@@ -45,43 +99,66 @@ fn taskbar_restart_msg() -> u32 {
     })
 }
 
-unsafe fn show_context_menu(hwnd: HWND) {
+unsafe fn show_context_menu(hwnd: HWND, texts: &MenuTexts) -> Option<TrayAction> {
     let menu = match CreatePopupMenu() {
-        Ok(m) => m,
-        Err(_) => return,
+        Ok(menu) => menu,
+        Err(e) => {
+            tracing::error!(target: "taix_shell::tray", "CreatePopupMenu failed: {}", e);
+            return None;
+        }
     };
 
-    let show_text: Vec<u16> = "显示 Taix\0".encode_utf16().collect();
-    let quit_text: Vec<u16> = "退出\0".encode_utf16().collect();
+    for (index, action) in TrayAction::ALL.into_iter().enumerate() {
+        if index > 0 {
+            let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
+        }
 
-    let _ = AppendMenuW(
-        menu,
-        MF_STRING,
-        ID_SHOW as usize,
-        PCWSTR::from_raw(show_text.as_ptr()),
-    );
-    let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
-    let _ = AppendMenuW(
-        menu,
-        MF_STRING,
-        ID_QUIT as usize,
-        PCWSTR::from_raw(quit_text.as_ptr()),
-    );
+        let label = wide(action.label(texts));
+        let _ = AppendMenuW(
+            menu,
+            MF_STRING,
+            action.id() as usize,
+            PCWSTR::from_raw(label.as_ptr()),
+        );
+        tracing::debug!(
+            target: "taix_shell::tray",
+            "menu item added id={} action={:?} label={:?}",
+            action.id(), action, action.label(texts)
+        );
+    }
 
     let mut point = POINT::default();
     let _ = GetCursorPos(&mut point);
+    tracing::debug!(target: "taix_shell::tray", "popping up context menu at ({}, {})", point.x, point.y);
 
     let _ = SetForegroundWindow(hwnd);
-    let _ = TrackPopupMenu(
+    let selected = TrackPopupMenu(
         menu,
-        TPM_LEFTBUTTON | TPM_NONOTIFY,
+        TPM_LEFTBUTTON | TPM_NONOTIFY | TPM_RETURNCMD,
         point.x,
         point.y,
         Some(0),
         hwnd,
         None,
+    )
+    .0 as u32;
+
+    // 这一行是验证「菜单选择不再被 TPM_NONOTIFY 吞掉」的关键证据：id 应当等于
+    // 被点中那一项的 ID，而不是恒为 0。
+    tracing::info!(
+        target: "taix_shell::tray",
+        "TrackPopupMenu returned id={} → {:?}",
+        selected, TrayAction::from_id(selected)
     );
-    let _ = PostMessageW(Some(hwnd), WM_USER, WPARAM(0), LPARAM(0));
+
+    let _ = DestroyMenu(menu);
+    let _ = PostMessageW(Some(hwnd), WM_NULL, WPARAM(0), LPARAM(0));
+
+    TrayAction::from_id(selected)
+}
+
+fn wide(text: &str) -> Vec<u16> {
+    text.encode_utf16().chain(Some(0)).collect()
 }
 
 unsafe extern "system" fn tray_wnd_proc(
@@ -98,7 +175,16 @@ unsafe extern "system" fn tray_wnd_proc(
             return DefWindowProcW(hwnd, msg, wparam, lparam);
         }
         WM_DESTROY => {
+            tracing::info!(
+                target: "taix_shell::tray",
+                "WM_DESTROY received; removing tray icon and releasing TrayUserData"
+            );
+            // 先断开 GWLP_USERDATA 再释放：DestroyWindow 之后系统还会补送一个
+            // WM_NCDESTROY，窗口过程那时会再读一次 USERDATA。若不清零，
+            // TrayUserData::from_userdata 就会基于已释放的内存造出一个引用
+            // —— 即使不解引用也是 UB。
             let userdata = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut TrayUserData;
+            SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
             if !userdata.is_null() {
                 // 移除托盘图标
                 let mut nid: NOTIFYICONDATAW = std::mem::zeroed();
@@ -116,43 +202,43 @@ unsafe extern "system" fn tray_wnd_proc(
         _ => {}
     }
 
-    let userdata = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+    let Some(data) = TrayUserData::from_userdata(hwnd) else {
+        return DefWindowProcW(hwnd, msg, wparam, lparam);
+    };
 
-    // 处理托盘图标回调消息
-    if userdata != 0 && msg == WM_TRAYICON {
-        let event = lparam.0 as u32;
-        match event {
+    // 托盘图标回调：左键直接唤起客户端，右键弹菜单
+    if msg == WM_TRAYICON {
+        match lparam.0 as u32 {
             WM_LBUTTONDOWN => {
-                let data = &*(userdata as *const TrayUserData);
-                let _ = data.cmd_tx.try_send(TrayCmd::LaunchClient);
+                tracing::debug!(target: "taix_shell::tray", "tray icon left-click");
+                dispatch(TrayAction::Show, data);
             }
             WM_RBUTTONUP => {
-                show_context_menu(hwnd);
+                tracing::debug!(target: "taix_shell::tray", "tray icon right-click; opening context menu");
+                match show_context_menu(hwnd, data.texts) {
+                    Some(action) => dispatch(action, data),
+                    None => tracing::debug!(
+                        target: "taix_shell::tray",
+                        "context menu dismissed without a selection (id=0)"
+                    ),
+                }
             }
-            _ => {}
+            other => tracing::trace!(
+                target: "taix_shell::tray",
+                "unhandled tray icon notification lparam={}",
+                other
+            ),
         }
         return LRESULT(0);
     }
 
-    if userdata != 0 && msg == WM_COMMAND {
-        let data = &*(userdata as *const TrayUserData);
-        match (wparam.0 & 0xFFFF) as u32 {
-            ID_SHOW => {
-                let _ = data.cmd_tx.try_send(TrayCmd::LaunchClient);
-            }
-            ID_QUIT => {
-                data.shutdown.store(true, Ordering::Relaxed);
-            }
-            _ => {}
-        }
-        return LRESULT(0);
-    }
-
-    // 处理 explorer 重启
-    let restart = taskbar_restart_msg();
-    if userdata != 0 && msg == restart {
-        let data = &*(userdata as *const TrayUserData);
-        register_tray_icon(hwnd, ID_TRAYICON, data.icon);
+    // explorer 重启后重新注册图标
+    if msg == taskbar_restart_msg() {
+        tracing::warn!(
+            target: "taix_shell::tray",
+            "TaskbarCreated received (explorer restarted); re-registering tray icon"
+        );
+        register_tray_icon(hwnd, ID_TRAYICON, data.icon, &data.shutdown);
         return LRESULT(0);
     }
 
@@ -161,58 +247,85 @@ unsafe extern "system" fn tray_wnd_proc(
 
 pub fn run_tray(
     cmd_tx: std::sync::mpsc::SyncSender<TrayCmd>,
-    initial_config: TrayConfig,
-    shutdown: Arc<AtomicBool>,
+    config: TrayConfig,
+    shutdown: Shutdown,
 ) -> anyhow::Result<()> {
-    let icon = load_icon()?;
+    tracing::info!(
+        target: "taix_shell::tray",
+        "run_tray start theme={:?} language={:?} is_visible={}",
+        config.theme, config.language, config.is_visible
+    );
 
-    {
-        let deadline = std::time::Instant::now() + Duration::from_secs(1);
-        while std::time::Instant::now() < deadline {
-            if shutdown.load(Ordering::Relaxed) {
-                return Ok(());
-            }
-            std::thread::sleep(Duration::from_millis(100));
+    // 菜单主题是进程级设置，且必须在任何菜单创建之前应用。
+    super::apply_menu_theme(config.theme);
+
+    let icon = match load_icon() {
+        Ok(icon) => icon,
+        Err(e) => {
+            tracing::error!(target: "taix_shell::tray", "failed to load tray icon: {:#}", e);
+            return Err(e);
         }
+    };
+    tracing::debug!(target: "taix_shell::tray", "tray icon loaded");
+
+    // 计划任务启动时托盘区域可能还没就绪，先等一小会儿
+    let deadline = std::time::Instant::now() + Duration::from_secs(1);
+    while std::time::Instant::now() < deadline {
+        if shutdown.is_requested() {
+            tracing::info!(
+                target: "taix_shell::tray",
+                "shutdown during taskbar readiness wait; aborting tray startup"
+            );
+            return Ok(());
+        }
+        std::thread::sleep(Duration::from_millis(100));
     }
 
     let userdata = Box::new(TrayUserData {
-        cmd_tx: cmd_tx.clone(),
+        cmd_tx,
         icon,
         shutdown: shutdown.clone(),
+        texts: menu_texts(config.language),
     });
     let userdata_ptr = Box::into_raw(userdata);
 
-    let hwnd = create_hidden_window(userdata_ptr as *mut std::ffi::c_void)?;
-
-    register_tray_icon(hwnd, ID_TRAYICON, icon);
-
-    if !initial_config.is_visible {
-        unsafe {
-            let mut nid: NOTIFYICONDATAW = std::mem::zeroed();
-            nid.cbSize = std::mem::size_of::<NOTIFYICONDATAW>() as u32;
-            nid.hWnd = hwnd;
-            nid.uID = ID_TRAYICON;
-            nid.uFlags = windows::Win32::UI::Shell::NIF_STATE;
-            nid.dwState = windows::Win32::UI::Shell::NIS_HIDDEN;
-            nid.dwStateMask = windows::Win32::UI::Shell::NIS_HIDDEN;
-            let _ = Shell_NotifyIconW(windows::Win32::UI::Shell::NIM_MODIFY, &nid);
+    let hwnd = match create_hidden_window(userdata_ptr as *mut std::ffi::c_void) {
+        Ok(hwnd) => hwnd,
+        Err(e) => {
+            tracing::error!(target: "taix_shell::tray", "CreateWindowExW failed: {:#}", e);
+            return Err(e);
         }
+    };
+    tracing::info!(target: "taix_shell::tray", "hidden tray window created hwnd={:?}", hwnd);
+
+    register_tray_icon(hwnd, ID_TRAYICON, icon, &shutdown);
+
+    if config.is_visible {
+        tracing::info!(target: "taix_shell::tray", "tray icon is visible; awaiting user interaction");
+    } else {
+        set_icon_hidden(hwnd, ID_TRAYICON);
     }
 
-    // 消息循环
+    tracing::info!(target: "taix_shell::tray", "entering message loop");
     unsafe {
         let mut msg: MSG = std::mem::zeroed();
         loop {
-            if shutdown.load(Ordering::Relaxed) {
-                // 主动销毁窗口，触发 WM_DESTROY → 清理
+            if shutdown.is_requested() {
+                // 主动销毁窗口，触发 WM_DESTROY → 清理图标与 userdata
+                tracing::info!(
+                    target: "taix_shell::tray",
+                    "shutdown observed in message loop; destroying the tray window"
+                );
                 let _ = DestroyWindow(hwnd);
                 break;
             }
 
             if PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
                 if msg.message == WM_DESTROY {
-                    // WM_DESTROY 已由窗口过程处理，此处结束消息循环
+                    tracing::debug!(
+                        target: "taix_shell::tray",
+                        "message loop saw WM_DESTROY; breaking out"
+                    );
                     break;
                 }
                 let _ = TranslateMessage(&msg);
@@ -223,6 +336,7 @@ pub fn run_tray(
         }
     }
 
+    tracing::info!(target: "taix_shell::tray", "message loop finished; run_tray returning");
     Ok(())
 }
 
@@ -237,11 +351,7 @@ fn load_icon() -> anyhow::Result<HICON> {
         return Err(anyhow::anyhow!("icon not found: {}", icon_path.display()));
     }
 
-    let path_wide: Vec<u16> = icon_path
-        .to_string_lossy()
-        .encode_utf16()
-        .chain(Some(0))
-        .collect();
+    let path_wide = wide(&icon_path.to_string_lossy());
 
     unsafe {
         let icon = LoadImageW(
@@ -297,12 +407,34 @@ fn create_hidden_window(lp_param: *mut std::ffi::c_void) -> anyhow::Result<HWND>
     }
 }
 
-/// 注册托盘图标，失败时指数退避重试（应对计划任务启动时托盘区域未就绪）
-fn register_tray_icon(hwnd: HWND, id: u32, icon: HICON) {
-    let tooltip: Vec<u16> = "Taix\0".encode_utf16().collect();
+/// 隐藏已注册的托盘图标（`IsEnableTray=false` 时使用）。
+///
+/// 进程继续运行以维持对 server / monitor 的监督，只是不在托盘区出现。
+fn set_icon_hidden(hwnd: HWND, id: u32) {
+    tracing::info!(
+        target: "taix_shell::tray",
+        "IsEnableTray=false: tray icon hidden, but the process keeps supervising server/monitor"
+    );
+    unsafe {
+        let mut nid: NOTIFYICONDATAW = std::mem::zeroed();
+        nid.cbSize = std::mem::size_of::<NOTIFYICONDATAW>() as u32;
+        nid.hWnd = hwnd;
+        nid.uID = id;
+        nid.uFlags = NIF_STATE;
+        nid.dwState = NIS_HIDDEN;
+        nid.dwStateMask = NIS_HIDDEN;
+        let _ = Shell_NotifyIconW(NIM_MODIFY, &nid);
+    }
+}
 
-    let mut attempt: u32 = 0;
-    loop {
+/// 注册托盘图标失败后最多重试几次。
+const MAX_REGISTER_ATTEMPTS: u32 = 10;
+
+/// 注册托盘图标，失败时指数退避重试（应对计划任务启动时托盘区域未就绪）
+fn register_tray_icon(hwnd: HWND, id: u32, icon: HICON, shutdown: &Shutdown) {
+    let tooltip = wide("Taix");
+
+    for attempt in 1..=MAX_REGISTER_ATTEMPTS {
         let ok = unsafe {
             let mut nid: NOTIFYICONDATAW = std::mem::zeroed();
             nid.cbSize = std::mem::size_of::<NOTIFYICONDATAW>() as u32;
@@ -317,13 +449,16 @@ fn register_tray_icon(hwnd: HWND, id: u32, icon: HICON) {
         };
 
         if ok {
-            break;
+            tracing::info!(
+                target: "taix_shell::tray",
+                "NIM_ADD ok hwnd={:?} id={} attempt={}/{}",
+                hwnd, id, attempt, MAX_REGISTER_ATTEMPTS
+            );
+            return;
         }
 
-        attempt += 1;
-        if attempt >= 10 {
-            tracing::error!(target: "taix_shell::tray", "NIM_ADD failed after {} retries", attempt);
-            return;
+        if attempt == MAX_REGISTER_ATTEMPTS {
+            break;
         }
 
         let delay = if attempt <= 5 {
@@ -331,7 +466,13 @@ fn register_tray_icon(hwnd: HWND, id: u32, icon: HICON) {
         } else {
             Duration::from_secs(2)
         };
-        tracing::warn!(target: "taix_shell::tray", "NIM_ADD failed (attempt {}), retrying in {}ms", attempt, delay.as_millis());
-        std::thread::sleep(delay);
+        tracing::warn!(target: "taix_shell::tray", "NIM_ADD failed (attempt {}/{}), retrying in {}ms", attempt, MAX_REGISTER_ATTEMPTS, delay.as_millis());
+
+        if !shutdown.wait_for(delay) {
+            tracing::info!(target: "taix_shell::tray", "NIM_ADD retry aborted: shutdown requested");
+            return;
+        }
     }
+
+    tracing::error!(target: "taix_shell::tray", "NIM_ADD failed after {} attempts", MAX_REGISTER_ATTEMPTS);
 }

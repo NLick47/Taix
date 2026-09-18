@@ -11,9 +11,18 @@ pub enum Theme {
 impl Theme {
     pub fn from_i32(v: i32) -> Self {
         match v {
-            1 => Self::Light,
+            1 | 3 => Self::Light,
             2 => Self::Dark,
             _ => Self::System,
+        }
+    }
+
+    pub fn from_name(v: &str) -> Option<Self> {
+        match v.to_ascii_lowercase().as_str() {
+            "system" => Some(Self::System),
+            "light" => Some(Self::Light),
+            "dark" => Some(Self::Dark),
+            _ => None,
         }
     }
 }
@@ -31,6 +40,15 @@ impl Language {
             1 => Self::ZhCn,
             2 => Self::EnUs,
             _ => Self::Auto,
+        }
+    }
+
+    pub fn from_name(v: &str) -> Option<Self> {
+        match v.to_ascii_lowercase().as_str() {
+            "auto" => Some(Self::Auto),
+            "zh" | "zh-cn" => Some(Self::ZhCn),
+            "en" | "en-us" => Some(Self::EnUs),
+            _ => None,
         }
     }
 }
@@ -92,39 +110,87 @@ pub fn load_tray_config(data_dir: &Path) -> Option<TrayConfig> {
     if !path.exists() {
         return None;
     }
-    let mut content = std::fs::read_to_string(&path).ok()?;
-    if content.starts_with('\u{FEFF}') {
-        content.remove(0);
-    }
-    let config: AppConfigFile = serde_json::from_str(&content).ok()?;
-    Some(TrayConfig {
-        theme: Theme::from_i32(config.general.theme),
-        language: Language::from_i32(config.general.language),
-        is_visible: config.general.is_enable_tray,
-    })
-}
-
-pub fn load_monitor_config(data_dir: &Path) -> crate::service_manager::MonitorConfig {
-    let path = data_dir.join("AppConfig.json");
-    if !path.exists() {
-        return crate::service_manager::MonitorConfig::default();
-    }
     let mut content = match std::fs::read_to_string(&path) {
-        Ok(c) => c,
-        Err(_) => return crate::service_manager::MonitorConfig::default(),
+        Ok(content) => content,
+        Err(e) => {
+            tracing::warn!(target: "taix_shell::config", "failed to read {:?}: {}", path, e);
+            return None;
+        }
     };
     if content.starts_with('\u{FEFF}') {
         content.remove(0);
     }
     let config: AppConfigFile = match serde_json::from_str(&content) {
-        Ok(c) => c,
-        Err(_) => return crate::service_manager::MonitorConfig::default(),
+        Ok(config) => config,
+        Err(e) => {
+            tracing::warn!(target: "taix_shell::config", "failed to parse {:?}: {}", path, e);
+            return None;
+        }
+    };
+
+    let tray = TrayConfig {
+        theme: Theme::from_i32(config.general.theme),
+        language: Language::from_i32(config.general.language),
+        is_visible: config.general.is_enable_tray,
+    };
+    tracing::info!(
+        target: "taix_shell::config",
+        "AppConfig.json tray: Theme={}→{:?} Language={}→{:?} IsEnableTray={}→is_visible={}",
+        config.general.theme,
+        tray.theme,
+        config.general.language,
+        tray.language,
+        config.general.is_enable_tray,
+        tray.is_visible
+    );
+    Some(tray)
+}
+
+pub fn load_monitor_config(data_dir: &Path) -> crate::service_manager::MonitorConfig {
+    let path = data_dir.join("AppConfig.json");
+    let default = crate::service_manager::MonitorConfig::default();
+
+    let mut content = match std::fs::read_to_string(&path) {
+        Ok(content) => content,
+        Err(e) => {
+            tracing::debug!(
+                target: "taix_shell::config",
+                "monitor config unavailable ({:?}: {}); using defaults",
+                path, e
+            );
+            return default;
+        }
+    };
+    if content.starts_with('\u{FEFF}') {
+        content.remove(0);
+    }
+    let config: AppConfigFile = match serde_json::from_str(&content) {
+        Ok(config) => config,
+        Err(e) => {
+            tracing::debug!(
+                target: "taix_shell::config",
+                "monitor config unparsable ({:?}: {}); using defaults",
+                path, e
+            );
+            return default;
+        }
     };
 
     let behavior = config.behavior.unwrap_or_default();
-    crate::service_manager::MonitorConfig {
+    let monitor = crate::service_manager::MonitorConfig {
         inactive_threshold: behavior.inactive_threshold.clamp(1, 60),
         max_sound_duration: behavior.max_sound_duration.clamp(15, 480),
         sleep_watch: behavior.is_sleep_watch,
-    }
+    };
+    tracing::info!(
+        target: "taix_shell::config",
+        "AppConfig.json behavior: InactiveThreshold={}→{} MaxSoundDuration={}→{} IsSleepWatch={}→{} (values shown post-clamp)",
+        behavior.inactive_threshold,
+        monitor.inactive_threshold,
+        behavior.max_sound_duration,
+        monitor.max_sound_duration,
+        behavior.is_sleep_watch,
+        monitor.sleep_watch
+    );
+    monitor
 }
