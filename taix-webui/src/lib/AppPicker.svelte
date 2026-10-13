@@ -4,10 +4,12 @@
 
   // 应用匹配选择器：chips + 搜索下拉。value 是逗号分隔的匹配词串，
   // 匹配词仍是子串语义，所以既可以从列表里挑真实应用，也可以输入自定义词。
-  let { apps, value, onchange }: {
+  let { apps, value, onchange, placeholder = '选择应用，或输入匹配词', emptyHint = '还没有记录到应用' }: {
     apps: AppOption[];
     value: string;
     onchange: (v: string) => void;
+    placeholder?: string;
+    emptyHint?: string;
   } = $props();
 
   function parse(v: string): string[] {
@@ -129,7 +131,7 @@
     }}
   >
     {#if tokens.length === 0}
-      <span class="ap-ph">选择应用，或输入匹配词</span>
+      <span class="ap-ph">{placeholder}</span>
     {:else}
       {#each tokens as t (t)}
         <span
@@ -184,7 +186,7 @@
             添加「{search.trim()}」作为匹配词
           </button>
         {:else if visible.length === 0}
-          <div class="ap-empty">还没有记录到应用</div>
+          <div class="ap-empty">{emptyHint}</div>
         {/if}
       </div>
     </div>

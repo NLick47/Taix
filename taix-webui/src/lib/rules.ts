@@ -5,6 +5,8 @@
 
 export type RuleType = 'continuous' | 'daily' | 'category' | 'app';
 export type TimeWindow = 'all' | 'work' | 'evening' | 'night';
+/** 冷却到期后是否再提醒 */
+export type Repeat = 'repeat' | 'once';
 
 export interface ReminderRule {
   /** 稳定 id，插件按它记冷却；缺省按序号回退 */
@@ -12,12 +14,14 @@ export interface ReminderRule {
   type: RuleType;
   /** 阈值（分钟） */
   minutes: number;
-  /** category=分类名；app=进程名子串，逗号分隔多个 */
+  /** category=分类名；app=进程名子串；均支持逗号分隔多个，时长求和 */
   match: string;
   window: TimeWindow;
   title: string;
   /** 提醒后的静默分钟数 */
   cooldown: number;
+  /** once = 当天只提醒一次，跨天自动重置 */
+  repeat?: Repeat;
 }
 
 export const RULE_TYPE_LABEL: Record<RuleType, string> = {
@@ -27,6 +31,11 @@ export const RULE_TYPE_LABEL: Record<RuleType, string> = {
   app: '按应用',
 };
 
+export const REPEAT_LABEL: Record<Repeat, string> = {
+  repeat: '重复提醒',
+  once: '每天一次',
+};
+
 export const WINDOW_LABEL: Record<TimeWindow, string> = {
   all: '全天',
   work: '白天 9-18 点',
@@ -34,10 +43,21 @@ export const WINDOW_LABEL: Record<TimeWindow, string> = {
   night: '深夜 22-6 点',
 };
 
+/** 逗号分隔的匹配词列表；中英文逗号都认 */
+export function matchList(match: string): string[] {
+  return match.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+}
+
 export function defaultRule(type: RuleType): ReminderRule {
-  const base: ReminderRule = { type, minutes: 60, match: '', window: 'all', title: '', cooldown: 60 };
+  const base: ReminderRule = {
+    type, minutes: 60, match: '', window: 'all', title: '', cooldown: 60, repeat: 'repeat',
+  };
   if (type === 'daily') base.minutes = 240;
   return base;
+}
+
+function threshold(minutes: number): number {
+  return Math.max(1, Math.round(minutes));
 }
 
 function autoTitle(r: ReminderRule): string {
@@ -60,25 +80,26 @@ function conditionExpr(r: ReminderRule): string {
     }
   })();
 
-  const apps = r.match.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+  const apps = matchList(r.match);
+  const limit = threshold(r.minutes);
   const parts: string[] = [];
   switch (r.type) {
     case 'continuous':
-      parts.push(`ctx.continuousMinutes >= ${Math.max(1, Math.round(r.minutes))}`);
+      parts.push(`ctx.continuousMinutes >= ${limit}`);
       break;
     case 'daily':
-      parts.push(`ctx.todayTotalMinutes >= ${Math.max(1, Math.round(r.minutes))}`);
+      parts.push(`ctx.todayTotalMinutes >= ${limit}`);
       break;
-    case 'category':
-      parts.push(
-        r.match
-          ? `todayCategoryMinutes(${luaStr(r.match)}) >= ${Math.max(1, Math.round(r.minutes))}`
-          : 'false',
-      );
+    case 'category': {
+      const sum = matchList(r.match)
+        .map((c) => `todayCategoryMinutes(${luaStr(c)})`)
+        .join(' + ');
+      parts.push(sum ? `(${sum}) >= ${limit}` : 'false');
       break;
+    }
     case 'app': {
       const sum = apps.map((a) => `todayAppMinutes(${luaStr(a)})`).join(' + ');
-      parts.push(sum ? `(${sum}) >= ${Math.max(1, Math.round(r.minutes))}` : 'false');
+      parts.push(sum ? `(${sum}) >= ${limit}` : 'false');
       break;
     }
   }
@@ -101,11 +122,13 @@ function autoBody(r: ReminderRule): string {
     case 'continuous': return `"已连续使用 " .. ctx.continuousMinutes .. " 分钟"`;
     case 'daily': return `"今日累计 " .. fmtHMS(ctx.todayTotalSeconds) .. "，注意休息"`;
     case 'category': {
-      const name = r.match || '未分类';
-      return `${luaStr(`「${name}」今日已用 `)} .. todayCategoryMinutes(${luaStr(name)}) .. " 分钟"`;
+      const cats = matchList(r.match);
+      const sum = cats.map((c) => `todayCategoryMinutes(${luaStr(c)})`).join(' + ') || '0';
+      const shown = cats.length ? cats.join('/') : '未分类';
+      return `${luaStr(`「${shown}」今日已用 `)} .. (${sum}) .. " 分钟"`;
     }
     case 'app': {
-      const apps = r.match.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+      const apps = matchList(r.match);
       const sum = apps.map((a) => `todayAppMinutes(${luaStr(a)})`).join(' + ') || '0';
       return `${luaStr(`${apps.join('/')} 今日已用 `)} .. (${sum}) .. " 分钟"`;
     }
@@ -113,13 +136,15 @@ function autoBody(r: ReminderRule): string {
 }
 
 function describe(r: ReminderRule): string {
-  const m = `${Math.round(r.minutes)} 分钟`;
+  const limit = `满 ${Math.round(r.minutes)} 分钟`;
+  const names = matchList(r.match);
   const target =
-    r.type === 'continuous' ? `连续使用满 ${m}`
-    : r.type === 'daily' ? `今日累计满 ${m}`
-    : r.type === 'category' ? (r.match ? `「${r.match}」今日满 ${m}` : '未选择分类')
-    : r.match.trim() ? `应用(${r.match})今日满 ${m}` : '未选择应用';
-  return r.window === 'all' ? target : `${target} · ${WINDOW_LABEL[r.window]}`;
+    r.type === 'continuous' ? `连续使用${limit}`
+    : r.type === 'daily' ? `今日累计${limit}`
+    : r.type === 'category' ? (names.length ? `「${names.join(' + ')}」今日${limit}` : '未选择分类')
+    : names.length ? `应用(${names.join(' + ')})${limit}` : '未选择应用';
+  const scope = r.window === 'all' ? target : `${target} · ${WINDOW_LABEL[r.window]}`;
+  return r.repeat === 'once' ? `${scope} · 每天一次` : scope;
 }
 
 /** 规则的一句话摘要（规则卡片预览用） */
@@ -139,13 +164,15 @@ export function compileRules(rules: ReminderRule[]): string {
     .map((r, i) => ({ ...r, id: r.id || `r${i + 1}`, title: r.title.trim() || autoTitle(r) }))
     .forEach((r, i) => {
       out.push('');
-      out.push(`-- ${i + 1}. ${describe(r)}`);
+      // 摘要进 Lua 注释：用户文本里的换行会把注释拆成代码行
+      out.push(`-- ${i + 1}. ${describe(r).replace(/[\r\n]+/g, ' ')}`);
       out.push(`if ${conditionExpr(r)} then`);
       out.push('  out[#out + 1] = {');
       out.push(`    id = ${luaStr(r.id)},`);
       out.push(`    title = ${luaStr(r.title)},`);
       out.push(`    body = ${autoBody(r)},`);
-      out.push(`    cooldownMinutes = ${Math.max(1, Math.round(r.cooldown))},`);
+      out.push(`    cooldownMinutes = ${threshold(r.cooldown)},`);
+      if (r.repeat === 'once') out.push('    oncePerDay = true,');
       out.push('  }');
       out.push('end');
     });
@@ -156,5 +183,6 @@ export function compileRules(rules: ReminderRule[]): string {
 
 /** 默认规则（首次进入可视化模式时播种，与 server DEFAULT_SCRIPT 的规则 1 对齐） */
 export const SEED_RULES: ReminderRule[] = [
-  { id: 'r1', type: 'continuous', minutes: 60, match: '', window: 'all', title: '该休息一下了', cooldown: 30 },
+  { id: 'r1', type: 'continuous', minutes: 60, match: '', window: 'all', title: '该休息一下了',
+    cooldown: 30, repeat: 'repeat' },
 ];

@@ -1,4 +1,4 @@
-// 与 taix-server 契约对应（docs/plugin-plan/01-server.md §3/§4）
+// 与 taix-server 的 HTTP 契约对应（见 taix-server/src/routes）
 
 export interface ApiResponse<T> {
   code: number;

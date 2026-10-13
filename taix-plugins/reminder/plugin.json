@@ -19,7 +19,7 @@
       "label": "提醒规则",
       "type": "json",
       "default": [
-        { "type": "continuous", "minutes": 60, "match": "", "window": "all", "title": "该休息一下了", "cooldown": 30 }
+        { "type": "continuous", "minutes": 60, "match": "", "window": "all", "title": "该休息一下了", "cooldown": 30, "repeat": "repeat" }
       ]
     },
     { "key": "script", "label": "提醒规则脚本（Lua）", "type": "text" }

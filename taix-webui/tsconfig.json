@@ -8,7 +8,8 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "types": ["svelte", "vite/client"]
+    "allowImportingTsExtensions": true,
+    "types": ["node", "svelte", "vite/client"]
   },
   "include": ["src/**/*.ts", "src/**/*.svelte"]
 }

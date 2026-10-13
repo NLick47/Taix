@@ -392,15 +392,18 @@ EOF
 
 - `title` 必填（缺了报错）；`body` 可省；`id` 可省——缺省按 **0 起的序号**回退（单表 = 固定 id，等价旧「全局冷却」语义）
 - `cooldownMinutes` 缺省 60、**钳制到 1–1440**（防 0 冷却导致的通知风暴）
+- `oncePerDay`（可选布尔）：当天只提醒一次，按本地日期记账、跨天自动重置；冷却仍然生效
 - 上限：单轮最多 32 条候选；标题截 120 字符、正文截 400 字符
 - 返回 `nil` 或空表 = 本轮不提醒；返回类型不对 / 缺 title = 报错（界面上可见）
 
-**提醒策略（插件侧）**：按顺序取**第一条不在冷却中**的弹系统通知；冷却**按 id 各自记账**；
-同轮其余命中让位 5 分钟（不缩短已有的更长冷却）。
+**提醒策略（插件侧）**：按顺序取**第一条未被拦住**的弹系统通知；冷却**按 id 各自记账**；
+同轮其余命中让位 5 分钟（不缩短已有的更长冷却，已「当天提醒过」的规则不再让位）。
+每拍都清理过期冷却，避免规则删除后残留的 id 压制同名新规则。
+闸门（冷却截止 + 当天已提醒）存 `state.json`：插件重启、自动更新后不会把刚提醒过的规则再弹一遍。
 
 **试运行**：webui 下发指令 `dry-run`（`data: {script, nonce}`）→ 插件执行并把结果写进 records `dryRun`
-（信封 `{nonce, ok, error, data:{candidates, pickedIndex, snapshot}}`，`candidates[i]` 含 `cooldownLeftSeconds`，
-`pickedIndex` 指向当前会提醒的那条、`null` = 命中的都在冷却；**不消耗冷却**）→ webui 按 nonce 认领（§3.5）。
+（信封 `{nonce, ok, error, data:{candidates, pickedIndex, snapshot}}`，`candidates[i]` 含 `cooldownLeftSeconds` / `oncePerDay` / `firedToday`，`pickedIndex` 指向当前会提醒的那条、
+`null` = 命中的都在冷却或当天已提醒过；**不消耗冷却**）→ webui 按 nonce 认领（§3.5）。
 
 **沙箱**：mlua（Lua 5.4 vendored），标准库白名单 `coroutine / table / math / string / utf8`
 （**不含 io / os / package / debug**）；1MB 内存上限 + 指令预算（约 2 亿条指令，防死循环）。
@@ -423,3 +426,10 @@ EOF
 **内置默认脚本**：三条示例规则——连续使用满 60 分钟（r1）、「娱乐」分类累计满 120 分钟（r2）、
 22 点后含 "game" 的应用累计满 30 分钟（r3）。配置里保存的新脚本在下一拍先试跑：通过即生效；
 编译/运行失败则**沿用上一份可用脚本**并把错误上报为 error 状态（webui 配置页可见），恢复后自动翻回 running。
+
+**可视化规则**（webui `src/lib/rules.ts`）：模式 = `可视化规则` 时前端把规则编译成上面的 Lua 存进
+`values.script`，server 与插件只认 `script`。规则字段：`type`（连续 / 每日总时长 / 按分类 / 按应用）、
+`minutes` 阈值、`match`（分类名或进程名子串，**逗号分隔多个、时长求和**）、`window` 时段、
+`cooldown` 间隔、`repeat`（`repeat` 重复提醒 / `once` 每天一次 → 编译出 `oncePerDay`）。
+未选分类/应用的规则编译成 `if false then`，不会因缺数据误报；用户文本进 Lua 前统一转义。
+改过脚本后再保存可视化规则会覆盖脚本，界面会提示。

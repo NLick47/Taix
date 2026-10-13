@@ -4,8 +4,8 @@
   import { api } from '../lib/api';
   import type { AppOption } from '../lib/types';
   import {
-    compileRules, defaultRule, ruleSummary, WINDOW_LABEL, RULE_TYPE_LABEL,
-    type ReminderRule, type RuleType,
+    compileRules, defaultRule, ruleSummary, WINDOW_LABEL, RULE_TYPE_LABEL, REPEAT_LABEL,
+    type ReminderRule, type RuleType, type Repeat,
   } from '../lib/rules';
 
   // values 由 PluginConfig 持有（$state proxy）。可视化模式编辑 rules，规则
@@ -30,13 +30,9 @@
       .catch(() => {});
   });
 
-  function catOptions(current: string): { value: string; label: string }[] {
-    const options = categories.map((name) => ({ value: name, label: name }));
-    if (current && !categories.includes(current)) {
-      options.unshift({ value: current, label: `${current}（分类不存在）` });
-    }
-    return options;
-  }
+  const categoryOptions = $derived<AppOption[]>(
+    categories.map((name) => ({ name, alias: null, totalTime: 0 })),
+  );
 
   const mode = $derived(String(values.mode ?? '可视化规则'));
   const isVisual = $derived(mode === '可视化规则');
@@ -50,7 +46,7 @@
     if (!Array.isArray(values.rules)) {
       values.rules = [
         { id: 'r1', type: 'continuous', minutes: 60, match: '', window: 'all',
-          title: '该休息一下了', cooldown: 30 },
+          title: '该休息一下了', cooldown: 30, repeat: 'repeat' },
       ];
     }
     if (!values.mode) values.mode = '可视化规则';
@@ -158,7 +154,10 @@
   }
 
   // ---- 试运行：命令 + 记录往返 ----
-  interface DryCandidate { id: string; title: string; body: string; cooldownMinutes: number; cooldownLeftSeconds: number }
+  interface DryCandidate {
+    id: string; title: string; body: string; cooldownMinutes: number;
+    cooldownLeftSeconds: number; oncePerDay: boolean; firedToday: boolean;
+  }
   interface DrySnapshot {
     continuousSeconds: number; todayTotalSeconds: number; currentProcess: string;
     hour: number; weekday: number;
@@ -213,14 +212,18 @@
       ? dryResult.candidates[dryResult.pickedIndex] ?? null
       : null,
   );
-  function leftLabel(seconds: number): string {
-    return seconds > 0 ? `剩余 ${Math.ceil(seconds / 60)} 分钟` : '也可提醒';
+  function leftLabel(c: DryCandidate): string {
+    if (c.oncePerDay && c.firedToday) return '今天已提醒过';
+    return c.cooldownLeftSeconds > 0 ? `剩余 ${Math.ceil(c.cooldownLeftSeconds / 60)} 分钟` : '也可提醒';
+  }
+  function rateLabel(c: DryCandidate): string {
+    return c.oncePerDay ? '每天一次' : `冷却 ${c.cooldownMinutes} 分钟`;
   }
   const dryOthers = $derived.by(() => {
     const result = dryResult;
     if (!result) return '';
     return result.candidates
-      .map((c, i) => (i === result.pickedIndex ? null : `${c.title} ${leftLabel(c.cooldownLeftSeconds)}`))
+      .map((c, i) => (i === result.pickedIndex ? null : `${c.title} ${leftLabel(c)}`))
       .filter((s): s is string => s !== null)
       .join(' · ');
   });
@@ -293,25 +296,14 @@
               {#if needMatch(r.type)}
                 <div class="rg span2">
                   {#if r.type === 'category'}
-                    <span class="rg-label">分类</span>
-                    {#if categories.length}
-                      <select
-                        value={r.match}
-                        onchange={(e) => updateRule(i, { match: (e.target as HTMLSelectElement).value })}
-                      >
-                        <option value="">选择分类</option>
-                        {#each catOptions(r.match) as c (c.value)}
-                          <option value={c.value}>{c.label}</option>
-                        {/each}
-                      </select>
-                    {:else}
-                      <input
-                        type="text"
-                        value={r.match}
-                        placeholder="暂无分类数据，可直接输入分类名"
-                        oninput={(e) => updateRule(i, { match: (e.target as HTMLInputElement).value })}
-                      />
-                    {/if}
+                    <span class="rg-label">分类（可多选，时长合计）</span>
+                    <AppPicker
+                      apps={categoryOptions}
+                      value={r.match}
+                      placeholder="选择分类，或输入分类名"
+                      emptyHint="还没有分类，可直接输入分类名"
+                      onchange={(v) => updateRule(i, { match: v })}
+                    />
                   {:else}
                     <span class="rg-label">应用匹配</span>
                     <AppPicker
@@ -338,11 +330,24 @@
                 </select>
               </div>
               <div class="rg">
-                <span class="rg-label">冷却</span>
+                <span class="rg-label">间隔</span>
                 <input
                   type="number" min="1" value={r.cooldown}
+                  disabled={r.repeat === 'once'}
+                  title={r.repeat === 'once' ? '每天只提醒一次，无需重复间隔' : '提醒后的静默分钟'}
                   oninput={(e) => updateRule(i, { cooldown: Number((e.target as HTMLInputElement).value) })}
                 />
+              </div>
+              <div class="rg">
+                <span class="rg-label">频率</span>
+                <select
+                  value={r.repeat ?? 'repeat'}
+                  onchange={(e) => updateRule(i, { repeat: (e.target as HTMLSelectElement).value as Repeat })}
+                >
+                  {#each Object.entries(REPEAT_LABEL) as [v, label] (v)}
+                    <option value={v}>{label}</option>
+                  {/each}
+                </select>
               </div>
               <div class="rg" class:span2={needMatch(r.type)}>
                 <span class="rg-label">通知标题</span>
@@ -416,14 +421,14 @@
           <span class="dry-tag ok">会提醒</span>
           <span class="dry-body">
             {dryPicked.title}{dryPicked.body ? `：${dryPicked.body}` : ''}
-            <span class="faint">（冷却 {dryPicked.cooldownMinutes} 分钟）</span>
+            <span class="faint">（{rateLabel(dryPicked)}）</span>
             {#if dryOthers}
               <div class="faint dry-note">命中 {dryResult.candidates.length} 条，其余：{dryOthers}</div>
             {/if}
           </span>
         {:else}
-          <span class="dry-tag">冷却中</span>
-          <span class="dry-body">命中的 {dryResult.candidates.length} 条都在冷却：{dryOthers}</span>
+          <span class="dry-tag">暂不提醒</span>
+          <span class="dry-body">命中的 {dryResult.candidates.length} 条都在冷却或今天已提醒过：{dryOthers}</span>
         {/if}
       </div>
     {/if}
@@ -478,12 +483,13 @@
   /* 均等四列：需要大空间的「应用匹配」跨两列，不再把窄列分给它 */
   .rule-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 9px;
     padding: 10px 14px 13px;
   }
   .rule-grid.with-match { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .rule-grid .span2 { grid-column: span 2; }
+  .rule-grid input:disabled { opacity: 0.45; cursor: not-allowed; }
   @media (max-width: 1180px) {
     .rule-grid, .rule-grid.with-match { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
