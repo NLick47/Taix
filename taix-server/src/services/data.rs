@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, Timelike, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, SecondsFormat, Timelike, Utc};
 use sqlx::SqlitePool;
 use std::collections::HashMap;
 use tracing::{debug, info};
@@ -6,7 +6,8 @@ use tracing::{debug, info};
 use crate::error::AppError;
 use crate::models::app::{AppJoinCols, AppModel, APP_JOIN_COLS_SQL};
 use crate::models::log::{
-    AppSessionModel, ColumnDataModel, DailyLogModel, ExportDataResult, HoursLogModel,
+    AppSessionModel, ColumnDataModel, DailyLogModel, ExportDataResult, HoursLogModel, SummaryRow,
+    TodaySummary,
 };
 use crate::services::config::ConfigService;
 use crate::utils::{
@@ -15,6 +16,12 @@ use crate::utils::{
 };
 
 pub struct DataService;
+
+/// 进行中会话：进程与开始时间（epoch 秒）
+pub struct OngoingSession {
+    pub process: String,
+    pub since_epoch: i64,
+}
 
 const HOURS_LOG_BY_HOUR_SQL: &str = r#"
 SELECT h.ID, h.DataTime, h.AppModelID, h.Time, {cols}
@@ -115,6 +122,90 @@ impl SessionJoinRow {
 }
 
 impl DataService {
+    /// 今日总时长 + 按进程 + 按分类；插件与界面共用，口径只在这里实现。
+    /// `ongoing` 为 `Some` 时并入进行中会话，跨 0 点只计当日部分。
+    pub async fn today_summary(
+        pool: &SqlitePool,
+        tz_id: &str,
+        ongoing: Option<&OngoingSession>,
+    ) -> Result<TodaySummary, AppError> {
+        let tz = parse_timezone(tz_id);
+        let today = Utc::now().with_timezone(&tz).date_naive();
+        let (day_start_utc, _) = tz_date_to_utc_range(today, &tz);
+        let day_start = day_start_utc.to_rfc3339_opts(SecondsFormat::Secs, true);
+
+        // 走 ProcessName 索引
+        let mut apps: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT ProcessName, SUM(Duration) FROM AppDurationRequests \
+             WHERE StartDateTime >= ?1 GROUP BY ProcessName ORDER BY 2 DESC LIMIT 200",
+        )
+        .bind(&day_start)
+        .fetch_all(pool)
+        .await?;
+
+        // 分类按进程名联 AppModels 近似归属
+        let mut categories: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT COALESCE(c.Name, '未分类') AS CName, SUM(adr.Duration) \
+             FROM AppDurationRequests adr \
+             JOIN AppModels a ON a.Name = adr.ProcessName \
+             JOIN CategoryModels c ON c.ID = a.CategoryID \
+             WHERE adr.StartDateTime >= ?1 \
+             GROUP BY CName ORDER BY 2 DESC",
+        )
+        .bind(&day_start)
+        .fetch_all(pool)
+        .await?;
+
+        // apps 有 LIMIT 200，总量单独求和
+        let mut total_seconds: i64 = sqlx::query_scalar(
+            "SELECT COALESCE(SUM(Duration), 0) FROM AppDurationRequests WHERE StartDateTime >= ?1",
+        )
+        .bind(&day_start)
+        .fetch_one(pool)
+        .await?;
+
+        if let Some(ongoing) = ongoing {
+            let now = Utc::now().timestamp();
+            let seconds = (now - ongoing.since_epoch.max(day_start_utc.timestamp())).max(0);
+            if seconds > 0 {
+                total_seconds += seconds;
+                match apps.iter_mut().find(|(name, _)| name == &ongoing.process) {
+                    Some(entry) => entry.1 += seconds,
+                    None => apps.push((ongoing.process.clone(), seconds)),
+                }
+                apps.sort_by(|a, b| b.1.cmp(&a.1));
+                apps.truncate(200);
+
+                let category = sqlx::query_scalar::<_, String>(
+                    "SELECT COALESCE(c.Name, '未分类') FROM AppModels a \
+                     JOIN CategoryModels c ON c.ID = a.CategoryID WHERE a.Name = ?1 LIMIT 1",
+                )
+                .bind(&ongoing.process)
+                .fetch_optional(pool)
+                .await?;
+                if let Some(category) = category {
+                    match categories.iter_mut().find(|(name, _)| name == &category) {
+                        Some(entry) => entry.1 += seconds,
+                        None => categories.push((category, seconds)),
+                    }
+                    categories.sort_by(|a, b| b.1.cmp(&a.1));
+                }
+            }
+        }
+
+        Ok(TodaySummary {
+            date: today.format("%Y-%m-%d").to_string(),
+            total_seconds,
+            apps: apps
+                .into_iter()
+                .map(|(name, seconds)| SummaryRow { name, seconds })
+                .collect(),
+            categories: categories
+                .into_iter()
+                .map(|(name, seconds)| SummaryRow { name, seconds })
+                .collect(),
+        })
+    }
     pub async fn get_date_range_log_list(
         pool: &SqlitePool,
         start: NaiveDate,

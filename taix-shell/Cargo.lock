@@ -328,6 +328,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "taix-plugin-manifest"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
 name = "taix-shell"
 version = "0.1.0"
 dependencies = [
@@ -341,6 +350,7 @@ dependencies = [
  "serde",
  "serde_json",
  "taix-logging",
+ "taix-plugin-manifest",
  "tracing",
  "windows",
 ]

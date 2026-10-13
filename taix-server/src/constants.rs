@@ -31,6 +31,14 @@ pub const MIGRATION_BATCH_SIZE: usize = 1_000;
 pub const DEFAULT_FREQUENT_USE_NUM: i32 = 2;
 pub const DEFAULT_MORE_NUM: i32 = 11;
 
+// 插件契约
+pub const PLUGINS_DIR_NAME: &str = "plugins";
+pub const PLUGIN_COMMAND_QUEUE_MAX: usize = 16;
+pub const PLUGIN_EVENT_CHANNEL_CAPACITY: usize = 256;
+pub const PLUGIN_SSE_KEEPALIVE_SECS: u64 = 15;
+/// 每插件只留最新 N 条；不按时间清，插件状态不能随统计保留期消失
+pub const PLUGIN_RECORDS_MAX_PER_PLUGIN: i64 = 512;
+
 #[cfg(target_os = "macos")]
 pub fn default_data_dir() -> std::path::PathBuf {
     dirs::data_local_dir()

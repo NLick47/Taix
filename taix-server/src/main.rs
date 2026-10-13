@@ -1,31 +1,18 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
-mod constants;
-mod db;
-mod error;
-mod migrations;
-mod models;
-mod pipe;
-mod response;
-mod routes;
-mod services;
-mod single_instance;
-mod utils;
-mod websocket_manager;
-
-use anyhow::Context;
-use axum::Router;
-use sqlx::SqlitePool;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use tower_http::cors::CorsLayer;
-use tower_http::trace::TraceLayer;
+
 use routes::web_sentry::SentryState;
 use services::category::CategoryService;
 use services::config::ConfigService;
 use services::web_data::WebDataService;
+use taix_server::{
+    constants, create_app, db, parse_data_dir, parse_server_addr, pipe, plugins, routes,
+    services, single_instance, websocket_manager,
+};
 
 #[tokio::main]
 async fn main() {
@@ -116,7 +103,17 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
         semaphore: Arc::new(tokio::sync::Semaphore::new(constants::MAX_CONCURRENT_PIPE_CLIENTS)),
     });
 
-    let app = create_app(pool.clone(), config_service.clone(), web_enabled_tx.clone());
+    let plugins_dir = exe_dir.join(constants::PLUGINS_DIR_NAME);
+    let plugin_state =
+        Arc::new(plugins::PluginState::init(&plugins_dir, &data_dir).await?);
+
+    let app = create_app(
+        pool.clone(),
+        config_service.clone(),
+        web_enabled_tx.clone(),
+        plugin_state.clone(),
+        &exe_dir,
+    );
 
     if let Err(e) = WebDataService::warmup_url_match_cache(&pool).await {
         tracing::warn!("Failed to warmup URL match cache: {}", e);
@@ -131,7 +128,11 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
 
     tokio::spawn(websocket_manager::run(web_enabled_rx, sentry_state.clone()));
 
-    tokio::spawn(pipe::start(sentry_state, pool.clone()));
+    tokio::spawn(pipe::start(
+        sentry_state,
+        pool.clone(),
+        plugin_state.clone(),
+    ));
 
     tokio::spawn(services::app_timer::AppTimerService::run_cleanup_task(
         pool.clone(),
@@ -157,45 +158,4 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
     http_server.await?;
 
     Ok(())
-}
-
-fn parse_data_dir(args: &[String]) -> PathBuf {
-    for i in 0..args.len() {
-        if args[i] == "--data-dir" && i + 1 < args.len() {
-            return PathBuf::from(&args[i + 1]);
-        }
-    }
-    std::env::var("TAIX_DATA_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| constants::default_data_dir())
-}
-
-fn parse_server_addr() -> anyhow::Result<SocketAddr> {
-    let raw = std::env::var("TAIX_SERVER")
-        .unwrap_or_else(|_| format!("http://127.0.0.1:{}", constants::DEFAULT_HTTP_PORT));
-    let stripped = raw
-        .trim_start_matches("http://")
-        .trim_start_matches("https://");
-    stripped.parse().context("Failed to parse server address")
-}
-
-fn create_app(
-    pool: SqlitePool,
-    config_service: Arc<ConfigService>,
-    web_enabled_tx: tokio::sync::watch::Sender<bool>,
-) -> Router<()> {
-    Router::new()
-        .merge(routes::app_data::router())
-        .merge(routes::category::router())
-        .merge(routes::category_summary::router())
-        .merge(routes::app_timer::router())
-        .merge(routes::data::router())
-        .merge(routes::web_data::router())
-        .merge(routes::config::router())
-        .merge(routes::health::router())
-        .layer(TraceLayer::new_for_http())
-        .layer(CorsLayer::permissive())
-        .layer(axum::extract::Extension(config_service))
-        .layer(axum::extract::Extension(web_enabled_tx))
-        .with_state(pool)
 }

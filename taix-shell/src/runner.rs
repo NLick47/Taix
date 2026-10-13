@@ -8,7 +8,7 @@ use crate::platform::{run_tray, try_acquire_single_instance, TrayCmd};
 use crate::service_manager::ServiceManager;
 use crate::shutdown::Shutdown;
 
-pub fn run(_data_dir: Option<PathBuf>) -> anyhow::Result<()> {
+pub fn run(data_dir: Option<PathBuf>) -> anyhow::Result<()> {
     tracing::info!(target: "taix_shell::lifecycle", "acquiring single-instance lock name={}", SHELL_MUTEX_NAME);
     let _single_instance = try_acquire_single_instance(SHELL_MUTEX_NAME).ok_or_else(|| {
         tracing::error!(
@@ -21,7 +21,10 @@ pub fn run(_data_dir: Option<PathBuf>) -> anyhow::Result<()> {
 
     crate::client::warm_client_exe_path();
 
-    let data_dir = default_data_dir();
+    // 解析顺序与 server/monitor 一致：CLI > TAIX_DATA_DIR > 默认
+    let data_dir = data_dir
+        .or_else(|| std::env::var("TAIX_DATA_DIR").ok().map(PathBuf::from))
+        .unwrap_or_else(default_data_dir);
     tracing::info!(target: "taix_shell::lifecycle", "data_dir={:?}", data_dir);
 
     let tray_config = match crate::config::load_tray_config(&data_dir) {
@@ -55,6 +58,13 @@ pub fn run(_data_dir: Option<PathBuf>) -> anyhow::Result<()> {
         ServiceManager::new(Some(service_data_dir)).run(service_shutdown);
     });
     tracing::info!(target: "taix_shell::lifecycle", "service supervisor thread spawned");
+
+    let plugin_shutdown = shutdown.clone();
+    let plugin_data_dir = data_dir.clone();
+    let plugin_handle = thread::spawn(move || {
+        crate::plugin_supervisor::PluginSupervisor::new(plugin_data_dir, plugin_shutdown).run();
+    });
+    tracing::info!(target: "taix_shell::lifecycle", "plugin supervisor thread spawned");
 
     let action_shutdown = shutdown.clone();
     let action_handle = thread::spawn(move || run_action_loop(cmd_rx, action_shutdown));
@@ -97,6 +107,14 @@ pub fn run(_data_dir: Option<PathBuf>) -> anyhow::Result<()> {
         target: "taix_shell::lifecycle",
         "joined service supervisor thread after {:?}",
         service_started.elapsed()
+    );
+
+    let plugin_started = Instant::now();
+    let _ = plugin_handle.join();
+    tracing::info!(
+        target: "taix_shell::lifecycle",
+        "joined plugin supervisor thread after {:?}",
+        plugin_started.elapsed()
     );
 
     tracing::info!(target: "taix_shell::lifecycle", "all threads joined; run() returning");

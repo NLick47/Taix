@@ -14,9 +14,13 @@ Taix 是 [Tai](https://github.com/Planshit/Tai) 的一次技术及架构的全�
 
 | 组件 | 说明 |
 |------|------|
-| taix-shell | 创建客户端托盘，方便唤醒客户端并起到看门狗作用，协同 server 与 monitor 应用，做到客户端随用随关 |
-| taix-server | 提供数据访问接口，接收浏览器插件和平台计时统计数据并写入 SQLite |
+| taix-shell | 创建客户端托盘，方便唤醒客户端并起到看门狗作用，协同 server 与 monitor 应用，做到客户端随用随关；同时监督侧车插件进程 |
+| taix-server | 提供数据访问接口，接收浏览器插件和平台计时统计数据并写入 SQLite；托管插件管理页面与插件契约（REST + SSE） |
 | taix-monitor | 监控应用睡眠及焦点切换，使用命名管道对 server 进行通讯 |
+| taix-webui | 插件管理页面（Svelte SPA，由 server 托管于 `http://127.0.0.1:37091/ui/`） |
+
+### 插件系统
+插件作为独立进程运行在常驻层，**客户端关闭也不受影响**。浏览器打开 `http://127.0.0.1:37091/ui/` 即可管理（启用/配置/交互）。开发指南见 [docs/plugin-dev-guide.md](docs/plugin-dev-guide.md)。
 
 后台进程统一由 taix-shell 看门狗管理，**不要手动单独启动** taix-server 与 taix-monitor：taix-shell 会读取睡眠监控配置并通过 `--sleep-watch` 参数传给 taix-monitor，手动启动的进程既不受看门狗守护，也缺失该参数。
 
@@ -28,6 +32,7 @@ Taix 是 [Tai](https://github.com/Planshit/Tai) 的一次技术及架构的全�
 
 - **开机自启失效**：Windows 检查任务计划中 **TaixShell** 任务的路径是否与安装目录一致；Setup 安装器与绿色版均可用管理员终端 `taix-shell install` 补注册。macOS 则运行 `/Applications/TaixTools/install-launchagent.sh`（DMG 中 `TaixTools/` 即后台组件与安装脚本集合）
 - **端口占用**：server 默认占 `127.0.0.1:37091`、浏览器扩展 WebSocket 占 `8908`。若 37091 被占用，可设置环境变量 `TAIX_SERVER` 换端口（如 `http://127.0.0.1:37100`，客户端与 server 均读取该变量）。server 日志按 `taix-server.YYYY-MM-DD.log` 按天滚动：Windows 在安装目录 `Logs\`，macOS 在 `/Applications/TaixTools/Logs/`
+- **插件管理页打不开**：确认 taix-server 在运行且安装目录存在 `webui/`（绿色版手动补齐即可）；插件安装/卸载 = 增删安装目录 `plugins/<plugin-id>/` 目录，webui 开关 5 秒内生效
 
 ### 运行表现
 

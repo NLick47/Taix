@@ -102,13 +102,44 @@ actor TransportClient {
             Logger.error("Transport encoding failed")
             return
         }
-        var payload = data
-        payload.append(10) // newline
 
         if let json = String(data: data, encoding: .utf8) {
             Logger.debug("Transport enqueue: \(json)")
         }
 
+        enqueue(data)
+    }
+
+    /// M4 心跳消息（与 Windows monitor 同一 JSON 形状）
+    func sendCurrent(app: AppInfo?, since: Date) {
+        struct CurrentMessage: Encodable {
+            let t: String
+            let p: String?
+            let f: String?
+            let i: String?
+            let s: Int64
+        }
+        let exePath = app?.executablePath
+        let message = CurrentMessage(
+            t: "current",
+            p: app?.name,
+            f: (exePath?.isEmpty == false) ? exePath : nil,
+            i: app?.iconPath,
+            s: Int64(since.timeIntervalSince1970)
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        guard let data = try? encoder.encode(message) else {
+            Logger.error("Current message encoding failed")
+            return
+        }
+        Logger.debug("Transport enqueue current: \(String(data: data, encoding: .utf8) ?? "")")
+        enqueue(data)
+    }
+
+    private func enqueue(_ data: Data) {
+        var payload = data
+        payload.append(10) // newline
         messageContinuation?.yield(payload)
     }
 

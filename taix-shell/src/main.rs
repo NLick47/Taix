@@ -5,6 +5,7 @@ mod config;
 mod constants;
 mod i18n;
 mod platform;
+mod plugin_supervisor;
 mod runner;
 mod service_manager;
 mod shutdown;

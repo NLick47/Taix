@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // 首帧主题：避免 CSS 加载后闪烁（与 src/lib/theme.svelte.ts 约定同名 key）
+      try {
+        var t = localStorage.getItem('taix-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23db2777'/%3E%3Ctext x='16' y='22' font-size='17' font-weight='800' font-family='sans-serif' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E" />
+    <title>Taix 插件</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

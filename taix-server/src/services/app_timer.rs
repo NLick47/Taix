@@ -314,6 +314,18 @@ impl AppTimerService {
                     tracing::error!(error = %e, "failed to clean up expired AppSessions");
                 }
             }
+
+            match crate::plugins::service::trim_records(&pool).await {
+                Ok(0) => {
+                    tracing::debug!("no PluginRecords beyond the per-plugin cap");
+                }
+                Ok(rows) => {
+                    tracing::info!(deleted_rows = rows, "trimmed PluginRecords beyond the per-plugin cap");
+                }
+                Err(e) => {
+                    tracing::error!(error = %e, "failed to trim PluginRecords");
+                }
+            }
         }
     }
 }

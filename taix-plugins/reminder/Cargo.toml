@@ -1,0 +1,25 @@
+[package]
+name = "taix-plugin-reminder"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = "0.4"
+tracing = { version = "0.1", features = ["release_max_level_off"] }
+taix-plugin-sdk = { path = "../../taix-plugin-sdk" }
+taix-notify = { path = "../../taix-notify" }
+# 用户脚本引擎（Lua 5.4 vendored，沙箱化）——随插件分发，不再进 server 二进制
+mlua = { version = "0.10", features = ["lua54", "vendored"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.release.package."*"]
+opt-level = "z"

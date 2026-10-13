@@ -45,6 +45,10 @@ if [ -z "$TARGET_DIR" ]; then
     echo "[3/5] Building taix-server..."
     cd "$ROOT_DIR/taix-server"
     cargo build --release 2>&1 | tail -3
+
+    echo "[3.5/5] Building taix-plugin-reminder..."
+    cd "$ROOT_DIR/taix-plugins/reminder"
+    cargo build --release 2>&1 | tail -3
 fi
 
 echo "[4/5] Publishing Taix.Client (AOT)..."
@@ -136,6 +140,45 @@ if [ -f "$ROOT_DIR/taix-shell/resources/icons/taix.icns" ]; then
     cp "$ROOT_DIR/taix-shell/resources/icons/taix.icns" "$TOOLS_DIR/resources/icons/"
 fi
 
+# 插件系统产物（docs/plugin-plan/07-packaging.md §1）：webui 由 server 托管 /ui/*
+# 缺产物要**让打包失败**：静静打出一个没有插件/界面的包，用户只会看到"插件列表是空的"
+if [ ! -f "$ROOT_DIR/taix-webui/dist/index.html" ]; then
+    echo "ERROR: taix-webui/dist/index.html 不存在，先运行 npm run build --prefix taix-webui" >&2
+    exit 1
+fi
+cp -r "$ROOT_DIR/taix-webui/dist" "$TOOLS_DIR/webui"
+echo "Copied taix-webui dist -> TaixTools/webui"
+# 侧车插件安装区（shell 扫描空集合法；macOS 首版无侧车 widget，目录占位）
+mkdir -p "$TOOLS_DIR/plugins"
+# 侧车插件「使用时长提醒」：构建产物 + 清单一起进包
+if [ -n "$TARGET_DIR" ]; then
+    PLUGIN_SRC="$ROOT_DIR/taix-plugins/reminder/target/$TARGET_DIR/release/taix-plugin-reminder"
+else
+    PLUGIN_SRC="$ROOT_DIR/taix-plugins/reminder/target/release/taix-plugin-reminder"
+fi
+if [ ! -f "$PLUGIN_SRC" ]; then
+    echo "ERROR: taix-plugin-reminder 未构建，先 cd taix-plugins/reminder && cargo build --release" >&2
+    exit 1
+fi
+mkdir -p "$TOOLS_DIR/plugins/reminder"
+cp "$ROOT_DIR/taix-plugins/reminder/plugin.json" "$TOOLS_DIR/plugins/reminder/"
+cp "$PLUGIN_SRC" "$TOOLS_DIR/plugins/reminder/"
+chmod +x "$TOOLS_DIR/plugins/reminder/taix-plugin-reminder"
+echo "Copied taix-plugin-reminder -> TaixTools/plugins/reminder"
+
+# TaixTools 下的可执行文件不在 .app 的 `codesign --deep` 覆盖范围内，逐个 ad-hoc 签名
+# （否则用户机器上可能因隔离属性直接拒绝执行——server/monitor/插件三类都要覆盖，
+#   所以这一步必须在插件拷进 TaixTools 之后）
+for bin in "$TOOLS_DIR/taix-shell" "$TOOLS_DIR/taix-server" "$TOOLS_DIR/taix-monitor-macos" "$TOOLS_DIR"/plugins/*/taix-plugin-*; do
+    if [ -f "$bin" ]; then
+        if codesign --force --sign - "$bin" >/dev/null 2>&1; then
+            echo "Signed (ad-hoc): $(basename "$bin")"
+        else
+            echo "WARN: codesign 失败: $bin"
+        fi
+    fi
+done
+
 cat > "$TOOLS_DIR/install-launchagent.sh" << 'SCRIPT'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -202,6 +245,9 @@ pkill -x "taix-shell" 2>/dev/null || true
 pkill -x "taix-server" 2>/dev/null || true
 pkill -x "taix-monitor-macos" 2>/dev/null || true
 pkill -x "Taix" 2>/dev/null || true
+# 插件绝不自杀（SDK park 常驻），必须在这里杀掉，否则卸载后仍是常驻孤儿；
+# 名字超 16 字符，pkill -x 的 comm 匹配不可靠，按完整命令行匹配安装目录
+pkill -f "/TaixTools/plugins/" 2>/dev/null || true
 
 sleep 1
 
