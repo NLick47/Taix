@@ -100,9 +100,9 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         var menu = new ContextMenu();
 
         var blockItem = new MenuItem { Header = ResourceStrings.IgnoreThisApplication };
-        blockItem.Click += (_, _) => OnBlockApp(data);
+        blockItem.Click += (_, _) => RunGuarded(() => OnBlockAppAsync(data));
         var whiteListItem = new MenuItem { Header = ResourceStrings.AddWhitelist };
-        whiteListItem.Click += (_, _) => OnWhiteListApp(data);
+        whiteListItem.Click += (_, _) => RunGuarded(() => OnWhiteListAppAsync(data));
         var setCategoryItem = new MenuItem { Header = ResourceStrings.SetCategory };
 
         if (app != null)
@@ -144,9 +144,9 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         var menu = new ContextMenu();
 
         var blockItem = new MenuItem { Header = ResourceStrings.IgnoreThisApplication };
-        blockItem.Click += (_, _) => OnBlockApp(data);
+        blockItem.Click += (_, _) => RunGuarded(() => OnBlockAppAsync(data));
         var whiteListItem = new MenuItem { Header = ResourceStrings.AddWhitelist };
-        whiteListItem.Click += (_, _) => OnWhiteListApp(data);
+        whiteListItem.Click += (_, _) => RunGuarded(() => OnWhiteListAppAsync(data));
         var setCategoryItem = new MenuItem { Header = ResourceStrings.SetCategory };
 
         menu.Opening += (_, _) => UpdateBlockWhiteListState(data, blockItem, whiteListItem);
@@ -177,9 +177,9 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         var menu = new ContextMenu();
 
         var blockItem = new MenuItem { Header = ResourceStrings.IgnoreThisApplication };
-        blockItem.Click += (_, _) => OnBlockApp(data);
+        blockItem.Click += (_, _) => RunGuarded(() => OnBlockAppAsync(data));
         var whiteListItem = new MenuItem { Header = ResourceStrings.AddWhitelist };
-        whiteListItem.Click += (_, _) => OnWhiteListApp(data);
+        whiteListItem.Click += (_, _) => RunGuarded(() => OnWhiteListAppAsync(data));
         var setCategoryItem = new MenuItem { Header = ResourceStrings.SetCategory };
 
         if (app != null)
@@ -247,7 +247,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
             _mainViewModel?.Toast(ResourceStrings.ApplicationFileExist, ToastType.Error, IconTypes.IncidentTriangle);
     }
 
-    private async void EditAppAliasAsync(ChartsDataModel data)
+    private async Task EditAppAliasAsync(ChartsDataModel data)
     {
         var app = GetApp(data);
         if (app == null) return;
@@ -282,7 +282,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         _mainViewModel?.Toast(ResourceStrings.OperationCompleted);
     }
 
-    private async void ClearAppDataAsync(ChartsDataModel data)
+    private async Task ClearAppDataAsync(ChartsDataModel data)
     {
         var app = GetApp(data);
         if (app == null) return;
@@ -299,7 +299,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         _mainViewModel?.Toast(ResourceStrings.Cleared);
     }
 
-    private async void OnBlockApp(ChartsDataModel data)
+    private async Task OnBlockAppAsync(ChartsDataModel data)
     {
         var app = GetApp(data);
         if (app == null) return;
@@ -321,7 +321,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         _mainViewModel?.RefreshCurrentPage();
     }
 
-    private async void OnWhiteListApp(ChartsDataModel data)
+    private async Task OnWhiteListAppAsync(ChartsDataModel data)
     {
         var app = GetApp(data);
         if (app == null) return;
@@ -361,7 +361,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
                     Header = category.Name,
                     IsChecked = categoryId == category.ID
                 };
-                menuItem.Click += async (_, _) => await SetAppCategoryAsync(appId, category);
+                menuItem.Click += (_, _) => RunGuarded(() => SetAppCategoryAsync(appId, category));
                 setCategoryMenuItem.Items.Add(menuItem);
             }
 
@@ -374,13 +374,13 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
                 {
                     Header = sysCategory?.Name ?? ResourceStrings.Uncategorized
                 };
-                uncategorizedItem.Click += async (_, _) => await ClearAppCategoryAsync(appId);
+                uncategorizedItem.Click += (_, _) => RunGuarded(() => ClearAppCategoryAsync(appId));
                 setCategoryMenuItem.Items.Add(uncategorizedItem);
             }
 
             setCategoryMenuItem.Items.Add(new Separator());
             var newCategoryItem = new MenuItem { Header = ResourceStrings.NewCategory };
-            newCategoryItem.Click += async (_, _) => await CreateNewAppCategoryAsync(appId, categories);
+            newCategoryItem.Click += (_, _) => RunGuarded(() => CreateNewAppCategoryAsync(appId, categories));
             setCategoryMenuItem.Items.Add(newCategoryItem);
 
             setCategoryMenuItem.IsEnabled = setCategoryMenuItem.Items.Count > 0;
@@ -441,7 +441,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
 
         var siteItem = new MenuItem { IsEnabled = false, Header = site?.Title ?? "" };
         var blockItem = new MenuItem { Header = ResourceStrings.IgnoreSite };
-        blockItem.Click += (_, _) => OnBlockWebSite(data);
+        blockItem.Click += (_, _) => RunGuarded(() => OnBlockWebSiteAsync(data));
         var setCategoryItem = new MenuItem { Header = ResourceStrings.SetCategory };
 
         if (site != null)
@@ -484,7 +484,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         var site = GetSite(data);
 
         var blockItem = new MenuItem { Header = ResourceStrings.IgnoreSite };
-        blockItem.Click += (_, _) => OnBlockWebSite(data);
+        blockItem.Click += (_, _) => RunGuarded(() => OnBlockWebSiteAsync(data));
         var setCategoryItem = new MenuItem { Header = ResourceStrings.SetCategory };
 
         menu.Opening += (_, _) => UpdateWebSiteBlockState(data, blockItem);
@@ -509,7 +509,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         var site = GetSite(data);
 
         var blockItem = new MenuItem { Header = ResourceStrings.IgnoreSite };
-        blockItem.Click += (_, _) => OnBlockWebSite(data);
+        blockItem.Click += (_, _) => RunGuarded(() => OnBlockWebSiteAsync(data));
         var setCategoryItem = new MenuItem { Header = ResourceStrings.SetCategory };
 
         if (site != null)
@@ -561,7 +561,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         _mainViewModel?.Toast(ResourceStrings.OperationCompleted);
     }
 
-    private async void EditWebSiteAliasAsync(ChartsDataModel data)
+    private async Task EditWebSiteAliasAsync(ChartsDataModel data)
     {
         var site = GetSite(data);
         if (site == null) return;
@@ -584,7 +584,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         }
     }
 
-    private async void OnBlockWebSite(ChartsDataModel data)
+    private async Task OnBlockWebSiteAsync(ChartsDataModel data)
     {
         var site = GetSite(data);
         if (site == null) return;
@@ -605,7 +605,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         _mainViewModel?.RefreshCurrentPage();
     }
 
-    private async void ClearWebSiteDataAsync(ChartsDataModel data)
+    private async Task ClearWebSiteDataAsync(ChartsDataModel data)
     {
         var site = GetSite(data);
         if (site == null) return;
@@ -638,7 +638,7 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
                     Header = category.Name,
                     IsChecked = siteCategoryId == category.ID
                 };
-                menuItem.Click += async (_, _) => await SetWebSiteCategoryAsync(siteId, category.ID);
+                menuItem.Click += (_, _) => RunGuarded(() => SetWebSiteCategoryAsync(siteId, category.ID));
                 setCategoryMenuItem.Items.Add(menuItem);
             }
 
@@ -651,13 +651,13 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
                 {
                     Header = sysCategory?.Name ?? ResourceStrings.Uncategorized
                 };
-                uncategorizedItem.Click += async (_, _) => await ClearWebSiteCategoryAsync(siteId);
+                uncategorizedItem.Click += (_, _) => RunGuarded(() => ClearWebSiteCategoryAsync(siteId));
                 setCategoryMenuItem.Items.Add(uncategorizedItem);
             }
 
             setCategoryMenuItem.Items.Add(new Separator());
             var newCategoryItem = new MenuItem { Header = ResourceStrings.NewCategory };
-            newCategoryItem.Click += async (_, _) => await CreateNewWebSiteCategoryAsync(siteId, categories);
+            newCategoryItem.Click += (_, _) => RunGuarded(() => CreateNewWebSiteCategoryAsync(siteId, categories));
             setCategoryMenuItem.Items.Add(newCategoryItem);
         }
         catch (Exception ex)
@@ -740,6 +740,29 @@ public class ContextMenuServicer : IContextMenuServicer, IDisposable
         var menuItem = new MenuItem { Header = header };
         menuItem.Click += (_, _) => clickAction();
         return menuItem;
+    }
+
+    private MenuItem CreateMenuItem(string header, Func<Task> clickAction)
+    {
+        return CreateMenuItem(header, () => RunGuarded(clickAction));
+    }
+
+    private void RunGuarded(Func<Task> action)
+    {
+        _ = RunGuardedAsync(action);
+    }
+
+    private async Task RunGuardedAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Context menu action failed: " + ex.Message, ex);
+            _mainViewModel?.Error(ResourceStrings.OperationFailedRetry);
+        }
     }
 
     private void OnGlobalPointerPressed(object? sender, PointerPressedEventArgs e)

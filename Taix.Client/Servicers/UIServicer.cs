@@ -75,24 +75,16 @@ public class UIServicer : IUIServicer, IDialogService
         // 生成一个不重复的默认颜色
         var defaultColor = GenerateUniqueColor(existingColorSet);
 
-        try
-        {
-            var name = await ShowInputModalAsync(
-                title,
-                ResourceStrings.EnterCategoryName ?? "请输入分类名称",
-                defaultName ?? string.Empty,
-                n => ValidateCategoryName(n, maxNameLength, existingNameSet));
+        var name = await ShowInputModalAsync(
+            title,
+            ResourceStrings.EnterCategoryName ?? "请输入分类名称",
+            defaultName ?? string.Empty,
+            n => ValidateCategoryName(n, maxNameLength, existingNameSet));
 
-            if (string.IsNullOrWhiteSpace(name))
-                return null;
-
-            return new CategoryResult(name, defaultIcon, defaultColor);
-        }
-        catch (Exception ex) when (ex.Message == "Input cancel")
-        {
-            // 用户取消输入，返回 null
+        if (string.IsNullOrWhiteSpace(name))
             return null;
-        }
+
+        return new CategoryResult(name, defaultIcon, defaultColor);
     }
 
     private static string GenerateUniqueColor(HashSet<string> existingColors)

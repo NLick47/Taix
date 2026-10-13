@@ -427,9 +427,7 @@ public class DefaultWindow : Avalonia.Controls.Window
         {
             while (IsShowInputModal) await Task.Delay(10);
 
-            if (IsDialogConfirm) return InputValue;
-
-            throw new Exception("Input cancel");
+            return IsDialogConfirm ? InputValue : null;
         });
     }
 
