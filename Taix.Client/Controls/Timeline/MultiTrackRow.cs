@@ -29,6 +29,19 @@ public class MultiTrackRow : Control
     private IList<MultiTrackSegment>? _sortedSegments;
     private bool _segmentsNeedSort = true;
 
+    private IList<MultiTrackSegment> GetSortedSegments()
+    {
+        if (_segmentsNeedSort || _sortedSegments == null)
+        {
+            _sortedSegments = (Segments ?? Array.Empty<MultiTrackSegment>())
+                .OrderBy(s => TimeToSeconds(s.Start))
+                .ToArray();
+            _segmentsNeedSort = false;
+        }
+
+        return _sortedSegments;
+    }
+
     public static readonly DirectProperty<MultiTrackRow, IEnumerable<MultiTrackSegment>> SegmentsProperty =
         AvaloniaProperty.RegisterDirect<MultiTrackRow, IEnumerable<MultiTrackSegment>>(
             nameof(Segments), o => o.Segments, (o, v) => o.Segments = v);
@@ -197,12 +210,8 @@ public class MultiTrackRow : Control
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (_segmentsNeedSort)
-        {
-            _sortedSegments = Segments?.OrderBy(s => TimeToSeconds(s.Start)).ToArray();
-            _segmentsNeedSort = false;
-        }
-        if (_sortedSegments == null || _sortedSegments.Count == 0) return;
+        var segs = GetSortedSegments();
+        if (segs.Count == 0) return;
 
         var pos = e.GetPosition(this);
         var snapRadius = 12.0;
@@ -215,7 +224,6 @@ public class MultiTrackRow : Control
         var pixelsPerSec = Bounds.Width / viewDuration;
         var mouseSec = viewStartSec + pos.X / pixelsPerSec;
 
-        var segs = _sortedSegments;
         var lo = 0;
         var hi = segs.Count - 1;
         while (lo <= hi)
@@ -481,8 +489,8 @@ public class MultiTrackRow : Control
     private void ComputeSegmentCache(double viewStartSec, double viewEndSec, double pixelsPerSec)
     {
         var bounds = Bounds;
-        var segments = _sortedSegments ?? Segments?.ToList() as IList<MultiTrackSegment>;
-        if (segments == null || segments.Count == 0)
+        var segments = GetSortedSegments();
+        if (segments.Count == 0)
         {
             _cachedSegments = Array.Empty<CachedSegmentInfo>();
             return;

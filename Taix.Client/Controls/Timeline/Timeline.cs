@@ -173,7 +173,6 @@ public class Timeline : Control
     private double _dragStartOffset;
     private Point? _mousePos;
     private TimelineUsageItem? _hoveredItem;
-    private IBrush? _hoverHighlightBrush;
     private IBrush? _hoverDimBrush;
 
     // FormattedText 缓存
@@ -292,9 +291,6 @@ public class Timeline : Control
         _selectionLabelTextBrush = FindBrush("TimelineSelectionLabelTextBrush");
 
         var isLight = this.ActualThemeVariant != ThemeVariant.Dark;
-        _hoverHighlightBrush = new ImmutableSolidColorBrush(isLight
-            ? Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF)
-            : Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
         _hoverDimBrush = new ImmutableSolidColorBrush(isLight
             ? Color.FromArgb(0x45, 0x00, 0x00, 0x00)
             : Color.FromArgb(0x65, 0x00, 0x00, 0x00));
@@ -344,9 +340,21 @@ public class Timeline : Control
 
     private double Pps => (DefaultPixelsPerHour / HourSeconds) * Zoom;
 
+    private double MinZoom =>
+        Bounds.Width > 0
+            ? Math.Max(0.05, Bounds.Width / (MaxDaySeconds * (DefaultPixelsPerHour / HourSeconds)))
+            : 0.05;
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        if (change.Property == BoundsProperty)
+        {
+            ClampZoomToBounds();
+            InvalidateVisual();
+            return;
+        }
+
         if (change.Property == UsageItemsProperty
             || change.Property == ViewModeProperty
             || change.Property == ZoomProperty
@@ -360,31 +368,13 @@ public class Timeline : Control
             if (change.Property == UsageItemsProperty)
             {
                 if (IsDefaultVisibleRange()) ResetSelection();
-                FitToData();
+                else FitToVisibleRange();
             }
             if ((change.Property == VisibleStartHourProperty
                 || change.Property == VisibleEndHourProperty)
                 && !_suppressFitToRange)
                 FitToVisibleRange();
             InvalidateVisual();
-        }
-    }
-
-    private void FitToData()
-    {
-        var items = GetNonIdleItems();
-        if (items.Count == 0) { _offsetX = 0; return; }
-
-        var firstSeconds = items.Min(i => i.Start.Hour * 3600 + i.Start.Minute * 60);
-        var lastSeconds = items.Max(i => i.End.Hour * 3600 + i.End.Minute * 60);
-        firstSeconds = Math.Max(0, firstSeconds - HourSeconds);
-        lastSeconds = Math.Min(MaxDaySeconds, lastSeconds + HourSeconds);
-
-        var pps = Pps;
-        if (Bounds.Width > 0)
-        {
-            var target = -(firstSeconds * pps) + Bounds.Width * 0.05;
-            _offsetX = Math.Clamp(target, Math.Min(0, Bounds.Width - MaxDaySeconds * pps), 0);
         }
     }
 
@@ -460,7 +450,7 @@ public class Timeline : Control
     private void ZoomAt(double px, double zoomFactor)
     {
         var oldZ = Zoom;
-        var newZ = Math.Clamp(oldZ * zoomFactor, 0.3, 50);
+        var newZ = Math.Clamp(oldZ * zoomFactor, MinZoom, 50);
         Zoom = newZ;
         var tw = MaxDaySeconds * Pps;
         var minOffset = Math.Min(0, Bounds.Width - tw);
@@ -939,7 +929,8 @@ public class Timeline : Control
         // dim all non-hover items
         foreach (var item in UsageItems ?? [])
         {
-            if (item == _hoveredItem || IsIdle(item)) continue;
+            if (IsIdle(item)) continue;
+            if (item.Start >= _hoveredItem.Start && item.End <= _hoveredItem.End) continue;
 
             var drawStart = item.Start < dayStart ? dayStart : item.Start;
             var drawEnd = item.End > dayEnd ? dayEnd : item.End;
@@ -967,7 +958,7 @@ public class Timeline : Control
             var y = UsageY + (UsageH - h) / 2;
             var r = new Rect(x, y, w, h);
 
-            var borderPen = new Pen(_hoverHighlightBrush!, 2);
+            var borderPen = new Pen(_tipText, 2);
             ctx.DrawRectangle(null, borderPen, r);
         }
     }
@@ -1399,10 +1390,29 @@ public class Timeline : Control
         var targetDuration = endSec - startSec;
         if (targetDuration <= 0) return;
         var targetPps = Bounds.Width / targetDuration;
-        Zoom = Math.Clamp(targetPps / (DefaultPixelsPerHour / HourSeconds), 0.3, 50);
+        Zoom = Math.Clamp(targetPps / (DefaultPixelsPerHour / HourSeconds), MinZoom, 50);
         var pps = Pps;
         _offsetX = Math.Clamp(-(startSec * pps),
             Math.Min(0, Bounds.Width - MaxDaySeconds * pps), 0);
+    }
+
+    private void ClampZoomToBounds()
+    {
+        if (Bounds.Width <= 0) return;
+
+        var clamped = Math.Clamp(Zoom, MinZoom, 50);
+        if (Math.Abs(clamped - Zoom) <= 0.0001) return;
+
+        var ppsBefore = Pps;
+        var startSec = ppsBefore > 0 ? -_offsetX / ppsBefore : 0;
+
+        Zoom = clamped;
+
+        var tw = MaxDaySeconds * Pps;
+        _offsetX = Math.Clamp(-(startSec * Pps),
+            Math.Min(0, Bounds.Width - tw), Math.Max(0, Bounds.Width - tw));
+
+        InvalidateVisual();
     }
 
     #region FormattedText Cache Helpers

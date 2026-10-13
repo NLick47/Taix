@@ -266,6 +266,8 @@ public partial class DataPageViewModel : DataPageModel
 
     #region 时间轴
 
+    private const int IdleGapSeconds = 60;
+
     private async Task LoadTimelineDataAsync(DateTime date, CancellationToken ct)
     {
         var dayStart = date.Date;
@@ -287,7 +289,7 @@ public partial class DataPageViewModel : DataPageModel
                 var startLocal = DateTime.SpecifyKind(session.StartTime, DateTimeKind.Utc).ToLocalTime();
                 var endLocal = DateTime.SpecifyKind(session.EndTime, DateTimeKind.Utc).ToLocalTime();
 
-                if (cursor.HasValue && startLocal > cursor.Value)
+                if (cursor.HasValue && (startLocal - cursor.Value).TotalSeconds >= IdleGapSeconds)
                 {
                     list.Add(new TimelineUsageItem
                     {
@@ -316,7 +318,7 @@ public partial class DataPageViewModel : DataPageModel
                 cursor = endLocal;
             }
 
-            if (cursor.HasValue && cursor.Value < dayEnd)
+            if (cursor.HasValue && (dayEnd - cursor.Value).TotalSeconds >= IdleGapSeconds)
             {
                 list.Add(new TimelineUsageItem
                 {
