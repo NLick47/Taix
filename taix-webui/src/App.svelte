@@ -3,7 +3,7 @@
   import PluginConfig from './pages/PluginConfig.svelte';
   import PluginDetail from './pages/PluginDetail.svelte';
   import Icon from './lib/Icon.svelte';
-  import { canLeave, connectPluginStore, pluginStore } from './lib/store.svelte';
+  import { canLeave, connectPluginStore, layout, pluginStore } from './lib/store.svelte';
   import { cycleTheme, theme, THEME_LABEL } from './lib/theme.svelte';
 
   let hash = $state(location.hash || '#/plugins');
@@ -49,7 +49,8 @@
     </button>
   </header>
 
-  <main class="canvas" class:canvas-narrow={view.page === 'config' && view.id !== 'reminder'}>
+  <!-- 配置页默认窄画布，插件自带 UI 时由页面把 layout.canvasWide 置宽 -->
+  <main class="canvas" class:canvas-narrow={view.page === 'config' && !layout.canvasWide}>
     <!-- key 只用 id：概览与配置同属一个插件，切 tab 不该重建整个画布 -->
     {#key view.id}
       {#if view.page === 'list'}

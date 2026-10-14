@@ -1,31 +1,73 @@
 <script lang="ts">
-  import Icon from '../lib/Icon.svelte';
-  import AppPicker from '../lib/AppPicker.svelte';
-  import { api } from '../lib/api';
-  import type { AppOption } from '../lib/types';
+  import Icon from './Icon.svelte';
+  import AppPicker from './AppPicker.svelte';
   import {
-    compileRules, defaultRule, ruleSummary, WINDOW_LABEL, RULE_TYPE_LABEL, REPEAT_LABEL,
+    getRecord, listApps, listCategories, postCommand,
+    type AppOption, type TaixPluginUiApi,
+  } from './bridge';
+  import {
+    compileRules, defaultRule, ruleSummary, SEED_RULES, WINDOW_LABEL, RULE_TYPE_LABEL, REPEAT_LABEL,
     type ReminderRule, type RuleType, type Repeat,
-  } from '../lib/rules';
+  } from './rules';
 
-  // values 由 PluginConfig 持有（$state proxy）。可视化模式编辑 rules，规则
-  // 变化时编译进 values.script；Lua 模式直改 values.script。server 只认 script。
-  let { values }: { values: Record<string, unknown> } = $props();
+  // 宿主契约：api.values 是挂载时快照，编辑经 api.patch 回写宿主草稿
+  // 可视化模式编辑 rules 并编译进 script，Lua 模式直改 script，server 只认 script
+  let { api }: { api: TaixPluginUiApi } = $props();
+
+  // 挂载一次的初始草稿：api 是宿主为本实例创建的稳定句柄，读初值不需要响应式绑定
+  function initFromApi() {
+    const values = api.values;
+    // 与旧版编辑器相同的宽松兜底：非字符串一律 String 化，布尔取真值
+    const mode = String(values.mode ?? '可视化规则') || '可视化规则';
+    const rules: ReminderRule[] = Array.isArray(values.rules)
+      ? (values.rules as ReminderRule[])
+      : SEED_RULES.map((r) => ({ ...r }));
+    // 兜底播种：宿主一般已按清单 default 播种，缺失时补上并回写，与 server DEFAULT_SCRIPT 对齐
+    if (!Array.isArray(values.rules)) api.patch({ rules: $state.snapshot(rules) });
+    if (typeof values.mode !== 'string' || !values.mode) api.patch({ mode });
+    return {
+      initialMode: mode,
+      initialRules: rules,
+      initialSound: !!values.sound,
+      initialScript: values.script == null ? '' : String(values.script),
+    };
+  }
+  const { initialMode, initialRules, initialSound, initialScript } = initFromApi();
+
+  let mode = $state(initialMode);
+  let sound = $state(initialSound);
+  let script = $state(initialScript);
+  let rules = $state<ReminderRule[]>(initialRules);
+
+  function setMode(m: '可视化规则' | 'Lua 脚本') {
+    mode = m;
+    api.patch({ mode: m });
+  }
+  function setSound(v: boolean) {
+    sound = v;
+    api.patch({ sound: v });
+  }
+  function setRules(next: ReminderRule[]) {
+    rules = next;
+    api.patch({ rules: $state.snapshot(next) });
+  }
+  function setScript(next: string) {
+    script = next;
+    api.patch({ script: next });
+  }
 
   // 分类与应用列表：选择器用它降低手输错误；拿不到就退回文本输入
   let categories = $state<string[]>([]);
   let appOptions = $state<AppOption[]>([]);
   $effect(() => {
-    api.listCategories()
-      .then((rows) => {
-        categories = rows.map((c) => c.name ?? '').filter(Boolean);
+    listCategories(api)
+      .then((names) => {
+        categories = names;
       })
       .catch(() => {});
-    api.listApps()
+    listApps(api)
       .then((rows) => {
-        appOptions = rows.flatMap((a) =>
-          a.name ? [{ name: a.name, alias: a.alias, totalTime: a.totalTime ?? 0 }] : [],
-        );
+        appOptions = rows;
       })
       .catch(() => {});
   });
@@ -34,35 +76,13 @@
     categories.map((name) => ({ name, alias: null, totalTime: 0 })),
   );
 
-  const mode = $derived(String(values.mode ?? '可视化规则'));
   const isVisual = $derived(mode === '可视化规则');
-  const rules = $derived.by(() => {
-    if (!Array.isArray(values.rules)) return [];
-    return values.rules as unknown as ReminderRule[];
-  });
-
-  // 首次载入：无规则时播种默认（server manifest default 已带，这里兜底）
-  $effect(() => {
-    if (!Array.isArray(values.rules)) {
-      values.rules = [
-        { id: 'r1', type: 'continuous', minutes: 60, match: '', window: 'all',
-          title: '该休息一下了', cooldown: 30, repeat: 'repeat' },
-      ];
-    }
-    if (!values.mode) values.mode = '可视化规则';
-  });
 
   const compiled = $derived(compileRules(rules));
 
   // 载入时的 script：可能是 server 默认脚本，也可能是用户手改过的。
   // 前端无法区分二者，所以只在「用户动过规则」时提示会覆盖，不指责用户改过什么
-  let scriptAtLoad = '';
-  let captured = false;
-  $effect(() => {
-    if (captured || Object.keys(values).length === 0) return;
-    scriptAtLoad = String(values.script ?? '');
-    captured = true;
-  });
+  const scriptAtLoad = initialScript;
 
   // 规则变化 → 编译进 script。载入时不动 script：手动改过的脚本不被静默覆盖
   let lastRulesJson = '';
@@ -74,7 +94,7 @@
       lastRulesJson = json;
     } else if (json !== lastRulesJson) {
       lastRulesJson = json;
-      if (isVisual) values.script = compiled;
+      if (isVisual) setScript(compiled);
     }
     // 播种完成后的规则定格为基线，之后的变化才算用户改过
     if (baseRulesJson === '' && json !== '[]') {
@@ -88,7 +108,7 @@
   const overwriteRisk = $derived(
     isVisual && rulesEdited && scriptAtLoad.trim() !== '' && scriptAtLoad !== compiled,
   );
-  const scriptOverridden = $derived(scriptTouched && String(values.script ?? '') !== compiled);
+  const scriptOverridden = $derived(scriptTouched && script !== compiled);
 
   // 新规则生成稳定 id：取现有 r<N> 的最大序号 + 1
   function nextRuleId(): string {
@@ -100,21 +120,21 @@
     return `r${max + 1}`;
   }
   function addRule(type: RuleType) {
-    values.rules = [...rules, { ...defaultRule(type), id: nextRuleId() }];
+    setRules([...rules, { ...defaultRule(type), id: nextRuleId() }]);
   }
   function removeRule(i: number) {
     const next = [...rules];
     next.splice(i, 1);
-    values.rules = next;
+    setRules(next);
   }
   function updateRule(i: number, patch: Partial<ReminderRule>) {
     const next = [...rules];
     next[i] = { ...next[i], ...patch };
-    values.rules = next;
+    setRules(next);
   }
 
   // ---- Lua 编辑器（脚本模式）：行号 + 水平滚动 + 高亮 overlay ----
-  const text = $derived(String(values.script ?? ''));
+  const text = $derived(script);
   const lineCount = $derived(text.split('\n').length);
   const KEYWORDS =
     'if|then|else|elseif|end|return|local|function|for|while|do|nil|true|false|and|or|not|in|break|repeat|until';
@@ -182,10 +202,10 @@
     dryTimedOut = false;
     const nonce = Math.random().toString(36).slice(2);
     try {
-      await api.postCommand('reminder', 'dry-run', { script: String(values.script ?? ''), nonce });
+      await postCommand(api, 'dry-run', { script, nonce });
       const deadline = Date.now() + 4000;
       while (Date.now() < deadline) {
-        const rec = (await api.getRecord('reminder', 'dryRun')) as DryReply | null;
+        const rec = await getRecord<DryReply>(api, 'dryRun');
         if (rec && rec.nonce === nonce) {
           dryResult = {
             nonce,
@@ -235,8 +255,8 @@
   <div>
     <div class="re-bar">
       <div class="seg">
-        <button class:active={isVisual} onclick={() => (values.mode = '可视化规则')}>可视化</button>
-        <button class:active={!isVisual} onclick={() => (values.mode = 'Lua 脚本')}>Lua</button>
+        <button class:active={isVisual} onclick={() => setMode('可视化规则')}>可视化</button>
+        <button class:active={!isVisual} onclick={() => setMode('Lua 脚本')}>Lua</button>
       </div>
       <label class="re-sound">
         提示音
@@ -244,8 +264,8 @@
         <span class="switch">
           <input
             type="checkbox"
-            checked={!!values.sound}
-            oninput={(e) => (values.sound = (e.target as HTMLInputElement).checked)}
+            checked={sound}
+            oninput={(e) => setSound((e.target as HTMLInputElement).checked)}
           />
           <span class="track"></span>
         </span>
@@ -386,7 +406,7 @@
               bind:this={ta}
               value={text}
               oninput={(e) => {
-                values.script = (e.target as HTMLTextAreaElement).value;
+                setScript((e.target as HTMLTextAreaElement).value);
                 scriptTouched = true;
                 syncScroll();
               }}

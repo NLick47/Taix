@@ -22,8 +22,8 @@ pub struct PluginQueue {
 }
 
 pub struct PluginState {
-    /// 启动时扫描；热安装靠 404 路径限量重扫
-    manifests: tokio::sync::RwLock<Vec<manifest::PluginManifest>>,
+    /// 启动时扫描；热安装靠 404 路径限量重扫。保留安装目录，ui 资源与 shell 启动用同一份路径
+    manifests: tokio::sync::RwLock<Vec<manifest::Installed>>,
     last_scan_ms: AtomicU64,
     pub registry: RwLock<PluginRegistry>,
     /// 写盘串行化，避免交错 rename
@@ -40,7 +40,7 @@ pub struct PluginState {
     /// 平台级数据：连续使用段起点；0 = 无段
     pub continuous_since: std::sync::atomic::AtomicI64,
     pub data_dir: PathBuf,
-    #[allow(dead_code)]
+    /// 插件 UI 资源按 <plugins_dir>/<id>/ui/ 解析
     pub plugins_dir: PathBuf,
 }
 
@@ -107,15 +107,12 @@ impl PluginState {
             .read()
             .await
             .iter()
-            .find(|m| m.id == id)
-            .cloned()
+            .find(|m| m.manifest.id == id)
+            .map(|m| m.manifest.clone())
     }
 
-    /// 404 路径用；未命中限量重扫，支持热安装
-    pub async fn manifest_or_rescan(&self, id: &str) -> Option<manifest::PluginManifest> {
-        if let Some(m) = self.manifest(id).await {
-            return Some(m);
-        }
+    /// 未命中时限量重扫，支持热安装
+    async fn rescan_throttled(&self) {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_millis() as u64)
@@ -124,11 +121,39 @@ impl PluginState {
         if now.saturating_sub(last) >= 1000 {
             self.rescan().await;
         }
+    }
+
+    /// 404 路径用；未命中限量重扫，支持热安装
+    pub async fn manifest_or_rescan(&self, id: &str) -> Option<manifest::PluginManifest> {
+        if let Some(m) = self.manifest(id).await {
+            return Some(m);
+        }
+        self.rescan_throttled().await;
         self.manifest(id).await
     }
 
+    /// 插件安装目录；与 shell 拉起进程用的是同一份路径
+    pub async fn plugin_dir_or_rescan(&self, id: &str) -> Option<PathBuf> {
+        let dir_of = |manifests: &Vec<manifest::Installed>| {
+            manifests
+                .iter()
+                .find(|m| m.manifest.id == id)
+                .map(|m| m.dir())
+        };
+        if let Some(dir) = dir_of(&*self.manifests.read().await) {
+            return Some(dir);
+        }
+        self.rescan_throttled().await;
+        dir_of(&*self.manifests.read().await)
+    }
+
     pub async fn list_manifests(&self) -> Vec<manifest::PluginManifest> {
-        self.manifests.read().await.clone()
+        self.manifests
+            .read()
+            .await
+            .iter()
+            .map(|m| m.manifest.clone())
+            .collect()
     }
 
     pub async fn rescan(&self) {

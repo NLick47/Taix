@@ -34,6 +34,10 @@ taix-plugin-manifest = { path = "../taix-plugin-manifest" }
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+
 [profile.release]
 opt-level = "z"
 lto = true

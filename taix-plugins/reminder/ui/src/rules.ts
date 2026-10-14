@@ -1,8 +1,3 @@
-// 可视化规则 ⇄ Lua 编译（reminder 插件）
-// 单一执行路径：规则在前端编译成 Lua 存入 values.script，server 只认 script。
-// 每条规则带稳定 id，插件按 id 记冷却；缺省按序号回退。
-// 手动改过脚本后切回可视化会提示覆盖（见 ReminderEditor）。
-
 export type RuleType = 'continuous' | 'daily' | 'category' | 'app';
 export type TimeWindow = 'all' | 'work' | 'evening' | 'night';
 /** 冷却到期后是否再提醒 */
@@ -69,7 +64,7 @@ function autoTitle(r: ReminderRule): string {
   }
 }
 
-/** 规则的 Lua 条件表达式（不含 if/end） */
+/** 规则的 Lua 条件表达式，不含 if/end */
 function conditionExpr(r: ReminderRule): string {
   const windowGuard = ((): string => {
     switch (r.window) {
@@ -147,12 +142,12 @@ function describe(r: ReminderRule): string {
   return r.repeat === 'once' ? `${scope} · 每天一次` : scope;
 }
 
-/** 规则的一句话摘要（规则卡片预览用） */
+/** 规则的一句话摘要，规则卡片预览用 */
 export function ruleSummary(r: ReminderRule): string {
   return describe(r);
 }
 
-/** 规则列表 → Lua 脚本（webui 保存可视化模式时调用） */
+/** 规则列表 → Lua 脚本，保存时经 patch 回写 values.script */
 export function compileRules(rules: ReminderRule[]): string {
   const out: string[] = [
     '-- 本脚本由「可视化规则」自动生成；切到 Lua 标签可手动微调，',
@@ -181,7 +176,7 @@ export function compileRules(rules: ReminderRule[]): string {
   return out.join('\n');
 }
 
-/** 默认规则（首次进入可视化模式时播种，与 server DEFAULT_SCRIPT 的规则 1 对齐） */
+/** 默认规则，首次进入可视化模式时播种，与 server DEFAULT_SCRIPT 的规则 1 对齐 */
 export const SEED_RULES: ReminderRule[] = [
   { id: 'r1', type: 'continuous', minutes: 60, match: '', window: 'all', title: '该休息一下了',
     cooldown: 30, repeat: 'repeat' },

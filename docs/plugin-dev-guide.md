@@ -35,6 +35,7 @@
 <安装目录>/plugins/<id>/           # macOS: /Applications/TaixTools/plugins/<id>/
   plugin.json                      # 清单（下节）
   taix-plugin-<id>(.exe)           # 可执行文件，名字 = 包名（Cargo package.name）
+  ui/config.js                     # 可选：插件自带的配置 UI 入口模块（§2.3）
 
 <数据目录>/plugins/                 # macOS: ~/Library/Application Support/Taix ；Windows: <安装目录>/Data
   registry.json                    # 启用状态 + 配置（**仅 server 写**，原子替换；shell 只读 enabled）
@@ -54,6 +55,7 @@
   "configSchema": [                // 缺省 [] = 无配置页；给 webui 的**渲染提示，不是校验契约**
     { "key": "workMinutes", "label": "专注时长(分)", "type": "number", "min": 1, "max": 120, "default": 25 }
   ],
+  "configUi": "config.js",         // 可选：插件自带的配置 UI 模块（ui/ 下的单文件名，不含 : ? # % 与空白，§2.3）
   "permissions": []                // 预留字段：不生效；存在时仅做结构校验（非空、≤32 字符）
 }
 ```
@@ -61,13 +63,58 @@
 `configSchema.type` ∈ `string | text | number | bool | select | json`；`select` 带 `options: string[]`，
 `number` 可带 `min` / `max`（透传为输入框属性，同为渲染提示）；
 `json` = 任意 JSON 由插件自己解释。**server 不按 schema 校验取值**，插件必须自己容错（serde default + 钳制）。
+有 `configUi` 时配置页渲染的是插件自己的界面（见 §2.3），`configSchema` 只用于播种 `default`；模块加载失败会回退到通用表单。
 
 校验与过滤行为（唯一实现：`taix-plugin-manifest`，server 与 shell 共用）：
 
-- 校验失败（id / 名称 / 版本 / entry / 平台值 / 字段类型不合法）→ 该清单被跳过并告警，不影响其它插件
+- 校验失败（id / 名称 / 版本 / entry / 平台值 / 字段类型 / configUi 不合法）→ 该清单被跳过并告警，不影响其它插件
 - `platforms` 不含当前系统 → **静默跳过（info 级）**，不是错误。「插件怎么不见了」先查这条
 - 同 id 出现两次 → 保留先扫描到的，后者告警丢弃
 - `entry` 解析（`resolve_entry`）：先按字面找；仅 Windows 再补一次 `.<exe>`。macOS 产物无扩展名，必须逐字写对
+
+### 2.3 插件自带配置界面（configUi）
+
+`configSchema` 的 6 种字段表达不了富交互（规则列表、代码编辑器、试跑面板）。声明 `configUi` 后，
+配置页整体交给插件自己的界面渲染，webui 不含任何插件专属代码。
+
+**契约（webui 侧实现：`taix-webui/src/pages/PluginConfig.svelte`）**
+
+- 入口是 `ui/` 下的一个 ES 模块（`configUi` 是单文件名），由 server 的
+  `GET /api/plugins/<id>/ui/*` 同源提供（只读 `<插件目录>/ui/`，拒绝 `..`／绝对路径／符号链接逃逸）
+- 模块必须导出 `mount(el, api)`，返回可选的卸载函数：
+
+```js
+export function mount(el, api) {
+  // 画界面到 el；编辑一律经 api.patch 回写宿主草稿
+  return () => {/* 卸载：换页、重置重挂载、插件切换时调用 */}
+}
+```
+
+- **宿主 API**（`api`）：
+  | 成员 | 语义 |
+  |---|---|
+  | `id` / `version` / `schema` | 插件 id、版本、manifest 的 configSchema |
+  | `values` | **挂载时**的配置快照（普通对象，非响应式） |
+  | `patch(partial)` | 合并改动进宿主草稿 → 脏检测、保存栏、⌘S、离开守卫自动生效 |
+  | `theme` / `onTheme(cb)` | `{ choice, resolved }`；切换主题与系统主题变化时回调 |
+  | `reportError(msg \| null)` | 非致命错误，显示在宿主错误条（不触发回退） |
+  | `getJson(path)` / `postJson(path, body)` | 同源 REST 薄封装，自动解 `{code,message,data}`，失败抛 `Error` |
+
+- **职责划分**：保存栏、脏检测、重置、错误条由宿主负责；插件只管内容区。
+  「放弃」（重置）会**重新挂载**模块并给到新的 `values` 快照——模块不要依赖宿主对快照的原地更新。
+- **回退**：模块 import 失败或 `mount` 抛错 → 宿主显示错误条并回退 `configSchema` 通用表单（所以 schema 仍建议认真填）。
+- **样式**：模块与宿主同页（非 iframe），可以直接使用全局设计令牌（`--card` `--text-2` `--accent` …）
+  与全局类（`.card` `.switch` `.seg` `.notice` `.faint` `.spacer` `.hl-*` 等），暗色主题自动生效；
+  自己的样式用 Svelte 作用域（或自行加前缀）避免外泄。`{@html}` 注入的高亮必须用全局类——组件作用域会被剔除。
+- **信任模型**：模块与页面同 realm（可访问 `window`），与插件二进制同级信任；不接受不可信来源的插件（红线 §9.4）。
+- **构建**：`taix-plugins/reminder/ui/` 是现成模板——独立 npm 工程（Svelte 5 + Vite，lib 模式单文件产出，
+  `css: 'injected'` 免去单独 CSS 文件），`npm ci && npm run build` 产出 `ui/dist/config.js`，随插件目录一起分发。
+  bundle 自带 Svelte 运行时，不要假设宿主暴露任何框架对象。
+- **单文件建议**：入口模块与其相对 `import()` 的 chunk 都在 `ui/` 下即可被同源加载；资源上限 4 MiB/文件。
+- **更新界面后要刷新页面**：ES 模块进浏览器的 module map 后不会再拉取，no-store 也绕不过；改完 `config.js` 刷新一次即可见新界面
+
+**reminder 的实例**（参考实现）：`configUi: "config.js"`，界面包含可视化规则卡片、Lua 编辑器（行号 + 高亮）、
+试运行面板；试运行 = `postJson` 发 `dry-run` 命令 + 轮询 `records?key=dryRun` 按 nonce 认领应答（§3.5／§4.1）。
 
 ## 3. taix-plugin-sdk
 
@@ -200,7 +247,7 @@ shell 以固定参数拉起插件：`run --plugin <id> --data-dir <path>`（`run
 
 ```
 GET  /api/plugins                       列表 → [{id,name,version,display,entry,platforms,enabled,state,configVersion}]
-GET  /api/plugins/:id                   详情（含 configSchema / status / records）
+GET  /api/plugins/:id                   详情（含 configSchema / configUi / status / records）
 GET  /api/plugins/:id/config            → {version, values}
 PUT  /api/plugins/:id/config            body {values: object} → {configVersion}（version+1 并广播 config 事件）
 POST /api/plugins/:id/enabled           body {enabled: bool}（shell ≤5s 生效）
@@ -210,6 +257,8 @@ POST /api/plugins/:id/events            body {state(非空 ≤64), data?} 状态
 GET  /api/plugins/:id/state             → {state, data, ts} | null
 POST /api/plugins/:id/records           body {key(非空 ≤128), value}  upsert
 GET  /api/plugins/:id/records?key=...   → [{key, value, updatedAt}]（缺省返回全部，按 key 排序）
+GET  /api/plugins/:id/ui/<file>         → 插件自带的配置 UI 资源（<插件目录>/ui/ 下，只读）
+                                          响应头 no-store + nosniff；路径穿越一律 400/404；上限 4 MiB/文件
 ```
 
 `:id` 必须先在安装目录 `plugins/` 里存在（清单扫描目录 = **server 可执行文件旁的 `plugins/`**），
@@ -301,6 +350,9 @@ strip = true
 opt-level = "z"
 ```
 
+声明了 `configUi` 的插件还要构建自带界面（独立 npm 工程，见 §2.3）：
+`cd taix-plugins/<id>/ui && npm ci && npm run build` → `ui/dist/config.js`；同目录 `npm test` 跑界面单测。
+
 ### 8.2 隔离联调（推荐工作流，不影响正式版）
 
 ```bash
@@ -314,6 +366,11 @@ TAIX_PIPE_PATH=/tmp/taix-dev-daemon.sock \
 # 2) 插件放进 server 的清单扫描目录（server exe 旁的 plugins/）并手动运行
 mkdir -p taix-server/target/debug/plugins/<id>
 cp taix-plugins/<id>/plugin.json taix-plugins/<id>/target/release/taix-plugin-<id> taix-server/target/debug/plugins/<id>/
+#    有 configUi 的话，界面产物也要在（否则配置页回退通用表单）：
+if [ -f taix-plugins/<id>/ui/dist/config.js ]; then
+  mkdir -p taix-server/target/debug/plugins/<id>/ui
+  cp taix-plugins/<id>/ui/dist/config.js taix-server/target/debug/plugins/<id>/ui/
+fi
 cd taix-plugins/<id>
 TAIX_SERVER=http://127.0.0.1:37191 ./target/release/taix-plugin-<id> run --plugin <id> --data-dir /tmp/taix-dev-data
 
@@ -341,9 +398,10 @@ EOF
 
 随包分发需要动两处：
 
-1. `taix-installer/build-dmg.sh`（macOS）：构建步骤 + 拷贝 `plugins/<id>/` + 代码签名循环（`plugins/*/taix-plugin-*` 已被通配覆盖；reminder 是现成落位）
+1. `taix-installer/build-dmg.sh`（macOS）：构建步骤 + 拷贝 `plugins/<id>/`（含 `ui/dist/config.js`）+ 代码签名循环（`plugins/*/taix-plugin-*` 已被通配覆盖；reminder 是现成落位）
 2. `.github/workflows/release.yml`：对应平台 job 加 `Build taix-plugin-<id>` step；`Swatinem/rust-cache` 的 workspaces 列表加插件目录；
-   Windows 打包段校验插件产物存在——缺产物必须让构建**失败**（防止打出空插件列表的包）
+   Windows 打包段校验插件产物存在——缺产物必须让构建**失败**（防止打出空插件列表的包）。
+   插件带 `configUi` 时，同样要在打包段构建并校验 `ui/dist/config.js`
 
 ## 9. 红线与预算
 
@@ -376,11 +434,13 @@ EOF
 |---|---|---|
 | `taix-plugins/demo` | headless 极简 | SDK 全链路最小用法（配置/指令/状态/records） |
 | `taix-plugins/reminder` | headless 完整 | tick 拉数据、Lua 沙箱规则、命中列表按规则冷却、命令+records 问答、通知、错误态上报（脚本接口见 §12） |
+| `taix-plugins/reminder/ui` | 自带配置界面 | `configUi` 契约的参考实现：mount/patch、宿主 API 封装（`bridge.ts`）、Svelte 单文件构建（§2.3） |
 | `taix-plugin-it/tests/transport.rs` | 契约测试 | 协议行为的可执行形式（改传输层先跑它） |
 
 核心源码（按需深读）：`taix-plugin-sdk/{lib,ctx,sse,transport,state,options,request}.rs`、
 `taix-notify/src/lib.rs`、`taix-plugin-manifest/src/lib.rs`（清单校验唯一实现）、
-`taix-server/src/{routes/plugins.rs, routes/events.rs, plugins/*.rs}`、`taix-shell/src/plugin_supervisor.rs`。
+`taix-server/src/{routes/plugins.rs, routes/events.rs, plugins/*.rs}`、`taix-shell/src/plugin_supervisor.rs`、
+`taix-webui/src/pages/PluginConfig.svelte`（configUi 挂载与宿主 API 的宿主侧实现）。
 
 ## 12. 参考：reminder 插件的 Lua 脚本接口
 

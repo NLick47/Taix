@@ -57,3 +57,6 @@ export const api = {
   listCategories: () => request<CategoryItem[]>('GET', '/api/category'),
   listApps: () => request<AppItem[]>('GET', '/api/appdata'),
 };
+
+/** 插件自带配置 UI 的通用请求入口，getJson/postJson 转发到它 */
+export { request as rawRequest };

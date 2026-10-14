@@ -22,6 +22,9 @@ pub struct PluginManifest {
     /// webui 表单渲染提示，不做校验
     #[serde(default)]
     pub config_schema: Vec<ConfigField>,
+    /// 插件自带的配置 UI 入口模块，ui/ 下的单文件名
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub config_ui: Option<String>,
     /// 预留字段；首版不生效
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub permissions: Vec<String>,
@@ -138,6 +141,16 @@ fn validate(m: &PluginManifest) -> bool {
                     "string" | "text" | "number" | "bool" | "select" | "json"
                 )
         })
+        && m.config_ui.as_deref().map(valid_config_ui).unwrap_or(true)
+}
+
+/// configUi 是 ui/ 下的单文件名，规则同 entry，另排除 URL 与文件系统里需要转义的字符
+fn valid_config_ui(name: &str) -> bool {
+    name.len() <= 128
+        && valid_entry(name)
+        && !name
+            .chars()
+            .any(|c| matches!(c, ':' | '?' | '#' | '%') || c.is_whitespace() || c.is_control())
 }
 
 pub fn valid_id(id: &str) -> bool {
@@ -205,6 +218,7 @@ mod tests {
             platforms: Vec::new(),
             display: false,
             config_schema: Vec::new(),
+            config_ui: None,
             permissions: Vec::new(),
         }
     }
@@ -282,6 +296,22 @@ mod tests {
     }
 
     #[test]
+    fn config_ui_is_optional_single_file_name() {
+        let mut m = manifest("demo", "taix-plugin-demo");
+        assert!(validate(&m), "缺省无自定义配置 UI 应合法");
+
+        m.config_ui = Some("config.js".to_string());
+        assert!(validate(&m));
+
+        for bad in ["", "ui/config.js", "a\\b.js", ".", "..", "C:config.js", "a b.js", "a#b.js", "a%20.js"] {
+            m.config_ui = Some(bad.to_string());
+            assert!(!validate(&m), "非法 configUi 应被拒绝: {bad:?}");
+        }
+        m.config_ui = Some(format!("{}.js", "a".repeat(130)));
+        assert!(!validate(&m), "超长 configUi 应被拒绝");
+    }
+
+    #[test]
     fn permissions_are_length_checked() {
         let mut m = manifest("demo", "taix-plugin-demo");
         m.permissions = vec!["notify".to_string(), "network".to_string()];
@@ -307,6 +337,11 @@ mod tests {
         assert_eq!(reminder.id, "reminder");
         assert!(validate(&reminder), "reminder 清单未通过校验: {reminder:?}");
         assert!(platform_matches(&reminder), "reminder 缺省 platforms 应全平台可用");
+        assert_eq!(
+            reminder.config_ui.as_deref(),
+            Some("config.js"),
+            "reminder 自带配置 UI"
+        );
     }
 
     #[test]

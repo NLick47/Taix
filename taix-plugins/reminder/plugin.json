@@ -5,6 +5,7 @@
   "entry": "taix-plugin-reminder",
   "platforms": [],
   "display": false,
+  "configUi": "config.js",
   "configSchema": [
     { "key": "sound", "label": "提示音", "type": "bool", "default": false },
     {

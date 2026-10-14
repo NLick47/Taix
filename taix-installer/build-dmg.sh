@@ -166,6 +166,15 @@ cp "$PLUGIN_SRC" "$TOOLS_DIR/plugins/reminder/"
 chmod +x "$TOOLS_DIR/plugins/reminder/taix-plugin-reminder"
 echo "Copied taix-plugin-reminder -> TaixTools/plugins/reminder"
 
+# 插件自带的配置 UI，configUi 指向它；缺产物让打包失败，避免配置页静默回退通用表单
+if [ ! -f "$ROOT_DIR/taix-plugins/reminder/ui/dist/config.js" ]; then
+    echo "ERROR: taix-plugins/reminder/ui/dist/config.js 不存在，先运行 (cd taix-plugins/reminder/ui && npm ci && npm run build)" >&2
+    exit 1
+fi
+mkdir -p "$TOOLS_DIR/plugins/reminder/ui"
+cp "$ROOT_DIR/taix-plugins/reminder/ui/dist/config.js" "$TOOLS_DIR/plugins/reminder/ui/"
+echo "Copied taix-plugin-reminder ui -> TaixTools/plugins/reminder/ui"
+
 # TaixTools 下的可执行文件不在 .app 的 `codesign --deep` 覆盖范围内，逐个 ad-hoc 签名
 # （否则用户机器上可能因隔离属性直接拒绝执行——server/monitor/插件三类都要覆盖，
 #   所以这一步必须在插件拷进 TaixTools 之后）

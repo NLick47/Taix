@@ -2069,6 +2069,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "dirs",
+ "http-body-util",
  "libc",
  "regex",
  "resvg",
@@ -2080,6 +2081,7 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tokio-stream",
+ "tower",
  "tower-http",
  "tracing",
 ]

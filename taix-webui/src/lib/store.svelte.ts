@@ -21,6 +21,14 @@ export function canLeave() {
   return guard ? guard() : true;
 }
 
+// 配置页画布宽度信号，默认窄；插件自带 UI 时由页面置宽
+// 宽度上限落在画布元素上，见 App.svelte
+export const layout = $state({ canvasWide: false });
+
+export function setCanvasWide(wide: boolean) {
+  layout.canvasWide = wide;
+}
+
 export async function refreshPlugins() {
   try {
     pluginStore.items = await api.listPlugins();
