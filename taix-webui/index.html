@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // 首帧主题：避免 CSS 加载后闪烁（与 src/lib/theme.svelte.ts 约定同名 key）
+      try {
+        var t = localStorage.getItem('taix-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+    <!-- 空图标：不显示 favicon，也避免浏览器去请求默认的 /favicon.ico -->
+    <link rel="icon" href="data:," />
+    <title>Taix</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

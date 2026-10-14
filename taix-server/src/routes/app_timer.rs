@@ -1,16 +1,22 @@
 use axum::{
     extract::State,
-    routing::post,
-    Json, Router,
+    routing::{get, post},
+    Extension, Json, Router,
 };
+use serde_json::Value;
 use sqlx::SqlitePool;
+use std::sync::Arc;
 
 use crate::models::request::UpdateAppDurationRequest;
+use crate::plugins::current;
+use crate::plugins::PluginState;
 use crate::response::ApiResponse;
 use crate::services::app_timer::AppTimerService;
 
 pub fn router() -> Router<SqlitePool> {
-    Router::new().route("/api/apptimer/duration", post(update_app_duration))
+    Router::new()
+        .route("/api/apptimer/duration", post(update_app_duration))
+        .route("/api/apptimer/current", get(current_app))
 }
 
 async fn update_app_duration(
@@ -25,4 +31,11 @@ async fn update_app_duration(
             data: None,
         }),
     }
+}
+
+async fn current_app(
+    State(pool): State<SqlitePool>,
+    Extension(plugins): Extension<Arc<PluginState>>,
+) -> Json<ApiResponse<Value>> {
+    Json(ApiResponse::ok(current::snapshot(&plugins, &pool).await))
 }

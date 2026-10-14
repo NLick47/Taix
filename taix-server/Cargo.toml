@@ -3,6 +3,14 @@ name = "taix-server"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "taix_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "taix-server"
+path = "src/main.rs"
+
 [dependencies]
 axum = { version = "0.7", features = ["ws"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "fs", "io-util", "time"] }
@@ -11,7 +19,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
-tower-http = { version = "0.6", features = ["cors", "trace"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "fs"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
 tracing = "0.1"
 taix-logging = { path = "../taix-logging" }
 anyhow = "1"
@@ -20,9 +29,14 @@ dirs = "5"
 attohttpc = { version = "0.28", default-features = false, features = ["tls-native"] }
 resvg = { version = "0.47", default-features = false }
 regex = "1"
+taix-plugin-manifest = { path = "../taix-plugin-manifest" }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
 
 [profile.release]
 opt-level = "z"

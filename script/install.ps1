@@ -77,6 +77,22 @@ if ($DesktopShortcut) {
     Write-Host "[+] Created Desktop shortcut: $desktopSc"
 }
 
+# 插件系统（docs/plugin-plan/07-packaging.md §2.2）：目录兜底 + Toast AUMID 注册
+New-Item -ItemType Directory -Force -Path (Join-Path $InstallDir "plugins") | Out-Null
+if (Test-Path (Join-Path $InstallDir "webui")) {
+    Write-Host "[+] Plugin webui present: webui/ (server hosts http://127.0.0.1:37091/ui/)"
+}
+try {
+    # taix-notify 的 Windows Toast 走此 AppUserModelId（与 taix-notify/src/lib.rs 约定一致）
+    $aumid = "Taix.Plugin"
+    $aumidKey = "HKCU:\SOFTWARE\Classes\AppUserModelId\$aumid"
+    New-Item -Path $aumidKey -Force | Out-Null
+    New-ItemProperty -Path $aumidKey -Name "DisplayName" -Value "Taix Plugins" -PropertyType String -Force | Out-Null
+    Write-Host "[+] Registered Toast AUMID: $aumid"
+} catch {
+    Write-Host "[*] Failed to register Toast AUMID: $_" -ForegroundColor Yellow
+}
+
 
 try {
     $defenderPref = Get-MpPreference -ErrorAction SilentlyContinue

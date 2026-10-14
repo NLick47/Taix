@@ -72,6 +72,13 @@ foreach ($procName in $processNames) {
     }
 }
 
+# 插件进程（taix-plugin-<id>.exe，SDK 侧永不自杀，必须显式杀掉）
+$pluginProcs = Get-Process -Name "taix-plugin-*" -ErrorAction SilentlyContinue
+if ($pluginProcs) {
+    $pluginProcs | Stop-Process -Force -ErrorAction SilentlyContinue
+    Write-Host "[+] Stopped plugin processes: $(($pluginProcs | ForEach-Object { $_.Name } | Select-Object -Unique) -join ', ')"
+}
+
 Start-Sleep -Seconds 1
 
 foreach ($c in $Components) {
@@ -128,6 +135,30 @@ foreach ($exe in $exeFiles) {
         Remove-Item $exe -Force
         Write-Host "[+] Removed executable: $exe"
     }
+}
+
+# 插件目录与 webui 静态资源：随主程序一起清掉，避免残留被下次安装直接复用
+foreach ($dirName in @("plugins", "webui")) {
+    $dirPath = Join-Path $InstallDir $dirName
+    if (Test-Path $dirPath) {
+        try {
+            Remove-Item $dirPath -Recurse -Force -ErrorAction Stop
+            Write-Host "[+] Removed directory: $dirPath"
+        } catch {
+            Write-Host "[-] Could not remove: $dirPath (locked by another process)" -ForegroundColor Yellow
+        }
+    }
+}
+
+# 插件系统：Toast AUMID 注销（install.ps1 注册的 Taix.Plugin）
+try {
+    $aumidKey = "HKCU:\SOFTWARE\Classes\AppUserModelId\Taix.Plugin"
+    if (Test-Path $aumidKey) {
+        Remove-Item $aumidKey -Force
+        Write-Host "[+] Unregistered Toast AUMID: Taix.Plugin"
+    }
+} catch {
+    Write-Host "[*] Failed to unregister Toast AUMID: $_" -ForegroundColor Yellow
 }
 
 Write-Host "`n========================================" -ForegroundColor Green

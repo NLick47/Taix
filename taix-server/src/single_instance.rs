@@ -28,6 +28,7 @@ mod imp {
     }
 
     pub fn try_acquire(name: &str) -> Option<Guard> {
+        let name = std::env::var("TAIX_INSTANCE_NAME").unwrap_or_else(|_| name.to_string());
         let name_wide: Vec<u16> = name.encode_utf16().chain(Some(0)).collect();
         let handle = unsafe { CreateMutexW(std::ptr::null_mut(), 1, name_wide.as_ptr()) };
 
@@ -59,6 +60,8 @@ mod imp {
     }
 
     pub fn try_acquire(name: &str) -> Option<Guard> {
+        // TAIX_INSTANCE_NAME 可覆盖
+        let name = std::env::var("TAIX_INSTANCE_NAME").unwrap_or_else(|_| name.to_string());
         let safe_name: String = name
             .trim_start_matches("Global\\")
             .chars()

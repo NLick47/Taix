@@ -8,6 +8,8 @@ pub struct Guard {
 }
 
 pub fn try_acquire(name: &str) -> Option<Guard> {
+    // TAIX_SHELL_INSTANCE_NAME 可覆盖
+    let name = std::env::var("TAIX_SHELL_INSTANCE_NAME").unwrap_or_else(|_| name.to_string());
     let lock_dir = dirs::cache_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("taix");

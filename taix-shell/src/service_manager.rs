@@ -34,6 +34,35 @@ fn build_monitor_args(config: &MonitorConfig) -> Vec<String> {
     ]
 }
 
+/// 显式透传 data_dir：两边解析顺序一致，避免各指向不同目录
+fn build_data_dir_args(data_dir: &Path) -> Vec<String> {
+    vec![
+        "--data-dir".to_owned(),
+        data_dir.to_string_lossy().to_string(),
+    ]
+}
+
+/// 被监督目标：server/monitor 按 exe 名解析，插件用完整路径
+#[derive(Debug, Clone)]
+pub struct SupervisedTarget {
+    pub label: String,
+    /// None 时按 exe_name 在安装目录解析
+    pub exe_path: Option<PathBuf>,
+    pub exe_name: String,
+    pub args: Vec<String>,
+}
+
+impl SupervisedTarget {
+    pub fn exe(exe_name: &'static str, args: Vec<String>) -> Self {
+        Self {
+            label: exe_name.to_string(),
+            exe_path: None,
+            exe_name: exe_name.to_string(),
+            args,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct ServiceManager {
     data_dir: PathBuf,
@@ -50,7 +79,8 @@ impl ServiceManager {
 
     pub fn run(self, shutdown: Shutdown) {
         let monitor_config = crate::config::load_monitor_config(&self.data_dir);
-        let monitor_args = build_monitor_args(&monitor_config);
+        let mut monitor_args = build_monitor_args(&monitor_config);
+        monitor_args.extend(build_data_dir_args(&self.data_dir));
 
         tracing::info!(
             target: "taix_shell::service",
@@ -65,16 +95,17 @@ impl ServiceManager {
         let shutdown_clone = shutdown.clone();
         let monitor_handle = std::thread::spawn(move || {
             self_clone.supervise(
-                crate::constants::MONITOR_EXE_NAME,
-                &monitor_args,
+                &SupervisedTarget::exe(crate::constants::MONITOR_EXE_NAME, monitor_args),
                 shutdown_clone,
             );
         });
         tracing::debug!(target: "taix_shell::service", "monitor supervisor thread spawned");
 
         self.supervise(
-            crate::constants::SERVER_EXE_NAME,
-            &[],
+            &SupervisedTarget::exe(
+                crate::constants::SERVER_EXE_NAME,
+                build_data_dir_args(&self.data_dir),
+            ),
             shutdown,
         );
 
@@ -82,12 +113,12 @@ impl ServiceManager {
         tracing::info!(target: "taix_shell::service", "service supervisor exiting; both supervise loops done");
     }
 
-    fn supervise(
+    pub fn supervise(
         &self,
-        exe_name: &'static str,
-        args: &[String],
+        target: &SupervisedTarget,
         shutdown: Shutdown,
     ) {
+        let exe_name = target.label.as_str();
         #[cfg(target_os = "windows")]
         let job = crate::platform::job_object::JobObject::new();
 
@@ -110,7 +141,12 @@ impl ServiceManager {
                 return;
             }
 
-            let exe_path = match resolve_exe_path(exe_name) {
+            let exe_path = match target
+                .exe_path
+                .clone()
+                .filter(|p| p.exists())
+                .or_else(|| resolve_exe_path(&target.exe_name))
+            {
                 Some(p) => p,
                 None => {
                     missing_retries += 1;
@@ -170,7 +206,7 @@ impl ServiceManager {
             // 已经有一个同名进程在跑 —— 通常是上一个 shell 崩溃后残留的 —— 等它自己
             // 退出后再重新拉起。两端都必须等：残留的 server 占着端口/单实例资源，
             // 新起的那个起来就挂，监督循环会陷入无意义的重启风暴。
-            if let Some(pid) = find_existing_process(exe_name) {
+            if let Some(pid) = find_existing_process(&target.exe_name) {
                 tracing::warn!(
                     target: "taix_shell::service",
                     "{}: found a pre-existing pid={} (likely orphaned by a previous shell); waiting for it to exit",
@@ -209,7 +245,7 @@ impl ServiceManager {
                 continue;
             }
 
-            let args = build_args(args);
+            let args = build_args(&target.args);
             let mut child = match spawn_process(&exe_path, &args) {
                 Ok(c) => c,
                 Err(e) => {
@@ -363,13 +399,20 @@ fn resolve_exe_path(exe_name: &str) -> Option<PathBuf> {
 }
 
 fn spawn_process(exe: &Path, args: &[String]) -> std::io::Result<std::process::Child> {
-    std::process::Command::new(exe)
+    let mut cmd = std::process::Command::new(exe);
+    cmd
         .current_dir(exe.parent().unwrap_or_else(|| Path::new(".")))
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
+        .stderr(Stdio::null());
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd.spawn()
 }
 
 #[cfg(target_os = "windows")]

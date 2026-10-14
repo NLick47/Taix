@@ -24,6 +24,10 @@ pub const SHELL_MUTEX_NAME: &str = "taix-shell";
 
 pub const TASK_NAME: &str = "TaixShell";
 
+// 插件监督
+pub const PLUGINS_DIR_NAME: &str = "plugins";
+pub const PLUGIN_REGISTRY_POLL_SECS: u64 = 5;
+
 #[cfg(target_os = "macos")]
 pub fn default_data_dir() -> std::path::PathBuf {
     dirs::data_local_dir()

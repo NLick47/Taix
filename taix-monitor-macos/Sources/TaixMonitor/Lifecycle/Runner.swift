@@ -10,6 +10,7 @@ actor Runner {
     private let idleDetector: IdleDetector
     private let sessionTracker: SessionTracker
     private let gamepadMonitor: GamepadMonitor
+    private let heartbeat: Heartbeat
     private var isRunning = false
 
     init(configuration: Configuration) {
@@ -43,6 +44,10 @@ actor Runner {
         self.idleDetector = idleDetector
         self.sessionTracker = sessionTracker
         self.gamepadMonitor = gamepadMonitor
+        self.heartbeat = Heartbeat(transport: transport, appProvider: { [weak appObserver] in
+            guard let appObserver else { return nil }
+            return await appObserver.currentTrackedApp()
+        })
     }
 
     func start() async {
@@ -53,6 +58,7 @@ actor Runner {
         await appObserver.start()
         await idleDetector.start()
         await gamepadMonitor.start()
+        await heartbeat.start(events: await eventBus.subscribe())
 
         Logger.info("TaixMonitor is running")
 
@@ -69,6 +75,7 @@ actor Runner {
         await idleDetector.stop()
         await gamepadMonitor.stop()
         await sessionTracker.stop()
+        await heartbeat.stop()
         await transport.stop()
         Logger.info("TaixMonitor stopped")
     }

@@ -57,16 +57,29 @@ pub fn run(
     let mut last_hwnd = windows::Win32::Foundation::HWND(0 as *mut _);
     info!(target: "main", "Running.");
 
+    // 心跳：前台应用 + 会话开始；睡眠停发
+    let mut last_app: Option<crate::models::AppInfo> = None;
+    let mut last_since = now_epoch_secs();
+    let mut is_sleeping = false;
+    let mut beat: u64 = 0;
+
     loop {
         let loop_start = std::time::Instant::now();
+        beat = beat.wrapping_add(1);
 
         // 前台窗口轮询
         if let Some(event) = app_manager.poll_foreground(&mut last_hwnd) {
+            last_app = Some(event.app.clone());
+            last_since = now_epoch_secs();
             timer.on_app_switch(event);
         }
 
         // Sleep/Wake 检测
         if let Some(status) = sleep_detector.tick() {
+            is_sleeping = matches!(status, crate::models::SleepStatus::Sleep);
+            if !is_sleeping {
+                last_since = now_epoch_secs(); // 唤醒即新会话
+            }
             timer.on_sleep_status_changed(status);
             info!(
                 target: "main",
@@ -91,11 +104,34 @@ pub fn run(
 
         timer.tick(&Some(data_dir.clone()), &queue);
 
+        // 5s 一拍上报 current
+        if !is_sleeping && beat % 5 == 0 {
+            if let Some(app) = &last_app {
+                let msg = crate::models::MonitorMessage::Current {
+                    p: &app.process,
+                    f: (!app.executable_path.is_empty())
+                        .then_some(app.executable_path.as_str()),
+                    i: (!app.icon_path.is_empty()).then_some(app.icon_path.as_str()),
+                    s: last_since,
+                };
+                let mut json = msg.to_string();
+                json.push('\n');
+                queue.enqueue(json.into_bytes());
+            }
+        }
+
         let elapsed = loop_start.elapsed();
         if elapsed < Duration::from_secs(1) {
             std::thread::sleep(Duration::from_secs(1) - elapsed);
         }
     }
+}
+
+fn now_epoch_secs() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
 }
 
 /// 崩溃恢复 从 active_session.json 读取上次活跃会话并上报

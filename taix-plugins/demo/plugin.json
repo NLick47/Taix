@@ -1,0 +1,11 @@
+{
+  "id": "demo",
+  "name": "Demo",
+  "version": "0.2.0",
+  "entry": "taix-plugin-demo",
+  "platforms": [],
+  "display": false,
+  "configSchema": [
+    { "key": "workMinutes", "label": "工作时长", "type": "number", "min": 1, "max": 120, "default": 25 }
+  ]
+}

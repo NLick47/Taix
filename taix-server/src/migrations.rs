@@ -8,7 +8,7 @@ use sqlx::SqlitePool;
 use std::collections::HashMap;
 use tracing::{info, warn};
 
-pub(crate) const MIGRATION_STEPS: [&str; 18] = [
+pub(crate) const MIGRATION_STEPS: [&str; 19] = [
     "baseline",
     "add_columns",
     "rename_columns",
@@ -27,6 +27,7 @@ pub(crate) const MIGRATION_STEPS: [&str; 18] = [
     "web_localhost_split",
     "macos_icon_paths",
     "web_favicons_dir",
+    "plugin_records",
 ];
 
 const BASELINE_SQL: &str = r#"
@@ -337,6 +338,26 @@ pub(crate) async fn run(pool: &SqlitePool, tz_id: &str) -> anyhow::Result<()> {
         #[cfg(target_os = "macos")]
         migrate_legacy_web_favicons_dir().await?;
         mark_done(&mut tx, "web_favicons_dir").await?;
+    }
+
+    // 插件记录 KV 表
+    if !is_done(&mut tx, "plugin_records").await? {
+        execute_batch(
+            &mut tx,
+            r#"
+            CREATE TABLE IF NOT EXISTS PluginRecords (
+                PluginID  TEXT NOT NULL,
+                RecordKey TEXT NOT NULL,
+                Value     TEXT NOT NULL,
+                UpdatedAt TEXT NOT NULL,
+                PRIMARY KEY (PluginID, RecordKey)
+            );
+            CREATE INDEX IF NOT EXISTS idx_plugin_records_updated ON PluginRecords(UpdatedAt);
+            "#,
+        )
+        .await
+        .context("创建 PluginRecords 表")?;
+        mark_done(&mut tx, "plugin_records").await?;
     }
 
     tx.commit().await.context("提交迁移事务失败")?;

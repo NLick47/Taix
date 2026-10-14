@@ -100,6 +100,13 @@ pub enum MonitorMessage<'a> {
     },
     Sleep,
     Wake,
+    /// M4 心跳：当前前台应用
+    Current {
+        p: &'a str,
+        f: Option<&'a str>,
+        i: Option<&'a str>,
+        s: i64,
+    },
 }
 
 impl<'a> fmt::Display for MonitorMessage<'a> {
@@ -127,6 +134,16 @@ impl<'a> fmt::Display for MonitorMessage<'a> {
             }
             MonitorMessage::Sleep => write!(f, "{{\"t\":\"sleep\"}}"),
             MonitorMessage::Wake => write!(f, "{{\"t\":\"wake\"}}"),
+            MonitorMessage::Current { p, f: file_path, i: icon_path, s } => {
+                write!(f, "{{\"t\":\"current\",\"p\":{},\"s\":{}", json_escape(p), s)?;
+                if let Some(v) = file_path {
+                    write!(f, ",\"f\":{}", json_escape(v))?;
+                }
+                if let Some(v) = icon_path {
+                    write!(f, ",\"i\":{}", json_escape(v))?;
+                }
+                write!(f, "}}")
+            }
         }
     }
 }

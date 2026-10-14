@@ -1,6 +1,9 @@
 # IDE
 .idea/
 
+# macOS
+**/.DS_Store
+
 # Rust build artifacts
 **/target/
 **/*.rs.bk

@@ -5,6 +5,7 @@ mod config;
 mod constants;
 mod i18n;
 mod platform;
+mod plugin_supervisor;
 mod runner;
 mod service_manager;
 mod shutdown;
@@ -94,7 +95,6 @@ fn run_test_tray(args: &[String]) -> i32 {
     }
 }
 
-#[cfg(debug_assertions)]
 fn init_logging() -> Option<taix_logging::LoggingGuard> {
     let dir = std::env::current_exe()
         .ok()
@@ -123,13 +123,13 @@ fn init_logging() -> Option<taix_logging::LoggingGuard> {
     }
 
     eprintln!(
-        "[taix-shell] debug build: writing logs to {} (file name uses the UTC date)",
+        "[taix-shell] writing logs to {} (file name uses the UTC date)",
         dir.display()
     );
 
     Some(taix_logging::init(
         "taix-shell",
-        "taix_shell=info",
+        "taix_shell=info,taix_plugin_manifest=info",
         taix_logging::PanicMode::SyncFile,
         7,
     ))
@@ -189,7 +189,6 @@ fn main() {
                 std::process::exit(1);
             }
 
-            #[cfg(debug_assertions)]
             let _logging_guard = init_logging();
             tracing::info!(
                 target: "taix_shell::lifecycle",

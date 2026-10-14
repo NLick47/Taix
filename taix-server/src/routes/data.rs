@@ -7,10 +7,13 @@ use chrono::NaiveDateTime;
 use serde::Deserialize;
 use sqlx::SqlitePool;
 
-use crate::models::log::{AppSessionModel, ColumnDataModel, DailyLogModel, ExportDataResult, HoursLogModel};
+use crate::models::log::{
+    AppSessionModel, ColumnDataModel, DailyLogModel, ExportDataResult, HoursLogModel, TodaySummary,
+};
+use crate::plugins::{current, PluginState};
 use crate::response::ApiResponse;
 use crate::services::config::ConfigService;
-use crate::services::data::DataService;
+use crate::services::data::{DataService, OngoingSession};
 use std::sync::Arc;
 
 #[derive(Debug, Deserialize)]
@@ -101,6 +104,7 @@ fn default_neg() -> i64 { -1 }
 pub fn router() -> Router<SqlitePool> {
     Router::new()
         .route("/api/data/sessions", get(get_app_sessions))
+        .route("/api/data/today-summary", get(get_today_summary))
         .route("/api/data/range", get(get_date_range_log_list))
         .route("/api/data/process-month", get(get_process_month_log_list))
         .route("/api/data/clear/:app_id", delete(clear_app_data))
@@ -194,6 +198,45 @@ async fn get_category_year_data(State(pool): State<SqlitePool>, Extension(config
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
     }
+}
+
+/// 插件与界面共用；tz 缺省 Asia/Shanghai
+async fn get_today_summary(
+    State(pool): State<SqlitePool>,
+    Extension(plugins): Extension<Arc<PluginState>>,
+    Query(q): Query<TodaySummaryQuery>,
+) -> Json<ApiResponse<TodaySummary>> {
+    let tz = q.tz.unwrap_or_else(|| "Asia/Shanghai".to_string());
+    let ongoing = if q.include_ongoing {
+        current::ongoing_session(&plugins)
+            .await
+            .map(|(process, since_epoch)| OngoingSession {
+                process,
+                since_epoch,
+            })
+    } else {
+        None
+    };
+    match DataService::today_summary(&pool, &tz, ongoing.as_ref()).await {
+        Ok(data) => Json(ApiResponse::ok(data)),
+        Err(e) => Json(ApiResponse {
+            code: 500,
+            message: e.to_string(),
+            data: None,
+        }),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct TodaySummaryQuery {
+    #[serde(default)]
+    tz: Option<String>,
+    #[serde(
+        default,
+        rename = "includeOngoing",
+        deserialize_with = "crate::models::request::deserialize_bool_insensitive"
+    )]
+    include_ongoing: bool,
 }
 
 async fn get_app_day_data(State(pool): State<SqlitePool>, Query(q): Query<AppDateQuery>) -> Json<ApiResponse<Vec<ColumnDataModel>>> {

@@ -1,0 +1,26 @@
+{
+  "id": "reminder",
+  "name": "使用时长提醒",
+  "version": "0.1.0",
+  "entry": "taix-plugin-reminder",
+  "platforms": [],
+  "display": false,
+  "configUi": "config.js",
+  "configSchema": [
+    { "key": "sound", "label": "提示音", "type": "bool", "default": false },
+    {
+      "key": "mode",
+      "label": "配置模式",
+      "type": "select",
+      "options": ["可视化规则", "Lua 脚本"],
+      "default": "可视化规则"
+    },
+    {
+      "key": "rules",
+      "label": "提醒规则",
+      "type": "json",
+      "default": []
+    },
+    { "key": "script", "label": "提醒规则脚本（Lua）", "type": "text", "default": "" }
+  ]
+}

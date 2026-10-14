@@ -80,3 +80,21 @@ pub struct ExportDataResult {
     pub daily_logs: Vec<DailyLogModel>,
     pub hours_logs: Vec<HoursLogModel>,
 }
+
+/// 进程名或分类名 + 秒数
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SummaryRow {
+    pub name: String,
+    pub seconds: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TodaySummary {
+    /// Asia/Shanghai 日期
+    pub date: String,
+    pub total_seconds: i64,
+    pub apps: Vec<SummaryRow>,
+    pub categories: Vec<SummaryRow>,
+}
