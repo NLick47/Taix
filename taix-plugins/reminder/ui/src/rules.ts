@@ -176,8 +176,3 @@ export function compileRules(rules: ReminderRule[]): string {
   return out.join('\n');
 }
 
-/** 默认规则，首次进入可视化模式时播种，与 server DEFAULT_SCRIPT 的规则 1 对齐 */
-export const SEED_RULES: ReminderRule[] = [
-  { id: 'r1', type: 'continuous', minutes: 60, match: '', window: 'all', title: '该休息一下了',
-    cooldown: 30, repeat: 'repeat' },
-];

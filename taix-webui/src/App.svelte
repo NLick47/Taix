@@ -34,7 +34,6 @@
 <div class="shell">
   <header class="topbar">
     <a class="home" href="#/plugins" onclick={onCrumbClick} title={t('topbar.home')}>
-      <span class="mark">T</span>
       <span class="brand">Taix</span>
     </a>
     <span class="spacer"></span>

@@ -399,13 +399,20 @@ fn resolve_exe_path(exe_name: &str) -> Option<PathBuf> {
 }
 
 fn spawn_process(exe: &Path, args: &[String]) -> std::io::Result<std::process::Child> {
-    std::process::Command::new(exe)
+    let mut cmd = std::process::Command::new(exe);
+    cmd
         .current_dir(exe.parent().unwrap_or_else(|| Path::new(".")))
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
+        .stderr(Stdio::null());
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd.spawn()
 }
 
 #[cfg(target_os = "windows")]

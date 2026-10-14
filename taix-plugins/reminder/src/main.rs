@@ -1,3 +1,5 @@
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
+
 mod engine;
 
 use std::collections::HashMap;
@@ -9,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use taix_plugin_sdk::{PluginApp, PluginCtx, Reply, Request};
 
-use engine::{run_script, RemindCandidate, Snapshot, DEFAULT_SCRIPT};
+use engine::{run_script, RemindCandidate, Snapshot};
 
 const PLUGIN_ID: &str = "reminder";
 const TICK: Duration = Duration::from_secs(5);
@@ -63,7 +65,7 @@ impl Runtime {
             current_process: Mutex::new(String::new()),
             sleeping: AtomicBool::new(false),
             sound: AtomicBool::new(false),
-            script: Mutex::new(DEFAULT_SCRIPT.to_string()),
+            script: Mutex::new(String::new()),
             candidate: Mutex::new(None),
             script_error: Mutex::new(None),
             reported_error: Mutex::new(None),
@@ -442,11 +444,7 @@ fn main() {
     PluginApp::new(PLUGIN_ID)
         .on_config_changed(move |_, cfg: &ReminderConfig| {
             cfg_rt.sound.store(cfg.sound, Ordering::Relaxed);
-            let script = cfg
-                .script
-                .clone()
-                .filter(|s| !s.trim().is_empty())
-                .unwrap_or_else(|| DEFAULT_SCRIPT.to_string());
+            let script = cfg.script.clone().unwrap_or_default();
             *cfg_rt.candidate.lock().unwrap() = Some(script);
         })
         .on_current(move |_, event| {

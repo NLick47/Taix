@@ -25,6 +25,14 @@
   }
 </script>
 
+<!-- 返回入口：顶栏 logo 太隐蔽，这里给一条显式面包屑 -->
+<div class="crumb">
+  <a href="#/plugins" onclick={guardClick}>
+    <Icon name="chevron-left" size={13} />
+    <span>{t('detail.back')}</span>
+  </a>
+</div>
+
 <div class="page-head">
   <div class="h-main">
     <h1>
@@ -58,6 +66,15 @@
 </div>
 
 <style>
+  .crumb a {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin: 0 0 9px -6px; padding: 4px 7px 4px 5px;
+    border-radius: 7px;
+    font-size: 12.5px; color: var(--text-2);
+    transition: background 0.12s, color 0.12s;
+  }
+  .crumb a:hover { background: var(--card-inset); color: var(--text); }
+
   .pid { color: var(--text-3); }
 
   .view-bar {

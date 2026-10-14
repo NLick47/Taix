@@ -6,7 +6,7 @@
     type AppOption, type TaixPluginUiApi,
   } from './bridge';
   import {
-    compileRules, defaultRule, SEED_RULES,
+    compileRules, defaultRule,
     type ReminderRule, type RuleType, type Repeat,
   } from './rules';
   import {
@@ -23,11 +23,12 @@
     const values = api.values;
     // 与旧版编辑器相同的宽松兜底：非字符串一律 String 化，布尔取真值
     const mode = String(values.mode ?? '可视化规则') || '可视化规则';
+    // 未配置即空：不预置规则，交给空态引导用户自己添加第一条
     const rules: ReminderRule[] = Array.isArray(values.rules)
       ? (values.rules as ReminderRule[])
-      : SEED_RULES.map((r) => ({ ...r }));
-    // 兜底播种：宿主一般已按清单 default 播种，缺失时补上并回写，与 server DEFAULT_SCRIPT 对齐
-    if (!Array.isArray(values.rules)) api.patch({ rules: $state.snapshot(rules) });
+      : [];
+    // 缺字段时回写空值，与「空 rules = 不提醒」的服务端口径保持一致
+    if (!Array.isArray(values.rules)) api.patch({ rules: [] });
     if (typeof values.mode !== 'string' || !values.mode) api.patch({ mode });
     return {
       initialMode: mode,
@@ -94,23 +95,19 @@
   const scriptAtLoad = initialScript;
 
   // 规则变化 → 编译进 script。载入时不动 script：手动改过的脚本不被静默覆盖
-  let lastRulesJson = '';
-  let baseRulesJson = '';
+  // baseRules 用 null 区分「未初始化」与「空规则」：空数组的 JSON 是 "[]" 而非空串，
+  // 拿空串当哨兵会让「加一条再删空」被误判成用户改过
+  let baseRules: string | null = null;
   let rulesEdited = $state(false);
   $effect(() => {
     const json = JSON.stringify(rules);
-    if (lastRulesJson === '') {
-      lastRulesJson = json;
-    } else if (json !== lastRulesJson) {
-      lastRulesJson = json;
-      if (isVisual) setScript(compiled);
+    if (baseRules === null) {
+      baseRules = json;
+      return;
     }
-    // 播种完成后的规则定格为基线，之后的变化才算用户改过
-    if (baseRulesJson === '' && json !== '[]') {
-      baseRulesJson = json;
-    } else if (baseRulesJson !== '' && json !== baseRulesJson) {
-      rulesEdited = true;
-    }
+    if (json === baseRules) return;
+    if (isVisual) setScript(compiled);
+    rulesEdited = true;
   });
 
   let scriptTouched = $state(false);

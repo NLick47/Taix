@@ -48,7 +48,8 @@ function fmtHMS(secs)
 end
 "#;
 
-pub const DEFAULT_SCRIPT: &str = r#"-- 使用时长提醒脚本（Lua）。每 5 秒执行一次：
+#[cfg(test)]
+pub const SAMPLE_SCRIPT: &str = r#"-- 使用时长提醒脚本（Lua）。每 5 秒执行一次：
 -- 把本轮命中的规则按顺序放进 out 并返回；插件只提醒第一条不在冷却中的，
 -- 其余命中让位 5 分钟。也可直接返回单个 {title=..., body=..., cooldownMinutes=30}，
 -- 返回 nil 或空表不提醒。可用数据见「实时数据」面板；辅助函数：todayAppMinutes /
@@ -273,8 +274,8 @@ mod tests {
     const MIN: i64 = 60;
 
     #[test]
-    fn default_script_collects_all_matches_in_order() {
-        let candidates = run_script(DEFAULT_SCRIPT, &snap()).unwrap();
+    fn sample_script_collects_all_matches_in_order() {
+        let candidates = run_script(SAMPLE_SCRIPT, &snap()).unwrap();
         let ids: Vec<&str> = candidates.iter().map(|c| c.id.as_str()).collect();
         assert_eq!(ids, ["r1", "r3"]);
         assert_eq!(candidates[0].title, "该休息一下了");

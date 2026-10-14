@@ -1,3 +1,6 @@
+// 与 taix-server 一致：release 下不弹控制台窗口
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
+
 use serde::Deserialize;
 use serde_json::json;
 use taix_plugin_sdk::PluginApp;
