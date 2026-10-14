@@ -65,10 +65,3 @@ export function statusOf(p: { state: string | null; enabled: boolean }): Status 
   if (p.state === 'running' || p.state === 'paused') return p.state;
   return p.enabled ? 'idle' : 'stopped';
 }
-
-export const statusLabel: Record<Status, string> = {
-  running: '运行中',
-  paused: '已暂停',
-  idle: '已启用',
-  stopped: '已停用',
-};

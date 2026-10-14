@@ -2,6 +2,7 @@
   import Icon from '../lib/Icon.svelte';
   import { api } from '../lib/api';
   import { subscribe } from '../lib/sse';
+  import { statusLabel, t } from '../lib/i18n.svelte';
   import PluginHeader from './PluginHeader.svelte';
   import type { PluginDetail } from '../lib/types';
 
@@ -89,7 +90,7 @@
   <div class="split">
     <div>
       {#if actions.length}
-        <div class="section-label">插件指令</div>
+        <div class="section-label">{t('detail.commands')}</div>
         <div class="actions" style="margin-bottom: 18px">
           {#each actions as a, i (a.cmd)}
             <button class={i === 0 ? 'primary' : ''} onclick={() => run(a.cmd)} disabled={busy !== ''}>
@@ -99,7 +100,7 @@
         </div>
       {/if}
 
-      <div class="section-label">{enabled ? '运行状态' : '状态'}</div>
+      <div class="section-label">{enabled ? t('detail.runtime') : t('detail.status')}</div>
       {#if kvRows.length}
         <div class="card">
           {#each kvRows as [k, v] (k)}
@@ -108,18 +109,18 @@
         </div>
       {:else}
         <div class="card muted-block">
-          <div class="mt">{enabled ? '尚未上报状态，稍候自动刷新' : '插件已停用'}</div>
-          <div class="ms">{enabled ? '插件每 5 秒上报一次' : '启用后开始上报运行数据'}</div>
+          <div class="mt">{enabled ? t('detail.noStatus') : t('detail.disabled')}</div>
+          <div class="ms">{enabled ? t('detail.reportEvery') : t('detail.enableHint')}</div>
         </div>
       {/if}
     </div>
 
     <div>
-      <div class="section-label">启用</div>
+      <div class="section-label">{t('detail.enable')}</div>
       <div class="card side-card">
         <div class="side-row">
           <div class="side-text">
-            <div class="st1">{enabled ? '已启用' : '已停用'}</div>
+            <div class="st1">{enabled ? statusLabel('idle') : statusLabel('stopped')}</div>
           </div>
           <span class="switch">
             <input type="checkbox" checked={enabled} onchange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)} />
@@ -128,18 +129,18 @@
         </div>
       </div>
 
-      <div class="section-label" style="margin-top: 18px">元信息</div>
+      <div class="section-label" style="margin-top: 18px">{t('detail.meta')}</div>
       <div class="card">
-        <div class="kv"><span class="k">类型</span><span class="v">{plugin.display ? '悬浮窗' : '独立进程'}</span></div>
-        <div class="kv"><span class="k">平台</span><span class="v">{plugin.platforms.length ? plugin.platforms.join('、') : '不限'}</span></div>
-        <div class="kv"><span class="k">配置版本</span><span class="v tnum">{plugin.configVersion ?? '—'}</span></div>
-        <div class="kv"><span class="k">入口</span><span class="v">{plugin.entry}</span></div>
+        <div class="kv"><span class="k">{t('detail.type')}</span><span class="v">{plugin.display ? t('kind.overlay') : t('kind.process')}</span></div>
+        <div class="kv"><span class="k">{t('detail.platforms')}</span><span class="v">{plugin.platforms.length ? plugin.platforms.join(t('detail.listSep')) : t('detail.platformAll')}</span></div>
+        <div class="kv"><span class="k">{t('detail.configVersion')}</span><span class="v tnum">{plugin.configVersion ?? '—'}</span></div>
+        <div class="kv"><span class="k">{t('detail.entry')}</span><span class="v">{plugin.entry}</span></div>
       </div>
     </div>
   </div>
 {:else if error}
   <div class="notice err"><span class="ico"><Icon name="alert" size={14} /></span>{error}</div>
-  <a href="#/plugins"><button class="flat">返回列表</button></a>
+  <a href="#/plugins"><button class="flat">{t('detail.back')}</button></a>
 {:else}
   <div class="skeleton" style="height: 30px; width: 220px; margin-bottom: 12px"></div>
   <div class="skeleton" style="height: 60px; width: 180px; margin-bottom: 18px"></div>

@@ -4,7 +4,8 @@
   import PluginDetail from './pages/PluginDetail.svelte';
   import Icon from './lib/Icon.svelte';
   import { canLeave, connectPluginStore, layout, pluginStore } from './lib/store.svelte';
-  import { cycleTheme, theme, THEME_LABEL } from './lib/theme.svelte';
+  import { cycleTheme, theme } from './lib/theme.svelte';
+  import { cycleLocale, locale, localeLabel, localeShort, t, themeLabel } from './lib/i18n.svelte';
 
   let hash = $state(location.hash || '#/plugins');
   window.addEventListener('hashchange', () => (hash = location.hash || '#/plugins'));
@@ -20,9 +21,9 @@
   $effect(() => connectPluginStore());
 
   $effect(() => {
-    if (view.page === 'list') document.title = '插件 · Taix';
-    else if (view.page === 'config') document.title = `${activeName} 配置 · Taix`;
-    else document.title = `${activeName} · Taix`;
+    if (view.page === 'list') document.title = t('app.title.list');
+    else if (view.page === 'config') document.title = t('app.title.config', { name: activeName });
+    else document.title = t('app.title.detail', { name: activeName });
   });
 
   function onCrumbClick(e: MouseEvent) {
@@ -32,18 +33,25 @@
 
 <div class="shell">
   <header class="topbar">
-    <a class="home" href="#/plugins" onclick={onCrumbClick} title="返回插件列表">
+    <a class="home" href="#/plugins" onclick={onCrumbClick} title={t('topbar.home')}>
       <span class="mark">T</span>
       <span class="brand">Taix</span>
     </a>
     <span class="spacer"></span>
-    <span class="conn" class:bad={pluginStore.conn !== 'live'} title={'本地服务 ' + location.host}>
-      <span class="dot"></span>{pluginStore.conn === 'live' ? '已连接' : '重连中…'}
+    <span class="conn" class:bad={pluginStore.conn !== 'live'} title={t('topbar.conn', { host: location.host })}>
+      <span class="dot"></span>{pluginStore.conn === 'live' ? t('topbar.connected') : t('topbar.reconnecting')}
     </span>
+    <button class="icon-btn" onclick={cycleLocale} title={t('topbar.locale', { label: localeLabel(locale.choice) })}>
+      {#if locale.choice === 'auto'}
+        <Icon name="globe" size={14} />
+      {:else}
+        <span class="loc-t">{localeShort[locale.resolved]}</span>
+      {/if}
+    </button>
     <button
       class="icon-btn"
       onclick={cycleTheme}
-      title={'外观：' + THEME_LABEL[theme.choice] + '（点击切换）'}
+      title={t('topbar.theme', { label: themeLabel(theme.choice) })}
     >
       <Icon name={theme.choice === 'auto' ? 'contrast' : theme.choice === 'light' ? 'sun' : 'moon'} size={14} />
     </button>
@@ -63,3 +71,7 @@
     {/key}
   </main>
 </div>
+
+<style>
+  .loc-t { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+</style>

@@ -1,21 +1,14 @@
 import type {
   ApiResponse, AppItem, CategoryItem, PluginDetail, PluginListItem,
 } from './types';
+import { t } from './i18n.svelte';
 
 // 按状态码区分失败原因：空响应体的 404 是最常见的一种——
 // 后台服务在跑，但二进制比 webui 旧、不含该路由（编译产物未更新）
 function httpError(status: number): Error {
-  const at = location.host;
-  if (status === 404) {
-    return new Error(
-      `本地服务（${at}）没有这个接口，通常是 taix-server 版本较旧。` +
-        '请重新编译并重启 taix-server 后再试。',
-    );
-  }
-  if (status === 502 || status === 503) {
-    return new Error(`本地服务暂时不可用（HTTP ${status}），可能正在重启，稍后会自动重连。`);
-  }
-  return new Error(`本地服务返回异常（HTTP ${status}），地址 ${at}`);
+  if (status === 404) return new Error(t('err.api404', { at: location.host }));
+  if (status === 502 || status === 503) return new Error(t('err.busy', { status }));
+  return new Error(t('err.http', { status, at: location.host }));
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -27,7 +20,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new Error(`无法连接本地服务（${location.host}），请确认 Taix 后台正在运行`);
+    throw new Error(t('err.connect', { host: location.host }));
   }
   let api: ApiResponse<T>;
   try {

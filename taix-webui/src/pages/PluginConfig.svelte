@@ -3,8 +3,9 @@
   import { api, rawRequest } from '../lib/api';
   import { setCanvasWide, setLeaveGuard } from '../lib/store.svelte';
   import { theme, type ThemeChoice } from '../lib/theme.svelte';
+  import { locale, t } from '../lib/i18n.svelte';
   import PluginHeader from './PluginHeader.svelte';
-  import type { PluginDetail, PluginUiApi, PluginUiTheme } from '../lib/types';
+  import type { PluginDetail, PluginUiApi, PluginUiLocale, PluginUiTheme } from '../lib/types';
 
   let { id }: { id: string } = $props();
 
@@ -27,6 +28,7 @@
   let uiNotice = $state('');
   let uiEpoch = $state(0);
   const themeSubs = new Set<(t: PluginUiTheme) => void>();
+  const localeSubs = new Set<(l: PluginUiLocale) => void>();
 
   const isCustomUi = $derived(!!plugin?.configUi && !uiError);
 
@@ -78,7 +80,7 @@
   $effect(() => {
     setLeaveGuard(() => {
       if (!dirty) return true;
-      return confirm('有未保存的修改，确定离开？');
+      return confirm(t('config.leaveConfirm'));
     });
     return () => setLeaveGuard(null);
   });
@@ -107,7 +109,7 @@
   async function save() {
     if (saving) return;
     if (Object.keys(jsonError).length) {
-      error = '存在 JSON 格式错误的字段，修正后才能保存';
+      error = t('config.jsonInvalid');
       return;
     }
     saving = true;
@@ -177,6 +179,13 @@
         themeSubs.add(cb);
         return () => themeSubs.delete(cb);
       },
+      get locale() {
+        return locale.resolved;
+      },
+      onLocale(cb) {
+        localeSubs.add(cb);
+        return () => localeSubs.delete(cb);
+      },
       reportError(msg) {
         uiNotice = msg ?? '';
       },
@@ -203,7 +212,7 @@
           mount?: (el: HTMLElement, api: PluginUiApi) => void | (() => void);
         };
         if (disposed) return;
-        if (typeof mod.mount !== 'function') throw new Error('模块未导出 mount(el, api)');
+        if (typeof mod.mount !== 'function') throw new Error(t('config.uiNoMount'));
         const ret = mod.mount(el, makeUiApi());
         if (typeof ret === 'function') dispose = ret;
       } catch (e) {
@@ -214,6 +223,7 @@
     return () => {
       disposed = true;
       themeSubs.clear();
+      localeSubs.clear();
       try {
         dispose?.();
       } catch {
@@ -234,6 +244,12 @@
     return () => mq.removeEventListener('change', onSys);
   });
 
+  // 语言变化通知模块，同样在循环外读当前值
+  $effect(() => {
+    const l = locale.resolved;
+    for (const cb of localeSubs) cb(l);
+  });
+
   // 画布宽度：自带 UI 需要整幅画布，通用表单留给窄列
   $effect(() => {
     setCanvasWide(isCustomUi);
@@ -250,7 +266,7 @@
   {#if uiError}
     <div class="notice err">
       <span class="ico"><Icon name="alert" size={14} /></span>
-      自带配置界面加载失败，已回退通用表单：{uiError}
+      {t('config.uiFallback', { err: uiError })}
     </div>
   {/if}
   {#if uiNotice}
@@ -262,7 +278,7 @@
       <div class="ui-host" bind:this={hostEl}></div>
     {/key}
   {:else if plugin.configSchema.length}
-    <div class="hint-line">保存后即时生效，无需重启</div>
+    <div class="hint-line">{t('config.instantHint')}</div>
     <div class="card">
       {#each plugin.configSchema as f (f.key)}
         {#if f.type === 'bool'}
@@ -289,7 +305,7 @@
               oninput={(e) => setJson(f.key, (e.target as HTMLTextAreaElement).value)}
             ></textarea>
             {#if jsonError[f.key]}
-              <div class="json-err">JSON 解析失败：{jsonError[f.key]}（已保留上次合法值，修正后才能保存）</div>
+              <div class="json-err">{t('config.jsonParseError', { err: jsonError[f.key] })}</div>
             {/if}
           </div>
         {:else}
@@ -324,24 +340,24 @@
     </div>
   {:else}
     <div class="empty" style="padding: 30px 20px">
-      <div class="eh">该插件没有可配置项</div>
+      <div class="eh">{t('config.nothing')}</div>
     </div>
   {/if}
 
   {#if dirty || saving || saved}
     <div class="savebar">
       {#if saved}
-        <span class="state ok"><Icon name="check" size={14} />已保存 · 即时生效</span>
+        <span class="state ok"><Icon name="check" size={14} />{t('config.saved')}</span>
       {:else if dirty}
-        <span class="state"><Icon name="alert" size={14} />有 {dirtyCount} 处未保存</span>
+        <span class="state"><Icon name="alert" size={14} />{t('config.unsaved', { n: dirtyCount })}</span>
       {/if}
       <span class="spacer"></span>
       {#if dirty && !saving}
-        <button class="flat" onclick={reset}>放弃</button>
+        <button class="flat" onclick={reset}>{t('config.discard')}</button>
       {/if}
       <span class="hint">⌘S</span>
       <button class="primary" onclick={save} disabled={saving || !dirty}>
-        {saving ? '保存中…' : '保存配置'}
+        {saving ? t('config.saving') : t('config.save')}
       </button>
     </div>
   {/if}

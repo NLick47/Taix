@@ -4,6 +4,9 @@ export interface PluginUiTheme {
   resolved: 'light' | 'dark';
 }
 
+/** 界面语言，auto 在宿主侧就解析成 zh 或 en */
+export type PluginUiLocale = 'zh' | 'en';
+
 /** 清单 configSchema 的字段描述，本 UI 只做类型参考 */
 export interface ConfigField {
   key: string;
@@ -26,6 +29,8 @@ export interface TaixPluginUiApi {
   patch(partial: Record<string, unknown>): void;
   theme: PluginUiTheme;
   onTheme(cb: (t: PluginUiTheme) => void): () => void;
+  locale: PluginUiLocale;
+  onLocale(cb: (l: PluginUiLocale) => void): () => void;
   /** 非致命错误：显示在宿主错误条，不触发回退 */
   reportError(msg: string | null): void;
   /** 同源 REST 便捷封装：自动解 {code,message,data}，失败抛 Error */

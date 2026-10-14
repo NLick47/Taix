@@ -1,10 +1,11 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import { t } from './i18n.svelte';
   import type { AppOption } from './bridge';
 
   // 应用匹配选择器：chips + 搜索下拉。value 是逗号分隔的匹配词串，
   // 匹配词仍是子串语义，所以既可以从列表里挑真实应用，也可以输入自定义词
-  let { apps, value, onchange, placeholder = '选择应用，或输入匹配词', emptyHint = '还没有记录到应用' }: {
+  let { apps, value, onchange, placeholder = t('picker.appPlaceholder'), emptyHint = t('picker.appEmpty') }: {
     apps: AppOption[];
     value: string;
     onchange: (v: string) => void;
@@ -133,20 +134,20 @@
     {#if tokens.length === 0}
       <span class="ap-ph">{placeholder}</span>
     {:else}
-      {#each tokens as t (t)}
+      {#each tokens as word (word)}
         <span
           class="ap-chip"
-          class:unknown={!matchesKnown(t)}
-          title={matchesKnown(t) ? `匹配词 ${t}` : `${t} 未匹配到任何已记录的应用`}
+          class:unknown={!matchesKnown(word)}
+          title={matchesKnown(word) ? t('picker.matched', { word }) : t('picker.unmatched', { word })}
         >
-          <span class="ap-chip-t">{labelOf(t)}</span>
+          <span class="ap-chip-t">{labelOf(word)}</span>
           <button
             class="ap-x"
             type="button"
-            aria-label="移除"
+            aria-label={t('picker.remove')}
             onclick={(e) => {
               e.stopPropagation();
-              remove(t);
+              remove(word);
             }}
           >
             <Icon name="x" size={10} />
@@ -164,7 +165,7 @@
     >
       <input
         class="ap-search"
-        placeholder="搜索应用，回车添加自定义匹配词"
+        placeholder={t('picker.search')}
         bind:value={search}
         onkeydown={onKeydown}
       />
@@ -183,7 +184,7 @@
         {/each}
         {#if visible.length === 0 && search.trim()}
           <button type="button" class="ap-item custom" onclick={commit}>
-            添加「{search.trim()}」作为匹配词
+            {t('picker.addCustom', { q: search.trim() })}
           </button>
         {:else if visible.length === 0}
           <div class="ap-empty">{emptyHint}</div>

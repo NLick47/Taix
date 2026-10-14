@@ -49,6 +49,9 @@ export interface PluginUiTheme {
   resolved: 'light' | 'dark';
 }
 
+/** 界面语言，已解析：auto 在宿主侧就落成 zh 或 en */
+export type PluginUiLocale = 'zh' | 'en';
+
 /**
  * 插件自带配置 UI 的宿主 API，即 mount(el, api) 的第二个参数
  * 契约见 docs/plugin-dev-guide.md，插件侧参考实现见 taix-plugins/reminder/ui/src/bridge.ts
@@ -64,6 +67,9 @@ export interface PluginUiApi {
   patch(partial: Record<string, unknown>): void;
   theme: PluginUiTheme;
   onTheme(cb: (t: PluginUiTheme) => void): () => void;
+  /** 当前界面语言，语言切换与浏览器语言变化时回调；插件自带文案应据此本地化 */
+  locale: PluginUiLocale;
+  onLocale(cb: (l: PluginUiLocale) => void): () => void;
   /** 非致命错误：显示在宿主错误条，不触发回退 */
   reportError(msg: string | null): void;
   /** 同源 REST 便捷封装：自动解 {code,message,data}，失败抛 Error */

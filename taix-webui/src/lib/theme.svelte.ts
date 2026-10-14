@@ -15,11 +15,6 @@ function initial(): ThemeChoice {
 export const theme = $state({ choice: initial() });
 
 const ORDER: ThemeChoice[] = ['auto', 'light', 'dark'];
-export const THEME_LABEL: Record<ThemeChoice, string> = {
-  auto: '跟随系统',
-  light: '浅色',
-  dark: '深色',
-};
 
 export function cycleTheme() {
   theme.choice = ORDER[(ORDER.indexOf(theme.choice) + 1) % ORDER.length];

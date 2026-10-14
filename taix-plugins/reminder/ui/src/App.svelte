@@ -6,9 +6,13 @@
     type AppOption, type TaixPluginUiApi,
   } from './bridge';
   import {
-    compileRules, defaultRule, ruleSummary, SEED_RULES, WINDOW_LABEL, RULE_TYPE_LABEL, REPEAT_LABEL,
+    compileRules, defaultRule, SEED_RULES,
     type ReminderRule, type RuleType, type Repeat,
   } from './rules';
+  import {
+    initI18n, repeatText, ruleSummary, t, typeText, windowText,
+    REPEATS, RULE_TYPES, WINDOWS,
+  } from './i18n.svelte';
 
   // 宿主契约：api.values 是挂载时快照，编辑经 api.patch 回写宿主草稿
   // 可视化模式编辑 rules 并编译进 script，Lua 模式直改 script，server 只认 script
@@ -33,6 +37,11 @@
     };
   }
   const { initialMode, initialRules, initialSound, initialScript } = initFromApi();
+
+  // 宿主语言：挂载时读初值并订阅变化，宿主缺失 onLocale 时读一次即止
+  $effect(() => {
+    initI18n(api);
+  });
 
   let mode = $state(initialMode);
   let sound = $state(initialSound);
@@ -233,11 +242,13 @@
       : null,
   );
   function leftLabel(c: DryCandidate): string {
-    if (c.oncePerDay && c.firedToday) return '今天已提醒过';
-    return c.cooldownLeftSeconds > 0 ? `剩余 ${Math.ceil(c.cooldownLeftSeconds / 60)} 分钟` : '也可提醒';
+    if (c.oncePerDay && c.firedToday) return t('dry.leftNotified');
+    return c.cooldownLeftSeconds > 0
+      ? t('dry.leftMinutes', { n: Math.ceil(c.cooldownLeftSeconds / 60) })
+      : t('dry.leftAvailable');
   }
   function rateLabel(c: DryCandidate): string {
-    return c.oncePerDay ? '每天一次' : `冷却 ${c.cooldownMinutes} 分钟`;
+    return c.oncePerDay ? t('dry.rateOnce') : t('dry.rateCooldown', { n: c.cooldownMinutes });
   }
   const dryOthers = $derived.by(() => {
     const result = dryResult;
@@ -255,11 +266,11 @@
   <div>
     <div class="re-bar">
       <div class="seg">
-        <button class:active={isVisual} onclick={() => setMode('可视化规则')}>可视化</button>
+        <button class:active={isVisual} onclick={() => setMode('可视化规则')}>{t('bar.visual')}</button>
         <button class:active={!isVisual} onclick={() => setMode('Lua 脚本')}>Lua</button>
       </div>
       <label class="re-sound">
-        提示音
+        {t('bar.sound')}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <span class="switch">
           <input
@@ -272,7 +283,7 @@
       </label>
       <span class="spacer"></span>
       <button onclick={dryRun} disabled={running}>
-        <Icon name="play" size={11} />{running ? '运行中…' : '试运行'}
+        <Icon name="play" size={11} />{running ? t('bar.running') : t('bar.dryRun')}
       </button>
     </div>
 
@@ -281,16 +292,14 @@
         {#if overwriteRisk || scriptOverridden}
           <div class="strip warn">
             <Icon name="alert" size={14} />
-            {overwriteRisk
-              ? '已存的 Lua 脚本与当前规则编译结果不同，保存会用规则覆盖该脚本'
-              : 'Lua 脚本有本次会话内的手动修改，保存可视化规则会覆盖这些修改'}
+            {overwriteRisk ? t('warn.overwriteRisk') : t('warn.overwriteSession')}
           </div>
         {/if}
         {#if rules.length === 0}
           <div class="empty" style="box-shadow: none; border-radius: 0; padding: 34px 20px">
             <div class="glyph"><Icon name="bell" size={22} /></div>
-            <div class="et">还没有提醒规则</div>
-            <div class="eh">从下方添加第一条规则</div>
+            <div class="et">{t('rules.empty')}</div>
+            <div class="eh">{t('rules.emptyHint')}</div>
           </div>
         {/if}
         {#each rules as r, i (i)}
@@ -302,13 +311,13 @@
                 value={r.type}
                 onchange={(e) => updateRule(i, { type: (e.target as HTMLSelectElement).value as RuleType })}
               >
-                {#each Object.entries(RULE_TYPE_LABEL) as [t, label] (t)}
-                  <option value={t}>{label}</option>
+                {#each RULE_TYPES as tp (tp)}
+                  <option value={tp}>{typeText(tp)}</option>
                 {/each}
               </select>
               <span class="rule-summary">{ruleSummary(r)}</span>
               <span class="spacer"></span>
-              <button class="icon" onclick={() => removeRule(i)} title="删除规则">
+              <button class="icon" onclick={() => removeRule(i)} title={t('rules.delete')}>
                 <Icon name="x" size={12} />
               </button>
             </div>
@@ -316,63 +325,65 @@
               {#if needMatch(r.type)}
                 <div class="rg span2">
                   {#if r.type === 'category'}
-                    <span class="rg-label">分类（可多选，时长合计）</span>
+                    <span class="rg-label">{t('rule.category')}</span>
                     <AppPicker
                       apps={categoryOptions}
                       value={r.match}
-                      placeholder="选择分类，或输入分类名"
-                      emptyHint="还没有分类，可直接输入分类名"
+                      placeholder={t('picker.categoryPlaceholder')}
+                      emptyHint={t('picker.categoryEmpty')}
                       onchange={(v) => updateRule(i, { match: v })}
                     />
                   {:else}
-                    <span class="rg-label">应用匹配</span>
+                    <span class="rg-label">{t('rule.appMatch')}</span>
                     <AppPicker
                       apps={appOptions}
                       value={r.match}
+                      placeholder={t('picker.appPlaceholder')}
+                      emptyHint={t('picker.appEmpty')}
                       onchange={(v) => updateRule(i, { match: v })}
                     />
                   {/if}
                 </div>
               {/if}
               <div class="rg">
-                <span class="rg-label">时长</span>
+                <span class="rg-label">{t('rule.threshold')}</span>
                 <input
                   type="number" min="1" value={r.minutes}
                   oninput={(e) => updateRule(i, { minutes: Number((e.target as HTMLInputElement).value) })}
                 />
               </div>
               <div class="rg">
-                <span class="rg-label">时段</span>
+                <span class="rg-label">{t('rule.window')}</span>
                 <select value={r.window} onchange={(e) => updateRule(i, { window: (e.target as HTMLSelectElement).value as never })}>
-                  {#each Object.entries(WINDOW_LABEL) as [w, label] (w)}
-                    <option value={w}>{label}</option>
+                  {#each WINDOWS as w (w)}
+                    <option value={w}>{windowText(w)}</option>
                   {/each}
                 </select>
               </div>
               <div class="rg">
-                <span class="rg-label">间隔</span>
+                <span class="rg-label">{t('rule.cooldown')}</span>
                 <input
                   type="number" min="1" value={r.cooldown}
                   disabled={r.repeat === 'once'}
-                  title={r.repeat === 'once' ? '每天只提醒一次，无需重复间隔' : '提醒后的静默分钟'}
+                  title={r.repeat === 'once' ? t('rule.cooldownOnceHint') : t('rule.cooldownHint')}
                   oninput={(e) => updateRule(i, { cooldown: Number((e.target as HTMLInputElement).value) })}
                 />
               </div>
               <div class="rg">
-                <span class="rg-label">频率</span>
+                <span class="rg-label">{t('rule.repeat')}</span>
                 <select
                   value={r.repeat ?? 'repeat'}
                   onchange={(e) => updateRule(i, { repeat: (e.target as HTMLSelectElement).value as Repeat })}
                 >
-                  {#each Object.entries(REPEAT_LABEL) as [v, label] (v)}
-                    <option value={v}>{label}</option>
+                  {#each REPEATS as rp (rp)}
+                    <option value={rp}>{repeatText(rp)}</option>
                   {/each}
                 </select>
               </div>
               <div class="rg" class:span2={needMatch(r.type)}>
-                <span class="rg-label">通知标题</span>
+                <span class="rg-label">{t('rule.title')}</span>
                 <input
-                  type="text" value={r.title} placeholder="留空自动生成"
+                  type="text" value={r.title} placeholder={t('rule.titlePlaceholder')}
                   oninput={(e) => updateRule(i, { title: (e.target as HTMLInputElement).value })}
                 />
               </div>
@@ -380,10 +391,10 @@
           </div>
         {/each}
         <div class="rule-add">
-          <span class="faint">添加</span>
-          {#each Object.entries(RULE_TYPE_LABEL) as [t, label] (t)}
-            <button class="small" onclick={() => addRule(t as RuleType)}>
-              <Icon name="plus" size={11} />{label}
+          <span class="faint">{t('rule.add')}</span>
+          {#each RULE_TYPES as tp (tp)}
+            <button class="small" onclick={() => addRule(tp)}>
+              <Icon name="plus" size={11} />{typeText(tp)}
             </button>
           {/each}
         </div>
@@ -392,9 +403,9 @@
       <div class="card">
         <div class="strip head">
           <Icon name="terminal" size={14} />
-          <span>提醒规则 · Lua</span>
+          <span>{t('lua.title')}</span>
           <span class="spacer"></span>
-          <span class="faint">手动修改后可视化编辑器不会同步</span>
+          <span class="faint">{t('lua.noSync')}</span>
         </div>
         <div class="code-editor">
           <div class="gutter mono" bind:this={gutter} aria-hidden="true">
@@ -416,39 +427,39 @@
           </div>
         </div>
         <div class="rule-foot">
-          <span>Lua 5.4 沙箱（无 io / os）</span>
+          <span>{t('lua.sandbox')}</span>
           <span class="spacer"></span>
-          <span class="tnum">{lineCount} 行</span>
-          <span>每 5 秒执行</span>
+          <span class="tnum">{t('lua.lines', { n: lineCount })}</span>
+          <span>{t('lua.every')}</span>
         </div>
       </div>
     {/if}
 
     {#if dryTimedOut}
       <div class="card dry-out err">
-        <span class="dry-tag err">无响应</span>
-        <span class="dry-body">提醒插件未响应，确认它已启用并在运行</span>
+        <span class="dry-tag err">{t('dry.noResponse')}</span>
+        <span class="dry-body">{t('dry.noResponseBody')}</span>
       </div>
     {:else if dryResult}
       <div class="card dry-out" class:err={!dryResult.ok}>
         {#if !dryResult.ok}
-          <span class="dry-tag err">脚本错误</span>
+          <span class="dry-tag err">{t('dry.scriptError')}</span>
           <span class="dry-body">{dryResult.error}</span>
         {:else if dryResult.candidates.length === 0}
-          <span class="dry-tag">不触发</span>
-          <span class="dry-body faint">当前数据下没有任何规则命中</span>
+          <span class="dry-tag">{t('dry.noTrigger')}</span>
+          <span class="dry-body faint">{t('dry.noTriggerBody')}</span>
         {:else if dryPicked}
-          <span class="dry-tag ok">会提醒</span>
+          <span class="dry-tag ok">{t('dry.wouldNotify')}</span>
           <span class="dry-body">
-            {dryPicked.title}{dryPicked.body ? `：${dryPicked.body}` : ''}
-            <span class="faint">（{rateLabel(dryPicked)}）</span>
+            {dryPicked.title}{dryPicked.body ? t('dry.bodyJoin', { body: dryPicked.body }) : ''}
+            <span class="faint">{t('dry.rateWrap', { rate: rateLabel(dryPicked) })}</span>
             {#if dryOthers}
-              <div class="faint dry-note">命中 {dryResult.candidates.length} 条，其余：{dryOthers}</div>
+              <div class="faint dry-note">{t('dry.matchedNote', { n: dryResult.candidates.length, others: dryOthers })}</div>
             {/if}
           </span>
         {:else}
-          <span class="dry-tag">暂不提醒</span>
-          <span class="dry-body">命中的 {dryResult.candidates.length} 条都在冷却或今天已提醒过：{dryOthers}</span>
+          <span class="dry-tag">{t('dry.heldBack')}</span>
+          <span class="dry-body">{t('dry.heldBackBody', { n: dryResult.candidates.length, others: dryOthers })}</span>
         {/if}
       </div>
     {/if}

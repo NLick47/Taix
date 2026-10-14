@@ -1,7 +1,8 @@
 <script lang="ts">
   import Icon from '../lib/Icon.svelte';
   import { api } from '../lib/api';
-  import { pluginStore, refreshPlugins, statusLabel, statusOf, type Status } from '../lib/store.svelte';
+  import { pluginStore, refreshPlugins, statusOf, type Status } from '../lib/store.svelte';
+  import { statusLabel, t } from '../lib/i18n.svelte';
 
   async function toggle(id: string, enabled: boolean) {
     const p = pluginStore.items.find((x) => x.id === id);
@@ -23,18 +24,18 @@
   }
 
   function kindLabel(p: { display: boolean }): string {
-    return p.display ? '悬浮窗' : '独立进程';
+    return p.display ? t('kind.overlay') : t('kind.process');
   }
 </script>
 
 <div class="page-head">
   <div class="h-main">
-    <h1>插件</h1>
-    <div class="sub">插件常驻后台运行，客户端关闭不受影响</div>
+    <h1>{t('plugins.title')}</h1>
+    <div class="sub">{t('plugins.sub')}</div>
   </div>
   <div class="acts">
-    <button onclick={refreshPlugins} title="重新读取插件列表">
-      <Icon name="refresh" size={13} />刷新
+    <button onclick={refreshPlugins} title={t('plugins.refreshTitle')}>
+      <Icon name="refresh" size={13} />{t('plugins.refresh')}
     </button>
   </div>
 </div>
@@ -54,14 +55,14 @@
   <!-- 服务不可达与「确实没有插件」必须分开：否则「服务没起」被读成「没有插件」 -->
   <div class="empty">
     <div class="glyph"><Icon name="alert" size={22} /></div>
-    <div class="et">无法读取插件列表</div>
-    <div class="eh">本地服务可能未在运行：确认 taix-shell 已启动后重新刷新</div>
+    <div class="et">{t('plugins.loadError')}</div>
+    <div class="eh">{t('plugins.loadErrorHint')}</div>
   </div>
 {:else if total === 0}
   <div class="empty">
     <div class="glyph"><Icon name="puzzle" size={22} /></div>
-    <div class="et">尚未安装任何插件</div>
-    <div class="eh">把插件目录放入安装路径的 plugins/&lt;id&gt;/ 即自动出现</div>
+    <div class="et">{t('plugins.empty')}</div>
+    <div class="eh">{t('plugins.emptyHint')}</div>
   </div>
 {:else}
   <div class="tiles">
@@ -69,7 +70,7 @@
       <span class="ico c-accent"><Icon name="puzzle" size={17} /></span>
       <div>
         <div class="n">{total}</div>
-        <div class="l">插件总数</div>
+        <div class="l">{t('plugins.statTotal')}</div>
       </div>
     </div>
     <div class="tile">
@@ -79,19 +80,19 @@
       </span>
       <div>
         <div class="n">{running}</div>
-        <div class="l">已启用</div>
+        <div class="l">{t('plugins.statEnabled')}</div>
       </div>
     </div>
     <div class="tile">
       <span class="ico c-idle"><Icon name="play" size={15} /></span>
       <div>
         <div class="n">{stopped}</div>
-        <div class="l">已停用</div>
+        <div class="l">{t('plugins.statDisabled')}</div>
       </div>
     </div>
   </div>
 
-  <div class="section-label">已安装</div>
+  <div class="section-label">{t('plugins.installed')}</div>
   <div class="card">
     {#each pluginStore.items as p (p.id)}
       {@const s = statusOf(p)}
@@ -110,7 +111,7 @@
         <span class="name">
           <span class="n1">{p.name}<span class="chip">{kindLabel(p)}</span></span>
           <span class="n2">{p.id} · v{p.version}</span>        </span>
-        <span class="tag {tagClass(s)}"><span class="tdot"></span>{statusLabel[s]}</span>
+        <span class="tag {tagClass(s)}"><span class="tdot"></span>{statusLabel(s)}</span>
         <!-- 开关本体是 label 内的 checkbox（可交互），label 仅拦截行点击冒泡 -->
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
         <label class="switch" onclick={(e) => e.stopPropagation()}>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from '../lib/Icon.svelte';
-  import { canLeave, statusLabel, statusOf } from '../lib/store.svelte';
+  import { canLeave, statusOf } from '../lib/store.svelte';
+  import { statusLabel, t } from '../lib/i18n.svelte';
   import type { PluginDetail } from '../lib/types';
 
   // 详情 / 配置两个视图共用同一页头，保证 tab 位置与身份信息完全一致
@@ -32,26 +33,26 @@
     </h1>
     <div class="sub">
       <span class="tag {s === 'running' || s === 'idle' ? 'ok' : s === 'paused' ? 'warn' : ''}">
-        <span class="tdot"></span>{statusLabel[s]}
+        <span class="tdot"></span>{statusLabel(s)}
       </span>
       <span class="pid">{plugin.id}</span>
       <span>·</span>
       <span>v{plugin.version}</span>
       <span>·</span>
-      <span>{plugin.display ? '悬浮窗 · 独立进程' : '独立进程'}</span>
+      <span>{plugin.display ? `${t('kind.overlay')} · ${t('kind.process')}` : t('kind.process')}</span>
     </div>
   </div>
 </div>
 
 <div class="view-bar">
   <div class="seg">
-    <a href={'#/plugins/' + plugin.id} class="seg-a" class:active={tab === 'overview'} onclick={guardClick}>概览</a>
-    <a href={'#/plugins/' + plugin.id + '/config'} class="seg-a" class:active={tab === 'config'} onclick={guardClick}>配置</a>
+    <a href={'#/plugins/' + plugin.id} class="seg-a" class:active={tab === 'overview'} onclick={guardClick}>{t('header.overview')}</a>
+    <a href={'#/plugins/' + plugin.id + '/config'} class="seg-a" class:active={tab === 'config'} onclick={guardClick}>{t('header.config')}</a>
   </div>
   <span class="spacer"></span>
   {#if onRefresh}
     <button onclick={onRefresh} disabled={busy}>
-      <Icon name="refresh" size={13} />刷新
+      <Icon name="refresh" size={13} />{t('plugins.refresh')}
     </button>
   {/if}
 </div>

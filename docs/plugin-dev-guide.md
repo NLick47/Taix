@@ -97,8 +97,13 @@ export function mount(el, api) {
   | `values` | **挂载时**的配置快照（普通对象，非响应式） |
   | `patch(partial)` | 合并改动进宿主草稿 → 脏检测、保存栏、⌘S、离开守卫自动生效 |
   | `theme` / `onTheme(cb)` | `{ choice, resolved }`；切换主题与系统主题变化时回调 |
+  | `locale` / `onLocale(cb)` | `'zh' \| 'en'`（auto 已在宿主侧解析）；手动切换语言与浏览器语言变化时回调 |
   | `reportError(msg \| null)` | 非致命错误，显示在宿主错误条（不触发回退） |
   | `getJson(path)` / `postJson(path, body)` | 同源 REST 薄封装，自动解 `{code,message,data}`，失败抛 `Error` |
+
+- **多语言**：宿主界面支持中英，默认随浏览器语言，用户在顶栏可手动切换。插件自带 UI 的文案应跟随
+  `locale` 本地化——挂载时读 `api.locale` 作初值，`api.onLocale` 订阅变化；缺省不订阅则维持挂载时语言
+  （参考实现：`ui/src/i18n.ts` 双语词典 + `ui/src/i18n.svelte.ts` 宿主订阅）
 
 - **职责划分**：保存栏、脏检测、重置、错误条由宿主负责；插件只管内容区。
   「放弃」（重置）会**重新挂载**模块并给到新的 `values` 快照——模块不要依赖宿主对快照的原地更新。
@@ -115,6 +120,7 @@ export function mount(el, api) {
 
 **reminder 的实例**（参考实现）：`configUi: "config.js"`，界面包含可视化规则卡片、Lua 编辑器（行号 + 高亮）、
 试运行面板；试运行 = `postJson` 发 `dry-run` 命令 + 轮询 `records?key=dryRun` 按 nonce 认领应答（§3.5／§4.1）。
+文案中英双语：`ui/src/i18n.ts`（词典与纯函数，`npm test` 覆盖中英转换）+ `ui/src/i18n.svelte.ts`（订阅宿主语言）。
 
 ## 3. taix-plugin-sdk
 
@@ -328,6 +334,9 @@ pub fn notify(title: &str, body: &str, opts: &NotifyOptions) -> anyhow::Result<(
 
 - Windows：Toast（AUMID 必须与安装器注册值一致）；macOS：`osascript display notification`
   （无 bundle 的 CLI 进程用 notify-rust 不弹横幅——实测结论，别换回去）
+- Windows 实测（2026-10-14，Win11 26200）：**AUMID 未注册时不弹横幅、只在通知中心留一条，`Show()` 不报错**
+  ——静默失败。注册 `HKCU\SOFTWARE\Classes\AppUserModelId\Taix.Plugin`（`script/install.ps1` 的步骤）后横幅正常、
+  署名为 "Taix Plugins"。手工部署插件时别跳过那步注册
 - 多行/制表文本内部已做 AppleScript 转义（拆段拼 `linefeed`/`tab`），直接用 `\n` `\t` 即可
 - 调用是**阻塞**的（等通知进程返回），建议挪到独立线程，别占 tick 线程；失败只记日志不 panic
 
@@ -426,6 +435,7 @@ EOF
 | 指令收到但订阅/数据对不上 | `PluginApp::new(id)` 与清单 id / `--plugin` 必须一致（订阅按 id 过滤） |
 | 端口 37091 被正式版占用 | 隔离联调用 §8.2 的三件套换端口/锁/管道 |
 | `todaySeconds` 恒为 0 | DB 里没有该进程今日**已完成**的会话（进行中会话不入库；用 `includeOngoing` 或本地叠加） |
+| 插件通知不弹但通知中心里有 | Toast AUMID 未注册（`HKCU\SOFTWARE\Classes\AppUserModelId\Taix.Plugin` 缺失；§7）：只归档不弹横幅且无报错，跑 `script/install.ps1` 补注册 |
 | 正式版没起来 | 本机还有同名调试进程：`pgrep -x taix-server` 后 kill，shell 1~2s 自动拉起 |
 
 ## 11. 参考实现索引
@@ -434,7 +444,7 @@ EOF
 |---|---|---|
 | `taix-plugins/demo` | headless 极简 | SDK 全链路最小用法（配置/指令/状态/records） |
 | `taix-plugins/reminder` | headless 完整 | tick 拉数据、Lua 沙箱规则、命中列表按规则冷却、命令+records 问答、通知、错误态上报（脚本接口见 §12） |
-| `taix-plugins/reminder/ui` | 自带配置界面 | `configUi` 契约的参考实现：mount/patch、宿主 API 封装（`bridge.ts`）、Svelte 单文件构建（§2.3） |
+| `taix-plugins/reminder/ui` | 自带配置界面 | `configUi` 契约的参考实现：mount/patch、宿主 API 封装（`bridge.ts`）、Svelte 单文件构建（§2.3）、双语词典与 `onLocale` 订阅 |
 | `taix-plugin-it/tests/transport.rs` | 契约测试 | 协议行为的可执行形式（改传输层先跑它） |
 
 核心源码（按需深读）：`taix-plugin-sdk/{lib,ctx,sse,transport,state,options,request}.rs`、
