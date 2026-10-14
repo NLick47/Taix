@@ -446,20 +446,27 @@ fn transport_contract() {
     post_command(port, "ping", json!({ "step": "after-restart" }));
     expect_command(&rx, "after-restart");
 
-    // ---------- S8: 指令不重复投递（SSE 与 poll 共用 server 侧投递游标） ----------
-    // 已投递不得再出现在 poll；旧实现双写（入队 + 广播）是重复投递的来源
     post_command(port, "ping", json!({ "step": "p1" }));
     post_command(port, "ping", json!({ "step": "p2" }));
     expect_command(&rx, "p1");
     expect_command(&rx, "p2");
     let poll = http_json("GET", port, &format!("/api/plugins/{}/poll", PLUGIN_ID), None);
+    let steps: Vec<&str> = poll["commands"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|c| c["data"]["step"].as_str())
+        .collect();
+    assert!(
+        steps.contains(&"p1") && steps.contains(&"p2"),
+        "SSE 已投递的指令必须仍能被 poll 补投（每订阅者游标）: {steps:?}"
+    );
+    let poll = http_json("GET", port, &format!("/api/plugins/{}/poll", PLUGIN_ID), None);
     assert_eq!(
         poll["commands"].as_array().unwrap().len(),
         0,
-        "已投递的指令不得再出现在 poll 里（否则插件会重复执行）"
+        "poll 自己的游标推进后不再重复返回"
     );
-    let poll = http_json("GET", port, &format!("/api/plugins/{}/poll", PLUGIN_ID), None);
-    assert_eq!(poll["commands"].as_array().unwrap().len(), 0);
 
     // ---------- S9: sub=webui 只收广播事件，不收该插件的指令 ----------
     let webui = open_sse(port, "webui");

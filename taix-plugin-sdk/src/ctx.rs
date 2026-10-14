@@ -14,6 +14,8 @@ pub struct PluginCtx {
     config_cache: Mutex<Option<Value>>,
     config_version: AtomicU64,
     last_state_push: Mutex<Option<(String, Instant)>>,
+    /// 最近一次成功上报的状态，心跳线程用它重推做存活信号
+    last_state_payload: Mutex<Option<(String, Option<Value>)>>,
 }
 
 impl PluginCtx {
@@ -24,6 +26,7 @@ impl PluginCtx {
             config_cache: Mutex::new(None),
             config_version: AtomicU64::new(0),
             last_state_push: Mutex::new(None),
+            last_state_payload: Mutex::new(None),
         }
     }
 
@@ -78,12 +81,27 @@ impl PluginCtx {
             }
             *last = Some((state.to_string(), Instant::now()));
         }
-        match self.transport.push_state(state, data) {
-            Ok(()) => true,
+        match self.transport.push_state(state, data.clone()) {
+            Ok(()) => {
+                *self.last_state_payload.lock().unwrap() = Some((state.to_string(), data));
+                true
+            }
             Err(e) => {
                 tracing::warn!(target: "taix_plugin_sdk", "push_state 失败: {:#}", e);
                 false
             }
+        }
+    }
+
+    /// 重推上次成功上报的状态作为存活心跳；没上报过就什么都不做
+    pub(crate) fn heartbeat_state(&self) {
+        let payload = self.last_state_payload.lock().unwrap().clone();
+        let Some((state, data)) = payload else {
+            return;
+        };
+        match self.transport.push_state(&state, data) {
+            Ok(()) => tracing::debug!(target: "taix_plugin_sdk", "状态心跳 state={}", state),
+            Err(e) => tracing::warn!(target: "taix_plugin_sdk", "状态心跳失败: {:#}", e),
         }
     }
 

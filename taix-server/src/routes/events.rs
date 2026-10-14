@@ -72,22 +72,26 @@ async fn sse_handler(
     Sse::new(full).keep_alive(keep_alive).into_response()
 }
 
-/// 该插件唯一的指令出口；取走即已投递（至多一次）
+/// 指令出口：每个订阅者用自己的游标读日志，断线重连按游标补投
 fn command_stream(
     state: Arc<PluginState>,
     id: String,
 ) -> impl tokio_stream::Stream<Item = Result<Event, Infallible>> {
     let (tx, rx) = tokio::sync::mpsc::channel(constants::PLUGIN_COMMAND_QUEUE_MAX);
+    // 单订阅者的缓冲上限；指令日志另有上限，泵阻塞不影响其它订阅者
     tokio::spawn(async move {
-        // 先拿通知器；Notify 留存许可，唤醒不会丢
         let notifier = state.command_notifier(&id);
+        // 起始游标 0 = 补投日志里保留下来的指令；插件端按 seq 去重
+        let mut cursor = 0u64;
         loop {
-            for command in state.take_pending(&id) {
+            for command in state.commands_after(&id, cursor) {
+                cursor = cursor.max(command.seq);
                 if tx.send(Ok(command_event(&id, &command))).await.is_err() {
-                    return; // 订阅者断开，泵退出
+                    return; // 订阅者断开，泵退出；指令仍在日志里，重连后补投
                 }
             }
-            notifier.notified().await;
+            // 死实例残留的泵可能抢走一次性唤醒，超时兜底重扫，指令最迟 10s 内投出
+            let _ = tokio::time::timeout(Duration::from_secs(10), notifier.notified()).await;
         }
     });
     ReceiverStream::new(rx)

@@ -87,23 +87,28 @@ impl PluginApp {
     }
 
     pub fn run_with_args(self, args: &[String]) -> anyhow::Result<()> {
-        let opts = options::parse(args).context("解析启动参数失败")?;
-
+        // 先起日志：启动期错误（参数、单实例锁）也要落盘
         let _logging = taix_logging::init(
             &format!("taix-plugin-{}", self.id),
             "info",
             taix_logging::PanicMode::SyncFile,
             7,
         );
+
+        let opts = options::parse(args).context("解析启动参数失败")?;
+
         tracing::info!(
             target: "taix_plugin_sdk",
-            "plugin '{}' starting, server={}",
+            "plugin '{}' starting, server={} data_dir={:?} filter={}",
             self.id,
-            opts.server_url
+            opts.server_url,
+            opts.data_dir,
+            std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string())
         );
 
         let _single = SingleInstance::acquire(&self.id)
             .context("获取插件单实例锁失败")?;
+        tracing::info!(target: "taix_plugin_sdk", "单实例锁已就绪 id={}", self.id);
 
         let transport = Transport::new(&opts.server_url, &self.id);
         let ctx = Arc::new(PluginCtx::new(
@@ -136,6 +141,15 @@ impl PluginApp {
                     std::thread::sleep(interval);
                 })?;
         }
+
+        // 状态存活心跳：server 端超过 90s 没收到上报会按「未上报」处理，插件不必自己实现
+        let heartbeat_ctx = ctx.clone();
+        std::thread::Builder::new()
+            .name("state-heartbeat".into())
+            .spawn(move || loop {
+                std::thread::sleep(std::time::Duration::from_secs(30));
+                heartbeat_ctx.heartbeat_state();
+            })?;
 
         loop {
             std::thread::park();

@@ -30,6 +30,8 @@ pub struct SseLoop {
 
 const SEEN_SEQ_MAX: usize = 256;
 const FALLBACK_AFTER: std::time::Duration = std::time::Duration::from_secs(5 * 60);
+/// SSE 正常时的兜底轮询间隔；指令若被静默吞掉，最迟一个周期内自愈
+const HEARTBEAT_POLL: std::time::Duration = std::time::Duration::from_secs(60);
 const POLL_INTERVAL: std::time::Duration = std::time::Duration::from_secs(2);
 
 impl SseLoop {
@@ -122,9 +124,10 @@ impl SseLoop {
                 let cmd = event["cmd"].as_str().unwrap_or_default().to_string();
                 let payload = event["data"].clone();
                 if let Some((_, handler)) = self.handlers.commands.iter().find(|(name, _)| *name == cmd) {
+                    tracing::info!(target: "taix_plugin_sdk", "执行指令 '{}' seq={}", cmd, seq);
                     handler(&self.ctx, if payload.is_null() { None } else { Some(payload) });
                 } else {
-                    tracing::debug!(target: "taix_plugin_sdk", "未注册的指令 '{}'（seq={}）", cmd, seq);
+                    tracing::info!(target: "taix_plugin_sdk", "未注册的指令 '{}'（seq={}）已忽略", cmd, seq);
                 }
             }
             Some("config") => {
@@ -151,6 +154,12 @@ impl SseLoop {
                 if version as u64 == self.ctx.config_version() {
                     return;
                 }
+                tracing::info!(
+                    target: "taix_plugin_sdk",
+                    "配置更新 version {} -> {}",
+                    self.ctx.config_version(),
+                    version
+                );
                 self.ctx.set_config(version as u64, values.clone());
                 self.notify_config_changed(&values);
             }
@@ -178,15 +187,22 @@ impl SseLoop {
         true
     }
 
-    /// SSE 断线超时后轮询取指令；SSE 恢复自动停
+    /// 保底取指令：SSE 长时间无字节时全速抢；平时每 60s 心跳探一次，
+    /// 万一 SSE 通道静默丢指令也能在一个周期内自愈（重复动作由 seq 去重挡掉）
     pub fn run_poll_fallback(&self) {
+        let mut last_poll = Instant::now();
         loop {
             std::thread::sleep(POLL_INTERVAL);
-            if self.sse_alive.lock().unwrap().elapsed() < FALLBACK_AFTER {
+            let stale = self.sse_alive.lock().unwrap().elapsed() >= FALLBACK_AFTER;
+            if !stale && last_poll.elapsed() < HEARTBEAT_POLL {
                 continue;
             }
+            last_poll = Instant::now();
             match self.transport.poll() {
                 Ok((config, commands)) => {
+                    if commands.is_empty() {
+                        tracing::debug!(target: "taix_plugin_sdk", "poll 心跳：无新指令 sse_stale={}", stale);
+                    }
                     let version = config["version"].as_u64().unwrap_or(0);
                     if version != 0 && version != self.ctx.config_version() {
                         self.refresh_config();

@@ -12,7 +12,7 @@ fn now_rfc3339() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-/// 入队 + 唤醒投递泵；投递路径只有队列 + 游标一条
+/// 入队 + 唤醒投递泵；投递靠各订阅者自己的游标读同一份有界日志
 pub fn push_command(
     state: &PluginState,
     id: &str,
@@ -25,27 +25,27 @@ pub fn push_command(
     {
         let mut queues = state.queues.lock().unwrap();
         let queue = queues.entry(id.to_string()).or_default();
-        if queue.pending.len() >= constants::PLUGIN_COMMAND_QUEUE_MAX {
-            if let Some(dropped) = queue.pending.pop_front() {
+        while queue.log.len() >= constants::PLUGIN_COMMAND_QUEUE_MAX {
+            if let Some(dropped) = queue.log.pop_front() {
                 tracing::warn!(
                     target: "taix_server::plugins",
-                    "command queue for '{}' is full ({}), dropping oldest seq={}",
+                    "command log for '{}' is full ({}), dropping oldest seq={}",
                     id,
                     constants::PLUGIN_COMMAND_QUEUE_MAX,
                     dropped.seq
                 );
             }
         }
-        queue.pending.push_back(command.clone());
+        queue.log.push_back(command.clone());
     }
 
     state.notify_commands(id);
     command
 }
 
-/// 投递泵与 poll 共用同一游标
+/// poll 降级通道的投递；自带游标，与 SSE 泵互不影响
 pub fn take_commands(state: &PluginState, id: &str) -> Vec<PluginCommand> {
-    state.take_pending(id)
+    state.take_poll_commands(id)
 }
 
 pub async fn get_config(state: &PluginState, id: &str) -> PluginConfig {
@@ -141,8 +141,23 @@ pub async fn set_plugin_state(
     );
 }
 
+/// SDK 每 30s 重推状态做存活心跳；超过这个时长没有更新说明进程已死，按「未上报」返回
+const STATUS_STALE_AFTER_SECS: i64 = 90;
+
 pub async fn get_status(state: &PluginState, id: &str) -> Option<PluginStatus> {
-    state.states.read().await.get(id).cloned()
+    let status = state.states.read().await.get(id).cloned()?;
+    match chrono::DateTime::parse_from_rfc3339(&status.ts) {
+        Ok(ts) if chrono::Utc::now().signed_duration_since(ts).num_seconds() > STATUS_STALE_AFTER_SECS => {
+            tracing::debug!(
+                target: "taix_server::plugins",
+                "status for '{}' is stale ({}), reporting as none",
+                id,
+                status.ts
+            );
+            None
+        }
+        _ => Some(status),
+    }
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -176,6 +191,18 @@ pub async fn upsert_record(
     .bind(now_rfc3339())
     .execute(pool)
     .await?;
+
+    // 写后即裁：上限必须随时成立，不能等每天的维护任务
+    if let Ok(trimmed) = trim_records_for(pool, plugin_id).await {
+        if trimmed > 0 {
+            tracing::debug!(
+                target: "taix_server::plugins",
+                "trimmed {} record(s) beyond the cap for '{}'",
+                trimmed,
+                plugin_id
+            );
+        }
+    }
 
     Ok(())
 }
@@ -222,8 +249,28 @@ pub async fn get_records(
         .collect())
 }
 
-/// 每插件只保留最新 N 条，超出删最旧。
+/// 每插件只保留最新 N 个 key，超出删最旧。
 /// 刻意不按时间清：插件持久状态不能随统计保留期消失。
+/// 同一秒内时间戳并列时用 rowid 兜底，保证淘汰顺序确定
+pub async fn trim_records_for(pool: &SqlitePool, plugin_id: &str) -> Result<u64, sqlx::Error> {
+    let result = sqlx::query(
+        r#"
+        DELETE FROM PluginRecords
+        WHERE PluginID = ?1 AND rowid NOT IN (
+            SELECT rowid FROM PluginRecords
+            WHERE PluginID = ?1
+            ORDER BY UpdatedAt DESC, rowid DESC
+            LIMIT ?2
+        )
+        "#,
+    )
+    .bind(plugin_id)
+    .bind(constants::PLUGIN_RECORDS_MAX_PER_PLUGIN)
+    .execute(pool)
+    .await?;
+    Ok(result.rows_affected())
+}
+
 pub async fn trim_records(pool: &SqlitePool) -> Result<u64, sqlx::Error> {
     let owners: Vec<(String,)> = sqlx::query_as("SELECT DISTINCT PluginID FROM PluginRecords")
         .fetch_all(pool)
@@ -231,22 +278,7 @@ pub async fn trim_records(pool: &SqlitePool) -> Result<u64, sqlx::Error> {
 
     let mut deleted = 0u64;
     for (plugin_id,) in owners {
-        let result = sqlx::query(
-            r#"
-            DELETE FROM PluginRecords
-            WHERE PluginID = ?1 AND RecordKey NOT IN (
-                SELECT RecordKey FROM PluginRecords
-                WHERE PluginID = ?1
-                ORDER BY UpdatedAt DESC
-                LIMIT ?2
-            )
-            "#,
-        )
-        .bind(&plugin_id)
-        .bind(constants::PLUGIN_RECORDS_MAX_PER_PLUGIN)
-        .execute(pool)
-        .await?;
-        deleted += result.rows_affected();
+        deleted += trim_records_for(pool, &plugin_id).await?;
     }
 
     Ok(deleted)

@@ -334,6 +334,7 @@ fn tick(ctx: &PluginCtx, rt: &Arc<Runtime>) {
     }
 
     if rt.sleeping.load(Ordering::Relaxed) {
+        tracing::debug!(target: "taix_plugin_reminder", "空闲/睡眠中，跳过本轮");
         return;
     }
 
@@ -344,6 +345,15 @@ fn tick(ctx: &PluginCtx, rt: &Arc<Runtime>) {
             return;
         }
     };
+    tracing::debug!(
+        target: "taix_plugin_reminder",
+        "tick: continuous={}s today={}s apps={} cats={} proc={}",
+        snap.continuous_seconds,
+        snap.today_total_seconds,
+        snap.apps.len(),
+        snap.categories.len(),
+        snap.current_process
+    );
 
     // 新脚本先试跑，失败沿用上一份
     if let Some(candidate) = rt.candidate.lock().unwrap().take() {
@@ -392,12 +402,23 @@ fn tick(ctx: &PluginCtx, rt: &Arc<Runtime>) {
 
     let Some(action) = action else {
         // 全在冷却：仍要发心跳，否则详情页的剩余时间与连续时长一起冻住
+        tracing::debug!(
+            target: "taix_plugin_reminder",
+            "命中 {} 条但全在冷却/今天已提醒，本轮不提醒",
+            candidates.len()
+        );
         report_state(ctx, rt, &snap, false);
         return;
     };
 
     notify(&action.title, &action.body, rt.sound.load(Ordering::Relaxed));
-    tracing::info!(target: "taix_plugin_reminder", "已提醒: {}", action.title);
+    tracing::info!(
+        target: "taix_plugin_reminder",
+        "已提醒 id={} title={} body={}",
+        action.id,
+        action.title,
+        action.body
+    );
     *rt.last_notify.lock().unwrap() = Some(json!({
         "id": action.id,
         "title": action.title,

@@ -30,10 +30,38 @@ pub struct NotifyOptions {
     /// 缺省 DEFAULT_AUMID
     #[cfg(target_os = "windows")]
     pub aumid: Option<String>,
-    /// None = 静默
+    /// None = 静默；Windows 声音名大小写不敏感，未知名字回退 Default
     pub sound: Option<&'static str>,
     /// 交互按钮；macOS 忽略
     pub actions: Vec<(String, String)>,
+}
+
+/// notify-rust 只认精确大小写的 Windows 声音名，解析失败会被静默变成静音
+#[cfg(target_os = "windows")]
+fn normalize_sound(name: &str) -> String {
+    const FIXED: [&str; 5] = ["Default", "IM", "Mail", "Reminder", "SMS"];
+
+    let trimmed = name.trim();
+    if let Some(hit) = FIXED.iter().find(|c| c.eq_ignore_ascii_case(trimmed)) {
+        return (*hit).to_string();
+    }
+
+    // Alarm / Alarm2..Alarm10 / Call / Call2..Call10 只有首字母大小写之差
+    let mut candidate = trimmed.to_ascii_lowercase();
+    if let Some(first) = candidate.get_mut(0..1) {
+        first.make_ascii_uppercase();
+        for prefix in ["Alarm", "Call"] {
+            if let Some(rest) = candidate.strip_prefix(prefix) {
+                let numbered = (2..=10).any(|n| rest == n.to_string());
+                if rest.is_empty() || numbered {
+                    return candidate;
+                }
+            }
+        }
+    }
+
+    tracing::warn!(target: "taix_notify", "未知 Windows 声音名 '{}'，回退 Default", name);
+    "Default".to_string()
 }
 
 /// 失败只记日志，不 panic
@@ -45,10 +73,17 @@ pub fn notify(title: &str, body: &str, opts: &NotifyOptions) -> anyhow::Result<(
         let mut n = notify_rust::Notification::new();
         n.app_id(effective_aumid(opts.aumid.as_deref()));
         n.summary(title).body(body);
-        if let Some(sound) = opts.sound {
+        let sound = opts.sound.map(normalize_sound);
+        if let Some(sound) = sound.as_deref() {
             n.sound_name(sound);
         }
         n.show().context("Windows Toast 发送失败")?;
+        tracing::info!(
+            target: "taix_notify",
+            "toast 已提交 aumid={} sound={:?}",
+            effective_aumid(opts.aumid.as_deref()),
+            sound
+        );
     }
 
     #[cfg(not(target_os = "windows"))]
@@ -107,5 +142,20 @@ mod tests {
             as_script_str("第\"一\"行\n第二\t行"),
             "\"第\\\"一\\\"行\" & linefeed & \"第二\" & tab & \"行\""
         );
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn sound_name_is_normalized_for_notify_rust() {
+        assert_eq!(normalize_sound("default"), "Default");
+        assert_eq!(normalize_sound(" Default "), "Default");
+        assert_eq!(normalize_sound("im"), "IM");
+        assert_eq!(normalize_sound("SMS"), "SMS");
+        assert_eq!(normalize_sound("alarm3"), "Alarm3");
+        assert_eq!(normalize_sound("CALL10"), "Call10");
+        // 未知名字回退，而不是静默静音
+        assert_eq!(normalize_sound("gong"), "Default");
+        assert_eq!(normalize_sound("alarm11"), "Default");
+        assert_eq!(normalize_sound(""), "Default");
     }
 }

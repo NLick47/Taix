@@ -66,6 +66,15 @@ impl Installed {
 
 const RESERVED_IDS: [&str; 1] = ["webui"];
 
+/// 同一问题只告警一次：重扫每 5s 一次，不变量不该刷屏
+fn log_once(key: &str) -> bool {
+    use std::sync::{Mutex, OnceLock};
+    static SEEN: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+    let seen = SEEN.get_or_init(|| Mutex::new(HashSet::new()));
+    let mut seen = seen.lock().unwrap_or_else(|e| e.into_inner());
+    seen.insert(key.to_string())
+}
+
 /// 单条失败只跳过并告警；平台不适用按跳过处理；同 id 保留先扫描到的
 pub fn scan(plugins_dir: &Path) -> Vec<Installed> {
     let mut out: Vec<Installed> = Vec::new();
@@ -85,20 +94,28 @@ pub fn scan(plugins_dir: &Path) -> Vec<Installed> {
         match read_manifest(&json_path) {
             Some(manifest) => {
                 if !platform_matches(&manifest) {
-                    tracing::info!(
-                        "plugin '{}' declares platforms {:?}, not applicable to {}, skipping",
-                        manifest.id,
-                        manifest.platforms,
-                        current_platform()
-                    );
+                    if log_once(&format!("platform|{}", json_path.display())) {
+                        tracing::info!(
+                            "plugin '{}' declares platforms {:?}, not applicable to {}, skipping",
+                            manifest.id,
+                            manifest.platforms,
+                            current_platform()
+                        );
+                    } else {
+                        tracing::debug!("plugin '{}' still not applicable, skipping", manifest.id);
+                    }
                     continue;
                 }
                 if seen.contains(&manifest.id) {
-                    tracing::warn!(
-                        "duplicate plugin id '{}' in {}, keeping the first one",
-                        manifest.id,
-                        json_path.display()
-                    );
+                    if log_once(&format!("dup|{}", json_path.display())) {
+                        tracing::warn!(
+                            "duplicate plugin id '{}' in {}, keeping the first one",
+                            manifest.id,
+                            json_path.display()
+                        );
+                    } else {
+                        tracing::debug!("duplicate plugin id '{}' still present", manifest.id);
+                    }
                     continue;
                 }
                 seen.insert(manifest.id.clone());
@@ -108,7 +125,11 @@ pub fn scan(plugins_dir: &Path) -> Vec<Installed> {
                 });
             }
             None => {
-                tracing::warn!("skipped invalid plugin manifest {}", json_path.display());
+                if log_once(&format!("invalid|{}", json_path.display())) {
+                    tracing::warn!("skipped invalid plugin manifest {}", json_path.display());
+                } else {
+                    tracing::debug!("invalid plugin manifest still present {}", json_path.display());
+                }
             }
         }
     }
@@ -373,5 +394,12 @@ mod tests {
 
         let ids: Vec<&str> = found.iter().map(|i| i.manifest.id.as_str()).collect();
         assert_eq!(ids, vec!["good"], "平台不适用的插件应被 scan 跳过，其余保留");
+    }
+
+    #[test]
+    fn repeated_problems_are_logged_once() {
+        assert!(log_once("invalid|C:/plugins/bad/plugin.json"));
+        assert!(!log_once("invalid|C:/plugins/bad/plugin.json"));
+        assert!(log_once("invalid|C:/plugins/other/plugin.json"));
     }
 }

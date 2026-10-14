@@ -14,11 +14,12 @@ use crate::constants;
 use crate::error::AppError;
 use registry::PluginRegistry;
 
-/// 队列 + 投递游标；取走即已投递（至多一次）
+/// 有界指令日志 + poll 降级游标；投递是「每个订阅者各读一份」，不再取走即丢
 #[derive(Default)]
 pub struct PluginQueue {
-    pending: VecDeque<PluginCommand>,
-    cursor: u64,
+    log: VecDeque<PluginCommand>,
+    /// /poll 无状态，降级通道的游标存这里；SSE 泵的游标在泵自己手里
+    poll_cursor: u64,
 }
 
 pub struct PluginState {
@@ -163,27 +164,51 @@ impl PluginState {
         tracing::debug!(target: "taix_server::plugins", "rescanned {} manifest(s)", n);
     }
 
-    /// 取走全部未投递并推进游标；投递泵与 poll 共用
-    pub fn take_pending(&self, id: &str) -> Vec<PluginCommand> {
-        let mut queues = self.queues.lock().unwrap();
-        let queue = queues.entry(id.to_string()).or_default();
-        let taken: Vec<PluginCommand> = queue.pending.drain(..).collect();
-        if let Some(last) = taken.last() {
-            queue.cursor = queue.cursor.max(last.seq);
-        }
-        taken
-    }
-
-    pub fn cursor_of(&self, id: &str) -> u64 {
+    /// seq 大于 after 的指令；多个订阅者用各自游标读同一份日志，互不偷抢
+    pub fn commands_after(&self, id: &str, after: u64) -> Vec<PluginCommand> {
         self.queues
             .lock()
             .unwrap()
             .get(id)
-            .map(|q| q.cursor)
+            .map(|q| q.log.iter().filter(|c| c.seq > after).cloned().collect())
+            .unwrap_or_default()
+    }
+
+    /// poll 降级通道：取游标之后的指令并推进自己的游标；不影响 SSE 泵
+    pub fn take_poll_commands(&self, id: &str) -> Vec<PluginCommand> {
+        let mut queues = self.queues.lock().unwrap();
+        let queue = queues.entry(id.to_string()).or_default();
+        let taken: Vec<PluginCommand> = queue
+            .log
+            .iter()
+            .filter(|c| c.seq > queue.poll_cursor)
+            .cloned()
+            .collect();
+        if let Some(last) = taken.last() {
+            queue.poll_cursor = queue.poll_cursor.max(last.seq);
+        }
+        taken
+    }
+
+    pub fn log_len(&self, id: &str) -> usize {
+        self.queues
+            .lock()
+            .unwrap()
+            .get(id)
+            .map(|q| q.log.len())
             .unwrap_or(0)
     }
 
-    /// 唤醒投递泵；Notify 留存许可，早于等待也不丢
+    pub fn latest_seq(&self, id: &str) -> u64 {
+        self.queues
+            .lock()
+            .unwrap()
+            .get(id)
+            .and_then(|q| q.log.back().map(|c| c.seq))
+            .unwrap_or(0)
+    }
+
+    /// 唤醒投递泵；Notify 只唤醒一个等待者，所以先广播再补许可
     pub fn notify_commands(&self, id: &str) {
         let notifier = {
             let mut notifiers = self.notify.lock().unwrap();
@@ -192,6 +217,7 @@ impl PluginState {
                 .or_insert_with(|| Arc::new(tokio::sync::Notify::new()))
                 .clone()
         };
+        notifier.notify_waiters();
         notifier.notify_one();
     }
 
@@ -204,11 +230,112 @@ impl PluginState {
     }
 
     pub fn pending_len(&self, id: &str) -> usize {
-        self.queues
-            .lock()
-            .unwrap()
-            .get(id)
-            .map(|q| q.pending.len())
-            .unwrap_or(0)
+        self.log_len(id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    async fn test_state(tag: &str) -> Arc<PluginState> {
+        let root = std::env::temp_dir().join(format!("taix-cmdlog-{}-{}", tag, std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("plugins")).unwrap();
+        std::fs::create_dir_all(root.join("data")).unwrap();
+        Arc::new(
+            PluginState::init(&root.join("plugins"), &root.join("data"))
+                .await
+                .unwrap(),
+        )
+    }
+
+    /// 多个消费端各读一份日志，不再互相偷抢
+    #[tokio::test]
+    async fn command_log_serves_every_consumer() {
+        let state = test_state("multi").await;
+        service::push_command(&state, "reminder", "dry-run".to_string(), None);
+
+        assert_eq!(state.commands_after("reminder", 0).len(), 1);
+        assert_eq!(
+            state.commands_after("reminder", 0).len(),
+            1,
+            "第二个订阅者用同样游标也应取到"
+        );
+
+        // poll 降级通道推进自己的游标，不影响 SSE 泵
+        assert_eq!(state.take_poll_commands("reminder").len(), 1);
+        assert!(state.take_poll_commands("reminder").is_empty());
+        assert_eq!(state.commands_after("reminder", 0).len(), 1);
+    }
+
+    /// 游标按 seq 前进后不重复投递；日志有界，超出丢最旧
+    #[tokio::test]
+    async fn command_log_cursor_and_capacity() {
+        let state = test_state("cursor").await;
+        for i in 0..3 {
+            service::push_command(&state, "reminder", format!("c{i}"), None);
+        }
+        let all = state.commands_after("reminder", 0);
+        assert_eq!(all.len(), 3);
+        assert!(all.windows(2).all(|w| w[0].seq < w[1].seq), "seq 必须递增");
+        let last = all.last().unwrap().seq;
+        assert_eq!(state.latest_seq("reminder"), last);
+
+        for _ in 0..constants::PLUGIN_COMMAND_QUEUE_MAX + 5 {
+            service::push_command(&state, "reminder", "x".to_string(), None);
+        }
+        assert_eq!(state.log_len("reminder"), constants::PLUGIN_COMMAND_QUEUE_MAX);
+        assert!(
+            state.commands_after("reminder", last).len()
+                <= constants::PLUGIN_COMMAND_QUEUE_MAX,
+            "有界日志不得无限增长"
+        );
+    }
+
+    /// 陈旧状态按「未上报」返回，避免进程已死界面还显示运行中
+    #[tokio::test]
+    async fn stale_status_is_reported_as_none() {        let state = test_state("stale").await;
+        let status = |ts: chrono::DateTime<chrono::Utc>| PluginStatus {
+            state: "running".to_string(),
+            data: None,
+            ts: ts.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+        };
+
+        state.states.write().await.insert(
+            "reminder".to_string(),
+            status(chrono::Utc::now() - chrono::Duration::seconds(300)),
+        );
+        assert!(
+            service::get_status(&state, "reminder").await.is_none(),
+            "300s 前的状态应视为陈旧"
+        );
+
+        state
+            .states
+            .write()
+            .await
+            .insert("reminder".to_string(), status(chrono::Utc::now()));
+        assert!(service::get_status(&state, "reminder").await.is_some());
+    }
+
+    /// records 写入即裁：超过上限时按 UpdatedAt/写入顺序淘汰最旧
+    #[tokio::test]
+    async fn records_are_trimmed_on_write() {
+        let pool = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        crate::migrations::run(&pool, "Asia/Shanghai").await.unwrap();
+
+        let cap = constants::PLUGIN_RECORDS_MAX_PER_PLUGIN as usize;
+        for i in 0..cap + 8 {
+            service::upsert_record(&pool, "reminder", &format!("k{i}"), &serde_json::json!(i))
+                .await
+                .unwrap();
+        }
+
+        let rows = service::get_records(&pool, "reminder", None).await.unwrap();
+        assert_eq!(rows.len(), cap, "写入路径必须即时裁剪到上限");
+        let keys: Vec<String> = rows.iter().map(|r| r.key.clone()).collect();
+        assert!(keys.contains(&format!("k{}", cap + 7)), "最新 key 必须保留");
+        assert!(!keys.contains(&"k0".to_string()), "最旧 key 应被淘汰");
     }
 }

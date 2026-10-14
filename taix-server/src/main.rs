@@ -24,9 +24,9 @@ async fn main() {
     let log_dir = exe_dir.join("Logs");
 
     let log_filter = if cfg!(debug_assertions) {
-        "taix_server=debug,tower_http=debug"
+        "taix_server=debug,tower_http=debug,taix_plugin_manifest=info"
     } else {
-        "taix_server=info,tower_http=warn"
+        "taix_server=info,tower_http=warn,taix_plugin_manifest=info"
     };
 
     let _logging_guard =
