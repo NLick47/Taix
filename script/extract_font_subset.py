@@ -34,7 +34,7 @@ def get_icon_unicode_map(iconconverter_path):
     with open(iconconverter_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    pattern = r'\{ IconTypes\.(\w+),\s*"\\x([0-9a-fA-F]+)"'
+    pattern = r'IconTypes\.(\w+)\s*(?:,|=>)\s*"\\x([0-9a-fA-F]+)"'
     matches = re.findall(pattern, content)
 
     return {name: int(code, 16) for name, code in matches}
