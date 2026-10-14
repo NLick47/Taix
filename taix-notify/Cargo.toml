@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 notify-rust = "4"
-tracing = { version = "0.1", features = ["release_max_level_off"] }
+tracing = "0.1"
 anyhow = "1"
 
 [profile.release]

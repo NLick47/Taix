@@ -235,11 +235,16 @@ shell 以固定参数拉起插件：`run --plugin <id> --data-dir <path>`（`run
 ### 3.8 SDK 内建行为（不需要插件自己做）
 
 - **SSE 优先**：订阅 `GET /api/events?sub=<id>`，Accept 头 `text/event-stream`；断线按 1→2→4…30s 退避重连；重连后主动对齐配置
-- **poll 降级**：SSE 连续 5 分钟没有收到任何字节后叠加 `GET /api/plugins/:id/poll`（每 2s），SSE 恢复自动停
-- **seq 去重**：进程内 256 窗口（防御性；投递已收敛到 server 单一路径，插件不需要理解重放/水位）
+- **poll 兜底**：SSE 正常时每 60s 也取一次 `/poll`（心跳，指令若被静默吞掉最迟一个周期内自愈）；SSE 连续 5 分钟没有任何字节
+  则切到每 2s 全速轮询，SSE 恢复后回到心跳节奏
+- **seq 去重**：进程内 256 窗口；投递按「每订阅者游标」补投，重复事件靠它挡掉，插件不需要自己写去重逻辑
 - **配置缓存**：version 变化才重拉，平时零流量
 - **单实例**：Windows 命名互斥量 `Local\TaixPluginMutex-<id>`；macOS 无锁（靠 shell 侧的进程名去重）
-- **日志**：`taix-logging` 文件日志，落 `<插件可执行文件目录>/Logs/taix-plugin-<id>.YYYY-MM-DD.log`；debug 构建同时打 stdout；panic 也写日志（SyncFile）
+- **日志**：`taix-logging` 文件日志，落 `<插件可执行文件目录>/Logs/taix-plugin-<id>.YYYY-MM-DD.log`，release 同样生效
+  （默认 `info`，`RUST_LOG=taix_plugin_sdk=debug,taix_plugin_my=debug` 可覆盖；日志先于参数/单实例检查初始化，
+  启动期错误也落盘）；SyncFile 模式每行同步落盘并写 stdout/stderr，panic 也写日志；保留 7 个日期文件
+- **状态即存活信号**：SDK 每 30s 重推上次状态（插件不必自己实现心跳）；server 超过 90s 没收到更新按「未上报」返回，
+  进程已死不会一直显示运行中
 
 ## 4. REST 契约
 
@@ -258,7 +263,7 @@ GET  /api/plugins/:id/config            → {version, values}
 PUT  /api/plugins/:id/config            body {values: object} → {configVersion}（version+1 并广播 config 事件）
 POST /api/plugins/:id/enabled           body {enabled: bool}（shell ≤5s 生效）
 POST /api/plugins/:id/commands          body {cmd(非空 ≤64), data?} → 入队回执 {seq, cmd, data?}
-GET  /api/plugins/:id/poll              → {config, configVersion, commands:[{seq, cmd, data?}]}（取走式）
+GET  /api/plugins/:id/poll              → {config, configVersion, commands:[{seq, cmd, data?}]}（自带游标，不影响 SSE 泵）
 POST /api/plugins/:id/events            body {state(非空 ≤64), data?} 状态上报
 GET  /api/plugins/:id/state             → {state, data, ts} | null
 POST /api/plugins/:id/records           body {key(非空 ≤128), value}  upsert
@@ -303,10 +308,10 @@ GET /api/events?sub=<plugin-id|webui>     # text/event-stream；keep-alive 注�
 
 投递语义：
 
-- 指令**不走广播**：每插件一个**有界队列（上限 16，溢出丢最旧）+ server 侧投递游标**；SSE 投递泵与 `poll` 共用
-  同一条取走路径（`take_pending`），订阅建立时先按序补发未投递的指令（含断线期间攒下的）
-- 「取走即视为已投递」（至多一次）；唯一边角是订阅竞态（先订阅广播、再取队列）在极端并发下可能重复一次——
-  由 SDK 的 seq 窗口兜底，**插件不需要自己写去重逻辑**
+- 指令**不走广播**：每插件一份**有界日志（上限 16，溢出丢最旧）**，**每个订阅者用自己的游标读同一份日志**
+  （SSE 泵的游标在泵里、`poll` 的游标存在 server 侧），互不偷抢；订阅建立时游标从 0 起，自然补投日志里留存的指令
+- 「每个订阅者都拿到一份、按 seq 去重挡重复」取代了旧的「取走即投递」：断线重连、僵尸订阅者都不会再吞掉指令
+- 投递泵对每次唤醒只投一次，另有 10s 超时重扫兜底（Notify 只唤醒一个等待者，死实例残留的泵可能抢走一次唤醒）
 - 全局 seq 用**server 启动时刻毫秒**做种子（防止重启后新 seq 撞进插件去重窗口被误弃）
 - `sub=webui` 只收广播（current / plugin-state），收不到指令与 config
 - 服务端广播通道容量 256；订阅者积压（lagged）时丢事件并告警（current 是尽力推送，丢一两拍不影响正确性）
@@ -317,7 +322,7 @@ GET /api/events?sub=<plugin-id|webui>     # text/event-stream；keep-alive 注�
 |---|---|---|---|---|
 | `registry.json` 的 configs | **仅 server** | 插件经 `GET config`（SDK 缓存） | 用户可改的配置（webui 表单） | 永久；version 递增 |
 | `<id>/state.json` | 插件自己 | `ctx.state_store()` | 插件私有状态（位置、冷却、累计） | 永久（插件负责） |
-| records（SQLite KV） | 插件 POST | `ctx.record()` / 界面 GET | 界面-插件问答交接、调试快照 | **每插件最多 512 条**（按 UpdatedAt 保留最新，超出删最旧），运行期记录，非永久 |
+| records（SQLite KV） | 插件 POST | `ctx.record()` / 界面 GET | 界面-插件问答交接、调试快照 | **每插件最多 512 个 key**，写入即裁（超出按 UpdatedAt/写入顺序淘汰最旧），运行期记录，非永久 |
 
 选择：能被用户改的 → config；只想自己知道的 → state.json；要给界面看的 → records。
 
@@ -325,7 +330,7 @@ GET /api/events?sub=<plugin-id|webui>     # text/event-stream；keep-alive 注�
 
 ```rust
 pub struct NotifyOptions {
-    pub sound: Option<&'static str>,        // None = 静默；Windows 声音名 / macOS 系统声名（如 "default"）
+    pub sound: Option<&'static str>,        // None = 静默；Windows 声音名 / macOS 系统声名（大小写不敏感，如 "default"）
     pub actions: Vec<(String, String)>,     // 交互按钮 (id, label)；macOS 忽略（平台限制）
     pub aumid: Option<String>,              // 仅 Windows 编译期字段；缺省 "Taix.Plugin"（与安装器注册一致）
 }
@@ -334,6 +339,9 @@ pub fn notify(title: &str, body: &str, opts: &NotifyOptions) -> anyhow::Result<(
 
 - Windows：Toast（AUMID 必须与安装器注册值一致）；macOS：`osascript display notification`
   （无 bundle 的 CLI 进程用 notify-rust 不弹横幅——实测结论，别换回去）
+- Windows 声音名会先归一化：`default`/`im`/`sms` 等大小写任意，未知名字回退 `Default`；**直接用 notify-rust 时**
+  声音名必须精确大小写（`"Default"`/`"IM"`/`"Mail"`/`"Reminder"`/`"SMS"`/`"Alarm*"`/`"Call*"`），
+  否则解析失败被静默吞掉、toast 变静音（`<audio silent="true"/>`）
 - Windows 实测（2026-10-14，Win11 26200）：**AUMID 未注册时不弹横幅、只在通知中心留一条，`Show()` 不报错**
   ——静默失败。注册 `HKCU\SOFTWARE\Classes\AppUserModelId\Taix.Plugin`（`script/install.ps1` 的步骤）后横幅正常、
   署名为 "Taix Plugins"。手工部署插件时别跳过那步注册
@@ -399,9 +407,9 @@ EOF
 ### 8.3 契约集成测试
 
 `cd taix-plugin-it && cargo test`（仓库无 workspace，不能 `-p`）。它用**真实 server 应用 + 真实 SDK**锁死协议，
-改传输层/契约前先跑。锁定的行为：指令队列溢出（丢最旧）与取走式 poll、预置指令重放恰好一次、实时下发（SSE）、
-配置热重载、records 往返、状态上报节流、current 广播与睡眠唤醒（pipe）、server 重启后指令仍可达（seq 种子回归）、
-指令不重复投递（SSE 与 poll 共用投递游标）、`sub=webui` 只收广播、today-summary 契约、`includeOngoing` 计入未结算会话。
+改传输层/契约前先跑。锁定的行为：指令日志溢出（丢最旧）、每个订阅者按自己的游标各取一份（SSE 与 poll 不互相偷抢）、
+预置指令按游标补投、实时下发（SSE）、配置热重载、records 往返、状态上报节流、current 广播与睡眠唤醒（pipe）、
+server 重启后指令仍可达（seq 种子回归）、`sub=webui` 只收广播、today-summary 契约、`includeOngoing` 计入未结算会话。
 
 ### 8.4 新增随包插件：落位清单
 
@@ -427,15 +435,21 @@ EOF
 
 | 症状 | 先查 |
 |---|---|
-| 插件放进目录但列表没有 | `platforms` 是否含当前系统；manifest 校验失败（server 日志 warn）；同 id 重名 |
+| 插件放进目录但列表没有 | `platforms` 是否含当前系统；manifest 校验失败/同 id 重名（现在 server 与 shell 日志都会打 `taix_plugin_manifest` 的告警，log filter 已含该 target） |
 | 列表有但没进程 | registry 未启用；`entry` 文件名与产物不符（macOS 无 `.exe`；Windows 可省 `.exe`） |
 | 改了 plugin.json | shell ≤5s 热升级（kill + 重启新版本）；只换二进制不改清单不触发重载 |
-| webui 点指令没反应 | 插件进程是否活着；队列上限 16（溢出丢最旧）；SSE 断线时指令在队列等重连（重启后仍可达） |
-| 状态不刷新 | `push_state` 同 state 5s 节流；要立刻可见用 `push_state_now` |
+| webui 点指令没反应 | 插件进程是否活着；指令日志上限 16（溢出丢最旧）；投递是「每订阅者游标」，指令不会因重启丢失，但静默吞掉最迟 60s 由心跳轮询补上 |
+| 状态不刷新 | `push_state` 同 state 5s 节流；要立刻可见用 `push_state_now`；SDK 另有 30s 存活心跳，`RUST_LOG=debug` 可看节拍 |
+| 界面显示运行中但进程已死 | 已修：SDK 30s 状态心跳 + server 90s 老化（超时按未上报返回）；排查看插件目录 `Logs/` 里的最后一条 |
+| release 版插件没有日志 | 已修：日志宏不再被 `release_max_level_off` 编译掉，默认 `info` 落 `<插件目录>/Logs/`；`RUST_LOG` 可调级 |
+| 插件启动即退出、看不到原因 | 已修：日志先于参数解析与单实例锁初始化，启动期错误与 panic 都落盘；shell 侧看 `Logs/taix-shell.<date>.log` |
 | 指令收到但订阅/数据对不上 | `PluginApp::new(id)` 与清单 id / `--plugin` 必须一致（订阅按 id 过滤） |
 | 端口 37091 被正式版占用 | 隔离联调用 §8.2 的三件套换端口/锁/管道 |
 | `todaySeconds` 恒为 0 | DB 里没有该进程今日**已完成**的会话（进行中会话不入库；用 `includeOngoing` 或本地叠加） |
 | 插件通知不弹但通知中心里有 | Toast AUMID 未注册（`HKCU\SOFTWARE\Classes\AppUserModelId\Taix.Plugin` 缺失；§7）：只归档不弹横幅且无报错，跑 `script/install.ps1` 补注册 |
+| 提示音开关打开却没声音 | `taix-notify` 已归一化大小写（小写 `default` 也认，未知名字回退 `Default`）；**绕过 taix-notify 直接用 `notify-rust`** 时要写 `"Default"` 等精确大小写，否则被静默变成静音（toast 里 `<audio silent="true"/>`） |
+| 自研插件用 mlua 沙箱时进程崩溃（WER 0xc0000409） | release profile 不能开 `panic = "abort"`：mlua 的 hook 错误传播依赖 unwind，超预算脚本会把进程 abort。reminder 已去掉该开关（§12） |
+| 试运行一直「无响应」/配置改了插件不动 | 旧版本指令投递是「取走即投递」的单队列多消费端，插件重启或第二订阅者会把指令吞掉；已改为有界日志 + 每订阅者游标 + 泵 10s 重扫 + 客户端 60s 心跳轮询（§5）。若仍复现，看 server 日志 `command log` 与插件进程是否重启 |
 | 正式版没起来 | 本机还有同名调试进程：`pgrep -x taix-server` 后 kill，shell 1~2s 自动拉起 |
 
 ## 11. 参考实现索引
@@ -477,6 +491,8 @@ EOF
 
 **沙箱**：mlua（Lua 5.4 vendored），标准库白名单 `coroutine / table / math / string / utf8`
 （**不含 io / os / package / debug**）；1MB 内存上限 + 指令预算（约 2 亿条指令，防死循环）。
+指令预算靠 hook 返回错误实现，而 mlua 的错误传播依赖 Rust unwind——用了 mlua 的插件 release profile 不能开
+`panic = "abort"`，否则超预算脚本会把进程直接 abort（reminder 已按此调整 §10 对应行）。
 
 `ctx` 字段（只读）：
 
