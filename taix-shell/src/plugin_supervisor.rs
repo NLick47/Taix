@@ -184,3 +184,96 @@ fn read_enabled(data_dir: &std::path::Path) -> HashMap<String, bool> {
             HashMap::new()
         })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    fn temp_dir(tag: &str) -> PathBuf {
+        let dir =
+            std::env::temp_dir().join(format!("taix-shell-reg-{}-{}", tag, std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("plugins")).unwrap();
+        dir
+    }
+
+    fn write_registry(dir: &Path, content: &str) {
+        std::fs::write(dir.join("plugins").join("registry.json"), content).unwrap();
+    }
+
+    #[test]
+    fn missing_registry_means_nothing_enabled() {
+        let dir = temp_dir("missing");
+        assert!(read_enabled(&dir).is_empty(), "无 registry.json 时全部视为未启用");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn enabled_flags_are_read_from_registry() {
+        let dir = temp_dir("flags");
+        write_registry(&dir, r#"{"enabled":{"demo":true,"reminder":false},"configs":{}}"#);
+        let got = read_enabled(&dir);
+        assert_eq!(got.get("demo"), Some(&true));
+        assert_eq!(got.get("reminder"), Some(&false));
+        assert_eq!(got.get("unknown"), None, "未登记插件按未启用处理");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn malformed_registry_degrades_to_empty() {
+        let dir = temp_dir("malformed");
+        for bad in ["", "not json", "{}", "[]", r#"{"enabled":null}"#] {
+            write_registry(&dir, bad);
+            let got = read_enabled(&dir);
+            assert!(got.is_empty(), "损坏的 registry 应降级为空而不是 panic: {bad:?}");
+        }
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn bom_prefixed_registry_is_tolerated() {
+        let dir = temp_dir("bom");
+        write_registry(&dir, "\u{FEFF}{\"enabled\":{\"demo\":true}}");
+        assert_eq!(
+            read_enabled(&dir).get("demo"),
+            Some(&true),
+            "server 原子写可能带 BOM，shell 必须能读"
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn entry_resolution_follows_manifest_rules() {
+        let dir = temp_dir("entry");
+        let plugin = dir.join("plugins").join("demo");
+        std::fs::create_dir_all(&plugin).unwrap();
+        std::fs::write(plugin.join("taix-plugin-demo"), b"").unwrap();
+        std::fs::write(
+            plugin.join("plugin.json"),
+            r#"{"id":"demo","name":"Demo","version":"1.0.0","entry":"taix-plugin-demo"}"#,
+        )
+        .unwrap();
+
+        let found = scan(&dir.join("plugins"));
+        assert_eq!(found.len(), 1, "合法清单应被扫到");
+        let entry = resolve_entry(&found[0].dir(), &found[0].manifest.entry);
+        assert!(entry.is_some(), "entry 应能解析到真实文件");
+
+        let missing = resolve_entry(&found[0].dir(), "taix-plugin-nope");
+        assert!(missing.is_none(), "缺失的可执行文件应返回 None，由上层告警跳过");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn supervisor_plugins_dir_falls_back_without_panicking() {
+        let dir = temp_dir("ctor");
+        let sup = PluginSupervisor::new(dir.clone(), Shutdown::new());
+        assert!(
+            sup.plugins_dir.ends_with(constants::PLUGINS_DIR_NAME),
+            "插件目录应指向 <exe 旁>/plugins，实际 {:?}",
+            sup.plugins_dir
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
+}

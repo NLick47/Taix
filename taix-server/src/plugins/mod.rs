@@ -130,10 +130,18 @@ impl PluginState {
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_millis() as u64)
             .unwrap_or(0);
-        let last = self.last_scan_ms.swap(now, Ordering::Relaxed);
-        if now.saturating_sub(last) >= 1000 {
-            self.rescan().await;
+        let last = self.last_scan_ms.load(Ordering::Relaxed);
+        if now.saturating_sub(last) < 1000 {
+            return;
         }
+        if self
+            .last_scan_ms
+            .compare_exchange(last, now, Ordering::Relaxed, Ordering::Relaxed)
+            .is_err()
+        {
+            return;
+        }
+        self.rescan().await;
     }
 
     /// 404 路径用；未命中限量重扫，支持热安装
@@ -305,9 +313,60 @@ mod tests {
         );
     }
 
+    /// 未重扫的调用不得推进时间戳，否则高频轮询会把重扫饿死
+    #[tokio::test]
+    async fn throttled_rescan_only_advances_when_it_scans() {
+        let state = test_state("throttle-ts").await;
+
+        state.rescan_throttled().await;
+        let after_first = state.last_scan_ms.load(Ordering::Relaxed);
+        assert!(after_first > 0, "首次调用应真正重扫并推进时间戳");
+
+        // 间隔要大于毫秒精度，否则「推进了时间戳」也看不出来
+        for _ in 0..4 {
+            tokio::time::sleep(std::time::Duration::from_millis(60)).await;
+            state.rescan_throttled().await;
+        }
+        assert_eq!(
+            state.last_scan_ms.load(Ordering::Relaxed),
+            after_first,
+            "节流窗口内的调用不得推进时间戳"
+        );
+    }
+
+    #[tokio::test]
+    async fn throttled_rescan_survives_high_frequency_polling() {
+        let state = test_state("throttle-starve").await;
+
+        for _ in 0..4 {
+            state.rescan_throttled().await;
+            tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+        }
+
+        let dir = state.plugins_dir.join("late");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("plugin.json"),
+            r#"{"id":"late","name":"Late","version":"1.0.0","entry":"taix-plugin-late"}"#,
+        )
+        .unwrap();
+
+        let mut found = false;
+        for _ in 0..8 {
+            state.rescan_throttled().await;
+            if state.manifest("late").await.is_some() {
+                found = true;
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+        }
+        assert!(found, "高频轮询下新装插件必须能被扫到（重扫不得被饿死）");
+    }
+
     /// 陈旧状态按「未上报」返回，避免进程已死界面还显示运行中
     #[tokio::test]
-    async fn stale_status_is_reported_as_none() {        let state = test_state("stale").await;
+    async fn stale_status_is_reported_as_none() {
+        let state = test_state("stale").await;
         let status = |ts: chrono::DateTime<chrono::Utc>| PluginStatus {
             state: "running".to_string(),
             data: None,
