@@ -19,7 +19,11 @@ actor Runner {
         let transport = TransportClient(socketPath: configuration.socketPath)
         let persistence = Persistence(url: configuration.persistenceURL)
         let iconExtractor = IconExtractor(cacheDirectory: configuration.iconCacheDirectory)
-        let appObserver = AppObserver(eventBus: eventBus, iconExtractor: iconExtractor)
+        let appObserver = AppObserver(
+            eventBus: eventBus,
+            iconExtractor: iconExtractor,
+            sleepWatch: configuration.monitorConfig.sleepWatch
+        )
         let gamepadMonitor = GamepadMonitor()
         let idleDetector = IdleDetector(
             eventBus: eventBus,

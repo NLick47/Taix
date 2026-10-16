@@ -1,5 +1,6 @@
 use anyhow::Context;
 use std::path::{Path, PathBuf};
+#[cfg(target_os = "windows")]
 use std::sync::Mutex;
 
 /// 必须与 script/install.ps1 注册值一致
@@ -35,7 +36,8 @@ pub struct NotifyOptions {
     pub sound: Option<&'static str>,
     /// 交互按钮；macOS 忽略
     pub actions: Vec<(String, String)>,
-    /// 通知图标 PNG 绝对路径；Windows 用 toast 的 appLogoOverride，macOS 待接
+    /// 通知图标 PNG 绝对路径；仅 Windows 使用（toast 的 appLogoOverride）；
+    /// macOS 通知图标由宿主 App 决定，忽略此项
     pub icon: Option<PathBuf>,
 }
 
@@ -43,6 +45,63 @@ pub struct NotifyOptions {
 pub struct AppIdentity {
     pub aumid: Option<String>,
     pub icon: Option<PathBuf>,
+}
+
+/// 主动申请通知权限：插件启动时调用，让首次询问发生在「启用/登录」时刻，
+#[cfg(not(target_os = "windows"))]
+pub fn request_permission() {
+    let Some(app) = find_notify_app() else { return };
+    let exe = app.join("Contents/MacOS/TaixNotify");
+    match std::process::Command::new(&exe).arg("--request").status() {
+        Ok(_) => tracing::debug!(target: "taix_notify", "已发起通知权限请求（未授权时才会弹询问）"),
+        Err(e) => tracing::debug!(target: "taix_notify", "通知权限请求未执行: {e}"),
+    }
+}
+
+#[cfg(target_os = "windows")]
+pub fn request_permission() {}
+
+/// 通知图标落盘目录
+#[cfg(target_os = "windows")]
+fn icon_dir() -> PathBuf {
+    #[cfg(target_os = "windows")]
+    {
+        std::env::var_os("LOCALAPPDATA")
+            .map(PathBuf::from)
+            .map(|base| base.join("Taix").join("plugin-icons"))
+            .unwrap_or_else(std::env::temp_dir)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        std::env::var_os("HOME")
+            .map(PathBuf::from)
+            .map(|home| home.join("Library/Application Support/Taix/plugin-icons"))
+            .unwrap_or_else(std::env::temp_dir)
+    }
+}
+
+#[cfg(any(target_os = "windows", test))]
+fn materialize_icon_in(dir: &Path, id: &str, png: &[u8]) -> std::io::Result<PathBuf> {
+    const PNG_MAGIC: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A];
+    if png.len() < PNG_MAGIC.len() || png[..PNG_MAGIC.len()] != PNG_MAGIC {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "通知图标必须是 PNG",
+        ));
+    }
+
+    std::fs::create_dir_all(dir)?;
+    let path = dir.join(format!("{id}.png"));
+    let current = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+    if current != png.len() as u64 {
+        std::fs::write(&path, png)?;
+    }
+    Ok(path)
+}
+
+#[cfg(target_os = "windows")]
+fn materialize_icon(id: &str, png: &[u8]) -> std::io::Result<PathBuf> {
+    materialize_icon_in(&icon_dir(), id, png)
 }
 
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
@@ -70,7 +129,7 @@ pub fn app_identity(id: &str, display_name: &str, icon_png: &[u8]) -> AppIdentit
                 tracing::warn!(target: "taix_notify", "注册通知身份失败，退回共享 AUMID: {e:#}");
                 AppIdentity {
                     aumid: None,
-                    icon: win_identity::materialize(id, icon_png).ok(),
+                    icon: materialize_icon(id, icon_png).ok(),
                 }
             }
         };
@@ -87,7 +146,6 @@ pub fn app_identity(id: &str, display_name: &str, icon_png: &[u8]) -> AppIdentit
 #[cfg(target_os = "windows")]
 mod win_identity {
     use super::{identity_aumid, identity_subkey, AppIdentity};
-    use std::path::PathBuf;
     use windows::core::PCWSTR;
     use windows::Win32::Foundation::ERROR_SUCCESS;
     use windows::Win32::System::Registry::{
@@ -208,30 +266,8 @@ mod win_identity {
         Ok(())
     }
 
-    pub fn materialize(id: &str, png: &[u8]) -> std::io::Result<PathBuf> {
-        const PNG_MAGIC: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A];
-        if png.len() < PNG_MAGIC.len() || png[..PNG_MAGIC.len()] != PNG_MAGIC {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "通知图标必须是 PNG",
-            ));
-        }
-
-        let dir = match std::env::var_os("LOCALAPPDATA") {
-            Some(base) => PathBuf::from(base).join("Taix").join("plugin-icons"),
-            None => std::env::temp_dir(),
-        };
-        std::fs::create_dir_all(&dir)?;
-        let path = dir.join(format!("{id}.png"));
-        let current = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
-        if current != png.len() as u64 {
-            std::fs::write(&path, png)?;
-        }
-        Ok(path)
-    }
-
     pub fn ensure(id: &str, display_name: &str, png: &[u8]) -> anyhow::Result<AppIdentity> {
-        let icon = materialize(id, png)?;
+        let icon = super::materialize_icon(id, png)?;
         let icon_uri = icon.display().to_string();
         let subkey = identity_subkey(id);
 
@@ -343,6 +379,91 @@ fn build_toast_xml(title: &str, body: &str, opts: &NotifyOptions) -> String {
     xml
 }
 
+/// 通知宿主 App 的调用结果：Sent = 已提交/已尝试（不再回退）；Fallback = 明显没发出去
+#[cfg(not(target_os = "windows"))]
+enum AppNotify {
+    Sent,
+    Fallback,
+}
+
+/// 找 TaixNotify.app：`TAIX_NOTIFY_APP` 覆盖优先；否则从自身可执行文件向上 4 层探测
+/// （安装布局：`<TaixTools>/plugins/<id>/<exe>` → `<TaixTools>/TaixNotify.app`）
+#[cfg(not(target_os = "windows"))]
+fn find_notify_app() -> Option<PathBuf> {
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| find_notify_app_from(&exe))
+}
+
+#[cfg(not(target_os = "windows"))]
+fn find_notify_app_from(exe: &Path) -> Option<PathBuf> {
+    if let Some(over) = std::env::var_os("TAIX_NOTIFY_APP") {
+        let path = PathBuf::from(over);
+        if path.exists() {
+            return Some(path);
+        }
+    }
+    let mut dir = exe.parent()?;
+    for _ in 0..4 {
+        let candidate = dir.join("TaixNotify.app");
+        if candidate.exists() {
+            return Some(candidate);
+        }
+        dir = dir.parent()?;
+    }
+    None
+}
+
+#[cfg(not(target_os = "windows"))]
+fn notifier_args(title: &str, body: &str, opts: &NotifyOptions) -> Vec<String> {
+    let mut args = vec![
+        "--title".to_string(),
+        title.to_string(),
+        "--body".to_string(),
+        body.to_string(),
+    ];
+    if let Some(sound) = opts.sound {
+        args.push("--sound".to_string());
+        args.push(sound.to_string());
+    }
+    args
+}
+
+/// 宿主退出码 → 行为：0=已提交；3=已授权但回调超时（按已尝试处理，避免重复推）；
+/// 其余（1/2/4/信号/未知）= 确定没发出去 → 回退 osascript
+#[cfg(not(target_os = "windows"))]
+fn notifier_exit_outcome(code: Option<i32>) -> AppNotify {
+    match code {
+        Some(0) | Some(3) => AppNotify::Sent,
+        _ => AppNotify::Fallback,
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn run_notify_app(app: &Path, title: &str, body: &str, opts: &NotifyOptions) -> AppNotify {
+    let exe = app.join("Contents/MacOS/TaixNotify");
+    match std::process::Command::new(&exe)
+        .args(notifier_args(title, body, opts))
+        .status()
+    {
+        Ok(status) => {
+            let outcome = notifier_exit_outcome(status.code());
+            if matches!(outcome, AppNotify::Fallback) {
+                tracing::warn!(
+                    target: "taix_notify",
+                    "TaixNotify.app 未送达（exit {:?}），回退 osascript",
+                    status.code()
+                );
+            }
+            outcome
+        }
+        Err(e) => {
+            tracing::warn!(target: "taix_notify", "TaixNotify.app 启动失败（{e}），回退 osascript");
+            AppNotify::Fallback
+        }
+    }
+}
+
 /// 失败只记日志，不 panic
 pub fn notify(title: &str, body: &str, opts: &NotifyOptions) -> anyhow::Result<()> {
     tracing::debug!(target: "taix_notify", "notify: {title} / {body}");
@@ -377,8 +498,18 @@ pub fn notify(title: &str, body: &str, opts: &NotifyOptions) -> anyhow::Result<(
 
     #[cfg(not(target_os = "windows"))]
     {
-        // macOS 无交互按钮，也没有图标参数
-        let _ = (&opts.actions, &opts.icon);
+        // macOS 无交互按钮（平台限制）
+        let _ = &opts.actions;
+
+        // 首选 TaixNotify.app：以「Taix」的名称与图标推送，并支持内容缩略图；
+        // 不可用（未安装/未授权）时回退 osascript（无图标、身份是 Script Editor）
+        if let Some(app) = find_notify_app() {
+            match run_notify_app(&app, title, body, opts) {
+                AppNotify::Sent => return Ok(()),
+                AppNotify::Fallback => {}
+            }
+        }
+
         // 无 bundle 进程下 notify-rust 不弹横幅，必须走 osascript
         let mut script = format!(
             "display notification {} with title {}",
@@ -472,35 +603,103 @@ mod tests {
     }
 
     #[test]
-    fn icon_bytes_must_be_png() {
+    fn icon_bytes_materialize_and_reject_non_png() {
         let png = std::fs::read(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../taix-plugins/reminder/assets/icon.png"
         ))
         .expect("reminder 图标应可读取");
-        let path = win_materialize("png-check", &png).expect("PNG 应能落盘");
+        let dir = std::env::temp_dir().join(format!("taix-icon-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+
+        let path = materialize_icon_in(&dir, "png-check", &png).expect("PNG 应能落盘");
         assert_eq!(
             std::fs::read(&path).expect("落盘后应可读").len(),
             png.len()
         );
+        let again = materialize_icon_in(&dir, "png-check", &png).expect("重复落盘应成功");
+        assert_eq!(std::fs::read(&again).unwrap(), png);
 
         let not_png = b"not an image at all";
-        let err = win_materialize("png-check", not_png).expect_err("非 PNG 必须被拒");
+        let err = materialize_icon_in(&dir, "png-check", not_png).expect_err("非 PNG 必须被拒");
         assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
-        let _ = std::fs::remove_file(path);
-    }
 
-    #[cfg(target_os = "windows")]
-    fn win_materialize(id: &str, png: &[u8]) -> std::io::Result<std::path::PathBuf> {
-        win_identity::materialize(id, png)
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[cfg(not(target_os = "windows"))]
-    fn win_materialize(_: &str, _: &[u8]) -> std::io::Result<std::path::PathBuf> {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Unsupported,
-            "非 Windows 不走注册表",
-        ))
+    #[test]
+    fn notifier_args_carry_sound_but_not_icon() {
+        let opts = NotifyOptions {
+            sound: Some("default"),
+            icon: Some(PathBuf::from("/tmp/i.png")),
+            ..Default::default()
+        };
+        // 即使传了 icon 也不进参数：macOS 通知只展示宿主 App 图标（避免双图标）
+        assert_eq!(
+            notifier_args("标题", "正文", &opts),
+            ["--title", "标题", "--body", "正文", "--sound", "default"]
+        );
+
+        assert_eq!(
+            notifier_args("t", "b", &NotifyOptions::default()),
+            ["--title", "t", "--body", "b"]
+        );
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn notifier_exit_codes_map_to_delivery_outcome() {
+        assert!(matches!(notifier_exit_outcome(Some(0)), AppNotify::Sent));
+        assert!(
+            matches!(notifier_exit_outcome(Some(3)), AppNotify::Sent),
+            "已授权但回调超时=可能已提交，避免重复推"
+        );
+        for code in [Some(1), Some(2), Some(4), Some(64), None] {
+            assert!(
+                matches!(notifier_exit_outcome(code), AppNotify::Fallback),
+                "{code:?} 应回退 osascript"
+            );
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn notify_app_probe_prefers_env_then_install_layout() {
+        let root = std::env::temp_dir().join(format!("taix-notify-probe-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+
+        // 安装布局：<root>/TaixTools/plugins/reminder/<exe> → <root>/TaixTools/TaixNotify.app
+        let tools = root.join("TaixTools");
+        let plugin_dir = tools.join("plugins/reminder");
+        std::fs::create_dir_all(&plugin_dir).unwrap();
+        let exe = plugin_dir.join("taix-plugin-reminder");
+        std::fs::write(&exe, b"x").unwrap();
+        std::fs::create_dir_all(tools.join("TaixNotify.app")).unwrap();
+
+        assert_eq!(
+            find_notify_app_from(&exe),
+            Some(tools.join("TaixNotify.app")),
+            "应从插件目录向上探测到安装目录的宿主 App"
+        );
+
+        // 环境覆盖优先（存在时）
+        let other = root.join("Other.app");
+        std::fs::create_dir_all(&other).unwrap();
+        std::env::set_var("TAIX_NOTIFY_APP", &other);
+        assert_eq!(find_notify_app_from(&exe), Some(other));
+        // 覆盖指向不存在的路径：忽略覆盖，继续探测
+        std::env::set_var("TAIX_NOTIFY_APP", root.join("missing.app"));
+        assert_eq!(find_notify_app_from(&exe), Some(tools.join("TaixNotify.app")));
+        std::env::remove_var("TAIX_NOTIFY_APP");
+
+        let bare = root.join("bare/plugins/reminder");
+        std::fs::create_dir_all(&bare).unwrap();
+        let bare_exe = bare.join("taix-plugin-reminder");
+        std::fs::write(&bare_exe, b"x").unwrap();
+        assert_eq!(find_notify_app_from(&bare_exe), None);
+
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

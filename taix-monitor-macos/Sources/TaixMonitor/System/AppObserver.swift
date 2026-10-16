@@ -13,14 +13,22 @@ private let excludedBundleIdentifiers: Set<String> = [
 actor AppObserver {
     private let eventBus: EventBus
     private let iconExtractor: IconExtractor
+    private let sleepWatch: Bool
     private var frontmostApp: NSRunningApplication?
     private var observation: Any?
     private var lastEmittedApp: AppInfo?
     private var lastEmittedPID: pid_t?
 
-    init(eventBus: EventBus, iconExtractor: IconExtractor) {
+    init(eventBus: EventBus, iconExtractor: IconExtractor, sleepWatch: Bool) {
         self.eventBus = eventBus
         self.iconExtractor = iconExtractor
+        self.sleepWatch = sleepWatch
+    }
+
+    /// 系统界面（锁屏/屏保/登录窗）接管前台时，是否立即结束统计会话
+    static func shouldSuspendForFrontmost(bundleIdentifier: String?, sleepWatch: Bool) -> Bool {
+        guard sleepWatch, let bundleIdentifier else { return false }
+        return excludedBundleIdentifiers.contains(bundleIdentifier)
     }
 
     func start() {
@@ -53,9 +61,11 @@ actor AppObserver {
         let previous = frontmostApp?.localizedName ?? "nil"
         frontmostApp = application
 
-        // 检查是否为排除的系统应用
-        guard !isExcluded(application) else {
-            // 锁屏/屏保等系统界面接管前台 → 立即结束正在统计的会话
+        // 锁屏/屏保等系统界面接管前台：按 sleepWatch 决定是否结束会话
+        if Self.shouldSuspendForFrontmost(
+            bundleIdentifier: application.bundleIdentifier,
+            sleepWatch: sleepWatch
+        ) {
             Logger.debug("App ignored (system): \(application.localizedName ?? "Unknown") [\(application.bundleIdentifier ?? "no-bundle-id")]")
             let idle = MonitorEvent(
                 kind: .idleDetected,
@@ -65,6 +75,10 @@ actor AppObserver {
                 window: nil
             )
             await eventBus.publish(idle)
+            return
+        }
+        guard !isExcluded(application) else {
+            Logger.debug("App ignored (system, sleepWatch off): \(application.localizedName ?? "Unknown") [\(application.bundleIdentifier ?? "no-bundle-id")]")
             return
         }
 

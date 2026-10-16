@@ -1,5 +1,7 @@
 use mlua::{Lua, LuaOptions, StdLib};
 use serde::Serialize;
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
 const LUA_MEMORY_LIMIT: usize = 1_000_000;
 const LUA_INSTRUCTION_BATCH: u32 = 50_000;
@@ -101,16 +103,17 @@ pub struct RemindCandidate {
 }
 
 // 显式白名单：ALL_SAFE 含 io，不能用于用户脚本
-fn fresh_lua() -> Result<Lua, mlua::Error> {
+fn fresh_lua() -> Result<(Lua, Rc<Cell<u32>>), mlua::Error> {
     let libs = StdLib::COROUTINE | StdLib::TABLE | StdLib::MATH | StdLib::STRING | StdLib::UTF8;
     let lua = Lua::new_with(libs, LuaOptions::new())?;
     lua.set_memory_limit(LUA_MEMORY_LIMIT)?;
-    let used = std::cell::Cell::new(0u32);
+    let used = Rc::new(Cell::new(0u32));
+    let hook_used = used.clone();
     lua.set_hook(
         mlua::HookTriggers::new().every_nth_instruction(LUA_INSTRUCTION_BATCH),
         move |_lua, _dbg| {
-            used.set(used.get() + LUA_INSTRUCTION_BATCH);
-            if used.get() >= LUA_INSTRUCTION_BATCH * LUA_INSTRUCTION_BUDGET {
+            hook_used.set(hook_used.get() + LUA_INSTRUCTION_BATCH);
+            if hook_used.get() >= LUA_INSTRUCTION_BATCH * LUA_INSTRUCTION_BUDGET {
                 Err(mlua::Error::RuntimeError(
                     "script exceeded instruction budget".to_string(),
                 ))
@@ -119,7 +122,7 @@ fn fresh_lua() -> Result<Lua, mlua::Error> {
             }
         },
     );
-    Ok(lua)
+    Ok((lua, used))
 }
 
 fn build_ctx_table(lua: &Lua, snap: &Snapshot) -> Result<mlua::Table, mlua::Error> {
@@ -149,25 +152,116 @@ fn build_ctx_table(lua: &Lua, snap: &Snapshot) -> Result<mlua::Table, mlua::Erro
     Ok(ctx)
 }
 
+thread_local! {
+    /// 每线程一个 Lua 引擎缓存，与脚本文本绑定；脚本变化才重建。
+    /// tick（5s 一拍）稳态下不再重建 VM / 重编译脚本
+    static ENGINE: RefCell<Option<(String, Engine)>> = const { RefCell::new(None) };
+    #[cfg(test)]
+    static ENGINE_BUILDS: Cell<u32> = const { Cell::new(0) };
+}
+
+/// 编译产物 + 运行环境缓存（引用绑定的 Lua 状态）：
+/// - 稳态（脚本不变）只做「清环境 + 建 ctx + 执行」；
+/// - 脚本变更时整个重建，顺带清掉上一份脚本可能污染的基础库
+struct Engine {
+    lua: Lua,
+    /// 已消耗指令数（钩子累加）；每轮运行前清零，长跑不累计误杀
+    used: Rc<Cell<u32>>,
+    /// 运行环境：脚本全局写在这里，每轮清空重用；`__index` 链到基础库
+    env: mlua::Table,
+    chunk: mlua::Function,
+}
+
+impl Engine {
+    fn new(script: &str) -> Result<Self, String> {
+        #[cfg(test)]
+        ENGINE_BUILDS.with(|c| c.set(c.get() + 1));
+
+        let (lua, used) = fresh_lua().map_err(|e| format!("Lua 初始化失败: {e}"))?;
+
+        let base = lua.create_table().map_err(|e| format!("Lua 初始化失败: {e}"))?;
+        for pair in lua.globals().pairs::<mlua::Value, mlua::Value>() {
+            let (key, value) = pair.map_err(|e| format!("Lua 初始化失败: {e}"))?;
+            if let mlua::Value::String(name) = &key {
+                if name.to_string_lossy() == "_G" {
+                    continue;
+                }
+            }
+            base.set(key, value).map_err(|e| format!("Lua 初始化失败: {e}"))?;
+        }
+        let env = lua.create_table().map_err(|e| format!("Lua 初始化失败: {e}"))?;
+        let meta = lua.create_table().map_err(|e| format!("Lua 初始化失败: {e}"))?;
+        meta.set("__index", base).map_err(|e| format!("Lua 初始化失败: {e}"))?;
+        env.set_metatable(Some(meta));
+
+        let full = format!("{PRELUDE}\n{script}");
+        let chunk = lua
+            .load(&full)
+            .set_name("reminder")
+            .set_environment(env.clone())
+            .into_function()
+            .map_err(|e| format!("脚本编译失败: {e}"))?;
+
+        Ok(Self { lua, used, env, chunk })
+    }
+
+    fn run(&mut self, snap: &Snapshot) -> Result<Vec<RemindCandidate>, String> {
+        self.used.set(0);
+        let _ = self.lua.gc_collect();
+
+        clear_table(&self.env).map_err(|e| format!("构建上下文失败: {e}"))?;
+        let ctx = build_ctx_table(&self.lua, snap).map_err(|e| format!("构建上下文失败: {e}"))?;
+        self.env.set("ctx", ctx).map_err(|e| e.to_string())?;
+
+        let result: mlua::Value = self
+            .chunk
+            .call(())
+            .map_err(|e| format!("脚本运行失败: {e}"))?;
+        match result {
+            mlua::Value::Nil => Ok(Vec::new()),
+            mlua::Value::Table(table) => collect_candidates(&table),
+            _ => Err("脚本返回类型不支持，应为表或 nil".to_string()),
+        }
+    }
+}
+
+/// 清空表的所有键
+fn clear_table(table: &mlua::Table) -> Result<(), mlua::Error> {
+    let mut keys = Vec::new();
+    for pair in table.pairs::<mlua::Value, mlua::Value>() {
+        let (key, _) = pair?;
+        keys.push(key);
+    }
+    for key in keys {
+        table.raw_set(key, mlua::Value::Nil)?;
+    }
+    Ok(())
+}
+
 /// 返回全部命中，按脚本顺序；nil 或空表 = 不提醒
 pub fn run_script(script: &str, snap: &Snapshot) -> Result<Vec<RemindCandidate>, String> {
-    let lua = fresh_lua().map_err(|e| format!("Lua 初始化失败: {e}"))?;
-    let ctx = build_ctx_table(&lua, snap).map_err(|e| format!("构建上下文失败: {e}"))?;
-    lua.globals().set("ctx", ctx).map_err(|e| e.to_string())?;
+    ENGINE.with(|cell| {
+        let mut slot = cell.borrow_mut();
+        let stale = match slot.as_ref() {
+            Some((cached, _)) => cached != script,
+            None => true,
+        };
+        if stale {
+            let engine = Engine::new(script)?;
+            *slot = Some((script.to_string(), engine));
+        }
+        slot.as_mut().expect("引擎刚写入").1.run(snap)
+    })
+}
 
-    let full = format!("{PRELUDE}\n{script}");
-    let chunk = lua
-        .load(&full)
-        .set_name("reminder")
-        .into_function()
-        .map_err(|e| format!("脚本编译失败: {e}"))?;
+#[cfg(test)]
+fn engine_used_batches() -> u32 {
+    ENGINE.with(|cell| cell.borrow().as_ref().map(|(_, e)| e.used.get()).unwrap_or(0))
+}
 
-    let result: mlua::Value = chunk.call(()).map_err(|e| format!("脚本运行失败: {e}"))?;
-    match result {
-        mlua::Value::Nil => Ok(Vec::new()),
-        mlua::Value::Table(table) => collect_candidates(&table),
-        _ => Err("脚本返回类型不支持，应为表或 nil".to_string()),
-    }
+#[cfg(test)]
+fn engine_builds() -> u32 {
+    ENGINE_BUILDS.with(|c| c.get())
 }
 
 fn collect_candidates(table: &mlua::Table) -> Result<Vec<RemindCandidate>, String> {
@@ -575,6 +669,114 @@ end
 
 return out
 "#;
+
+    #[test]
+    fn globals_do_not_leak_between_runs() {
+        // 脚本写全局（不带 local）不应跨轮可见：与旧的「每轮新建 VM」语义一致
+        let script = r#"
+counter = (counter or 0) + 1
+return { title = tostring(counter), body = "", cooldownMinutes = 1 }
+"#;
+        let first = &run_script(script, &snap()).unwrap()[0];
+        let second = &run_script(script, &snap()).unwrap()[0];
+        assert_eq!(first.title, "1");
+        assert_eq!(second.title, "1", "第二轮的 counter 不应继承第一轮");
+    }
+
+    #[test]
+    fn instruction_budget_resets_each_run() {
+        // 每轮触发若干次指令钩子；若预算计数不按轮重置，第二轮结束时会翻倍
+        let spin = "local i = 0 while i < 100000 do i = i + 1 end return nil";
+        run_script(spin, &snap()).unwrap();
+        let first = engine_used_batches();
+        assert!(first > 0, "校准失败：脚本应触发指令钩子（used={first}）");
+
+        run_script(spin, &snap()).unwrap();
+        let second = engine_used_batches();
+        assert!(
+            second <= first + 1,
+            "指令计数应按轮重置：第一轮 {first} 批，第二轮结束 {second} 批"
+        );
+    }
+
+    #[test]
+    fn same_script_reuses_single_engine() {
+        let before = engine_builds();
+        for _ in 0..3 {
+            run_script(FROM_WEBUI, &snap()).unwrap();
+        }
+        assert_eq!(
+            engine_builds(),
+            before + 1,
+            "同一脚本连续运行只应构建一次引擎（不再每拍重建 VM/重编译）"
+        );
+
+        run_script("return nil", &snap()).unwrap();
+        assert_eq!(engine_builds(), before + 2, "脚本变更才应重建引擎");
+
+        run_script("return nil", &snap()).unwrap();
+        assert_eq!(engine_builds(), before + 2, "变更后保持不变不应再重建");
+    }
+
+    /// 基准（默认忽略）：cargo test --release bench_engine -- --ignored --nocapture
+    /// 对比「每拍新建 VM+编译」与「复用缓存」的单次耗时，量化 Lua 编译浪费
+    #[test]
+    #[ignore = "基准，手动运行"]
+    fn bench_engine() {
+        use std::time::Instant;
+
+        // 代表性数据量：今日 150 个进程、15 个分类
+        let apps: Vec<(String, i64)> = (0..150)
+            .map(|i| (format!("app-{i:03}.exe"), (i as i64 + 1) * 37))
+            .collect();
+        let categories: Vec<(String, i64)> = (0..15)
+            .map(|i| (format!("分类{i:02}"), (i as i64 + 1) * 900))
+            .collect();
+        let snap = Snapshot {
+            continuous_seconds: 3725,
+            sleeping: false,
+            today_total_seconds: apps.iter().map(|(_, s)| *s).sum(),
+            apps,
+            categories,
+            current_process: "app-007.exe".to_string(),
+            hour: 22,
+            weekday: 5,
+        };
+        let script = FROM_WEBUI;
+        const N: u32 = 1000;
+
+        // 旧路径：每次新建 Lua、重编译、再执行（修复前的 run_script 行为）
+        let t = Instant::now();
+        for _ in 0..N {
+            let (lua, _used) = fresh_lua().unwrap();
+            let ctx = build_ctx_table(&lua, &snap).unwrap();
+            lua.globals().set("ctx", ctx).unwrap();
+            let full = format!("{PRELUDE}\n{script}");
+            let chunk = lua.load(&full).into_function().unwrap();
+            let result: mlua::Value = chunk.call(()).unwrap();
+            let _ = collect_candidates(result.as_table().unwrap()).unwrap();
+        }
+        let per_old = t.elapsed() / N;
+
+        // 新路径：run_script（内部有编译/状态缓存）
+        let t = Instant::now();
+        for _ in 0..N {
+            run_script(script, &snap).unwrap();
+        }
+        let per_new = t.elapsed() / N;
+
+        // 只计「新建 Lua + 编译」本身（上下文构建另算）
+        let t = Instant::now();
+        for _ in 0..N {
+            let (lua, _used) = fresh_lua().unwrap();
+            let _ = lua.load(&format!("{PRELUDE}\n{script}")).into_function().unwrap();
+        }
+        let per_bare = t.elapsed() / N;
+
+        println!("每拍新建 VM+编译: {per_old:?}/次");
+        println!("run_script 现路径: {per_new:?}/次");
+        println!("仅新建+编译裸成本: {per_bare:?}/次");
+    }
 
     #[test]
     fn webui_compiled_script_runs_as_configured() {

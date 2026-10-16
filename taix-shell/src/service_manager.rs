@@ -50,6 +50,9 @@ pub struct SupervisedTarget {
     pub exe_path: Option<PathBuf>,
     pub exe_name: String,
     pub args: Vec<String>,
+    /// 把子进程 stdout/stderr 落到 <exe_dir>/Logs/taix-monitor.out.log
+    /// （macOS monitor 是 Swift print 日志，没有自己的文件日志）
+    pub capture_output: bool,
 }
 
 impl SupervisedTarget {
@@ -59,7 +62,13 @@ impl SupervisedTarget {
             exe_path: None,
             exe_name: exe_name.to_string(),
             args,
+            capture_output: false,
         }
+    }
+
+    pub fn with_captured_output(mut self) -> Self {
+        self.capture_output = true;
+        self
     }
 }
 
@@ -95,7 +104,8 @@ impl ServiceManager {
         let shutdown_clone = shutdown.clone();
         let monitor_handle = std::thread::spawn(move || {
             self_clone.supervise(
-                &SupervisedTarget::exe(crate::constants::MONITOR_EXE_NAME, monitor_args),
+                &SupervisedTarget::exe(crate::constants::MONITOR_EXE_NAME, monitor_args)
+                    .with_captured_output(),
                 shutdown_clone,
             );
         });
@@ -246,7 +256,7 @@ impl ServiceManager {
             }
 
             let args = build_args(&target.args);
-            let mut child = match spawn_process(&exe_path, &args) {
+            let mut child = match spawn_process(&exe_path, &args, target.capture_output) {
                 Ok(c) => c,
                 Err(e) => {
                     tracing::warn!(
@@ -398,14 +408,58 @@ fn resolve_exe_path(exe_name: &str) -> Option<PathBuf> {
     None
 }
 
-fn spawn_process(exe: &Path, args: &[String]) -> std::io::Result<std::process::Child> {
+/// monitor 的 stdout/stderr 落盘上限：超过即截断重建，避免无轮换日志无限增长
+const MONITOR_OUT_LOG_MAX_BYTES: u64 = 2 * 1024 * 1024;
+
+/// 打开（必要时截断重建）monitor 的输出日志文件 <exe_dir>/Logs/taix-monitor.out.log。
+/// 打不开返回 None（调用方退回丢弃输出，不影响拉起）
+fn monitor_out_log(exe: &Path) -> Option<std::fs::File> {
+    let dir = exe.parent().unwrap_or_else(|| Path::new(".")).join("Logs");
+    std::fs::create_dir_all(&dir).ok()?;
+    let path = dir.join("taix-monitor.out.log");
+    let oversized = std::fs::metadata(&path)
+        .map(|meta| meta.len() > MONITOR_OUT_LOG_MAX_BYTES)
+        .unwrap_or(false);
+    if oversized {
+        let _ = std::fs::remove_file(&path);
+    }
+    std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .ok()
+}
+
+/// 子进程 stdout/stderr 的落盘 Stdio；失败退回 null
+fn captured_stdio(exe: &Path) -> (Stdio, Stdio) {
+    match monitor_out_log(exe) {
+        Some(file) => match file.try_clone() {
+            Ok(err_file) => (Stdio::from(file), Stdio::from(err_file)),
+            Err(_) => (Stdio::from(file), Stdio::null()),
+        },
+        None => {
+            tracing::warn!(
+                target: "taix_shell::service",
+                "monitor 日志文件不可写，stdout/stderr 丢弃"
+            );
+            (Stdio::null(), Stdio::null())
+        }
+    }
+}
+
+fn spawn_process(exe: &Path, args: &[String], capture_output: bool) -> std::io::Result<std::process::Child> {
     let mut cmd = std::process::Command::new(exe);
+    let (out, err) = if capture_output {
+        captured_stdio(exe)
+    } else {
+        (Stdio::null(), Stdio::null())
+    };
     cmd
         .current_dir(exe.parent().unwrap_or_else(|| Path::new(".")))
         .args(args)
         .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
+        .stdout(out)
+        .stderr(err);
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
@@ -528,5 +582,67 @@ impl Backoff {
 
     fn record_failure(&mut self) {
         self.failures = self.failures.saturating_add(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_exe_dir(tag: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!(
+            "taix-monitor-log-{}-{}",
+            tag,
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        let exe_dir = root.join("bin");
+        std::fs::create_dir_all(&exe_dir).unwrap();
+        exe_dir
+    }
+
+    #[test]
+    fn monitor_out_log_truncates_oversized_and_keeps_small() {
+        let exe_dir = test_exe_dir("truncate");
+        let exe = exe_dir.join("taix-monitor-macos");
+        let path = exe_dir.join("Logs").join("taix-monitor.out.log");
+
+        drop(monitor_out_log(&exe).expect("首次应能创建日志文件"));
+        assert!(path.exists(), "日志文件应被创建");
+
+        std::fs::write(&path, vec![b'x'; (MONITOR_OUT_LOG_MAX_BYTES + 1) as usize]).unwrap();
+        drop(monitor_out_log(&exe).expect("超限后应能重建"));
+        assert_eq!(std::fs::metadata(&path).unwrap().len(), 0, "超限文件应被截断");
+
+        std::fs::write(&path, b"keep").unwrap();
+        drop(monitor_out_log(&exe).expect("应能再次打开"));
+        assert_eq!(std::fs::read(&path).unwrap(), b"keep", "未超限不得清空");
+
+        let _ = std::fs::remove_dir_all(exe_dir.parent().unwrap());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn captured_stdio_redirects_child_output_into_log() {
+        let exe_dir = test_exe_dir("capture");
+        let exe = exe_dir.join("taix-monitor-macos");
+        let (out, err) = captured_stdio(&exe);
+
+        let status = std::process::Command::new("/bin/echo")
+            .arg("monitor-hello")
+            .stdout(out)
+            .stderr(err)
+            .status()
+            .expect("应能运行 /bin/echo");
+        assert!(status.success());
+
+        let content = std::fs::read_to_string(exe_dir.join("Logs/taix-monitor.out.log"))
+            .expect("日志文件应可读");
+        assert!(
+            content.contains("monitor-hello"),
+            "子进程 stdout 应落盘，实际: {content:?}"
+        );
+
+        let _ = std::fs::remove_dir_all(exe_dir.parent().unwrap());
     }
 }

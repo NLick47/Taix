@@ -137,6 +137,23 @@ actor TransportClient {
         enqueue(data)
     }
 
+    /// 睡眠/唤醒状态消息（与 Windows monitor 同一 JSON：`{"t":"sleep"}` / `{"t":"wake"}`）。
+    /// server 据此置 continuousSince=null / 重开连续段，插件睡眠期间冻结评估
+    func sendLifecycle(sleeping: Bool) {
+        struct LifecycleMessage: Encodable {
+            let t: String
+        }
+        let message = LifecycleMessage(t: sleeping ? "sleep" : "wake")
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        guard let data = try? encoder.encode(message) else {
+            Logger.error("Lifecycle message encoding failed")
+            return
+        }
+        Logger.debug("Transport enqueue lifecycle: \(message.t)")
+        enqueue(data)
+    }
+
     private func enqueue(_ data: Data) {
         var payload = data
         payload.append(10) // newline
@@ -202,7 +219,7 @@ actor TransportClient {
             throw TransportError.connectionFailed
         }
 
-        path.withUnsafeBufferPointer { source in
+        _ = path.withUnsafeBufferPointer { source in
             withUnsafeMutablePointer(to: &address.sun_path.0) { destination in
                 destination.withMemoryRebound(to: CChar.self, capacity: path.count) { ptr in
                     memcpy(ptr, source.baseAddress!, path.count - 1)

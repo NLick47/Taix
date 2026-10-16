@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, SecondsFormat, Timelike, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, Timelike, Utc};
 use sqlx::SqlitePool;
 use std::collections::HashMap;
 use tracing::{debug, info};
@@ -123,7 +123,8 @@ impl SessionJoinRow {
 
 impl DataService {
     /// 今日总时长 + 按进程 + 按分类；插件与界面共用，口径只在这里实现。
-    /// `ongoing` 为 `Some` 时并入进行中会话，跨 0 点只计当日部分。
+    /// 已结算会话按「与今日的重叠部分」计入（跨 0 点自动拆分）；
+    /// `ongoing` 为 `Some` 时并入进行中会话（同样钳制到当日 0 点）。
     pub async fn today_summary(
         pool: &SqlitePool,
         tz_id: &str,
@@ -132,35 +133,40 @@ impl DataService {
         let tz = parse_timezone(tz_id);
         let today = Utc::now().with_timezone(&tz).date_naive();
         let (day_start_utc, _) = tz_date_to_utc_range(today, &tz);
-        let day_start = day_start_utc.to_rfc3339_opts(SecondsFormat::Secs, true);
+        let day_start = day_start_utc.timestamp();
 
-        // 走 ProcessName 索引
-        let mut apps: Vec<(String, i64)> = sqlx::query_as(
-            "SELECT ProcessName, SUM(Duration) FROM AppDurationRequests \
-             WHERE StartDateTime >= ?1 GROUP BY ProcessName ORDER BY 2 DESC LIMIT 200",
-        )
-        .bind(&day_start)
+        // 与今日的重叠时长：overlap = max(0, start + Duration - max(start, 今日 0 点))
+        const CLIP: &str = "MAX(0, (CAST(strftime('%s', adr.StartDateTime) AS INTEGER) + adr.Duration) \
+             - MAX(CAST(strftime('%s', adr.StartDateTime) AS INTEGER), ?1))";
+        // 只扫「结束时间在今天之后」的行；表按天清理，全表扫可接受
+        const ONSET: &str = "CAST(strftime('%s', adr.StartDateTime) AS INTEGER) + adr.Duration > ?1";
+
+        let mut apps: Vec<(String, i64)> = sqlx::query_as(&format!(
+            "SELECT adr.ProcessName, SUM({CLIP}) FROM AppDurationRequests adr \
+             WHERE {ONSET} GROUP BY adr.ProcessName ORDER BY 2 DESC LIMIT 200",
+        ))
+        .bind(day_start)
         .fetch_all(pool)
         .await?;
 
         // 分类按进程名联 AppModels 近似归属
-        let mut categories: Vec<(String, i64)> = sqlx::query_as(
-            "SELECT COALESCE(c.Name, '未分类') AS CName, SUM(adr.Duration) \
+        let mut categories: Vec<(String, i64)> = sqlx::query_as(&format!(
+            "SELECT COALESCE(c.Name, '未分类') AS CName, SUM({CLIP}) \
              FROM AppDurationRequests adr \
              JOIN AppModels a ON a.Name = adr.ProcessName \
              JOIN CategoryModels c ON c.ID = a.CategoryID \
-             WHERE adr.StartDateTime >= ?1 \
+             WHERE {ONSET} \
              GROUP BY CName ORDER BY 2 DESC",
-        )
-        .bind(&day_start)
+        ))
+        .bind(day_start)
         .fetch_all(pool)
         .await?;
 
         // apps 有 LIMIT 200，总量单独求和
-        let mut total_seconds: i64 = sqlx::query_scalar(
-            "SELECT COALESCE(SUM(Duration), 0) FROM AppDurationRequests WHERE StartDateTime >= ?1",
-        )
-        .bind(&day_start)
+        let mut total_seconds: i64 = sqlx::query_scalar(&format!(
+            "SELECT COALESCE(SUM({CLIP}), 0) FROM AppDurationRequests adr WHERE {ONSET}",
+        ))
+        .bind(day_start)
         .fetch_one(pool)
         .await?;
 
@@ -1337,4 +1343,57 @@ fn merge_and_filter_sessions(sessions: Vec<AppSessionModel>) -> Vec<AppSessionMo
     result.push(current);
 
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn today_summary_clips_sessions_crossing_midnight() {
+        let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
+        crate::migrations::run(&pool, "Asia/Shanghai").await.unwrap();
+
+        let tz = parse_timezone("Asia/Shanghai");
+        let today = Utc::now().with_timezone(&tz).date_naive();
+        let (day_start, _) = tz_date_to_utc_range(today, &tz);
+
+        // 昨天 23:40 开始、2400s：与今天的重叠 = 1200s，昨天占 1200s
+        let crossing = (day_start - chrono::Duration::seconds(1200))
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        // 完全属于昨天的会话：不应出现在今日
+        let yesterday = (day_start - chrono::Duration::seconds(7200))
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+
+        for (process, start, duration) in [
+            ("CrossingApp", crossing.as_str(), 2400i64),
+            ("YesterdayApp", yesterday.as_str(), 600i64),
+        ] {
+            sqlx::query(
+                "INSERT INTO AppDurationRequests (ProcessName, StartDateTime, Duration) \
+                 VALUES (?1, ?2, ?3)",
+            )
+            .bind(process)
+            .bind(start)
+            .bind(duration)
+            .execute(&pool)
+            .await
+            .unwrap();
+        }
+
+        let summary = DataService::today_summary(&pool, "Asia/Shanghai", None)
+            .await
+            .unwrap();
+        assert_eq!(summary.total_seconds, 1200, "跨零点会话只计今天部分: {summary:?}");
+        let crossing_row = summary
+            .apps
+            .iter()
+            .find(|r| r.name == "CrossingApp")
+            .expect("跨零点会话应出现在今日");
+        assert_eq!(crossing_row.seconds, 1200);
+        assert!(
+            summary.apps.iter().all(|r| r.name != "YesterdayApp"),
+            "纯昨天的会话不得出现: {summary:?}"
+        );
+    }
 }

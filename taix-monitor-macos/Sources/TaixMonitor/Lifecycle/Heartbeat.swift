@@ -1,8 +1,8 @@
 import Foundation
 
 /// M4 数据总线心跳（docs/plugin-plan/04-databus.md §4）：
-/// 5s 一拍上报当前前台应用；idleDetected（系统空闲→睡眠语义）期间停发，
-/// activityResumed 后以唤醒时刻重新计会话起点。
+/// 5s 一拍上报当前前台应用；idleDetected（系统空闲→睡眠语义）期间停发并上报
+/// `{"t":"sleep"}`，activityResumed / 回到前台后以唤醒时刻重新计会话起点并上报 `{"t":"wake"}`。
 /// 与 Windows monitor 共用同一 JSON：`{"t":"current","p","f","i","s"}`。
 actor Heartbeat {
     private let transport: TransportClient
@@ -12,6 +12,7 @@ actor Heartbeat {
     private var isIdle = false
     private var since = Date()
     private var currentName: String?
+    private var lastTrackedApp: AppInfo?
 
     init(transport: TransportClient, appProvider: @escaping () async -> AppInfo?) {
         self.transport = transport
@@ -26,9 +27,18 @@ actor Heartbeat {
                 guard let self else { break }
                 switch event.kind {
                 case .idleDetected:
-                    await self.setSleeping(true)
+                    if await self.setSleeping(true) {
+                        await self.transport.sendLifecycle(sleeping: true)
+                    }
                 case .activityResumed:
-                    await self.setSleeping(false)
+                    if await self.setSleeping(false) {
+                        await self.transport.sendLifecycle(sleeping: false)
+                    }
+                case .foregroundChanged:
+                    // 锁屏/屏保后回到前台不会触发 activityResumed，这里兜底恢复心跳
+                    if await self.setSleeping(false) {
+                        await self.transport.sendLifecycle(sleeping: false)
+                    }
                 default:
                     break
                 }
@@ -52,20 +62,34 @@ actor Heartbeat {
         listener = nil
     }
 
-    private func setSleeping(_ sleeping: Bool) {
-        if sleeping && !isIdle {
+    @discardableResult
+    private func setSleeping(_ sleeping: Bool) -> Bool {
+        guard isIdle != sleeping else { return false }
+        isIdle = sleeping
+        if sleeping {
             Logger.debug("Heartbeat paused (idle)")
-        }
-        if !sleeping && isIdle {
+        } else {
             since = Date() // 唤醒即新会话
             Logger.debug("Heartbeat resumed")
         }
-        isIdle = sleeping
+        return true
+    }
+
+    /// 心跳上报的目标应用：`provided`（当前可统计前台）为空时沿用 `last`。
+    /// 锁屏/屏保时 appProvider 返回 nil，编码后消息不带 `p` 字段，server 会直接
+    /// 丢弃（既不更新应用也不刷新存活时间），sleep_watch=false 下 90s 后会被
+    /// 看门狗误判空闲。沿用上一个应用与 Windows monitor 的 last_app 行为对齐
+    static func heartbeatTarget(provided: AppInfo?, last: AppInfo?) -> AppInfo? {
+        provided ?? last
     }
 
     private func beat() async {
         guard !isIdle else { return }
-        let app = await appProvider()
+        let provided = await appProvider()
+        if let provided {
+            lastTrackedApp = provided
+        }
+        let app = Self.heartbeatTarget(provided: provided, last: lastTrackedApp)
         if app?.name != currentName {
             currentName = app?.name
             since = Date() // 应用切换即新会话起点

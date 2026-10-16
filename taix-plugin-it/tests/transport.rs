@@ -1,6 +1,7 @@
 use serde_json::{json, Value};
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::Ordering;
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::sync::Arc;
 use std::time::Duration;
@@ -29,6 +30,7 @@ struct ItConfig {
 struct ServerHandle {
     serve: tokio::task::JoinHandle<()>,
     pool: sqlx::SqlitePool,
+    plugins: Arc<PluginState>,
 }
 
 /// 「重启」要整个 runtime 关停：abort 只杀 accept 循环，SSE 长连接仍存活
@@ -152,9 +154,11 @@ fn write_manifest(data_dir: &Path) {
 
 async fn start_server(data_dir: &Path, port: u16) -> anyhow::Result<ServerHandle> {
     // SDK 与 server 的 create_app（Origin 白名单）都读 TAIX_SERVER；
-    // pipe 路径指向临时目录，避免与真实 Taix 实例冲突
+    // pipe 路径指向临时目录，避免与真实 Taix 实例冲突。
+    // TAIX_TZ 固定上海：本测试的「今日」边界断言按 +8 计算，不能跟随宿主机时区
     std::env::set_var("TAIX_SERVER", format!("http://127.0.0.1:{}", port));
     std::env::set_var("TAIX_PIPE_PATH", data_dir.join("monitor.sock").display().to_string());
+    std::env::set_var("TAIX_TZ", "Asia/Shanghai");
     std::env::remove_var("TAIX_WEBUI_DIR");
 
     let pool = taix_server::db::init_db(data_dir.join("data.db").to_str().unwrap(), "Asia/Shanghai").await?;
@@ -184,9 +188,22 @@ async fn start_server(data_dir: &Path, port: u16) -> anyhow::Result<ServerHandle
     let serve = tokio::spawn(async move {
         let _ = axum::serve(listener, app).await;
     });
-    tokio::spawn(taix_server::pipe::start(sentry_state, pool.clone(), plugin_state));
+    tokio::spawn(taix_server::pipe::start(
+        sentry_state,
+        pool.clone(),
+        plugin_state.clone(),
+    ));
+    // 与 main.rs 同一接线：心跳看门狗（静默 → 空闲广播）
+    tokio::spawn(taix_server::plugins::current::run_idle_watchdog(
+        plugin_state.clone(),
+        pool.clone(),
+    ));
 
-    Ok(ServerHandle { serve, pool })
+    Ok(ServerHandle {
+        serve,
+        pool,
+        plugins: plugin_state,
+    })
 }
 
 fn spawn_plugin(data_dir: &Path) -> mpsc::Receiver<Event> {
@@ -572,6 +589,179 @@ fn transport_contract() {
 
         let plain = http_json("GET", port, "/api/data/today-summary", None);
         assert_eq!(plain["totalSeconds"], json!(0), "默认参数不应含进行中会话");
+    }
+
+    // ---------- S12: 心跳静默 = 空闲/睡眠（看门狗兜底 + 连续段重开） ----------
+    #[cfg(unix)]
+    {
+        let rfc = |epoch: i64| {
+            chrono::DateTime::from_timestamp(epoch, 0)
+                .unwrap()
+                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+        };
+
+        // 基线：正在进行中的会话有连续段
+        let before = http_json("GET", port, "/api/apptimer/current", None);
+        assert_eq!(before["sleep"], json!(false), "基线应是清醒状态");
+        let old_since = before["continuousSince"]
+            .as_str()
+            .expect("基线应有连续段")
+            .to_string();
+
+        // 订阅广播：静默升级为空闲后，看门狗应推一条 sleep=true 的 current 信封
+        let webui = open_sse(port, "webui");
+
+        // 模拟 monitor 静默：把最近心跳拨到阈值之前（等价 monitor 崩溃 / 空闲事件丢失 / 系统睡眠）
+        let plugins = srv.handle.as_ref().unwrap().plugins.clone();
+        plugins
+            .last_current_at
+            .store(now_epoch() - 3600, Ordering::Relaxed);
+
+        // 读路径立即按空闲口径回答，不等广播
+        let current = http_json("GET", port, "/api/apptimer/current", None);
+        assert_eq!(current["sleep"], json!(true), "心跳静默应视为空闲/睡眠");
+        assert_eq!(
+            current["continuousSince"],
+            json!(null),
+            "空闲期不保留连续使用段"
+        );
+
+        // 进行中会话必须剔除，避免「已结算 + ongoing」的重复计量
+        let live = http_json("GET", port, "/api/data/today-summary?includeOngoing=1", None);
+        assert_eq!(
+            live["totalSeconds"],
+            json!(0),
+            "静默后 ongoing 不应再计入今日: {live}"
+        );
+
+        // 看门狗补广播（≤2s 节拍）：插件据此冻结
+        let deadline = std::time::Instant::now() + TIMEOUT;
+        loop {
+            match webui.recv_timeout(Duration::from_millis(200)) {
+                Ok(payload) => {
+                    let v: Value = serde_json::from_str(&payload).expect("SSE 帧不是 JSON");
+                    if v["type"] == json!("current") && v["sleep"] == json!(true) {
+                        assert_eq!(v["continuousSince"], json!(null));
+                        break;
+                    }
+                }
+                Err(RecvTimeoutError::Timeout) => {
+                    assert!(
+                        std::time::Instant::now() < deadline,
+                        "看门狗未广播 sleep=true"
+                    );
+                }
+                Err(RecvTimeoutError::Disconnected) => panic!("webui SSE 连接断开"),
+            }
+        }
+
+        // 心跳恢复 = 用户回来：退出空闲，连续段从恢复时刻重开
+        let mut monitor = connect_monitor(&data_dir);
+        let mut send_line = |v: Value| {
+            let mut line = v.to_string();
+            line.push('\n');
+            monitor.get_mut().write_all(line.as_bytes()).unwrap();
+            monitor.get_mut().flush().unwrap();
+        };
+
+        let resumed_at = now_epoch();
+        send_line(json!({ "t": "current", "p": "OngoingApp", "s": resumed_at }));
+        let deadline = std::time::Instant::now() + TIMEOUT;
+        let resumed = loop {
+            let current = http_json("GET", port, "/api/apptimer/current", None);
+            if current["sleep"] == json!(false) {
+                break current;
+            }
+            assert!(std::time::Instant::now() < deadline, "恢复心跳后应退出空闲");
+            std::thread::sleep(Duration::from_millis(200));
+        };
+        let new_since = resumed["continuousSince"]
+            .as_str()
+            .expect("恢复后应开新连续段")
+            .to_string();
+        assert_ne!(new_since, old_since, "连续段必须从恢复时刻重开，不得沿用旧起点");
+        assert!(
+            new_since.as_str() >= rfc(resumed_at - 2).as_str(),
+            "新段起点应接近恢复时刻: {new_since}"
+        );
+
+        // 常规节拍（应用切换）不重置连续段
+        send_line(json!({ "t": "current", "p": "OngoingApp2", "s": now_epoch() }));
+        let deadline = std::time::Instant::now() + TIMEOUT;
+        loop {
+            let current = http_json("GET", port, "/api/apptimer/current", None);
+            if current["app"]["process"] == json!("OngoingApp2") {
+                assert_eq!(
+                    current["continuousSince"].as_str(),
+                    Some(new_since.as_str()),
+                    "常规心跳/应用切换不得重置连续段"
+                );
+                break;
+            }
+            assert!(std::time::Instant::now() < deadline, "第二拍心跳未生效");
+            std::thread::sleep(Duration::from_millis(200));
+        }
+    }
+
+    // ---------- S13: 跨零点的已结算会话按「与今天重叠」计入 ----------
+    #[cfg(unix)]
+    {
+        let now = now_epoch();
+        // 北京时间今天 0 点（与 server 的 Asia/Shanghai 口径一致）
+        let day_start = now - (now + 8 * 3600).rem_euclid(86_400);
+        // 昨天 23:40 开始、2400s：今天占 20 分钟，昨天占 20 分钟
+        let started = day_start - 20 * 60;
+        let mut monitor = connect_monitor(&data_dir);
+        let mut line = json!({ "t": "app", "p": "MidnightApp", "d": 2400, "a": started })
+            .to_string();
+        line.push('\n');
+        monitor.get_mut().write_all(line.as_bytes()).unwrap();
+        monitor.get_mut().flush().unwrap();
+
+        let deadline = std::time::Instant::now() + TIMEOUT;
+        loop {
+            let summary = http_json("GET", port, "/api/data/today-summary", None);
+            let row = summary["apps"]
+                .as_array()
+                .and_then(|rows| rows.iter().find(|r| r["name"] == json!("MidnightApp")));
+            if let Some(row) = row {
+                let seconds = row["seconds"].as_i64().unwrap();
+                assert!(
+                    (seconds - 1200).abs() <= 5,
+                    "跨零点会话今日只应计 1200s，实际 {seconds}"
+                );
+                let total = summary["totalSeconds"].as_i64().unwrap();
+                assert!(
+                    (total - 1200).abs() <= 5,
+                    "总量同样只计今天部分，实际 {total}"
+                );
+                break;
+            }
+            assert!(std::time::Instant::now() < deadline, "跨零点会话未写入");
+            std::thread::sleep(Duration::from_millis(200));
+        }
+
+        // app.todaySeconds 与 today-summary 同口径
+        let mut monitor = connect_monitor(&data_dir);
+        let mut line =
+            json!({ "t": "current", "p": "MidnightApp", "s": now_epoch() - 10 }).to_string();
+        line.push('\n');
+        monitor.get_mut().write_all(line.as_bytes()).unwrap();
+        monitor.get_mut().flush().unwrap();
+        let deadline = std::time::Instant::now() + TIMEOUT;
+        loop {
+            let current = http_json("GET", port, "/api/apptimer/current", None);
+            if current["app"]["process"] == json!("MidnightApp") {
+                let secs = current["app"]["todaySeconds"].as_i64().unwrap();
+                assert!(
+                    (secs - 1200).abs() <= 5,
+                    "app.todaySeconds 与 today-summary 口径不一致: {secs}"
+                );
+                break;
+            }
+            assert!(std::time::Instant::now() < deadline, "current 心跳未生效");
+            std::thread::sleep(Duration::from_millis(200));
+        }
     }
 
     // ---------- 清理 ----------

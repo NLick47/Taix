@@ -19,6 +19,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
+iana-time-zone = "0.1"
 tower-http = { version = "0.6", features = ["cors", "trace", "fs"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 tracing = "0.1"

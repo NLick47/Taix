@@ -125,6 +125,7 @@ impl PluginSupervisor {
                     "--data-dir".to_string(),
                     self.data_dir.to_string_lossy().to_string(),
                 ],
+                capture_output: false,
             };
             let plugin_shutdown = self.shutdown.child();
             let supervise_shutdown = plugin_shutdown.clone();

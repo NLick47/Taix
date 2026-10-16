@@ -40,6 +40,10 @@ pub struct PluginState {
     pub sleep_flag: std::sync::atomic::AtomicBool,
     /// 平台级数据：连续使用段起点；0 = 无段
     pub continuous_since: std::sync::atomic::AtomicI64,
+    /// 最近一次 current 心跳的 epoch 秒；0 = 本进程还没收到过
+    pub last_current_at: std::sync::atomic::AtomicI64,
+    /// 心跳静默超过该秒数按空闲/睡眠处理；TAIX_CURRENT_STALE_SECS 可覆盖（测试用）
+    pub current_stale_secs: i64,
     pub data_dir: PathBuf,
     /// 插件 UI 资源按 <plugins_dir>/<id>/ui/ 解析
     pub plugins_dir: PathBuf,
@@ -67,6 +71,13 @@ impl PluginState {
         let manifests = manifest::scan(plugins_dir);
         let (tx, _) = broadcast::channel(constants::PLUGIN_EVENT_CHANNEL_CAPACITY);
 
+        // 心跳基准取启动时刻：monitor 从未上报（未安装 / 被杀且不再拉起）时，
+        // 静默超过阈值同样进入空闲，而不是永远当作在用
+        let start_secs = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
+
         tracing::info!(
             target: "taix_server::plugins",
             "scanned {} plugin manifest(s) from {}",
@@ -91,12 +102,13 @@ impl PluginState {
             tx,
             current_app: RwLock::new(None),
             sleep_flag: std::sync::atomic::AtomicBool::new(false),
-            continuous_since: std::sync::atomic::AtomicI64::new(
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map(|d| d.as_secs() as i64)
-                    .unwrap_or(0),
-            ),
+            continuous_since: std::sync::atomic::AtomicI64::new(start_secs),
+            last_current_at: std::sync::atomic::AtomicI64::new(start_secs),
+            current_stale_secs: std::env::var("TAIX_CURRENT_STALE_SECS")
+                .ok()
+                .and_then(|v| v.parse::<i64>().ok())
+                .filter(|v| *v > 0)
+                .unwrap_or(current::HEARTBEAT_STALE_SECS),
             data_dir: data_dir.to_path_buf(),
             plugins_dir: plugins_dir.to_path_buf(),
         })

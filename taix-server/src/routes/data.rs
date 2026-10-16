@@ -200,13 +200,15 @@ async fn get_category_year_data(State(pool): State<SqlitePool>, Extension(config
     }
 }
 
-/// 插件与界面共用；tz 缺省 Asia/Shanghai
+/// 插件与界面共用；tz 缺省 = 宿主机时区
 async fn get_today_summary(
     State(pool): State<SqlitePool>,
     Extension(plugins): Extension<Arc<PluginState>>,
     Query(q): Query<TodaySummaryQuery>,
 ) -> Json<ApiResponse<TodaySummary>> {
-    let tz = q.tz.unwrap_or_else(|| "Asia/Shanghai".to_string());
+    let tz = q
+        .tz
+        .unwrap_or_else(|| crate::utils::host_timezone().name().to_string());
     let ongoing = if q.include_ongoing {
         current::ongoing_session(&plugins)
             .await

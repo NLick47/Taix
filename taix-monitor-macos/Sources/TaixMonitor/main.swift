@@ -3,6 +3,8 @@ import Foundation
 @main
 struct TaixMonitor {
     static func main() async {
+        setvbuf(stdout, nil, _IOLBF, 0)
+
         guard SingleInstance.tryAcquire() else {
             Logger.error("Another instance is already running, exiting...")
             exit(1)

@@ -18,8 +18,8 @@ const PLUGIN_ID: &str = "reminder";
 const PLUGIN_NAME: &str = "使用时长提醒";
 const TICK: Duration = Duration::from_secs(5);
 const HEARTBEAT_TICKS: u64 = 6;
-/// 全局口径：Asia/Shanghai
-const TZ: &str = "Asia/Shanghai";
+/// 两次 tick 的墙钟差超过它 = 进程被挂起过（系统睡眠/唤醒），该拍只做状态对齐
+const RESUMED_GAP_SECS: i64 = 60;
 /// 其余命中让位，防连弹
 const ROUND_DEFER_SECS: i64 = 300;
 /// 兜底探测 /api/apptimer/current 的最小间隔
@@ -45,9 +45,13 @@ struct Runtime {
     continuous_since: Mutex<Option<i64>>,
     /// 上次兜底探测 /api/apptimer/current 的 epoch；0 = 从未探测
     current_probed: AtomicI64,
+    /// SSE current 事件计数器；探测结果落地前用它确认「期间没有更新的状态」
+    current_events: AtomicU64,
     gate: Mutex<Gate>,
     /// state.json 只读一次，之后以内存为准
     state_loaded: AtomicBool,
+    /// 上一拍 tick 的 epoch 秒；0 = 还没跑过（用于识别系统睡眠造成的空档）
+    last_tick_at: AtomicI64,
     last_notify: Mutex<Option<Value>>,
     current_process: Mutex<String>,
     sleeping: AtomicBool,
@@ -67,8 +71,10 @@ impl Runtime {
             identity: Mutex::new(None),
             continuous_since: Mutex::new(None),
             current_probed: AtomicI64::new(0),
+            current_events: AtomicU64::new(0),
             gate: Mutex::new(Gate::default()),
             state_loaded: AtomicBool::new(false),
+            last_tick_at: AtomicI64::new(0),
             last_notify: Mutex::new(None),
             current_process: Mutex::new(String::new()),
             sleeping: AtomicBool::new(false),
@@ -156,11 +162,10 @@ fn rfc3339(epoch: i64) -> String {
         .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-/// Asia/Shanghai 恒为 UTC+8；返回 (时, 周一=1…周日=7, 日期)
+/// 宿主机本地时区；返回 (时, 周一=1…周日=7, 日期)。
 fn local_clock() -> (i64, i64, String) {
-    use chrono::{Datelike, TimeZone, Timelike};
-    let tz = chrono::FixedOffset::east_opt(8 * 3600).expect("+8 时区合法");
-    let now = tz.from_utc_datetime(&chrono::Utc::now().naive_utc());
+    use chrono::{Datelike, Local, Timelike};
+    let now = Local::now();
     (
         now.hour() as i64,
         now.weekday().number_from_monday() as i64,
@@ -199,16 +204,28 @@ fn continuous_seconds(ctx: &PluginCtx, rt: &Runtime) -> i64 {
 
     // 持锁做阻塞 IO 会卡住 on_current 回调线程，所以只在锁外请求、拿到值再写回
     if should_probe(rt.current_probed.load(Ordering::Relaxed), now, since) {
+        let events = rt.current_events.load(Ordering::Relaxed);
         if let Ok(current) = ctx.get_json("/api/apptimer/current") {
             rt.current_probed.store(now, Ordering::Relaxed);
-            // 探测期间的 current 事件可能已经带来更新的起点，null 不去覆盖它
-            if let Some(start) = current["continuousSince"].as_str().and_then(parse_rfc3339) {
-                *rt.continuous_since.lock().unwrap() = Some(start);
-                return (now - start).max(0);
+            // 探测期间有 current 事件到达 = SSE 状态更新鲜，丢弃这次探测结果
+            if rt.current_events.load(Ordering::Relaxed) == events {
+                let (sleeping, start) = parse_probe(&current);
+                rt.sleeping.store(sleeping, Ordering::Relaxed);
+                *rt.continuous_since.lock().unwrap() = start;
+                return start.map(|start| (now - start).max(0)).unwrap_or(0);
             }
         }
     }
     since.map(|start| (now - start).max(0)).unwrap_or(0)
+}
+
+/// 探测响应 → (睡眠/空闲中, 连续段起点)；continuousSince=null = 无段，
+/// 插件重启或错过 SSE 后靠它一次对齐睡眠状态与连续段
+fn parse_probe(current: &Value) -> (bool, Option<i64>) {
+    (
+        current["sleep"].as_bool().unwrap_or(false),
+        current["continuousSince"].as_str().and_then(parse_rfc3339),
+    )
 }
 
 /// 空闲时 continuousSince 恒为 null，不必每拍兜底；但仍要节流重试，
@@ -224,8 +241,13 @@ fn should_probe(last_probe: i64, now: i64, since: Option<i64>) -> bool {
     }
 }
 
+/// 相邻两拍墙钟差超阈值 = 进程被挂起过（系统睡眠/唤醒），需要重新对齐状态
+fn resumed_from_gap(last_tick: i64, now: i64) -> bool {
+    last_tick > 0 && now - last_tick > RESUMED_GAP_SECS
+}
+
 fn build_snapshot(ctx: &PluginCtx, rt: &Runtime) -> anyhow::Result<Snapshot> {
-    let summary = ctx.get_json(&format!("/api/data/today-summary?tz={TZ}&includeOngoing=1"))?;
+    let summary = ctx.get_json("/api/data/today-summary?includeOngoing=1")?;
     let sleeping = rt.sleeping.load(Ordering::Relaxed);
     let (hour, weekday, _) = local_clock();
 
@@ -362,6 +384,21 @@ fn tick(ctx: &PluginCtx, rt: &Arc<Runtime>) {
         return;
     }
 
+    let now = now_epoch();
+    let last_tick = rt.last_tick_at.swap(now, Ordering::Relaxed);
+    let resumed = resumed_from_gap(last_tick, now);
+    if resumed {
+        // 系统睡眠/挂起后进程恢复：本地连续段与睡眠标记可能都已过时。
+        // 清空连续段并强制探测对齐，本拍不评估规则，避免「开盖瞬间弹陈旧时长」
+        rt.current_probed.store(0, Ordering::Relaxed);
+        *rt.continuous_since.lock().unwrap() = None;
+        tracing::info!(
+            target: "taix_plugin_reminder",
+            "tick 空档 {}s（系统睡眠/挂起），本拍只做状态对齐",
+            now - last_tick
+        );
+    }
+
     let snap = match build_snapshot(ctx, rt) {
         Ok(snap) => snap,
         Err(e) => {
@@ -378,6 +415,11 @@ fn tick(ctx: &PluginCtx, rt: &Arc<Runtime>) {
         snap.categories.len(),
         snap.current_process
     );
+
+    if resumed {
+        report_state(ctx, rt, &snap, false);
+        return;
+    }
 
     // 新脚本先试跑，失败沿用上一份
     if let Some(candidate) = rt.candidate.lock().unwrap().take() {
@@ -463,6 +505,11 @@ fn tick(ctx: &PluginCtx, rt: &Arc<Runtime>) {
 fn main() {
     let rt = Arc::new(Runtime::new());
 
+    // 启动即主动申请 macOS 通知权限：首次询问发生在「启用插件/登录」时刻，
+    // 而不是第一次提醒才弹（未授权也不会丢提醒——发送时会先尝试权限、超时回退 osascript）
+    #[cfg(not(target_os = "windows"))]
+    std::thread::spawn(taix_notify::request_permission);
+
     let cfg_rt = rt.clone();
     let current_rt = rt.clone();
     let cmd_rt = rt.clone();
@@ -475,6 +522,7 @@ fn main() {
             *cfg_rt.candidate.lock().unwrap() = Some(script);
         })
         .on_current(move |_, event| {
+            current_rt.current_events.fetch_add(1, Ordering::Relaxed);
             let sleeping = event["sleep"].as_bool().unwrap_or(false);
             if let Some(app) = event["app"].as_object() {
                 *current_rt.current_process.lock().unwrap() =
@@ -719,6 +767,40 @@ mod tests {
 
         let fresh = NOW - 600;
         assert!(!should_probe(probed, NOW, Some(fresh)), "正常连续段不需要额外请求");
+    }
+
+    #[test]
+    fn resume_gap_detection() {
+        assert!(!resumed_from_gap(0, NOW), "首拍没有上一拍，不算恢复");
+        assert!(!resumed_from_gap(NOW - 5, NOW), "常规 5s 节拍不算");
+        assert!(!resumed_from_gap(NOW - RESUMED_GAP_SECS, NOW), "恰好阈值不算");
+        assert!(resumed_from_gap(NOW - RESUMED_GAP_SECS - 1, NOW), "超过阈值视为恢复");
+        assert!(!resumed_from_gap(NOW + 5, NOW), "时钟回拨不算恢复");
+    }
+
+    #[test]
+    fn local_clock_matches_system_local_time() {
+        // 与 chrono::Local 对齐：开发机不在 +8 时能抓住“又写死 +8”的回归。
+        // 跨时区完整验证在 script/verify_local_timezone.py（真身进程 + TZ）
+        use chrono::{Datelike, Timelike};
+        let (hour, weekday, date) = local_clock();
+        let now = chrono::Local::now();
+        assert_eq!(hour, now.hour() as i64);
+        assert_eq!(weekday, now.weekday().number_from_monday() as i64);
+        assert_eq!(date, now.format("%Y-%m-%d").to_string());
+    }
+
+    #[test]
+    fn probe_result_carries_sleep_state_and_segment() {
+        // 空闲/睡眠：sleep=true 且无连续段 —— 两者都要落地，插件据此冻结
+        let sleeping = json!({ "sleep": true, "continuousSince": null });
+        assert_eq!(parse_probe(&sleeping), (true, None));
+
+        let awake = json!({ "sleep": false, "continuousSince": "1970-01-01T00:01:00Z" });
+        assert_eq!(parse_probe(&awake), (false, Some(60)));
+
+        // 字段缺失按「醒着、无段」兜底，不 panic
+        assert_eq!(parse_probe(&json!({})), (false, None));
     }
 
     #[test]

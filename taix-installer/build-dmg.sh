@@ -175,6 +175,10 @@ mkdir -p "$TOOLS_DIR/plugins/reminder/ui"
 cp "$ROOT_DIR/taix-plugins/reminder/ui/dist/config.js" "$TOOLS_DIR/plugins/reminder/ui/"
 echo "Copied taix-plugin-reminder ui -> TaixTools/plugins/reminder/ui"
 
+# macOS 通知宿主：通知以「Taix」名称与图标推送（缺它时 taix-notify 自动回退 osascript）
+"$ROOT_DIR/taix-notify-macos/make-app.sh" "$TOOLS_DIR"
+echo "Assembled TaixNotify.app -> TaixTools/TaixNotify.app"
+
 # TaixTools 下的可执行文件不在 .app 的 `codesign --deep` 覆盖范围内，逐个 ad-hoc 签名
 # （否则用户机器上可能因隔离属性直接拒绝执行——server/monitor/插件三类都要覆盖，
 #   所以这一步必须在插件拷进 TaixTools 之后）

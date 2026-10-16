@@ -2070,6 +2070,7 @@ dependencies = [
  "chrono-tz",
  "dirs",
  "http-body-util",
+ "iana-time-zone",
  "libc",
  "regex",
  "resvg",

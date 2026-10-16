@@ -7,7 +7,7 @@ actor IdleDetector {
     private let config: MonitorConfig
     private let checkInterval: TimeInterval
     private var monitorTask: Task<Void, Never>?
-    private var isIdle: Bool = false
+    private(set) var isIdle: Bool = false
     private let audioMonitor: AudioMonitor
     private var gamepadMonitor: GamepadMonitor?
 
@@ -115,8 +115,8 @@ actor IdleDetector {
         monitorTask = nil
     }
 
-    private func handleSystemSleep() async {
-        // 系统/显示器即将休眠，立即暂停计时
+    func handleSystemSleep() async {
+        guard config.sleepWatch else { return }
         guard !isIdle else { return }
         isIdle = true
         isResumePending = true  // 标记为待恢复状态，等待唤醒后用户活动

@@ -134,6 +134,11 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
         plugin_state.clone(),
     ));
 
+    tokio::spawn(plugins::current::run_idle_watchdog(
+        plugin_state.clone(),
+        pool.clone(),
+    ));
+
     tokio::spawn(services::app_timer::AppTimerService::run_cleanup_task(
         pool.clone(),
         config_service.clone(),
