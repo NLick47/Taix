@@ -540,12 +540,28 @@ impl WebDataService {
 
     pub async fn get_date_range_web_site_list(pool: &SqlitePool, start: NaiveDateTime, end: NaiveDateTime, take: i64, skip: i64, is_time: bool, tz_id: &str, config_service: &ConfigService) -> Result<Vec<WebSiteModel>, AppError> {
         debug!("get_date_range_web_site_list: start={} end={} take={} skip={} is_time={}", start, end, take, skip, is_time);
+        // 半开区间 小时跨到下一整点 天跨到次日 0 点 回拨小时不漏
         let (start, end) = if is_time {
-            (NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(start.hour(), 0, 0).unwrap()),
-             NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(end.hour(), 59, 59).unwrap()))
+            let hour_start = NaiveDateTime::new(
+                start.date(),
+                chrono::NaiveTime::from_hms_opt(start.hour(), 0, 0).unwrap(),
+            );
+            let hour_end = NaiveDateTime::new(
+                end.date(),
+                chrono::NaiveTime::from_hms_opt(end.hour(), 0, 0).unwrap(),
+            ) + Duration::hours(1);
+            (hour_start, hour_end)
         } else {
-            (NaiveDateTime::new(start.date(), chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap()),
-             NaiveDateTime::new(end.date(), chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap()))
+            (
+                NaiveDateTime::new(
+                    start.date(),
+                    chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
+                ),
+                NaiveDateTime::new(
+                    end.date().succ_opt().unwrap(),
+                    chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
+                ),
+            )
         };
         let utc_start = tz_naive_to_utc(start, &parse_timezone(tz_id));
         let utc_end = tz_naive_to_utc(end, &parse_timezone(tz_id));
@@ -556,7 +572,7 @@ impl WebDataService {
             FROM WebBrowseLogModels wbl
             LEFT JOIN WebSiteModels s ON wbl.SiteId = s.ID
             LEFT JOIN WebSiteCategoryModels c ON s.CategoryID = c.ID
-            WHERE wbl.LogTime >= ? AND wbl.LogTime <= ? AND wbl.SiteId != 0
+            WHERE wbl.LogTime >= ? AND wbl.LogTime < ? AND wbl.SiteId != 0
             GROUP BY wbl.SiteId
             ORDER BY site_duration DESC"#,
             cols = WEB_SITE_JOIN_COLS_SQL

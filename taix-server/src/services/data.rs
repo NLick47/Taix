@@ -23,12 +23,12 @@ pub struct OngoingSession {
     pub since_epoch: i64,
 }
 
-const HOURS_LOG_BY_HOUR_SQL: &str = r#"
+const HOURS_LOG_RANGE_HALF_OPEN_SQL: &str = r#"
 SELECT h.ID, h.DataTime, h.AppModelID, h.Time, {cols}
 FROM HoursLogModels h
 LEFT JOIN AppModels a ON h.AppModelID = a.ID
 LEFT JOIN CategoryModels c ON a.CategoryID = c.ID
-WHERE h.DataTime = ?
+WHERE h.DataTime >= ? AND h.DataTime < ?
 "#;
 
 const HOURS_LOG_RANGE_SQL: &str = r#"
@@ -486,23 +486,33 @@ impl DataService {
         config_service: &ConfigService,
     ) -> Result<Vec<HoursLogModel>, AppError> {
         debug!("get_time_range_log_list: time={}", time);
-        let local_hour = NaiveDateTime::new(
+        let tz = parse_timezone(tz_id);
+        // 按本地小时区间取整点 UTC 桶 半小时时区和 DST 回拨不漏
+        let local_hour_start = NaiveDateTime::new(
             time.date(),
             chrono::NaiveTime::from_hms_opt(time.hour(), 0, 0).unwrap(),
         );
-        let utc_hour = tz_naive_to_utc(local_hour, &parse_timezone(tz_id));
+        let utc_start = tz_naive_to_utc(local_hour_start, &tz);
+        let utc_end = tz_naive_to_utc(local_hour_start + chrono::Duration::hours(1), &tz);
 
         let logs: Vec<HoursLogJoinRow> = sqlx::query_as::<_, HoursLogJoinRow>(
-            &HOURS_LOG_BY_HOUR_SQL.replace("{cols}", APP_JOIN_COLS_SQL),
+            &HOURS_LOG_RANGE_HALF_OPEN_SQL.replace("{cols}", APP_JOIN_COLS_SQL),
         )
-            .bind(utc_hour)
-            .fetch_all(pool)
-            .await?;
+        .bind(utc_start)
+        .bind(utc_end)
+        .fetch_all(pool)
+        .await?;
 
         let excluded = config_service.get_excluded_app_id_set(pool).await;
 
+        let target_date = time.date();
+        let target_hour = time.hour();
         let result: Vec<HoursLogModel> = logs
             .into_iter()
+            .filter(|row| {
+                let local = row.data_time.with_timezone(&tz);
+                local.date_naive() == target_date && local.hour() == target_hour
+            })
             .filter(|row| !excluded.contains(&row.app_model_id))
             .map(HoursLogJoinRow::into_hours_log_model)
             .collect();
@@ -582,15 +592,13 @@ impl DataService {
                 query.fetch_all(pool).await?
             };
 
-            let data_map: HashMap<DateTime<Utc>, i64> = rows.into_iter().collect();
+            // 按桶记录的时间归到本地小时 半小时时区和 DST 回拨都能对上
             let mut result = vec![0.0; 24];
-            for i in 0..24 {
-                let local_hour = NaiveDateTime::new(
-                    start,
-                    chrono::NaiveTime::from_hms_opt(i as u32, 0, 0).unwrap(),
-                );
-                let utc_hour = tz_naive_to_utc(local_hour, &tz);
-                result[i] = data_map.get(&utc_hour).copied().unwrap_or(0) as f64;
+            for (utc_dt, total) in rows {
+                let local = utc_dt.with_timezone(&tz);
+                if local.date_naive() == start {
+                    result[local.hour() as usize] += total as f64;
+                }
             }
             Ok(result)
         } else {
@@ -994,15 +1002,13 @@ impl DataService {
         .fetch_all(pool)
         .await?;
 
-        let data_map: HashMap<DateTime<Utc>, i64> = data.into_iter().collect();
+        // 与 get_range_total_data 同口径 按桶记录的时间归到本地小时
         let mut values = vec![0.0; 24];
-        for i in 0..24 {
-            let local_hour = NaiveDateTime::new(
-                date,
-                chrono::NaiveTime::from_hms_opt(i as u32, 0, 0).unwrap(),
-            );
-            let utc_hour = tz_naive_to_utc(local_hour, &tz);
-            values[i] = data_map.get(&utc_hour).copied().unwrap_or(0) as f64;
+        for (utc_dt, total) in data {
+            let local = utc_dt.with_timezone(&tz);
+            if local.date_naive() == date {
+                values[local.hour() as usize] += total as f64;
+            }
         }
 
         Ok(vec![ColumnDataModel {
