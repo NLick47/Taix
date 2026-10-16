@@ -10,7 +10,7 @@ pub(crate) const DEFAULT_ICON: &str = "avares://Taix/Resources/Icons/tai.ico";
 pub(crate) const DEFAULT_COLOR: &str = "#e4e3df";
 
 /// 初始化数据库连接并执行迁移
-/// tz_id: C# 历史数据使用的本地时区，如 "Asia/Shanghai"
+/// tz_id: 旧版本地数据所在时区 通常传宿主机时区
 pub async fn init_db(db_path: &str, tz_id: &str) -> anyhow::Result<SqlitePool> {
     let path = Path::new(db_path);
     if let Some(parent) = path.parent() {

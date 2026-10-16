@@ -11,7 +11,7 @@ use services::config::ConfigService;
 use services::web_data::WebDataService;
 use taix_server::{
     constants, create_app, db, parse_data_dir, parse_server_addr, pipe, plugins, routes,
-    services, single_instance, websocket_manager,
+    services, single_instance, utils, websocket_manager,
 };
 
 #[tokio::main]
@@ -76,9 +76,10 @@ async fn run(exe_dir: &Path) -> anyhow::Result<()> {
     tracing::info!("Using data dir: {}", data_dir.display());
     tracing::info!("Using web favicons dir: {}", web_favicons_dir.display());
 
+    // 旧版本地时间按宿主机时区迁移 TAIX_TZ 可覆盖
     let pool = db::init_db(
         db_path.to_str().ok_or_else(|| anyhow::anyhow!("Database path contains invalid UTF-8"))?,
-        "Asia/Shanghai",
+        utils::host_timezone().name(),
     ).await?;
 
     let config_service = Arc::new(ConfigService::new(&data_dir));
