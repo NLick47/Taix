@@ -23,6 +23,7 @@
                   ToastType="{Binding ToastType}"
                   Height="553" Width="860" MinHeight="553" MinWidth="860"
                   Title="{Binding Title}"
+                  TitleBarCommand="{Binding OpenPluginUiCommand}"
                   ConnectionStatus="{Binding ConnectionStatus}">
 
     <ui:DefaultWindow.Resources>

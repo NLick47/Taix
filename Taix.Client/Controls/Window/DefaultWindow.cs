@@ -71,6 +71,12 @@ public class DefaultWindow : Avalonia.Controls.Window
     public static readonly StyledProperty<ConnectionStatus> ConnectionStatusProperty =
         AvaloniaProperty.Register<DefaultWindow, ConnectionStatus>(nameof(ConnectionStatus), ConnectionStatus.Checking);
 
+    public static readonly StyledProperty<ICommand?> TitleBarCommandProperty =
+        AvaloniaProperty.Register<DefaultWindow, ICommand?>(nameof(TitleBarCommand));
+
+    public static readonly StyledProperty<bool> TitleBarCommandVisibleProperty =
+        AvaloniaProperty.Register<DefaultWindow, bool>(nameof(TitleBarCommandVisible), true);
+
     private CancellationTokenSource _toastCancellationTokenSource;
     private Button.Button CancelBtn, ConfirmBtn, InputModalCancelBtn, InputModalConfirmBtn;
     private InputBox InputModalInputBox;
@@ -247,6 +253,18 @@ public class DefaultWindow : Avalonia.Controls.Window
     {
         get => GetValue(IconSourceProperty);
         set => SetValue(IconSourceProperty, value);
+    }
+
+    public ICommand? TitleBarCommand
+    {
+        get => GetValue(TitleBarCommandProperty);
+        set => SetValue(TitleBarCommandProperty, value);
+    }
+
+    public bool TitleBarCommandVisible
+    {
+        get => GetValue(TitleBarCommandVisibleProperty);
+        set => SetValue(TitleBarCommandVisibleProperty, value);
     }
 
 

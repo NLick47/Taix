@@ -69,8 +69,7 @@ internal partial class AppServiceProvider
     public HttpClient CreateHttpClient()
     {
         var client = new HttpClient();
-        var serverUrl = Environment.GetEnvironmentVariable("TAIX_SERVER") ?? "http://127.0.0.1:37091";
-        client.BaseAddress = new Uri(serverUrl);
+        client.BaseAddress = new Uri(ServerEndpoints.ServerUrl);
         client.Timeout = TimeSpan.FromSeconds(6);
         return client;
     }

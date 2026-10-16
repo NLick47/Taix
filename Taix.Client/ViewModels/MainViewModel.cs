@@ -24,6 +24,7 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
     private readonly IAppConfig _appConfig;
     private readonly IServiceProvider _serviceProvider;
     private readonly ITaixApiClient _apiClient;
+    private readonly IProcessService _processService;
     private readonly string[] _pages = [nameof(IndexPage), nameof(ChartPage), nameof(DataPage), nameof(CategoryPage)];
     private readonly CompositeDisposable _disposables = new();
     private readonly CancellationTokenSource _connectionCts = new();
@@ -37,16 +38,19 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
     public MainViewModel(
         IServiceProvider serviceProvider,
         IAppConfig appConfig,
-        ITaixApiClient apiClient
+        ITaixApiClient apiClient,
+        IProcessService processService
     )
     {
         _serviceProvider = serviceProvider;
         _appConfig = appConfig;
         _apiClient = apiClient;
+        _processService = processService;
         ServiceProvider = serviceProvider;
 
         OnSelectedCommand = AsyncRelayCommand.Create<object>(OnSelectedCommandHandle);
         GotoPageCommand = AsyncRelayCommand.Create<object>(OnGotoPageCommand);
+        OpenPluginUiCommand = AsyncRelayCommand.CreateFromTask(OnOpenPluginUiAsync);
 
 #if !DEBUG
         Title = "Taix";
@@ -130,6 +134,31 @@ public class MainViewModel : MainWindowModel, IToastService, INavigationService,
 
     public ICommand OnSelectedCommand { get; }
     public ICommand GotoPageCommand { get; }
+
+    /// <summary>
+    /// 标题栏「插件」按钮：在默认浏览器里打开本地插件 Web UI
+    /// </summary>
+    public ICommand OpenPluginUiCommand { get; }
+
+    private async Task OnOpenPluginUiAsync()
+    {
+        // 先探活：taix-shell 没起来时与其开一个打不开的标签页，不如直接告诉用户
+        if (!await _apiClient.HealthCheckAsync())
+        {
+            Error(ResourceStrings.ServerDisconnected);
+            return;
+        }
+
+        try
+        {
+            _processService.OpenUrl(ServerEndpoints.PluginUiUrl);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"打开插件界面失败: {ex.Message}", ex);
+            Error(ResourceStrings.OpenPluginUiFailed);
+        }
+    }
 
     private void OnGotoPageCommand(object obj)
     {

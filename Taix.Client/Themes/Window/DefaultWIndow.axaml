@@ -157,6 +157,20 @@
                                       Panel.ZIndex="3">
                                     <StackPanel Orientation="Horizontal">
                                         <button:IconButton
+                                            x:Name="PluginUiButton"
+                                            ToolTip.Tip="{DynamicResource PluginsOpenInBrowser}"
+                                            Width="32"
+                                            Height="32"
+                                            CornerRadius="7"
+                                            PathStrokeThickness="{DynamicResource TitleBarIconStroke}"
+                                            PathData="M1.379,4.777 A1.257,1.226 0 0 1 2.636,3.551 H5.486 A2.179,2.125 0 0 1 9.844,3.551 H12.693 A1.257,1.226 0 0 1 13.95,4.777 V6.738 A2.179,2.125 0 0 1 13.95,10.988 V12.95 A1.257,1.226 0 0 1 12.693,14.176 H2.636 A1.257,1.226 0 0 1 1.379,12.95 V10.743 A1.928,1.88 0 0 0 1.379,6.984 V4.777 Z"
+                                            Command="{TemplateBinding TitleBarCommand}"
+                                            IsVisible="{TemplateBinding TitleBarCommandVisible}"
+                                            HandlesPointerPressed="True" />
+                                        <Border Width="1" Height="16" Margin="4,0,6,0"
+                                                Background="{DynamicResource WindowBorderBrush}" />
+
+                                        <button:IconButton
                                             x:Name="MinimizeButton"
                                             ToolTip.Tip="{DynamicResource Minimization}"
                                             Width="46"
@@ -164,6 +178,7 @@
                                             FontSize="10"
                                             Icon="ChromeMinimize"
                                             Command="{x:Static controls:DefaultWindow.MinimizeWindowCommand}"
+                                            HandlesPointerPressed="True"
                                             IsVisible="True" />
                                         <button:IconButton
                                             x:Name="MaximizeButton"
@@ -173,6 +188,7 @@
                                             FontSize="10"
                                             Icon="ChromeMaximize"
                                             Command="{x:Static controls:DefaultWindow.MaximizeWindowCommand}"
+                                            HandlesPointerPressed="True"
                                             IsVisible="{TemplateBinding MaximizeVisible}" />
                                         <button:IconButton
                                             x:Name="RestoreButton"
@@ -182,6 +198,7 @@
                                             FontSize="10"
                                             Icon="ChromeRestore"
                                             Command="{x:Static controls:DefaultWindow.RestoreWindowCommand}"
+                                            HandlesPointerPressed="True"
                                             IsVisible="{TemplateBinding RestoreVisible}" />
                                         <button:IconButton
                                             ToolTip.Tip="{DynamicResource Close}"
@@ -190,6 +207,7 @@
                                             FontSize="10"
                                             Icon="ChromeClose"
                                             Command="{x:Static controls:DefaultWindow.CloseWindowCommand}"
+                                            HandlesPointerPressed="True"
                                             IsVisible="True" />
 
                                     </StackPanel>

@@ -148,6 +148,7 @@ public static class ResourceStrings
     public static string ConnectionStatusConnected => GetStringValue("ConnectionStatusConnected");
     public static string ConnectionStatusDisconnected => GetStringValue("ConnectionStatusDisconnected");
     public static string ConnectionStatusChecking => GetStringValue("ConnectionStatusChecking");
+    public static string OpenPluginUiFailed => GetStringValue("OpenPluginUiFailed");
     public static string CategoryHasApps => GetStringValue("CategoryHasApps");
     public static string CategoryHasSites => GetStringValue("CategoryHasSites");
     public static string MoveToSystemCategory => GetStringValue("MoveToSystemCategory");

@@ -43,6 +43,9 @@
     <system:String x:Key="Maximize">最大化</system:String>
     <system:String x:Key="Restore">向下还原</system:String>
     <system:String x:Key="Close">关闭</system:String>
+    <system:String x:Key="Plugins">插件</system:String>
+    <system:String x:Key="PluginsOpenInBrowser">插件 · 在浏览器中打开</system:String>
+    <system:String x:Key="OpenPluginUiFailed">打开插件界面失败，请手动访问本地服务地址</system:String>
 
 
     <system:String x:Key="Hour">小时</system:String>

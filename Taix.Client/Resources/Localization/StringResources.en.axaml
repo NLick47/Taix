@@ -43,6 +43,9 @@
     <system:String x:Key="Maximize">Maximize</system:String>
     <system:String x:Key="Restore">Restore</system:String>
     <system:String x:Key="Close">Close</system:String>
+    <system:String x:Key="Plugins">Plugins</system:String>
+    <system:String x:Key="PluginsOpenInBrowser">Plugins · Open in browser</system:String>
+    <system:String x:Key="OpenPluginUiFailed">Failed to open the plugin page, please visit the local service manually</system:String>
 
 
     <system:String x:Key="Hour">Hour</system:String>

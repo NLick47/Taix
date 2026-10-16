@@ -33,6 +33,8 @@
             <!--鼠标经过背景颜色-->
             <Color x:Key="HoverBackgroundColor">#4A4A52</Color>
 
+            <x:Double x:Key="TitleBarIconStroke">1.25</x:Double>
+
             <!--【通用笔刷】-->
             <!--主题颜色笔刷-->
             <SolidColorBrush x:Key="ThemeBrush" Color="{StaticResource ThemeColor}" />
@@ -338,6 +340,9 @@
 
             <!--鼠标经过背景颜色-->
             <Color x:Key="HoverBackgroundColor">#eaeaea</Color>
+
+            <!--标题栏自绘图标线宽 黑线在浅色底上显粗 所以比深色主题细一档-->
+            <x:Double x:Key="TitleBarIconStroke">1</x:Double>
 
             <!--【通用笔刷】-->
             <!--主题颜色笔刷-->

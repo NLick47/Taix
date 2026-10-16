@@ -9,23 +9,38 @@
         <Setter Property="Height" Value="35" />
         <Setter Property="FontSize" Value="16" />
         <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="4" />
         <Styles>
             <Style Selector="controls|IconButton:pointerover /template/ Border">
                 <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+            </Style>
+            <Style Selector="controls|IconButton /template/ Path#PathIcon">
+                <Setter Property="Stroke" Value="{DynamicResource StandardTextBrush}" />
             </Style>
         </Styles>
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Width="{TemplateBinding Width}"
                         Height="{TemplateBinding Height}"
-                        x:Name="BoxBorder" CornerRadius="4" Padding="5"
+                        x:Name="BoxBorder" CornerRadius="{TemplateBinding CornerRadius}" Padding="5"
                         Background="Transparent">
                     <Grid>
                         <base:Icon x:Name="Icon"
                                    IconType="{TemplateBinding Icon}"
                                    Foreground="{DynamicResource StandardTextBrush}"
                                    VerticalAlignment="Center"
-                                   FontSize="{TemplateBinding FontSize}" />
+                                   HorizontalAlignment="Center"
+                                   FontSize="{TemplateBinding FontSize}"
+                                   IsVisible="{TemplateBinding PathData, Converter={x:Static ObjectConverters.IsNull}}" />
+                        <Path x:Name="PathIcon"
+                              Data="{TemplateBinding PathData}"
+                              StrokeThickness="{TemplateBinding PathStrokeThickness}"
+                              StrokeLineCap="Round"
+                              StrokeJoin="Round"
+                              Stretch="None"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Center"
+                              IsVisible="{TemplateBinding PathData, Converter={x:Static ObjectConverters.IsNotNull}}" />
                         <ContentPresenter Content="{TemplateBinding Content}" />
                     </Grid>
                 </Border>
