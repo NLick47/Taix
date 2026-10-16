@@ -267,6 +267,14 @@ public class DefaultWindow : Avalonia.Controls.Window
         set => SetValue(TitleBarCommandVisibleProperty, value);
     }
 
+    internal void SetTitleBarHeight(double height)
+    {
+        if (height > 0 && titleBar != null)
+        {
+            titleBar.Height = height;
+        }
+    }
+
 
     protected override Type StyleKeyOverride => typeof(DefaultWindow);
 

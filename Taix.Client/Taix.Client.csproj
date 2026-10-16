@@ -126,4 +126,42 @@
                           ReferenceOutputAssembly="false" />
     </ItemGroup>
 
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+        <TaixWindowKitDir>$(MSBuildThisFileDirectory)../taix-windowkit-macos</TaixWindowKitDir>
+        <TaixWindowKitSwiftConfig Condition="'$(Configuration)' == 'Release'">release</TaixWindowKitSwiftConfig>
+        <TaixWindowKitSwiftConfig Condition="'$(TaixWindowKitSwiftConfig)' == ''">debug</TaixWindowKitSwiftConfig>
+        <TaixWindowKitDylib>$(TaixWindowKitDir)/.build/$(TaixWindowKitSwiftConfig)/libTaixWindowKit.dylib</TaixWindowKitDylib>
+        <TaixWindowKitEnabled Condition="'$(TaixWindowKitEnabled)' != 'false' And '$(RuntimeIdentifier)' == ''">true</TaixWindowKitEnabled>
+        <TaixWindowKitEnabled Condition="'$(TaixWindowKitEnabled)' != 'false' And $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('osx'))">true</TaixWindowKitEnabled>
+    </PropertyGroup>
+
+    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(TaixWindowKitEnabled)' == 'true'">
+        <TaixWindowKitSource Include="$(TaixWindowKitDir)/Package.swift" />
+        <TaixWindowKitSource Include="$(TaixWindowKitDir)/Sources/**/*.swift" />
+    </ItemGroup>
+
+    <Target Name="TaixWindowKitBuild"
+            Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(TaixWindowKitEnabled)' == 'true' And Exists('$(TaixWindowKitDir)/Package.swift')"
+            Inputs="@(TaixWindowKitSource)"
+            Outputs="$(TaixWindowKitDylib)">
+        <Exec Command="swift build -c $(TaixWindowKitSwiftConfig)"
+              WorkingDirectory="$(TaixWindowKitDir)"
+              StandardOutputImportance="Low"
+              IgnoreStandardErrorWarningFormat="true" />
+    </Target>
+
+    <Target Name="TaixWindowKitCopyToOutputDirectory"
+            AfterTargets="Build"
+            DependsOnTargets="TaixWindowKitBuild"
+            Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(TaixWindowKitEnabled)' == 'true' And Exists('$(TaixWindowKitDir)/Package.swift')">
+        <Copy SourceFiles="$(TaixWindowKitDylib)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    </Target>
+
+    <Target Name="TaixWindowKitCopyToPublishDirectory"
+            AfterTargets="Publish"
+            DependsOnTargets="TaixWindowKitBuild"
+            Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(TaixWindowKitEnabled)' == 'true' And Exists('$(TaixWindowKitDir)/Package.swift') And '$(PublishDir)' != ''">
+        <Copy SourceFiles="$(TaixWindowKitDylib)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+    </Target>
+
 </Project>

@@ -5,7 +5,35 @@
                     xmlns:input="using:Taix.Client.Controls.Input"
                     xmlns:controls="using:Taix.Client.Controls.Window">
 
-    <x:Double x:Key="WindowTitleBarHeight">40</x:Double>
+    <x:Double x:Key="MacOSWindowTitleBarHeight">40</x:Double>
+
+    <ControlTheme x:Key="MacPluginEntryButton" TargetType="Button">
+        <Setter Property="Background" Value="{DynamicResource StandardBackgroundBrush2}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Style Selector="^:pointerover /template/ Border">
+            <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+        </Style>
+        <Style Selector="^:pressed /template/ Border">
+            <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}" />
+        </Style>
+    </ControlTheme>
 
     <ControlTheme x:Key="{x:Type controls:MacOSWindow}"
                   TargetType="controls:MacOSWindow">
@@ -56,14 +84,14 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Border x:Name="ContentBorder"
-                        CornerRadius="10"
+                        CornerRadius="0"
                         BorderThickness="1"
                         Background="{DynamicResource WindowBackground}">
                     <Grid x:Name="WindowContent">
                         <Grid
                             x:Name="TitleBar"
                             Panel.ZIndex="999"
-                            Height="{DynamicResource WindowTitleBarHeight}"
+                            Height="{DynamicResource MacOSWindowTitleBarHeight}"
                             VerticalAlignment="Top"
                             Background="Transparent">
                             <Grid Panel.ZIndex="3"
@@ -116,6 +144,32 @@
                                                Foreground="{DynamicResource DefaultTextBrush}" Margin="10,0,0,0" />
                                 </StackPanel>
                             </Grid>
+
+                            <Grid Panel.ZIndex="3"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Right"
+                                  Margin="0,0,13,0">
+                                <Button x:Name="PluginUiButton"
+                                        Theme="{StaticResource MacPluginEntryButton}"
+                                        ToolTip.Tip="{DynamicResource PluginsOpenInBrowser}"
+                                        Command="{TemplateBinding TitleBarCommand}"
+                                        IsVisible="{TemplateBinding TitleBarCommandVisible}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <Path Data="M1.379,4.777 A1.257,1.226 0 0 1 2.636,3.551 H5.486 A2.179,2.125 0 0 1 9.844,3.551 H12.693 A1.257,1.226 0 0 1 13.95,4.777 V6.738 A2.179,2.125 0 0 1 13.95,10.988 V12.95 A1.257,1.226 0 0 1 12.693,14.176 H2.636 A1.257,1.226 0 0 1 1.379,12.95 V10.743 A1.928,1.88 0 0 0 1.379,6.984 V4.777 Z"
+                                              Stroke="{DynamicResource StandardTextBrush}"
+                                              StrokeThickness="{DynamicResource TitleBarIconStroke}"
+                                              StrokeLineCap="Round"
+                                              StrokeJoin="Round"
+                                              VerticalAlignment="Center" />
+                                        <TextBlock Text="{DynamicResource Plugins}"
+                                                   FontSize="12.5"
+                                                   FontWeight="Medium"
+                                                   Foreground="{DynamicResource StandardTextBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
                         </Grid>
 
                         <!-- 必须叫 PART_VisualLayerManager：TopLevel 按这个名字查找，找到才会创建

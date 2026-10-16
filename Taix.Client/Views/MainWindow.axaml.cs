@@ -1,10 +1,12 @@
 using System;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Taix.Client.Controls.Window;
+using Taix.Client.Platform;
 using Taix.Client.Shared.Models.Search;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.ViewModels;
@@ -30,6 +32,49 @@ public partial class MainWindow : DefaultWindow
         }
 
         Loaded += OnLoadedAttachShortcuts;
+    }
+
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+        ApplyMacTitleBar();
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == WindowStateProperty && OperatingSystem.IsMacOS())
+        {
+            ApplyMacTitleBar();
+        }
+    }
+
+    /// <summary>
+    /// macOS：把原生标题条加厚（unified titlebar）并把页面内容让到实际标题条高度之下，
+    /// 使自绘头部（左侧标题、右侧插件入口）与红绿灯处在同一设计行；
+    /// 全屏时移除 toolbar（否则全屏顶部会留灰条），退出全屏后恢复
+    /// </summary>
+    private void ApplyMacTitleBar()
+    {
+        if (!OperatingSystem.IsMacOS()) return;
+
+        var fullScreen = WindowState == WindowState.FullScreen;
+        var titleBarHeight = MacWindowChrome.SetThickTitleBar(this, !fullScreen);
+        MacWindowChrome.SetCornerRadius(this, fullScreen ? 0 : MacWindowChrome.WindowCornerRadius);
+        if (!fullScreen) MacWindowChrome.SetTrafficLightScale(this, MacWindowChrome.TrafficLightScale);
+        if (fullScreen || titleBarHeight <= 0) return;
+
+        // 自绘头部与原生标题条同高（红绿灯居中于该高度），页面内容让位到同一条线之下
+        SetTitleBarHeight(titleBarHeight);
+
+        var nav = this.FindControl<Grid>("NavigationHost");
+        if (nav != null) nav.Margin = new Thickness(0, titleBarHeight, 0, 15);
+
+        var page = this.FindControl<Border>("PageHost");
+        if (page != null) page.Margin = new Thickness(0, titleBarHeight, 10, 10);
+
+        var overlay = this.FindControl<Grid>("SearchOverlay");
+        if (overlay != null) overlay.Margin = new Thickness(0, titleBarHeight, 0, 0);
     }
 
     private void OnLoadedAttachShortcuts(object? sender, RoutedEventArgs e)
