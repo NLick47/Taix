@@ -1,4 +1,7 @@
-import { matchList, type ReminderRule, type Repeat, type RuleType, type TimeWindow } from './rules.ts';
+import {
+  fmtMinutesLabel, matchList,
+  type ReminderRule, type Repeat, type RuleType, type TimeWindow,
+} from './rules.ts';
 
 export type Lang = 'zh' | 'en';
 
@@ -21,7 +24,7 @@ export const zh = {
   'rule.window': '时段',
   'rule.cooldown': '间隔',
   'rule.cooldownOnceHint': '每天只提醒一次，无需重复间隔',
-  'rule.cooldownHint': '提醒后的静默分钟',
+  'rule.cooldownHint': '提醒后的静默时长',
   'rule.repeat': '频率',
   'rule.title': '通知标题',
   'rule.titlePlaceholder': '留空自动生成',
@@ -40,11 +43,11 @@ export const zh = {
   'repeat.repeat': '重复提醒',
   'repeat.once': '每天一次',
 
-  'sum.continuous': '连续使用满 {min} 分钟',
-  'sum.daily': '今日累计满 {min} 分钟',
-  'sum.category': '「{names}」今日满 {min} 分钟',
+  'sum.continuous': '连续使用满 {dur}',
+  'sum.daily': '今日累计满 {dur}',
+  'sum.category': '「{names}」今日满 {dur}',
   'sum.categoryNone': '未选择分类',
-  'sum.app': '应用({names})满 {min} 分钟',
+  'sum.app': '应用({names})满 {dur}',
   'sum.appNone': '未选择应用',
 
   'lua.title': '提醒规则 · Lua',
@@ -65,10 +68,10 @@ export const zh = {
   'dry.heldBack': '暂不提醒',
   'dry.heldBackBody': '命中的 {n} 条都在冷却或今天已提醒过：{others}',
   'dry.leftNotified': '今天已提醒过',
-  'dry.leftMinutes': '剩余 {n} 分钟',
+  'dry.leftTime': '剩余 {dur}',
   'dry.leftAvailable': '也可提醒',
   'dry.rateOnce': '每天一次',
-  'dry.rateCooldown': '冷却 {n} 分钟',
+  'dry.rateCooldown': '冷却 {dur}',
 
   'picker.categoryPlaceholder': '选择分类，或输入分类名',
   'picker.categoryEmpty': '还没有分类，可直接输入分类名',
@@ -100,7 +103,7 @@ export const en: Record<keyof typeof zh, string> = {
   'rule.window': 'Window',
   'rule.cooldown': 'Cooldown',
   'rule.cooldownOnceHint': 'Notified once a day, no cooldown needed',
-  'rule.cooldownHint': 'Silent minutes after a reminder',
+  'rule.cooldownHint': 'Silent period after a reminder',
   'rule.repeat': 'Repeat',
   'rule.title': 'Notification title',
   'rule.titlePlaceholder': 'Leave empty to auto-generate',
@@ -119,11 +122,11 @@ export const en: Record<keyof typeof zh, string> = {
   'repeat.repeat': 'Repeat',
   'repeat.once': 'Once a day',
 
-  'sum.continuous': 'Continuous use over {min} min',
-  'sum.daily': 'Today total over {min} min',
-  'sum.category': '「{names}」 over {min} min today',
+  'sum.continuous': 'Continuous use over {dur}',
+  'sum.daily': 'Today total over {dur}',
+  'sum.category': '「{names}」 over {dur} today',
   'sum.categoryNone': 'No category selected',
-  'sum.app': 'App ({names}) over {min} min',
+  'sum.app': 'App ({names}) over {dur}',
   'sum.appNone': 'No app selected',
 
   'lua.title': 'Reminder rules · Lua',
@@ -144,10 +147,10 @@ export const en: Record<keyof typeof zh, string> = {
   'dry.heldBack': 'Held back',
   'dry.heldBackBody': 'All {n} matches are cooling down or already notified today: {others}',
   'dry.leftNotified': 'already notified today',
-  'dry.leftMinutes': '{n} min left',
+  'dry.leftTime': '{dur} left',
   'dry.leftAvailable': 'can also notify',
   'dry.rateOnce': 'once a day',
-  'dry.rateCooldown': 'cooldown {n} min',
+  'dry.rateCooldown': 'cooldown {dur}',
 
   'picker.categoryPlaceholder': 'Pick categories or type a name',
   'picker.categoryEmpty': 'No categories yet, type a name directly',
@@ -212,26 +215,36 @@ export function repeatLabel(lang: Lang, repeat: Repeat): string {
   return translate(lang, REPEAT_KEY[repeat]);
 }
 
+/** 分钟 → 自带单位的本地化时长；与 Lua 侧 fmtMinutes 同一口径 */
+export function durationLabel(lang: Lang, minutes: number): string {
+  const m = Math.max(0, Math.round(minutes));
+  if (lang !== 'en') return fmtMinutesLabel(m);
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return rem === 0 ? `${h} hr` : `${h} hr ${rem} min`;
+}
+
 /** 规则卡片的一句话摘要，与 compileRules 写进 Lua 注释的口径一致 */
 export function summarizeRule(lang: Lang, r: ReminderRule): string {
-  const min = Math.round(r.minutes);
+  const dur = durationLabel(lang, r.minutes);
   const names = matchList(r.match);
   let target: string;
   switch (r.type) {
     case 'continuous':
-      target = translate(lang, 'sum.continuous', { min });
+      target = translate(lang, 'sum.continuous', { dur });
       break;
     case 'daily':
-      target = translate(lang, 'sum.daily', { min });
+      target = translate(lang, 'sum.daily', { dur });
       break;
     case 'category':
       target = names.length
-        ? translate(lang, 'sum.category', { names: names.join(' + '), min })
+        ? translate(lang, 'sum.category', { names: names.join(' + '), dur })
         : translate(lang, 'sum.categoryNone');
       break;
     case 'app':
       target = names.length
-        ? translate(lang, 'sum.app', { names: names.join(' + '), min })
+        ? translate(lang, 'sum.app', { names: names.join(' + '), dur })
         : translate(lang, 'sum.appNone');
       break;
   }

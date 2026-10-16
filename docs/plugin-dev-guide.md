@@ -507,7 +507,10 @@ server 重启后指令仍可达（seq 种子回归）、`sub=webui` 只收广播
 | `sleeping` | boolean | 是否处于空闲 / 睡眠段 |
 
 辅助函数：`todayAppMinutes(pattern)`（进程名子串匹配、大小写不敏感，返回累计分钟）、
-`todayCategoryMinutes(name)`、`fmtHMS(secs)`。
+`todayCategoryMinutes(name)`、`fmtDuration(secs)`（秒 → 中文时长）、`fmtMinutes(mins)`（分钟 → 中文时长）。
+
+时长一律经这两个函数输出中文友好格式，不要自己拼「N 分钟」：
+`fmtDuration(5400)` → `1 小时 30 分钟`；`fmtMinutes(120)` → `2 小时`；不足 1 小时按分钟、不足 1 分钟按秒。
 
 **内置默认脚本**：三条示例规则——连续使用满 60 分钟（r1）、「娱乐」分类累计满 120 分钟（r2）、
 22 点后含 "game" 的应用累计满 30 分钟（r3）。配置里保存的新脚本在下一拍先试跑：通过即生效；

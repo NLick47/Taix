@@ -44,9 +44,19 @@ function todayCategoryMinutes(name)
   return 0
 end
 
-function fmtHMS(secs)
-  local t = math.max(0, math.floor(secs))
-  return string.format("%d:%02d:%02d", t // 3600, (t % 3600) // 60, t % 60)
+function fmtDuration(secs)
+  local t = math.max(0, math.floor(tonumber(secs) or 0))
+  if t < 60 then return t .. " 秒" end
+  local m = t // 60
+  if m < 60 then return m .. " 分钟" end
+  local h, rem = m // 60, m % 60
+  if rem == 0 then return h .. " 小时" end
+  return h .. " 小时 " .. rem .. " 分钟"
+end
+
+-- 分钟 → 同上；todayAppMinutes / continuousMinutes 等已是分钟
+function fmtMinutes(mins)
+  return fmtDuration(math.max(0, math.floor(tonumber(mins) or 0)) * 60)
 end
 "#;
 
@@ -55,7 +65,7 @@ pub const SAMPLE_SCRIPT: &str = r#"-- 使用时长提醒脚本（Lua）。每 5 
 -- 把本轮命中的规则按顺序放进 out 并返回；插件只提醒第一条不在冷却中的，
 -- 其余命中让位 5 分钟。也可直接返回单个 {title=..., body=..., cooldownMinutes=30}，
 -- 返回 nil 或空表不提醒。可用数据见「实时数据」面板；辅助函数：todayAppMinutes /
--- todayCategoryMinutes / fmtHMS。修改保存后即时生效。
+-- todayCategoryMinutes / fmtDuration(秒) / fmtMinutes(分钟)。修改保存后即时生效。
 
 local out = {}
 
@@ -64,7 +74,7 @@ if ctx.continuousMinutes >= 60 then
   out[#out + 1] = {
     id = "r1",
     title = "该休息一下了",
-    body = "已连续使用 " .. ctx.continuousMinutes .. " 分钟",
+    body = "已连续使用 " .. fmtMinutes(ctx.continuousMinutes),
     cooldownMinutes = 30,
   }
 end
@@ -74,7 +84,7 @@ if todayCategoryMinutes("娱乐") >= 120 then
   out[#out + 1] = {
     id = "r2",
     title = "娱乐时间到头啦",
-    body = "今天娱乐分类已用 " .. todayCategoryMinutes("娱乐") .. " 分钟",
+    body = "今天娱乐分类已用 " .. fmtMinutes(todayCategoryMinutes("娱乐")),
     cooldownMinutes = 120,
   }
 end
@@ -84,7 +94,7 @@ if ctx.hour >= 22 and todayAppMinutes("game") >= 30 then
   out[#out + 1] = {
     id = "r3",
     title = "夜深了",
-    body = "游戏今天已用 " .. todayAppMinutes("game") .. " 分钟",
+    body = "游戏今天已用 " .. fmtMinutes(todayAppMinutes("game")),
     cooldownMinutes = 240,
   }
 end
@@ -409,14 +419,45 @@ return out
     fn helper_functions_read_host_data() {
         let script = r#"
 if todayAppMinutes("game") == 60 and todayCategoryMinutes("娱乐") == 60 then
-  return { title = "ok", body = fmtHMS(ctx.continuousSeconds), cooldownMinutes = 5 }
+  return { title = "ok", body = fmtDuration(ctx.continuousSeconds), cooldownMinutes = 5 }
 end
 return nil
 "#;
         let candidates = run_script(script, &snap()).unwrap();
         assert_eq!(candidates.len(), 1);
-        assert_eq!(candidates[0].body, "1:00:00");
+        assert_eq!(candidates[0].body, "1 小时");
         assert_eq!(candidates[0].cooldown_minutes, 5);
+    }
+
+    #[test]
+    fn duration_helpers_format_human_readable() {
+        let cases = [
+            (0u64, "0 秒"),
+            (45, "45 秒"),
+            (60, "1 分钟"),
+            (45 * 60, "45 分钟"),
+            (59 * 60 + 59, "59 分钟"),
+            (60 * 60, "1 小时"),
+            (90 * 60, "1 小时 30 分钟"),
+            (125 * 60, "2 小时 5 分钟"),
+            (24 * 3600, "24 小时"),
+        ];
+        for (secs, want) in cases {
+            let script = format!(
+                r#"return {{ title = "x", body = fmtDuration({secs}), cooldownMinutes = 1 }}"#
+            );
+            let got = &run_script(&script, &snap()).unwrap()[0].body;
+            assert_eq!(got, want, "fmtDuration({secs})");
+        }
+
+        // fmtMinutes 走同一套格式，输入是分钟
+        for (mins, want) in [(0i64, "0 秒"), (1, "1 分钟"), (120, "2 小时"), (95, "1 小时 35 分钟")] {
+            let script = format!(
+                r#"return {{ title = "x", body = fmtMinutes({mins}), cooldownMinutes = 1 }}"#
+            );
+            let got = &run_script(&script, &snap()).unwrap()[0].body;
+            assert_eq!(got, want, "fmtMinutes({mins})");
+        }
     }
 
     #[test]
@@ -643,7 +684,7 @@ if ctx.continuousMinutes >= 60 then
   out[#out + 1] = {
     id = "r1",
     title = "该休息一下了",
-    body = "已连续使用 " .. ctx.continuousMinutes .. " 分钟",
+    body = "已连续使用 " .. fmtMinutes(ctx.continuousMinutes),
     cooldownMinutes = 30,
   }
 end
@@ -652,7 +693,7 @@ if (todayCategoryMinutes("娱乐") + todayCategoryMinutes("社交")) >= 120 then
   out[#out + 1] = {
     id = "r2",
     title = "「娱乐, 社交」时间到啦",
-    body = "「娱乐/社交」今日已用 " .. (todayCategoryMinutes("娱乐") + todayCategoryMinutes("社交")) .. " 分钟",
+    body = "「娱乐/社交」今日已用 " .. fmtMinutes(todayCategoryMinutes("娱乐") + todayCategoryMinutes("社交")),
     cooldownMinutes = 120,
     oncePerDay = true,
   }
@@ -662,7 +703,7 @@ if (todayAppMinutes("Chromium") + todayAppMinutes("WeChat")) >= 90 and (ctx.hour
   out[#out + 1] = {
     id = "r3",
     title = "夜深了",
-    body = "Chromium/WeChat 今日已用 " .. (todayAppMinutes("Chromium") + todayAppMinutes("WeChat")) .. " 分钟",
+    body = "Chromium/WeChat 今日已用 " .. fmtMinutes(todayAppMinutes("Chromium") + todayAppMinutes("WeChat")),
     cooldownMinutes = 240,
   }
 end
@@ -789,7 +830,11 @@ return { title = tostring(counter), body = "", cooldownMinutes = 1 }
             candidates.iter().map(|c| c.id.as_str()).collect::<Vec<_>>(),
             ["r1", "r2", "r3"]
         );
-        assert_eq!(candidates[1].body, "「娱乐/社交」今日已用 120 分钟");
+        assert_eq!(
+            candidates[1].body,
+            "「娱乐/社交」今日已用 2 小时",
+            "120 分钟应格式化为「2 小时」而不是「120 分钟」"
+        );
         assert!(candidates[1].once_per_day, "规则 2 配的是每天一次");
         assert!(!candidates[0].once_per_day && !candidates[2].once_per_day);
         assert_eq!(

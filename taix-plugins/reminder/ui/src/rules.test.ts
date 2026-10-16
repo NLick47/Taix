@@ -2,9 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  compileRules, defaultRule, ruleSummary, matchList, REPEAT_LABEL,
+  compileRules, defaultRule, ruleSummary, matchList, fmtMinutesLabel, REPEAT_LABEL,
   type ReminderRule, type RuleType,
 } from './rules.ts';
+import { durationLabel, summarizeRule } from './i18n.ts';
 
 function rule(patch: Partial<ReminderRule> = {}): ReminderRule {
   return { id: 'r1', type: 'category', minutes: 120, match: '娱乐', window: 'all',
@@ -139,10 +140,10 @@ test('matchList 兼容中英文逗号与空白', () => {
 });
 
 test('ruleSummary 说明阈值、时段与频率', () => {
-  assert.equal(ruleSummary(rule({ minutes: 120 })), '「娱乐」今日满 120 分钟');
+  assert.equal(ruleSummary(rule({ minutes: 120 })), '「娱乐」今日满 2 小时');
   assert.equal(
     ruleSummary(rule({ match: '娱乐,社交', window: 'night', repeat: 'once' })),
-    '「娱乐 + 社交」今日满 120 分钟 · 深夜 22-6 点 · 每天一次',
+    '「娱乐 + 社交」今日满 2 小时 · 深夜 22-6 点 · 每天一次',
   );
   assert.equal(ruleSummary(rule({ match: '' })), '未选择分类');
   assert.equal(ruleSummary(rule({ type: 'app', match: '' })), '未选择应用');
@@ -167,6 +168,55 @@ test('多条规则按序编译，注释带人类可读摘要', () => {
   const first = s.indexOf('id = "r1"');
   const second = s.indexOf('id = "r2"');
   assert.ok(first > -1 && second > first, '规则顺序应保持');
-  assert.match(s, /-- 1\. 连续使用满 60 分钟/);
-  assert.match(s, /-- 2\. 「娱乐」今日满 120 分钟/);
+  assert.match(s, /-- 1\. 连续使用满 1 小时/);
+  assert.match(s, /-- 2\. 「娱乐」今日满 2 小时/);
+});
+
+test('durationLabel 中英双语都带单位且口径一致', () => {
+  assert.equal(durationLabel('zh', 30), '30 分钟');
+  assert.equal(durationLabel('zh', 60), '1 小时');
+  assert.equal(durationLabel('zh', 95), '1 小时 35 分钟');
+  assert.equal(durationLabel('zh', 120), '2 小时');
+
+  assert.equal(durationLabel('en', 30), '30 min');
+  assert.equal(durationLabel('en', 60), '1 hr');
+  assert.equal(durationLabel('en', 95), '1 hr 35 min');
+  assert.equal(durationLabel('en', 120), '2 hr');
+});
+
+test('summarizeRule 的阈值按语言格式化', () => {
+  const r = rule({ minutes: 120 });
+  assert.equal(summarizeRule('zh', r), '「娱乐」今日满 2 小时');
+  assert.equal(summarizeRule('en', r), '「娱乐」 over 2 hr today');
+
+  assert.equal(summarizeRule('zh', rule({ minutes: 45 })), '「娱乐」今日满 45 分钟');
+  assert.equal(summarizeRule('en', rule({ minutes: 45 })), '「娱乐」 over 45 min today');
+});
+
+test('fmtMinutesLabel 按中文时长口径格式化', () => {
+  assert.equal(fmtMinutesLabel(0), '0 分钟');
+  assert.equal(fmtMinutesLabel(30), '30 分钟');
+  assert.equal(fmtMinutesLabel(59), '59 分钟');
+  assert.equal(fmtMinutesLabel(60), '1 小时');
+  assert.equal(fmtMinutesLabel(95), '1 小时 35 分钟');
+  assert.equal(fmtMinutesLabel(120), '2 小时');
+});
+
+test('编译出的正文用友好时长，不再拼「xxx 分钟」', () => {
+  const continuous = compileRules([rule({ id: 'r1', type: 'continuous', minutes: 60 })]);
+  assert.match(continuous, /body = "已连续使用 " \.\. fmtMinutes\(ctx\.continuousMinutes\)/);
+
+  const daily = compileRules([rule({ id: 'r2', type: 'daily', minutes: 240 })]);
+  assert.match(daily, /fmtDuration\(ctx\.todayTotalSeconds\)/);
+
+  const category = compileRules([rule({ id: 'r3', type: 'category', match: '娱乐,社交' })]);
+  assert.match(
+    category,
+    /body = "「娱乐\/社交」今日已用 " \.\. fmtMinutes\(todayCategoryMinutes\("娱乐"\) \+ todayCategoryMinutes\("社交"\)\)/,
+  );
+
+  const app = compileRules([rule({ id: 'r4', type: 'app', match: 'Chromium,WeChat' })]);
+  assert.match(app, /fmtMinutes\(todayAppMinutes\("Chromium"\) \+ todayAppMinutes\("WeChat"\)\)/);
+
+  assert.doesNotMatch(continuous + daily + category + app, /\.\. " 分钟"/);
 });

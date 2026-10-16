@@ -1,5 +1,5 @@
 import {
-  detectLang, repeatLabel, summarizeRule, translate, typeLabel, windowLabel,
+  detectLang, durationLabel, repeatLabel, summarizeRule, translate, typeLabel, windowLabel,
   type Lang, type MsgKey, type Params,
 } from './i18n.ts';
 import type { ReminderRule, Repeat, RuleType, TimeWindow } from './rules.ts';
@@ -39,4 +39,8 @@ export function repeatText(repeat: Repeat): string {
 
 export function ruleSummary(r: ReminderRule): string {
   return summarizeRule(i18n.lang, r);
+}
+
+export function durationText(minutes: number): string {
+  return durationLabel(i18n.lang, minutes);
 }

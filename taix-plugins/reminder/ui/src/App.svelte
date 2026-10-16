@@ -10,7 +10,7 @@
     type ReminderRule, type RuleType, type Repeat,
   } from './rules';
   import {
-    initI18n, repeatText, ruleSummary, t, typeText, windowText,
+    initI18n, durationText, repeatText, ruleSummary, t, typeText, windowText,
     REPEATS, RULE_TYPES, WINDOWS,
   } from './i18n.svelte';
 
@@ -146,7 +146,7 @@
     'if|then|else|elseif|end|return|local|function|for|while|do|nil|true|false|and|or|not|in|break|repeat|until';
   function highlightLua(src: string): string {
     const pattern = new RegExp(
-      `(--\\[\\[[\\s\\S]*?\\]\\]|--.*?(?=\n|$))|("(?:[^"\\\\]|\\\\.)*"|'(?:[^'\\\\]|\\\\.)*')|\\b(${KEYWORDS})\\b|\\b(0x[0-9a-fA-F]+|\\d+(?:\\.\\d+)?)\\b|\\b(todayAppMinutes|todayCategoryMinutes|fmtHMS|ctx|string|math|table|pairs|tostring|tonumber)\\b`,
+      `(--\\[\\[[\\s\\S]*?\\]\\]|--.*?(?=\n|$))|("(?:[^"\\\\]|\\\\.)*"|'(?:[^'\\\\]|\\\\.)*')|\\b(${KEYWORDS})\\b|\\b(0x[0-9a-fA-F]+|\\d+(?:\\.\\d+)?)\\b|\\b(todayAppMinutes|todayCategoryMinutes|fmtDuration|fmtMinutes|ctx|string|math|table|pairs|tostring|tonumber)\\b`,
       'g',
     );
     let out = '';
@@ -241,11 +241,13 @@
   function leftLabel(c: DryCandidate): string {
     if (c.oncePerDay && c.firedToday) return t('dry.leftNotified');
     return c.cooldownLeftSeconds > 0
-      ? t('dry.leftMinutes', { n: Math.ceil(c.cooldownLeftSeconds / 60) })
+      ? t('dry.leftTime', { dur: durationText(c.cooldownLeftSeconds / 60) })
       : t('dry.leftAvailable');
   }
   function rateLabel(c: DryCandidate): string {
-    return c.oncePerDay ? t('dry.rateOnce') : t('dry.rateCooldown', { n: c.cooldownMinutes });
+    return c.oncePerDay
+      ? t('dry.rateOnce')
+      : t('dry.rateCooldown', { dur: durationText(c.cooldownMinutes) });
   }
   const dryOthers = $derived.by(() => {
     const result = dryResult;

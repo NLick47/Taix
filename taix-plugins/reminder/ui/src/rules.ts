@@ -55,6 +55,14 @@ function threshold(minutes: number): number {
   return Math.max(1, Math.round(minutes));
 }
 
+export function fmtMinutesLabel(minutes: number): string {
+  const m = Math.max(0, Math.round(minutes));
+  if (m < 60) return `${m} 分钟`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return rem === 0 ? `${h} 小时` : `${h} 小时 ${rem} 分钟`;
+}
+
 function autoTitle(r: ReminderRule): string {
   switch (r.type) {
     case 'continuous': return '该休息一下了';
@@ -114,24 +122,24 @@ function luaStr(s: string): string {
 
 function autoBody(r: ReminderRule): string {
   switch (r.type) {
-    case 'continuous': return `"已连续使用 " .. ctx.continuousMinutes .. " 分钟"`;
-    case 'daily': return `"今日累计 " .. fmtHMS(ctx.todayTotalSeconds) .. "，注意休息"`;
+    case 'continuous': return `"已连续使用 " .. fmtMinutes(ctx.continuousMinutes)`;
+    case 'daily': return `"今日累计 " .. fmtDuration(ctx.todayTotalSeconds) .. "，注意休息"`;
     case 'category': {
       const cats = matchList(r.match);
       const sum = cats.map((c) => `todayCategoryMinutes(${luaStr(c)})`).join(' + ') || '0';
       const shown = cats.length ? cats.join('/') : '未分类';
-      return `${luaStr(`「${shown}」今日已用 `)} .. (${sum}) .. " 分钟"`;
+      return `${luaStr(`「${shown}」今日已用 `)} .. fmtMinutes(${sum})`;
     }
     case 'app': {
       const apps = matchList(r.match);
       const sum = apps.map((a) => `todayAppMinutes(${luaStr(a)})`).join(' + ') || '0';
-      return `${luaStr(`${apps.join('/')} 今日已用 `)} .. (${sum}) .. " 分钟"`;
+      return `${luaStr(`${apps.join('/')} 今日已用 `)} .. fmtMinutes(${sum})`;
     }
   }
 }
 
 function describe(r: ReminderRule): string {
-  const limit = `满 ${Math.round(r.minutes)} 分钟`;
+  const limit = `满 ${fmtMinutesLabel(r.minutes)}`;
   const names = matchList(r.match);
   const target =
     r.type === 'continuous' ? `连续使用${limit}`
