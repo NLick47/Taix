@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Taix.Client.Controls.Charts.Model;
 using Taix.Client.Controls.Select;
 using Taix.Client.PageState;
+using Taix.Client.Platform;
 using Taix.Client.Shared.Models;
 
 namespace Taix.Client.Models;
@@ -25,6 +26,7 @@ public partial class ChartPageModel : ModelBase
             _rowWidth = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(ColumnChartWidth));
+            OnPropertyChanged(nameof(CardsWidth));
         }
     }
 
@@ -50,6 +52,20 @@ public partial class ChartPageModel : ModelBase
             var rest = RadarChartWidth + TopListWidth + 40; // 两块宽度 + 各自左margin + WrapPanel 外扩
             var merged = _rowWidth - rest;
             return merged >= 560 ? merged : _rowWidth - 20;
+        }
+    }
+
+    /// <summary>
+    /// 统计卡片行宽度：仅 macOS 下自适应（最小窗口 860 时内容区 728 = 860 - 侧栏 80 - 右边距 10
+    /// - 页面边框 2 - 页面边距 40），铺满内容区但不超过该宽度；其它平台维持原来的固定 680
+    /// </summary>
+    public double CardsWidth
+    {
+        get
+        {
+            if (!PlatformHelper.IsMacOS) return 680;
+            if (_rowWidth <= 0) return double.NaN;
+            return Math.Min(_rowWidth - 20, 728);
         }
     }
 
