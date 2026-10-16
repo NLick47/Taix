@@ -67,7 +67,9 @@ impl Installed {
 const RESERVED_IDS: [&str; 1] = ["webui"];
 
 /// 同一问题只告警一次：重扫每 5s 一次，不变量不该刷屏
-fn log_once(key: &str) -> bool {
+///
+/// server 与 shell 共用；返回 true = 首次出现，应当告警
+pub fn log_once(key: &str) -> bool {
     use std::sync::{Mutex, OnceLock};
     static SEEN: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
     let seen = SEEN.get_or_init(|| Mutex::new(HashSet::new()));

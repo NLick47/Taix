@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use taix_plugin_manifest::{resolve_entry, scan, Installed};
+use taix_plugin_manifest::{log_once, resolve_entry, scan, Installed};
 
 use crate::constants;
 use crate::service_manager::{ServiceManager, SupervisedTarget};
@@ -69,13 +69,23 @@ impl PluginSupervisor {
             let dir = installed.dir();
             let entry = installed.manifest.entry.clone();
             let Some(entry_path) = resolve_entry(&dir, &entry) else {
-                tracing::warn!(
-                    target: "taix_shell::plugins",
-                    "plugin '{}': entry {} not found in {}, skipping",
-                    installed.manifest.id,
-                    entry,
-                    dir.display()
-                );
+                let key = format!("entry|{}|{}", installed.manifest.id, entry);
+                if log_once(&key) {
+                    tracing::warn!(
+                        target: "taix_shell::plugins",
+                        "plugin '{}': entry {} not found in {}, skipping",
+                        installed.manifest.id,
+                        entry,
+                        dir.display()
+                    );
+                } else {
+                    tracing::debug!(
+                        target: "taix_shell::plugins",
+                        "plugin '{}': entry {} still missing",
+                        installed.manifest.id,
+                        entry
+                    );
+                }
                 continue;
             };
             out.insert(installed.manifest.id.clone(), (installed, entry_path));
@@ -180,7 +190,12 @@ fn read_enabled(data_dir: &std::path::Path) -> HashMap<String, bool> {
     serde_json::from_str::<RegistryEnabled>(content)
         .map(|r| r.enabled)
         .unwrap_or_else(|e| {
-            tracing::warn!(target: "taix_shell::plugins", "registry.json 解析失败（{}）", e);
+            // registry 损坏也是每 5s 重扫一次，同样要抑制
+            if log_once("registry|parse") {
+                tracing::warn!(target: "taix_shell::plugins", "registry.json 解析失败（{}）", e);
+            } else {
+                tracing::debug!(target: "taix_shell::plugins", "registry.json 仍无法解析");
+            }
             HashMap::new()
         })
 }
