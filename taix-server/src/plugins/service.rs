@@ -174,6 +174,7 @@ pub async fn upsert_record(
     key: &str,
     value: &Value,
 ) -> Result<(), AppError> {
+    let key = key.trim();
     let value_json = serde_json::to_string(value)
         .map_err(|e| AppError::Internal(format!("序列化 record 失败: {}", e)))?;
 
@@ -221,7 +222,10 @@ pub async fn get_records(
         }
     }
 
-    let rows = match key {
+    // 写入端会 trim，查询同样要 trim，否则带空白的 key 存进去后按原样查不回来
+    let key = key.map(|k| k.trim().to_string());
+
+    let rows = match key.as_deref() {
         Some(key) => {
             sqlx::query_as::<_, (String, String, String)>(
                 "SELECT RecordKey, Value, UpdatedAt FROM PluginRecords WHERE PluginID = ?1 AND RecordKey = ?2",

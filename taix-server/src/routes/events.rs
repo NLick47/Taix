@@ -44,6 +44,18 @@ async fn sse_handler(
             .into_response();
     };
 
+    if sub != "webui" && state.manifest_or_rescan(&sub).await.is_none() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(ApiResponse {
+                code: 404,
+                message: format!("plugin '{}' not found", sub),
+                data: None::<serde_json::Value>,
+            }),
+        )
+            .into_response();
+    }
+
     let keep_alive =
         KeepAlive::default().interval(Duration::from_secs(constants::PLUGIN_SSE_KEEPALIVE_SECS));
 
