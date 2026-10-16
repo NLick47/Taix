@@ -4,9 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-notify-rust = "4"
 tracing = "0.1"
 anyhow = "1"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = [
+    "Data_Xml_Dom",
+    "UI_Notifications",
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Registry",
+] }
 
 [profile.release]
 opt-level = "z"

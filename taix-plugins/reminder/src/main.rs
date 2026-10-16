@@ -14,6 +14,8 @@ use taix_plugin_sdk::{PluginApp, PluginCtx, Reply, Request};
 use engine::{run_script, RemindCandidate, Snapshot};
 
 const PLUGIN_ID: &str = "reminder";
+/// 与 plugin.json 的 name 一致，Windows 通知头部显示的就是它
+const PLUGIN_NAME: &str = "使用时长提醒";
 const TICK: Duration = Duration::from_secs(5);
 const HEARTBEAT_TICKS: u64 = 6;
 /// 全局口径：Asia/Shanghai
@@ -24,6 +26,8 @@ const ROUND_DEFER_SECS: i64 = 300;
 const CURRENT_PROBE_INTERVAL: i64 = 60;
 /// 连续段超过这个时长即视为起点卡住
 const STALE_AFTER_SECS: i64 = 12 * 3600;
+/// 通知图标，编译进二进制，免得依赖部署时拷文件
+const ICON_PNG: &[u8] = include_bytes!("../assets/icon.png");
 
 #[derive(Debug, Clone, Default, Deserialize)]
 struct ReminderConfig {
@@ -34,6 +38,9 @@ struct ReminderConfig {
 }
 
 struct Runtime {
+    /// 通知身份（Windows 的 AUMID 与已落盘图标）；首次发通知时才建，
+    /// 因为建身份要读写注册表，失败只靠日志报，而 SDK 的日志在 run() 里才就绪
+    identity: Mutex<Option<taix_notify::AppIdentity>>,
     /// 连续使用段起点；None = 空闲或还没收到过 current
     continuous_since: Mutex<Option<i64>>,
     /// 上次兜底探测 /api/apptimer/current 的 epoch；0 = 从未探测
@@ -57,6 +64,7 @@ struct Runtime {
 impl Runtime {
     fn new() -> Self {
         Self {
+            identity: Mutex::new(None),
             continuous_since: Mutex::new(None),
             current_probed: AtomicI64::new(0),
             gate: Mutex::new(Gate::default()),
@@ -251,12 +259,26 @@ fn snapshot_view(snap: &Snapshot) -> Value {
     })
 }
 
-fn notify(title: &str, body: &str, sound: bool) {
-    // 通知是阻塞 IPC，放专用线程
+/// 首次调用时建身份并缓存；注册失败只记日志，通知仍走共享 AUMID
+fn identity(rt: &Runtime) -> taix_notify::AppIdentity {
+    let mut slot = rt.identity.lock().unwrap();
+    if let Some(identity) = slot.clone() {
+        return identity;
+    }
+    let identity = taix_notify::app_identity(PLUGIN_ID, PLUGIN_NAME, ICON_PNG);
+    *slot = Some(identity.clone());
+    identity
+}
+
+fn notify(rt: &Runtime, title: &str, body: &str, sound: bool) {
+    // 通知是阻塞调用，放专用线程
     let (t, b) = (title.to_string(), body.to_string());
+    let identity = identity(rt);
     std::thread::spawn(move || {
         let opts = taix_notify::NotifyOptions {
+            aumid: identity.aumid,
             sound: sound.then_some("default"),
+            icon: identity.icon,
             ..Default::default()
         };
         if let Err(e) = taix_notify::notify(&t, &b, &opts) {
@@ -413,7 +435,12 @@ fn tick(ctx: &PluginCtx, rt: &Arc<Runtime>) {
         return;
     };
 
-    notify(&action.title, &action.body, rt.sound.load(Ordering::Relaxed));
+    notify(
+        rt,
+        &action.title,
+        &action.body,
+        rt.sound.load(Ordering::Relaxed),
+    );
     tracing::info!(
         target: "taix_plugin_reminder",
         "已提醒 id={} title={} body={}",
