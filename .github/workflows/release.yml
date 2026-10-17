@@ -8,6 +8,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: '产物版本号（手动触发用；打 tag 时以 tag 名为准）'
+        required: false
+        default: '0.0.0-test'
 
 jobs:
   build-windows:
@@ -42,14 +47,22 @@ jobs:
             taix-shell
             taix-installer
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            taix-webui/package-lock.json
+            taix-plugins/reminder/ui/package-lock.json
+
       - name: Set APP_VERSION environment variable
         shell: pwsh
         run: |
+          $appVersion = "${{ github.event.inputs.version }}"
           if ("${{ github.ref }}" -match '^refs/tags/v') {
             $appVersion = "${{ github.ref_name }}" -replace '^v', ''
-          } else {
-            $appVersion = '0.0.0'
           }
+          if ([string]::IsNullOrEmpty($appVersion)) { $appVersion = '0.0.0' }
           Add-Content -Path $env:GITHUB_ENV -Value "APP_VERSION=$appVersion"
 
       - name: Build Rust taix-server
@@ -94,6 +107,39 @@ jobs:
 
           # Remove macOS-only files
           Get-ChildItem -Path "$publishDir/resources" -Recurse -Include "*.icns" -File | Remove-Item -Force
+
+      - name: Build webui 与 reminder 插件产物
+        shell: pwsh
+        run: |
+          npm ci --prefix taix-webui
+          npm run build --prefix taix-webui
+          npm ci --prefix taix-plugins/reminder/ui
+          npm run build --prefix taix-plugins/reminder/ui
+          Push-Location taix-plugins/reminder
+          cargo build --release --target x86_64-pc-windows-msvc
+          $code = $LASTEXITCODE
+          Pop-Location
+          if ($code -ne 0) { exit $code }
+
+      - name: 把 webui 与插件放进安装包
+        shell: pwsh
+        run: |
+          $publishDir = "./output/${{ matrix.cpu }}"
+          $need = @(
+            "taix-webui/dist/index.html",
+            "taix-plugins/reminder/ui/dist/config.js",
+            "taix-plugins/reminder/target/x86_64-pc-windows-msvc/release/taix-plugin-reminder.exe"
+          )
+          foreach ($f in $need) {
+            if (-not (Test-Path $f)) { throw "缺少产物：$f" }
+          }
+          Copy-Item "taix-webui/dist" -Destination "$publishDir/webui" -Recurse -Force
+          $plug = "$publishDir/plugins/reminder"
+          New-Item -ItemType Directory -Force -Path "$plug/ui" | Out-Null
+          Copy-Item "taix-plugins/reminder/plugin.json" -Destination $plug -Force
+          Copy-Item "taix-plugins/reminder/target/x86_64-pc-windows-msvc/release/taix-plugin-reminder.exe" -Destination $plug -Force
+          Copy-Item "taix-plugins/reminder/ui/dist/config.js" -Destination "$plug/ui" -Force
+          Write-Host "已放入 webui 与 plugins/reminder（含 ui）"
 
       - name: Install 7-Zip for ultra compression
         shell: pwsh
@@ -164,104 +210,39 @@ jobs:
           workspaces: |
             taix-server
             taix-shell
+            taix-plugins/reminder
 
       - name: Set APP_VERSION
         run: |
+          VERSION="${{ github.event.inputs.version }}"
           if [[ "${{ github.ref }}" =~ ^refs/tags/v ]]; then
             VERSION="${{ github.ref_name }}"
-            echo "APP_VERSION=${VERSION#v}" >> $GITHUB_ENV
-          else
-            echo "APP_VERSION=0.0.0" >> $GITHUB_ENV
+            VERSION="${VERSION#v}"
           fi
+          if [[ -z "$VERSION" ]]; then VERSION="0.0.0"; fi
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Build taix-server
-        run: cd taix-server && cargo build --release --target aarch64-apple-darwin
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            taix-webui/package-lock.json
+            taix-plugins/reminder/ui/package-lock.json
 
-      - name: Build taix-shell
-        run: cd taix-shell && cargo build --release --target aarch64-apple-darwin
-
-      - name: Build taix-monitor-macos
-        run: cd taix-monitor-macos && swift build -c release --arch arm64
-
-      - name: Publish .NET Client (AOT)
-        run: |
-          dotnet publish Taix.Client/Taix.Client.csproj \
-            -c Release -r osx-arm64 --self-contained true \
-            -p:PublishAot=true -p:StripSymbols=true -p:IlcGenerateStackTraceData=false \
-            -p:DebuggerSupport=false -p:StartupHookSupport=false -p:StackTraceSupport=false \
-            -p:HttpActivityPropagationSupport=false -p:MetadataUpdaterSupport=false -p:EnableUnsafeUTF7Encoding=false \
-            -p:EventSourceSupport=false             -p:MetricsSupport=false -p:UseSystemResourceKeys=true -p:Http3Support=false \
-            -p:AssemblyTitle=Taix -p:Product=Taix \
-            -o ./output/macos
-
-      - name: Strip debug symbols from Swift binary
-        run: |
-          strip taix-monitor-macos/.build/release/taix-monitor
-          echo "Stripped Swift binary: $(ls -lh taix-monitor-macos/.build/release/taix-monitor | awk '{print $5}')"
-
-      - name: Build DMG
-        run: |
-          chmod +x taix-installer/build-dmg.sh
-          ./taix-installer/build-dmg.sh "${{ env.APP_VERSION }}" "taix-installer" "aarch64-apple-darwin"
+      # 一条命令搞定前端 → 插件 → Rust/Swift → .app/TaixTools → DMG，
+      # 和本地 script/package-macos.sh 完全同一条路径
+      - name: 打包
+        run: bash script/package-macos.sh "${{ env.APP_VERSION }}" "$GITHUB_WORKSPACE/dist"
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
           name: Taix-${{ env.APP_VERSION }}-macos-arm64
-          path: taix-installer/Taix-${{ env.APP_VERSION }}-macos-arm64.dmg
-
-  build-extension:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: taix-browser-extension/package-lock.json
-
-      - name: Read extension version
-        id: ext-version
-        working-directory: taix-browser-extension
-        run: |
-          EXT_VERSION=$(node -p "require('./package.json').version")
-          echo "EXT_VERSION=$EXT_VERSION" >> $GITHUB_ENV
-          echo "Extension version: $EXT_VERSION"
-
-      - name: Install dependencies
-        working-directory: taix-browser-extension
-        run: npm ci
-
-      - name: Sync manifest version
-        working-directory: taix-browser-extension
-        run: |
-          for f in manifests/manifest.*.json; do
-            node -e "const fs=require('fs');const p='$f';const j=JSON.parse(fs.readFileSync(p,'utf8'));j.version=process.env.EXT_VERSION;fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n');"
-          done
-
-      - name: Build Chrome extension
-        working-directory: taix-browser-extension
-        run: npm run build:chrome
-
-      - name: Create Chrome extension ZIP
-        run: |
-          ZIP_NAME="Taix-Web-Sentry-${{ env.EXT_VERSION }}-chrome.zip"
-          cd taix-browser-extension/dist/chrome
-          zip -r "../../../$ZIP_NAME" .
-          cd -
-          ls -lh "$ZIP_NAME"
-
-      - name: Upload Chrome extension ZIP
-        uses: actions/upload-artifact@v4
-        with:
-          name: Taix-Web-Sentry-${{ env.EXT_VERSION }}-chrome
-          path: Taix-Web-Sentry-${{ env.EXT_VERSION }}-chrome.zip
+          path: dist/*.dmg
 
   release:
-    needs: [build-windows, build-macos, build-extension]
+    needs: [build-windows, build-macos]
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') }}
     steps:
@@ -272,11 +253,6 @@ jobs:
         run: |
           VERSION="${{ github.ref_name }}"
           echo "APP_VERSION=${VERSION#v}" >> $GITHUB_ENV
-
-      - name: Read extension version
-        run: |
-          EXT_VERSION=$(node -p "require('./taix-browser-extension/package.json').version")
-          echo "EXT_VERSION=$EXT_VERSION" >> $GITHUB_ENV
 
       - name: Download Windows Installer
         uses: actions/download-artifact@v4
@@ -296,19 +272,12 @@ jobs:
           name: Taix-${{ env.APP_VERSION }}-macos-arm64
           path: ./artifacts
 
-      - name: Download Chrome extension ZIP
-        uses: actions/download-artifact@v4
-        with:
-          name: Taix-Web-Sentry-${{ env.EXT_VERSION }}-chrome
-          path: ./artifacts
-
       - name: Read release notes
         id: release-notes
         run: |
           if [ -f release_notes.txt ]; then
             echo "content<<EOF" >> $GITHUB_OUTPUT
             sed -e "s/{version}/${{ env.APP_VERSION }}/g" \
-                -e "s/{ext_version}/${{ env.EXT_VERSION }}/g" \
                 release_notes.txt >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else

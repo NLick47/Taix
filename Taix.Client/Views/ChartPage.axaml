@@ -76,7 +76,7 @@
                     <TabItem TextElement.Foreground="{DynamicResource DefaultTextBrush}">
                         <StackPanel>
                             <!-- 统计卡片 -->
-                            <Grid Width="680" HorizontalAlignment="Left" Margin="0,5,0,15">
+                            <Grid Width="{Binding CardsWidth}" HorizontalAlignment="Left" Margin="0,5,0,15">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="*" />

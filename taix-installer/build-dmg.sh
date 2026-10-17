@@ -220,8 +220,6 @@ cat > "$PLIST_PATH" << EOF
         <key>SuccessfulExit</key>
         <false/>
     </dict>
-    <key>StandardOutPath</key>
-    <string>$LOG_DIR/shell.log</string>
     <key>StandardErrorPath</key>
     <string>$LOG_DIR/shell.err</string>
     <key>EnvironmentVariables</key>
@@ -233,14 +231,26 @@ cat > "$PLIST_PATH" << EOF
 </plist>
 EOF
 
-launchctl load "$PLIST_PATH" 2>/dev/null || true
+# launchd 里有旧登记时 bootstrap 会报 5 I/O error，先清一次再装
+launchctl bootout "gui/$(id -u)/com.taix.shell" 2>/dev/null || true
+
+# 顺手清掉旧版本留下的输出重定向文件
+rm -f "$LOG_DIR/shell.log"
+
+# 老 load -w 的 -w 会清 Disabled 覆盖，bootstrap 不会
+launchctl enable "gui/$(id -u)/com.taix.shell" 2>/dev/null || true
+
+if ! launchctl bootstrap "gui/$(id -u)" "$PLIST_PATH" 2>/dev/null; then
+    launchctl load -w "$PLIST_PATH" 2>/dev/null || true
+fi
+
 echo "LaunchAgent installed at $SCRIPT_DIR"
 SCRIPT
 chmod +x "$TOOLS_DIR/install-launchagent.sh"
 
 cat > "$TOOLS_DIR/uninstall-launchagent.sh" << 'SCRIPT'
 #!/bin/bash
-launchctl unload "$HOME/Library/LaunchAgents/com.taix.shell.plist" 2>/dev/null || true
+launchctl bootout "gui/$(id -u)/com.taix.shell" 2>/dev/null || true
 rm -f "$HOME/Library/LaunchAgents/com.taix.shell.plist"
 echo "LaunchAgent removed"
 SCRIPT
@@ -251,7 +261,7 @@ cat > "$TOOLS_DIR/uninstall.sh" << 'SCRIPT'
 
 echo "Uninstalling Taix..."
 
-launchctl unload "$HOME/Library/LaunchAgents/com.taix.shell.plist" 2>/dev/null || true
+launchctl bootout "gui/$(id -u)/com.taix.shell" 2>/dev/null || true
 rm -f "$HOME/Library/LaunchAgents/com.taix.shell.plist"
 
 pkill -x "taix-shell" 2>/dev/null || true
