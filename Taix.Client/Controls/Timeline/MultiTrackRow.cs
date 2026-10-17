@@ -24,7 +24,6 @@ public class MultiTrackRow : Control
     private IEnumerable<MultiTrackSegment> _segments = Array.Empty<MultiTrackSegment>();
     private double _visibleStartHour = 0.0;
     private double _visibleEndHour = 24.0;
-    private double? _nowLinePosition;
 
     private IList<MultiTrackSegment>? _sortedSegments;
     private bool _segmentsNeedSort = true;
@@ -54,10 +53,6 @@ public class MultiTrackRow : Control
         AvaloniaProperty.RegisterDirect<MultiTrackRow, double>(
             nameof(VisibleEndHour), o => o.VisibleEndHour, (o, v) => o.VisibleEndHour = v, 24.0);
 
-    public static readonly DirectProperty<MultiTrackRow, double?> NowLinePositionProperty =
-        AvaloniaProperty.RegisterDirect<MultiTrackRow, double?>(
-            nameof(NowLinePosition), o => o.NowLinePosition, (o, v) => o.NowLinePosition = v);
-
     public static readonly StyledProperty<double> CornerRadiusProperty =
         AvaloniaProperty.Register<MultiTrackRow, double>(nameof(CornerRadius));
 
@@ -65,17 +60,6 @@ public class MultiTrackRow : Control
     {
         get => GetValue(CornerRadiusProperty);
         set => SetValue(CornerRadiusProperty, value);
-    }
-
-    private TimeRange? _hoveredTimeRange;
-    public static readonly DirectProperty<MultiTrackRow, TimeRange?> HoveredTimeRangeProperty =
-        AvaloniaProperty.RegisterDirect<MultiTrackRow, TimeRange?>(
-            nameof(HoveredTimeRange), o => o.HoveredTimeRange);
-
-    public TimeRange? HoveredTimeRange
-    {
-        get => _hoveredTimeRange;
-        private set => SetAndRaise(HoveredTimeRangeProperty, ref _hoveredTimeRange, value);
     }
 
     public IEnumerable<MultiTrackSegment> Segments
@@ -86,12 +70,6 @@ public class MultiTrackRow : Control
             SetAndRaise(SegmentsProperty, ref _segments, value);
             _segmentsNeedSort = true;
         }
-    }
-
-    public double? NowLinePosition
-    {
-        get => _nowLinePosition;
-        set => SetAndRaise(NowLinePositionProperty, ref _nowLinePosition, value);
     }
 
     public double VisibleStartHour
@@ -122,24 +100,36 @@ public class MultiTrackRow : Control
     private bool _cacheValid;
 
     private MultiTrackSegment? _hoveredSegment;
+    private string? _lastTipText;
 
     private IBrush _periodNightBrush = null!;
     private IBrush _periodMorningBrush = null!;
     private IBrush _periodNoonBrush = null!;
     private IBrush _periodAfternoonBrush = null!;
     private IBrush _periodEveningBrush = null!;
+    private (int Start, int End, IBrush Brush)[] _periodBands = [];
 
     private const double LuminanceThreshold = 0.35;
+    private const double PanDragThreshold = 5;
+    private static readonly Cursor PanCursor = new(StandardCursorType.SizeWestEast);
     private static readonly IBrush LightLabelBrush = new ImmutableSolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
     private static readonly IBrush DarkLabelBrush = new ImmutableSolidColorBrush(Color.FromArgb(0xFF, 0x1A, 0x1A, 0x1A));
     private static readonly ImmutableSolidColorBrush LightGlowBrush = new(Color.FromArgb(0x30, 0x00, 0x00, 0x00));
     private static readonly ImmutableSolidColorBrush DarkGlowBrush = new(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF));
 
+    private bool _pointerDown;
+    private bool _isPanning;
+    private Point _panStartPoint;
+    private double _panStartVisibleStart;
+    private double _panStartVisibleEnd;
+
     public MultiTrackRow()
     {
         PointerEntered += OnPointerEntered;
         PointerExited += OnPointerExited;
+        PointerPressed += OnPointerPressed;
         PointerMoved += OnPointerMoved;
+        PointerReleased += OnPointerReleased;
         PointerWheelChanged += OnRowPointerWheel;
         PointerTouchPadGestureMagnify += OnRowMagnify;
     }
@@ -149,11 +139,67 @@ public class MultiTrackRow : Control
         InvalidateVisual();
     }
 
+    private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonPressed) return;
+
+        _pointerDown = true;
+        _isPanning = false;
+        _panStartPoint = e.GetPosition(this);
+        _panStartVisibleStart = VisibleStartHour;
+        _panStartVisibleEnd = VisibleEndHour;
+        e.Pointer.Capture(this);
+    }
+
+    private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        var wasPanning = _isPanning;
+        _pointerDown = false;
+        _isPanning = false;
+        Cursor = null;
+        e.Pointer.Capture(null);
+
+        // 拖拽平移后的释放不触发点击跳转
+        if (wasPanning)
+            e.Handled = true;
+    }
+
+    protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
+    {
+        base.OnPointerCaptureLost(e);
+        _pointerDown = false;
+        _isPanning = false;
+        Cursor = null;
+    }
+
+    /// <summary>
+    /// 在轨道区域内按住水平拖动以平移可视范围（限制在 Frame 边界内）。
+    /// </summary>
+    private void PanView(Point pos)
+    {
+        var owner = FindTimelineOwner();
+        var bounds = Bounds;
+        if (owner == null || bounds.Width <= 0) return;
+
+        var viewDuration = _panStartVisibleEnd - _panStartVisibleStart;
+        if (viewDuration <= 0) return;
+
+        var deltaHours = -(pos.X - _panStartPoint.X) / bounds.Width * viewDuration;
+        var next = TimelineGestures.Pan(_panStartVisibleStart, _panStartVisibleEnd, deltaHours,
+            owner.FrameStartHour, owner.FrameEndHour);
+
+        owner.VisibleStartHour = next.Start;
+        owner.VisibleEndHour = next.End;
+    }
+
     private void OnPointerExited(object? sender, PointerEventArgs e)
     {
         _hoveredSegment = null;
-        HoveredTimeRange = null;
-        PropagateHoverToTimeline(null);
+        if (_lastTipText != null)
+        {
+            _lastTipText = null;
+            ToolTip.SetTip(this, null);
+        }
         InvalidateVisual();
     }
 
@@ -210,10 +256,37 @@ public class MultiTrackRow : Control
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)
     {
+        var pos = e.GetPosition(this);
+
+        if (_pointerDown)
+        {
+            if (!_isPanning)
+            {
+                var dx = pos.X - _panStartPoint.X;
+                var dy = pos.Y - _panStartPoint.Y;
+                if (Math.Abs(dx) >= PanDragThreshold && Math.Abs(dx) > Math.Abs(dy))
+                {
+                    _isPanning = true;
+                    Cursor = PanCursor;
+                    _hoveredSegment = null;
+                    if (_lastTipText != null)
+                    {
+                        _lastTipText = null;
+                        ToolTip.SetTip(this, null);
+                    }
+                }
+            }
+
+            if (_isPanning)
+            {
+                PanView(pos);
+                return;
+            }
+        }
+
         var segs = GetSortedSegments();
         if (segs.Count == 0) return;
 
-        var pos = e.GetPosition(this);
         var snapRadius = 12.0;
 
         var viewStartSec = Math.Min(VisibleStartHour, VisibleEndHour) * SecondsPerHour;
@@ -268,62 +341,37 @@ public class MultiTrackRow : Control
         var changed = _hoveredSegment != nearestSeg || (nearestSeg != null && nearestDist > snapRadius);
         _hoveredSegment = nearestSeg != null && nearestDist <= snapRadius ? nearestSeg : null;
 
-        TimeRange? newRange = null;
+        var tipText = _hoveredSegment != null ? BuildSegmentTip(_hoveredSegment) : null;
 
-        if (_hoveredSegment != null)
+        if (!string.Equals(_lastTipText, tipText, StringComparison.Ordinal))
         {
-            newRange = new TimeRange(_hoveredSegment.Start, _hoveredSegment.End);
-
-            var tipText = $"{_hoveredSegment.Start:HH:mm} - {_hoveredSegment.End:HH:mm}  ";
-            if (_hoveredSegment.ActualDurationSeconds > 0)
-            {
-                var actualMinutes = _hoveredSegment.ActualDurationSeconds / 60;
-                var actualSeconds = _hoveredSegment.ActualDurationSeconds % 60;
-                if (actualMinutes >= 1)
-                    tipText += $"{actualMinutes}m{actualSeconds}s";
-                else
-                    tipText += $"{actualSeconds}s";
-            }
-            else
-            {
-                var span = _hoveredSegment.End - _hoveredSegment.Start;
-                if (span.TotalMinutes < 1)
-                    tipText += $"{span.Seconds}s";
-                else if (span.TotalHours >= 1)
-                    tipText += $"{(int)span.TotalHours}h{span.Minutes}m";
-                else
-                    tipText += $"{span.Minutes}m";
-            }
-
+            _lastTipText = tipText;
             ToolTip.SetTip(this, tipText);
-        }
-        else
-        {
-            ToolTip.SetTip(this, null);
         }
 
         if (changed)
             InvalidateVisual();
-
-        if (HoveredTimeRange != newRange)
-        {
-            HoveredTimeRange = newRange;
-            PropagateHoverToTimeline(newRange);
-        }
     }
 
-    private void PropagateHoverToTimeline(TimeRange? range)
+    /// <summary>
+    /// 构建片段悬停提示（缓存判断委托给调用方，避免重复设置 ToolTip）。
+    /// </summary>
+    private static string BuildSegmentTip(MultiTrackSegment segment)
     {
-        var parent = this.GetVisualParent();
-        while (parent != null)
+        var tipText = $"{segment.Start:HH:mm} - {segment.End:HH:mm}  ";
+        if (segment.ActualDurationSeconds > 0)
         {
-            if (parent is MultiTrackTimeline timeline)
-            {
-                timeline.HoveredTimeRange = range;
-                return;
-            }
-            parent = parent.GetVisualParent();
+            var actualMinutes = segment.ActualDurationSeconds / 60;
+            var actualSeconds = segment.ActualDurationSeconds % 60;
+            return tipText + (actualMinutes >= 1 ? $"{actualMinutes}m{actualSeconds}s" : $"{actualSeconds}s");
         }
+
+        var span = segment.End - segment.Start;
+        if (span.TotalMinutes < 1)
+            return tipText + $"{span.Seconds}s";
+        if (span.TotalHours >= 1)
+            return tipText + $"{(int)span.TotalHours}h{span.Minutes}m";
+        return tipText + $"{span.Minutes}m";
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -339,6 +387,17 @@ public class MultiTrackRow : Control
         _periodNoonBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodNoonBgBrush")!;
         _periodAfternoonBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodAfternoonBgBrush")!;
         _periodEveningBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodEveningBgBrush")!;
+        _periodBands =
+        [
+            (0, 6, _periodNightBrush),
+            (6, 12, _periodMorningBrush),
+            (12, 14, _periodNoonBrush),
+            (14, 18, _periodAfternoonBrush),
+            (18, 24, _periodEveningBrush),
+        ];
+
+        // 主题可能已变：释放旧主题下的 FormattedText 缓存条目
+        _labelCache.Clear();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -346,8 +405,7 @@ public class MultiTrackRow : Control
         base.OnPropertyChanged(change);
         if (change.Property == SegmentsProperty
             || change.Property == VisibleStartHourProperty
-            || change.Property == VisibleEndHourProperty
-            || change.Property == NowLinePositionProperty)
+            || change.Property == VisibleEndHourProperty)
         {
             _cacheValid = false;
             InvalidateVisual();
@@ -394,7 +452,7 @@ public class MultiTrackRow : Control
 
         var pixelsPerSec = bounds.Width / viewDuration;
 
-        DrawTimePeriodBackgrounds(ctx, pixelsPerSec, viewStartSec, viewEndSec);
+        DrawTimePeriodBackgrounds(ctx, pixelsPerSec, viewStartSec);
 
         if (!_cacheValid
             || _cachedViewStartSec != viewStartSec
@@ -561,18 +619,9 @@ public class MultiTrackRow : Control
             (byte)Math.Max(0, c.B * (1 - factor)));
     }
 
-    private void DrawTimePeriodBackgrounds(DrawingContext ctx, double pps, double viewStartSec, double viewEndSec)
+    private void DrawTimePeriodBackgrounds(DrawingContext ctx, double pps, double viewStartSec)
     {
-        var periods = new (int Start, int End, IBrush Brush)[]
-        {
-            (0, 6, _periodNightBrush),
-            (6, 12, _periodMorningBrush),
-            (12, 14, _periodNoonBrush),
-            (14, 18, _periodAfternoonBrush),
-            (18, 24, _periodEveningBrush),
-        };
-
-        foreach (var (start, end, brush) in periods)
+        foreach (var (start, end, brush) in _periodBands)
         {
             var startSec = start * SecondsPerHour;
             var endSec = end * SecondsPerHour;

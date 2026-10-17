@@ -5,10 +5,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
-using Avalonia.Media.Immutable;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
-using Taix.Client.Logging;
 using Taix.Client.Shared.Helpers;
 
 namespace Taix.Client.Controls.Timeline;
@@ -93,6 +91,7 @@ public class MultiTrackTimeRuler : Control
     private IBrush _periodNoonBrush = null!;
     private IBrush _periodAfternoonBrush = null!;
     private IBrush _periodEveningBrush = null!;
+    private (int Start, int End, IBrush Brush)[] _periodBands = [];
 
     public MultiTrackTimeRuler()
     {
@@ -125,6 +124,14 @@ public class MultiTrackTimeRuler : Control
         _periodNoonBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodNoonBgBrush")!;
         _periodAfternoonBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodAfternoonBgBrush")!;
         _periodEveningBrush = (IBrush)this.FindResource(this.ActualThemeVariant, "TimelinePeriodEveningBgBrush")!;
+        _periodBands =
+        [
+            (0, 6, _periodNightBrush),
+            (6, 12, _periodMorningBrush),
+            (12, 14, _periodNoonBrush),
+            (14, 18, _periodAfternoonBrush),
+            (18, 24, _periodEveningBrush),
+        ];
 
         _labelCache.Clear();
     }
@@ -231,16 +238,7 @@ public class MultiTrackTimeRuler : Control
 
     private void DrawTimePeriodBackgrounds(DrawingContext ctx, double pps, double viewStartSec, double viewEndSec)
     {
-        var periods = new (int Start, int End, IBrush Brush)[]
-        {
-            (0, 6, _periodNightBrush),
-            (6, 12, _periodMorningBrush),
-            (12, 14, _periodNoonBrush),
-            (14, 18, _periodAfternoonBrush),
-            (18, 24, _periodEveningBrush),
-        };
-
-        foreach (var (start, end, brush) in periods)
+        foreach (var (start, end, brush) in _periodBands)
         {
             var startSec = start * SecondsPerHour;
             var endSec = end * SecondsPerHour;
@@ -411,6 +409,14 @@ public class MultiTrackTimeRuler : Control
             _isPanning = false;
             e.Pointer.Capture(null);
         }
+    }
+
+    protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
+    {
+        base.OnPointerCaptureLost(e);
+        if (!_isPanning) return;
+        _isPanning = false;
+        InvalidateVisual();
     }
 
     private void PropagateToTimeline(double startHour, double endHour)

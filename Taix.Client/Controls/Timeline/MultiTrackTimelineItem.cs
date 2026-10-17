@@ -29,8 +29,6 @@ public class MultiTrackTimelineItem
         }
     }
 
-    public string SessionCountText => $"{Segments.Count} 次";
-
 
     public List<string> SegmentSummaries
     {

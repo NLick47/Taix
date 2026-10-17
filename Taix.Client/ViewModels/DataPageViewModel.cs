@@ -434,7 +434,7 @@ public partial class DataPageViewModel : DataPageModel
             // Step 3: 多轨道数据
             var totalDurationSec = rawFiltered.Sum(x => x.ClipDuration);
             var totalDurationText = FormatDuration(totalDurationSec);
-            var mtItems = BuildMultiTrackItems(rawFiltered, totalDurationSec, isDark);
+            var mtItems = BuildMultiTrackItems(rawFiltered, isDark);
 
             return (Data: chartData, MultiTrackItems: mtItems, TotalDurationText: totalDurationText);
         });
@@ -449,7 +449,7 @@ public partial class DataPageViewModel : DataPageModel
 
     private static List<MultiTrackTimelineItem> BuildMultiTrackItems(
         List<(AppSessionModel Session, int ClipDuration, DateTime LocalStart, DateTime LocalEnd)> rawFiltered,
-        double totalDurationSec, bool isDark)
+        bool isDark)
     {
         return rawFiltered
             .GroupBy(x => x.Session.AppModel!.GetDisplayName() ?? "Unknown")
