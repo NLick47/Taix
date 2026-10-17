@@ -70,7 +70,7 @@ impl PluginCtx {
     }
 
     fn push_state_inner(&self, state: &str, data: Option<Value>, force: bool) -> bool {
-        let prev = {
+        let (prev, mine) = {
             let mut last = self.last_state_push.lock().unwrap();
             if !force {
                 if let Some((last_state, at)) = last.as_ref() {
@@ -80,8 +80,9 @@ impl PluginCtx {
                 }
             }
             let prev = last.clone();
-            *last = Some((state.to_string(), Instant::now()));
-            prev
+            let mine = Instant::now();
+            *last = Some((state.to_string(), mine));
+            (prev, mine)
         };
         match self.transport.push_state(state, data.clone()) {
             Ok(()) => {
@@ -89,8 +90,11 @@ impl PluginCtx {
                 true
             }
             Err(e) => {
+                // 没发出去就别占住节流窗口，否则紧接着的真实更新会被静默吞掉。
+                // 只回滚「仍是本次写进去的那条」：别的线程可能刚用同一个 state
+                // 成功上报过，按 state 名比较会把它的时间戳一起抹掉。
                 let mut last = self.last_state_push.lock().unwrap();
-                if last.as_ref().map(|(s, _)| s.as_str()) == Some(state) {
+                if matches!(last.as_ref(), Some((s, at)) if s == state && *at == mine) {
                     *last = prev;
                 }
                 tracing::warn!(target: "taix_plugin_sdk", "push_state 失败: {:#}", e);
