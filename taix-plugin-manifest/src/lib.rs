@@ -187,9 +187,9 @@ fn valid_version(v: &str) -> bool {
     parts.len() == 3 && parts.iter().all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()))
 }
 
-/// 禁止路径分隔与 ..
+/// 禁止路径分隔与 ..；纯空白名字会进列表却永远解析不到文件
 fn valid_entry(entry: &str) -> bool {
-    !entry.is_empty()
+    !entry.trim().is_empty()
         && !entry.contains('/')
         && !entry.contains('\\')
         && entry != "."

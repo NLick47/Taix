@@ -102,6 +102,10 @@ pub async fn set_enabled(state: &PluginState, id: &str, enabled: bool) -> Result
     drop(registry);
     drop(_guard);
 
+    if !enabled {
+        state.states.write().await.remove(id);
+    }
+
     broadcast(
         state,
         json!({
