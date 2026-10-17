@@ -340,11 +340,14 @@ fn report_state(ctx: &PluginCtx, rt: &Runtime, snap: &Snapshot, force: bool) {
 
     match script_error {
         Some(err) => {
-            let mut reported = rt.reported_error.lock().unwrap();
-            if !force && reported.as_deref() == Some(err.as_str()) {
-                return;
-            }
-            *reported = Some(err.clone());
+            let changed = {
+                let mut reported = rt.reported_error.lock().unwrap();
+                let changed = reported.as_deref() != Some(err.as_str());
+                if changed {
+                    *reported = Some(err.clone());
+                }
+                changed
+            };
             data["error"] = json!(err);
             if let Some(until) = cooldown_until {
                 data["cooldownUntil"] = json!(rfc3339(until));
@@ -352,7 +355,11 @@ fn report_state(ctx: &PluginCtx, rt: &Runtime, snap: &Snapshot, force: bool) {
             if let Some(last) = last_notify {
                 data["lastNotify"] = last;
             }
-            ctx.push_state_now("error", Some(data));
+            if changed || force {
+                ctx.push_state_now("error", Some(data));
+            } else {
+                ctx.push_state("error", Some(data));
+            }
         }
         None => {
             *rt.reported_error.lock().unwrap() = None;
@@ -442,11 +449,20 @@ fn tick(ctx: &PluginCtx, rt: &Arc<Runtime>) {
         // 脚本报错不叫停提醒，只上报 error 态
         Ok(candidates) => candidates,
         Err(e) => {
-            let mut reported = rt.reported_error.lock().unwrap();
-            if reported.as_deref() != Some(e.as_str()) {
+            // 文案没变时也要推一次，否则界面上的详情会停在第一次报错那一刻
+            let changed = {
+                let mut reported = rt.reported_error.lock().unwrap();
+                let changed = reported.as_deref() != Some(e.as_str());
+                if changed {
+                    *reported = Some(e.clone());
+                }
+                changed
+            };
+            if changed {
                 tracing::warn!(target: "taix_plugin_reminder", "脚本错误: {e}");
-                *reported = Some(e.clone());
                 ctx.push_state_now("error", Some(json!({ "error": e })));
+            } else {
+                ctx.push_state("error", Some(json!({ "error": e })));
             }
             return;
         }

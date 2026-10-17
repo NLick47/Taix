@@ -70,7 +70,7 @@ impl PluginCtx {
     }
 
     fn push_state_inner(&self, state: &str, data: Option<Value>, force: bool) -> bool {
-        {
+        let prev = {
             let mut last = self.last_state_push.lock().unwrap();
             if !force {
                 if let Some((last_state, at)) = last.as_ref() {
@@ -79,14 +79,20 @@ impl PluginCtx {
                     }
                 }
             }
+            let prev = last.clone();
             *last = Some((state.to_string(), Instant::now()));
-        }
+            prev
+        };
         match self.transport.push_state(state, data.clone()) {
             Ok(()) => {
                 *self.last_state_payload.lock().unwrap() = Some((state.to_string(), data));
                 true
             }
             Err(e) => {
+                let mut last = self.last_state_push.lock().unwrap();
+                if last.as_ref().map(|(s, _)| s.as_str()) == Some(state) {
+                    *last = prev;
+                }
                 tracing::warn!(target: "taix_plugin_sdk", "push_state 失败: {:#}", e);
                 false
             }
