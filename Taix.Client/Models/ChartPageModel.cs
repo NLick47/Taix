@@ -56,8 +56,7 @@ public partial class ChartPageModel : ModelBase
     }
 
     /// <summary>
-    /// 统计卡片行宽度：仅 macOS 下自适应（最小窗口 860 时内容区 728 = 860 - 侧栏 80 - 右边距 10
-    /// - 页面边框 2 - 页面边距 40），铺满内容区但不超过该宽度；其它平台维持原来的固定 680
+    /// 统计卡片行宽度：仅 macOS 下跟随内容区，其它平台维持固定 680
     /// </summary>
     public double CardsWidth
     {
@@ -65,7 +64,7 @@ public partial class ChartPageModel : ModelBase
         {
             if (!PlatformHelper.IsMacOS) return 680;
             if (_rowWidth <= 0) return double.NaN;
-            return Math.Min(_rowWidth - 20, 728);
+            return _rowWidth - 20;
         }
     }
 
