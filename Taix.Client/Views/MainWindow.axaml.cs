@@ -59,7 +59,10 @@ public partial class MainWindow : DefaultWindow
         if (!OperatingSystem.IsMacOS()) return;
 
         var fullScreen = WindowState == WindowState.FullScreen;
-        var titleBarHeight = MacWindowChrome.SetThickTitleBar(this, !fullScreen);
+        // NativeAOT 下 Avalonia 的 ExtendClientArea 布局与 JIT 不同：
+        // contentLayoutRect 会多算一个系统标题条（toolbar 38 + titlebar 28 = 66，
+        var isAot = !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported;
+        var titleBarHeight = MacWindowChrome.SetThickTitleBar(this, !fullScreen && !isAot);
         MacWindowChrome.SetCornerRadius(this, fullScreen ? 0 : MacWindowChrome.WindowCornerRadius);
         if (!fullScreen) MacWindowChrome.SetTrafficLightScale(this, MacWindowChrome.TrafficLightScale);
         if (fullScreen || titleBarHeight <= 0) return;
