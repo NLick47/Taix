@@ -44,13 +44,11 @@ fn build_plist_content(exe_path: &Path, data_dir: Option<&PathBuf>) -> String {
     <true/>
     <key>KeepAlive</key>
     <true/>
-    <key>StandardOutPath</key>
-    <string>{}/shell.log</string>
     <key>StandardErrorPath</key>
     <string>{}/shell.err</string>
 </dict>
 </plist>"#,
-        LAUNCH_AGENT_ID, exe_str, data_dir_args, log_dir.display(), log_dir.display()
+        LAUNCH_AGENT_ID, exe_str, data_dir_args, log_dir.display()
     )
 }
 

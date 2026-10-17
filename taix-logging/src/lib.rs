@@ -97,9 +97,8 @@ fn write_ts(w: &mut Vec<u8>, secs: u64, ms: u32) {
 }
 
 
-fn date_str(secs: u64) -> String {
-    let (y, m, d) = ymd(secs);
-    format!("{y:04}-{m:02}-{d:02}")
+fn local_date() -> String {
+    chrono::Local::now().format("%Y-%m-%d").to_string()
 }
 
 struct Visitor<'a>(&'a mut Vec<u8>);
@@ -125,10 +124,11 @@ impl<'a> tracing::field::Visit for Visitor<'a> {
 }
 
 struct Writer {
-    file: BufWriter<std::fs::File>,
+    file: Option<BufWriter<std::fs::File>>,
     log_dir: PathBuf,
     prefix: String,
-    day: u64,
+    /// 本地日期 YYYY-MM-DD，用于判断跨天
+    day: String,
     sync: bool,
     stdout: bool,
     max_log_files: u32,
@@ -136,25 +136,37 @@ struct Writer {
 
 impl Writer {
     fn new(name: &str, dir: &std::path::Path, sync: bool, stdout: bool, max_log_files: u32) -> Self {
-        let (s, _) = now(); let day = s / 86400;
-        let ds = date_str(s);
-        let path = dir.join(format!("{name}.{ds}.log"));
-        let file = OpenOptions::new().create(true).append(true)
-            .open(&path).unwrap_or_else(|_| panic!("open {path:?}"));
+        let day = local_date();
+        let path = dir.join(format!("{name}.{day}.log"));
+
+        let file = std::fs::create_dir_all(dir)
+            .ok()
+            .and_then(|_| OpenOptions::new().create(true).append(true).open(&path).ok())
+            .map(BufWriter::new);
+        if file.is_none() {
+            eprintln!(
+                "[taix-logging] 日志不落盘（{} 不可写），仅输出到标准流",
+                path.display()
+            );
+        }
+
         let w = Writer {
-            file: BufWriter::new(file), log_dir: dir.to_owned(),
+            file, log_dir: dir.to_owned(),
             prefix: name.to_owned(), day, sync, stdout, max_log_files,
         };
         if max_log_files > 0 { w.cleanup(); }
         w
     }
-    fn rotate(&mut self, day_now: u64, ds: &str) {
-        if day_now != self.day {
-            self.day = day_now;
-            let path = self.log_dir.join(format!("{}.{}.log", self.prefix, ds));
-            if let Ok(f) = OpenOptions::new().create(true).append(true).open(&path) {
-                self.file = BufWriter::new(f);
-            }
+    fn rotate(&mut self, today: &str) {
+        if today != self.day {
+            self.day = today.to_owned();
+            let path = self.log_dir.join(format!("{}.{}.log", self.prefix, today));
+            self.file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&path)
+                .ok()
+                .map(BufWriter::new);
             if self.max_log_files > 0 { self.cleanup(); }
         }
     }
@@ -244,9 +256,8 @@ impl tracing::Subscriber for Sub {
         let w = &mut *guard;
         let meta = ev.metadata();
         let (s, ms) = now();
-        let day_now = s / 86400;
-        let ds = date_str(s);
-        w.rotate(day_now, &ds);
+        let ds = local_date();
+        w.rotate(&ds);
         Buf::with(|buf| {
             write_ts(buf, s, ms);
             let _ = write!(buf, " {} {}: {}:{}",
@@ -254,8 +265,10 @@ impl tracing::Subscriber for Sub {
                            meta.target(), meta.file().unwrap_or("?"), meta.line().unwrap_or(0));
             { let mut v = Visitor(buf); ev.record(&mut v); }
             buf.push(b'\n');
-            let _ = w.file.write_all(buf);
-            if w.sync { let _ = w.file.flush(); }
+            if let Some(f) = w.file.as_mut() {
+                let _ = f.write_all(buf);
+                if w.sync { let _ = f.flush(); }
+            }
             if w.stdout {
                 let _ = std::io::stdout().lock().write_all(buf);
             }
@@ -274,29 +287,71 @@ pub struct LoggingGuard;
 impl Drop for LoggingGuard {
     fn drop(&mut self) {
         if let Some(l) = LOGGER.get() {
-            if let Ok(mut g) = l.lock() { let _ = g.file.flush(); }
+            if let Ok(mut g) = l.lock() {
+                if let Some(f) = g.file.as_mut() { let _ = f.flush(); }
+            }
         }
     }
+}
+
+pub fn log_dir() -> PathBuf {
+    if let Some(dir) = std::env::var_os("TAIX_LOG_DIR") {
+        return PathBuf::from(dir);
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(dir) = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.join("Logs")))
+        {
+            return dir;
+        }
+        return PathBuf::from("Logs");
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(home) = std::env::var_os("HOME") {
+            return PathBuf::from(home).join("Library").join("Logs").join("Taix");
+        }
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        if let Some(state) = std::env::var_os("XDG_STATE_HOME") {
+            return PathBuf::from(state).join("taix").join("logs");
+        }
+        if let Some(home) = std::env::var_os("HOME") {
+            return PathBuf::from(home).join(".local").join("state").join("taix").join("logs");
+        }
+    }
+
+    PathBuf::from("Logs")
+}
+
+pub fn active_log_dir() -> Option<PathBuf> {
+    LOGGER
+        .get()
+        .and_then(|l| l.lock().ok())
+        .map(|g| g.log_dir.clone())
 }
 
 pub fn init(name: &str, default_filter: &str, panic_mode: PanicMode, max_log_files: u32) -> LoggingGuard {
     let filter = std::env::var("RUST_LOG").unwrap_or_else(|_| default_filter.to_owned());
     let rules = parse_rules(&filter);
 
-    let exe = std::env::current_exe()
-        .ok().and_then(|p| p.parent().map(|p| p.to_path_buf()))
-        .unwrap_or_else(|| PathBuf::from("."));
-    let log_dir = exe.join("Logs");
-    let _ = fs::create_dir_all(&log_dir);
-
     let sync = matches!(panic_mode, PanicMode::SyncFile);
     let stdout = cfg!(debug_assertions) || sync;
-    let _ = LOGGER.set(Mutex::new(Writer::new(name, &log_dir, sync, stdout, max_log_files)));
+    let log_dir = log_dir();
+    let writer = Writer::new(name, &log_dir, sync, stdout, max_log_files);
+    let _ = LOGGER.set(Mutex::new(writer));
     let _ = tracing::subscriber::set_global_default(Sub { rules, next_id: std::sync::atomic::AtomicU64::new(1) });
 
     install_panic_hook(name, &log_dir, panic_mode);
     LoggingGuard
 }
+
 
 fn install_panic_hook(name: &str, log_dir: &std::path::Path, mode: PanicMode) {
     let n = name.to_owned(); let d = log_dir.to_path_buf();
@@ -318,7 +373,7 @@ fn install_panic_hook(name: &str, log_dir: &std::path::Path, mode: PanicMode) {
                     .map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column()))
                     .unwrap_or_else(|| "unknown location".to_string());
                 let (s, ms) = now();
-                let ds = date_str(s);
+                let ds = local_date();
                 let buf = Buf::with(|buf| {
                     write_ts(buf, s, ms);
                     let _ = write!(buf, " ERROR {n}: PANIC at {loc}\n    payload: {payload}\n");

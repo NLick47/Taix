@@ -96,37 +96,6 @@ fn run_test_tray(args: &[String]) -> i32 {
 }
 
 fn init_logging() -> Option<taix_logging::LoggingGuard> {
-    let dir = std::env::current_exe()
-        .ok()
-        .and_then(|exe| exe.parent().map(|dir| dir.join("Logs")))?;
-
-    if std::fs::create_dir_all(&dir).is_err() {
-        eprintln!(
-            "[taix-shell] logging disabled: cannot create {:?}; continuing without logs",
-            dir
-        );
-        return None;
-    }
-
-    let probe = dir.join(".write-probe");
-    match std::fs::File::create(&probe) {
-        Ok(_) => {
-            let _ = std::fs::remove_file(&probe);
-        }
-        Err(e) => {
-            eprintln!(
-                "[taix-shell] logging disabled: {:?} is not writable ({}); continuing without logs",
-                dir, e
-            );
-            return None;
-        }
-    }
-
-    eprintln!(
-        "[taix-shell] writing logs to {} (file name uses the UTC date)",
-        dir.display()
-    );
-
     Some(taix_logging::init(
         "taix-shell",
         "taix_shell=info,taix_plugin_manifest=info",

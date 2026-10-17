@@ -27,7 +27,7 @@ Taix 是 [Tai](https://github.com/Planshit/Tai) 的一次技术及架构的全�
 本质是后台进程没在运行。正常情况下 taix-server 与 taix-monitor 由 taix-shell 看门狗自动拉起并守护，**只需确保 `taix-shell` 在运行即可**（为何不要手动启动见「协同组件」）。若 server 自身异常（如端口被占用、数据库损坏）导致启动即退出，看门狗虽会自动重试（间隔 5 秒起、退避至最长 30 秒），但服务始终不可用，此时应从 server 日志定位根因。
 
 - **开机自启失效**：Windows 检查任务计划中 **TaixShell** 任务的路径是否与安装目录一致；Setup 安装器与绿色版均可用管理员终端 `taix-shell install` 补注册。macOS 则运行 `/Applications/TaixTools/install-launchagent.sh`（DMG 中 `TaixTools/` 即后台组件与安装脚本集合）
-- **端口占用**：server 默认占 `127.0.0.1:37091`、浏览器扩展 WebSocket 占 `8908`。若 37091 被占用，可设置环境变量 `TAIX_SERVER` 换端口（如 `http://127.0.0.1:37100`，客户端与 server 均读取该变量）。server 日志按 `taix-server.YYYY-MM-DD.log` 按天滚动：Windows 在安装目录 `Logs\`，macOS 在 `/Applications/TaixTools/Logs/`
+- **端口占用**：server 默认占 `127.0.0.1:37091`、浏览器扩展 WebSocket 占 `8908`。若 37091 被占用，可设置环境变量 `TAIX_SERVER` 换端口（如 `http://127.0.0.1:37100`，客户端与 server 均读取该变量）。server 日志按 `taix-server.YYYY-MM-DD.log` 按天滚动：macOS 在 `~/Library/Logs/Taix/`；Windows 绿色版在程序目录的 `Logs\`（该目录不可写时不落盘，只输出到标准流，不会写到别处）。插件与 shell 日志也在同一目录，可用环境变量 `TAIX_LOG_DIR` 覆盖
 
 ### 运行表现
 
