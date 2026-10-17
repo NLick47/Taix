@@ -1,5 +1,6 @@
 use serde_json::{json, Value};
 use sqlx::SqlitePool;
+use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
@@ -9,11 +10,70 @@ use crate::utils::host_timezone;
 /// monitor 5s 一拍；静默超过这个时长视为空闲/睡眠（看门狗与读路径共用）
 pub const HEARTBEAT_STALE_SECS: i64 = 90;
 
+/// 连续段落盘文件，放在 data_dir 下
+pub const CONTINUOUS_STATE_FILE: &str = "continuous.json";
+
+/// 落盘刷新间隔；值不变就不写，空闲时零写入
+const PERSIST_INTERVAL_SECS: i64 = 60;
+
+/// 时钟回拨 / 超前的容忍量
+const CLOCK_SKEW_SECS: i64 = 60;
+
 fn now_epoch() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0)
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct ContinuousState {
+    since: i64,
+    #[serde(rename = "lastSeen")]
+    last_seen: i64,
+}
+
+pub fn load_continuous(path: &Path) -> Option<(i64, i64)> {
+    let text = std::fs::read_to_string(path).ok()?;
+    let st: ContinuousState = serde_json::from_str(&text).ok()?;
+    let now = now_epoch();
+    if st.since < 0
+        || st.last_seen <= 0
+        || st.last_seen > now + CLOCK_SKEW_SECS
+        || st.since > st.last_seen + 2
+    {
+        return None;
+    }
+    Some((st.since, st.last_seen))
+}
+
+/// 先写临时文件再 rename，崩溃时不会留下半截 JSON
+fn save_continuous(path: &Path, since: i64, last_seen: i64) -> std::io::Result<()> {
+    let body = serde_json::to_vec(&ContinuousState { since, last_seen })
+        .map_err(std::io::Error::other)?;
+    let tmp = path.with_extension("json.tmp");
+    std::fs::write(&tmp, body)?;
+    std::fs::rename(&tmp, path)
+}
+
+pub fn persist(state: &PluginState) {
+    let since = state.continuous_since.load(Ordering::Relaxed);
+    let last_seen = state.last_current_at.load(Ordering::Relaxed);
+    let mut saved = state
+        .continuous_saved
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    if *saved == Some((since, last_seen)) {
+        return;
+    }
+    match save_continuous(&state.continuous_path, since, last_seen) {
+        Ok(()) => *saved = Some((since, last_seen)),
+        Err(e) => tracing::warn!(
+            target: "taix_server::plugins",
+            "continuous state write failed: {}",
+            e
+        ),
+    }
 }
 
 /// last = 0（还没收到过心跳，如 server 刚启动）不算过期
@@ -102,11 +162,15 @@ pub async fn update_and_broadcast(state: &PluginState, pool: &SqlitePool, app: V
     let now = now_epoch();
     // 静默期后的首拍 = 用户回来了：退出空闲并重开连续段；
     // 常规节拍（5s 一拍）与应用切换都不动连续段
-    if is_idle(state, now) || state.continuous_since.load(Ordering::Relaxed) == 0 {
+    let restarted = is_idle(state, now) || state.continuous_since.load(Ordering::Relaxed) == 0;
+    if restarted {
         state.sleep_flag.store(false, Ordering::Relaxed);
         state.continuous_since.store(now, Ordering::Relaxed);
     }
     state.last_current_at.store(now, Ordering::Relaxed);
+    if restarted {
+        persist(state);
+    }
     *state.current_app.write().await = Some(app);
     let snap = snapshot(state, pool).await;
     let _ = state.tx.send(envelope(&snap).to_string());
@@ -123,6 +187,7 @@ pub async fn set_sleep(state: &PluginState, pool: &SqlitePool, sleeping: bool) {
         // 显式唤醒也算一次「平台活着」的信号，避免读路径立刻又按静默判空闲
         state.last_current_at.store(now, Ordering::Relaxed);
     }
+    persist(state);
     let snap = snapshot(state, pool).await;
     let _ = state.tx.send(envelope(&snap).to_string());
 }
@@ -145,9 +210,14 @@ pub async fn ongoing_session(state: &PluginState) -> Option<(String, i64)> {
 pub async fn run_idle_watchdog(state: Arc<PluginState>, pool: SqlitePool) {
     let mut tick = tokio::time::interval(std::time::Duration::from_secs(2));
     tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    let mut last_persist = now_epoch();
     loop {
         tick.tick().await;
         let now = now_epoch();
+        if now - last_persist >= PERSIST_INTERVAL_SECS {
+            persist(&state);
+            last_persist = now;
+        }
         let last = state.last_current_at.load(Ordering::Relaxed);
         if state.sleep_flag.load(Ordering::Relaxed)
             || !heartbeat_stale(last, now, state.current_stale_secs)

@@ -47,6 +47,8 @@ pub struct PluginState {
     pub data_dir: PathBuf,
     /// 插件 UI 资源按 <plugins_dir>/<id>/ui/ 解析
     pub plugins_dir: PathBuf,
+    pub continuous_path: PathBuf,
+    pub continuous_saved: std::sync::Mutex<Option<(i64, i64)>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -78,6 +80,26 @@ impl PluginState {
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0);
 
+        let stale_secs = std::env::var("TAIX_CURRENT_STALE_SECS")
+            .ok()
+            .and_then(|v| v.parse::<i64>().ok())
+            .filter(|v| *v > 0)
+            .unwrap_or(current::HEARTBEAT_STALE_SECS);
+
+        // 重启前最后活动仍在阈值内才接续连续段；隔太久说明人已经离开，重开一段
+        let continuous_path = data_dir.join(current::CONTINUOUS_STATE_FILE);
+        let restored = current::load_continuous(&continuous_path)
+            .filter(|(_, last)| start_secs - *last <= stale_secs);
+        if let Some((since, last)) = restored {
+            tracing::info!(
+                target: "taix_server::plugins",
+                "restored continuous segment since={} lastSeen={}",
+                since,
+                last
+            );
+        }
+        let (continuous_since, last_current_at) = restored.unwrap_or((start_secs, start_secs));
+
         tracing::info!(
             target: "taix_server::plugins",
             "scanned {} plugin manifest(s) from {}",
@@ -85,7 +107,7 @@ impl PluginState {
             plugins_dir.display()
         );
 
-        Ok(Self {
+        let state = Self {
             manifests: tokio::sync::RwLock::new(manifests),
             last_scan_ms: AtomicU64::new(0),
             registry: RwLock::new(registry::load_or_default(data_dir).await?),
@@ -102,16 +124,16 @@ impl PluginState {
             tx,
             current_app: RwLock::new(None),
             sleep_flag: std::sync::atomic::AtomicBool::new(false),
-            continuous_since: std::sync::atomic::AtomicI64::new(start_secs),
-            last_current_at: std::sync::atomic::AtomicI64::new(start_secs),
-            current_stale_secs: std::env::var("TAIX_CURRENT_STALE_SECS")
-                .ok()
-                .and_then(|v| v.parse::<i64>().ok())
-                .filter(|v| *v > 0)
-                .unwrap_or(current::HEARTBEAT_STALE_SECS),
+            continuous_since: std::sync::atomic::AtomicI64::new(continuous_since),
+            last_current_at: std::sync::atomic::AtomicI64::new(last_current_at),
+            current_stale_secs: stale_secs,
             data_dir: data_dir.to_path_buf(),
             plugins_dir: plugins_dir.to_path_buf(),
-        })
+            continuous_path,
+            continuous_saved: std::sync::Mutex::new(restored),
+        };
+        current::persist(&state);
+        Ok(state)
     }
 
     /// 清单快照（clone，清单条目很小）
