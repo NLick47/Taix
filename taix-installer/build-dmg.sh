@@ -220,8 +220,6 @@ cat > "$PLIST_PATH" << EOF
         <key>SuccessfulExit</key>
         <false/>
     </dict>
-    <key>StandardOutPath</key>
-    <string>$LOG_DIR/shell.log</string>
     <key>StandardErrorPath</key>
     <string>$LOG_DIR/shell.err</string>
     <key>EnvironmentVariables</key>
@@ -232,6 +230,8 @@ cat > "$PLIST_PATH" << EOF
 </dict>
 </plist>
 EOF
+
+rm -f "$LOG_DIR/shell.log"
 
 launchctl load "$PLIST_PATH" 2>/dev/null || true
 echo "LaunchAgent installed at $SCRIPT_DIR"
