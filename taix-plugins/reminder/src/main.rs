@@ -24,8 +24,6 @@ const RESUMED_GAP_SECS: i64 = 60;
 const ROUND_DEFER_SECS: i64 = 300;
 /// 兜底探测 /api/apptimer/current 的最小间隔
 const CURRENT_PROBE_INTERVAL: i64 = 60;
-/// 连续段超过这个时长即视为起点卡住
-const STALE_AFTER_SECS: i64 = 12 * 3600;
 /// 通知图标，编译进二进制，免得依赖部署时拷文件
 const ICON_PNG: &[u8] = include_bytes!("../assets/icon.png");
 
@@ -203,7 +201,7 @@ fn continuous_seconds(ctx: &PluginCtx, rt: &Runtime) -> i64 {
     let since = *rt.continuous_since.lock().unwrap();
 
     // 持锁做阻塞 IO 会卡住 on_current 回调线程，所以只在锁外请求、拿到值再写回
-    if should_probe(rt.current_probed.load(Ordering::Relaxed), now, since) {
+    if should_probe(rt.current_probed.load(Ordering::Relaxed), now) {
         let events = rt.current_events.load(Ordering::Relaxed);
         if let Ok(current) = ctx.get_json("/api/apptimer/current") {
             rt.current_probed.store(now, Ordering::Relaxed);
@@ -228,17 +226,12 @@ fn parse_probe(current: &Value) -> (bool, Option<i64>) {
     )
 }
 
-/// 空闲时 continuousSince 恒为 null，不必每拍兜底；但仍要节流重试，
-/// 否则 SSE 断线期间收不到 current 就再也拿不到真实起点
-fn should_probe(last_probe: i64, now: i64, since: Option<i64>) -> bool {
-    if last_probe + CURRENT_PROBE_INTERVAL > now {
-        return false;
-    }
-    match since {
-        None => true,
-        // 连续段不可能这么长：起点必然是卡住的旧值
-        Some(start) => now - start > STALE_AFTER_SECS,
-    }
+/// 每 60s 与 server 对齐一次睡眠状态与连续段起点。SSE 断线时收不到 current
+/// 事件，这里是唯一的自愈通道——所以不能只在「没有起点」时才探：起点看起来
+/// 正常但已经过时（期间发生过 sleep/wake），会按旧起点继续计时，最长要等
+/// 12 小时才被兜底发现。
+fn should_probe(last_probe: i64, now: i64) -> bool {
+    last_probe + CURRENT_PROBE_INTERVAL <= now
 }
 
 /// 相邻两拍墙钟差超阈值 = 进程被挂起过（系统睡眠/唤醒），需要重新对齐状态
@@ -769,20 +762,12 @@ mod tests {
     }
 
     #[test]
-    fn continuous_start_probe_is_throttled_not_disabled() {
-        assert!(should_probe(0, NOW, None), "从未探测过要先探测一次");
-        assert!(!should_probe(NOW, NOW + 5, None), "刚探测过，空闲时不要每拍请求");
-        assert!(should_probe(NOW, NOW + CURRENT_PROBE_INTERVAL, None), "节流窗口过后允许重试");
-    }
-
-    #[test]
-    fn stale_continuous_start_is_reprobed() {
-        let probed = NOW - CURRENT_PROBE_INTERVAL;
-        let started = NOW - STALE_AFTER_SECS - 1;
-        assert!(should_probe(probed, NOW, Some(started)), "起点卡住超过 12 小时应重新探测");
-
-        let fresh = NOW - 600;
-        assert!(!should_probe(probed, NOW, Some(fresh)), "正常连续段不需要额外请求");
+    fn probe_is_throttled_to_a_minute() {
+        assert!(should_probe(0, NOW), "从未探测过要先探测一次");
+        assert!(!should_probe(NOW, NOW + 5), "刚探测过不要每拍请求");
+        assert!(!should_probe(NOW, NOW + CURRENT_PROBE_INTERVAL - 1), "差 1 秒仍在窗口内");
+        assert!(should_probe(NOW, NOW + CURRENT_PROBE_INTERVAL), "整 60 秒放开");
+        assert!(should_probe(NOW, NOW + 12 * 3600), "长时间后同样放开");
     }
 
     #[test]
