@@ -45,8 +45,10 @@ actor SessionTracker {
         }
 
         tickTask = Task { [weak self] in
+            // 1s 粒度轮询 lastPeriodicCheck：beginSession 会重置它，
+            // 固定 60s 相位会错过保存窗口，崩溃时丢掉整段会话（实测 80s 全丢）
             while !Task.isCancelled, let self = self {
-                try? await Task.sleep(nanoseconds: UInt64(self.tickInterval * 1_000_000_000))
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
                 await self.periodicCheck()
             }
         }
@@ -154,10 +156,9 @@ actor SessionTracker {
                 state = .tracking(app: app, window: nil, start: start, startTick: startTick, accumulatedMs: accumulatedMs, lastPeriodicCheck: now, sessionId: sessionId)
                 Logger.debug("Periodic checkpoint: \(app.name)")
             }
-        case .idle:
-            await persistence.clear()
-        case .suspended:
-            await persistence.clear()
+        case .idle, .suspended:
+            // 进入这两个状态时 flushFinal 已清过快照，1s 轮询不再重复删除
+            break
         }
     }
 
