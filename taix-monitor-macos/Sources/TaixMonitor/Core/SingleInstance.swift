@@ -4,7 +4,8 @@ enum SingleInstance {
     private static var lockFile: FileHandle?
     private static var lockPath: String = "/tmp/taix-monitor.lock"
 
-    static func tryAcquire() -> Bool {
+    static func tryAcquire(path: String? = nil) -> Bool {
+        if let path { lockPath = path }
         let fileManager = FileManager.default
 
         if !fileManager.fileExists(atPath: lockPath) {

@@ -49,15 +49,23 @@ impl AppTimerService {
 
         let mut tx = pool.begin().await?;
 
-        // 同一进程在同一开始时间的上报只处理一次（StartDateTime 统一为 UTC，RFC3339 格式）
         let start_time_key = start_time.to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+
+        let session_id = if req.session_id.trim().is_empty() {
+            format!("{}@{}", process, start_time_key)
+        } else {
+            req.session_id
+        };
+        let session_id: String = session_id.chars().take(128).collect();
+
         let dedup_result = sqlx::query(
             r#"
-            INSERT INTO AppDurationRequests (ProcessName, StartDateTime, Duration)
-            VALUES (?, ?, ?)
-            ON CONFLICT(ProcessName, StartDateTime) DO NOTHING
+            INSERT INTO AppDurationRequests (SessionId, ProcessName, StartDateTime, Duration)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(SessionId) DO NOTHING
             "#,
         )
+        .bind(&session_id)
         .bind(&process)
         .bind(&start_time_key)
         .bind(duration)
@@ -66,8 +74,8 @@ impl AppTimerService {
 
         if dedup_result.rows_affected() == 0 {
             debug!(
-                "update_app_duration: duplicate request skipped for {}@{}",
-                process, start_time_key
+                "update_app_duration: duplicate session skipped for {}@{}",
+                process, session_id
             );
             tx.commit().await?;
             return Ok(());

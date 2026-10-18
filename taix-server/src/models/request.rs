@@ -19,6 +19,8 @@ pub struct UpdateAppDurationRequest {
     pub process_name: String,
     pub duration: i64,
     pub start_date_time: DateTime<Utc>,
+    #[serde(default)]
+    pub session_id: String,
     pub file: Option<String>,
     pub icon_file: Option<String>,
     pub description: Option<String>,

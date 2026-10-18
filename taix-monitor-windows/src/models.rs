@@ -79,6 +79,7 @@ impl WindowInfo {
 pub struct AppActiveEvent {
     pub app: AppInfo,
     pub window: WindowInfo,
+    pub session_id: String,
 }
 
 #[derive(Debug, Clone)]
@@ -86,6 +87,19 @@ pub struct AppDurationEvent {
     pub duration_secs: i64,
     pub app: AppInfo,
     pub start_time: SystemTime,
+    pub session_id: String,
+}
+
+/// 会话 id 由时间戳 + 进程内序号组成，monitor 重启也不会撞
+pub fn next_session_id() -> String {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static SEQ: AtomicU64 = AtomicU64::new(0);
+    let seq = SEQ.fetch_add(1, Ordering::Relaxed);
+    let nanos = SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    format!("{nanos}-{seq}")
 }
 
 // 通过命名管道发给 daemon 的格式
@@ -94,6 +108,7 @@ pub enum MonitorMessage<'a> {
         p: &'a str,
         d: i64,
         a: i64,
+        sid: &'a str,
         f: Option<&'a str>,
         i: Option<&'a str>,
         desc: Option<&'a str>,
@@ -106,6 +121,7 @@ pub enum MonitorMessage<'a> {
         f: Option<&'a str>,
         i: Option<&'a str>,
         s: i64,
+        sid: &'a str,
     },
 }
 
@@ -116,11 +132,12 @@ impl<'a> fmt::Display for MonitorMessage<'a> {
                 p,
                 d,
                 a,
+                sid,
                 f: file_path,
                 i: icon_path,
                 desc,
             } => {
-                write!(f, "{{\"t\":\"app\",\"p\":{},\"d\":{},\"a\":{}", json_escape(p), d, a)?;
+                write!(f, "{{\"t\":\"app\",\"p\":{},\"d\":{},\"a\":{},\"sid\":{}", json_escape(p), d, a, json_escape(sid))?;
                 if let Some(v) = file_path {
                     write!(f, ",\"f\":{}", json_escape(v))?;
                 }
@@ -134,8 +151,8 @@ impl<'a> fmt::Display for MonitorMessage<'a> {
             }
             MonitorMessage::Sleep => write!(f, "{{\"t\":\"sleep\"}}"),
             MonitorMessage::Wake => write!(f, "{{\"t\":\"wake\"}}"),
-            MonitorMessage::Current { p, f: file_path, i: icon_path, s } => {
-                write!(f, "{{\"t\":\"current\",\"p\":{},\"s\":{}", json_escape(p), s)?;
+            MonitorMessage::Current { p, f: file_path, i: icon_path, s, sid } => {
+                write!(f, "{{\"t\":\"current\",\"p\":{},\"s\":{},\"sid\":{}", json_escape(p), s, json_escape(sid))?;
                 if let Some(v) = file_path {
                     write!(f, ",\"f\":{}", json_escape(v))?;
                 }
@@ -223,5 +240,68 @@ impl SessionCheckpoint {
             desc: desc.to_owned(),
             since_ts,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 手拼 JSON 没有 serde 兜底，sid 字段的格式靠测试锁死
+    #[test]
+    fn app_message_json_carries_session_id() {
+        let msg = MonitorMessage::App {
+            p: "chrome.exe",
+            d: 120,
+            a: 1_792_302_696,
+            sid: "nano-1",
+            f: Some(r"C:\app\chrome.exe"),
+            i: None,
+            desc: Some("Chrome"),
+        };
+        let json = msg.to_string();
+        assert!(json.starts_with(r#"{"t":"app""#), "{json}");
+        assert!(json.contains(r#""p":"chrome.exe""#), "{json}");
+        assert!(json.contains(r#""d":120"#), "{json}");
+        assert!(json.contains(r#""a":1792302696"#), "{json}");
+        assert!(json.contains(r#""sid":"nano-1""#), "{json}");
+        assert!(json.contains(r#""f":"C:\\app\\chrome.exe""#), "{json}");
+        assert!(json.contains(r#""desc":"Chrome""#), "{json}");
+        assert!(!json.contains(r#""i":"#), "None 字段不得出现: {json}");
+        assert!(json.ends_with('}'), "{json}");
+    }
+
+    #[test]
+    fn current_message_json_carries_session_id() {
+        let msg = MonitorMessage::Current {
+            p: "code.exe",
+            f: None,
+            i: Some("icon.png"),
+            s: 1_792_302_696,
+            sid: "1792302696000000000-3",
+        };
+        let json = msg.to_string();
+        assert!(json.starts_with(r#"{"t":"current""#), "{json}");
+        assert!(json.contains(r#""p":"code.exe""#), "{json}");
+        assert!(json.contains(r#""s":1792302696"#), "{json}");
+        assert!(json.contains(r#""sid":"1792302696000000000-3""#), "{json}");
+        assert!(!json.contains(r#""f":"#), "None 字段不得出现: {json}");
+        assert!(json.contains(r#""i":"icon.png""#), "{json}");
+        assert!(json.ends_with('}'), "{json}");
+    }
+
+    #[test]
+    fn lifecycle_messages_unchanged() {
+        assert_eq!(MonitorMessage::Sleep.to_string(), r#"{"t":"sleep"}"#);
+        assert_eq!(MonitorMessage::Wake.to_string(), r#"{"t":"wake"}"#);
+    }
+
+    #[test]
+    fn next_session_id_is_unique_and_shaped() {
+        let a = next_session_id();
+        let b = next_session_id();
+        assert_ne!(a, b);
+        assert!(a.contains('-'), "{a}");
+        assert!(a.chars().all(|c| c.is_ascii_digit() || c == '-'), "{a}");
     }
 }

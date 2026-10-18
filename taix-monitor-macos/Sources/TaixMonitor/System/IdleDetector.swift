@@ -254,7 +254,8 @@ actor IdleDetector {
             timestamp: Date(),
             app: nil,
             duration: nil,
-            window: nil
+            window: nil,
+            sessionId: nil
         )
         await eventBus.publish(event)
     }

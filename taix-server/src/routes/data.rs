@@ -210,7 +210,7 @@ async fn get_today_summary(
         .tz
         .unwrap_or_else(|| crate::utils::host_timezone().name().to_string());
     let ongoing = if q.include_ongoing {
-        current::ongoing_session(&plugins)
+        current::ongoing_session(&plugins, &pool)
             .await
             .map(|(process, since_epoch)| OngoingSession {
                 process,

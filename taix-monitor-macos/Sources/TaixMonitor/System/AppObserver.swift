@@ -72,7 +72,8 @@ actor AppObserver {
                 timestamp: Date(),
                 app: nil,
                 duration: nil,
-                window: nil
+                window: nil,
+                sessionId: nil
             )
             await eventBus.publish(idle)
             return
@@ -110,7 +111,8 @@ actor AppObserver {
             timestamp: Date(),
             app: appInfo,
             duration: nil,
-            window: windowInfo
+            window: windowInfo,
+            sessionId: UUID().uuidString
         )
 
         await eventBus.publish(event)

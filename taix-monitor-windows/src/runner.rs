@@ -60,6 +60,7 @@ pub fn run(
     // 心跳：前台应用 + 会话开始；睡眠停发
     let mut last_app: Option<crate::models::AppInfo> = None;
     let mut last_since = now_epoch_secs();
+    let mut last_session_id = String::new();
     let mut is_sleeping = false;
     let mut beat: u64 = 0;
 
@@ -71,7 +72,13 @@ pub fn run(
         if let Some(event) = app_manager.poll_foreground(&mut last_hwnd) {
             last_app = Some(event.app.clone());
             last_since = now_epoch_secs();
+            last_session_id = event.session_id.clone();
             timer.on_app_switch(event);
+            if !is_sleeping {
+                if let Some(app) = &last_app {
+                    send_current(&queue, app, last_since, &last_session_id);
+                }
+            }
         }
 
         // Sleep/Wake 检测
@@ -79,8 +86,9 @@ pub fn run(
             is_sleeping = matches!(status, crate::models::SleepStatus::Sleep);
             if !is_sleeping {
                 last_since = now_epoch_secs(); // 唤醒即新会话
+                last_session_id = crate::models::next_session_id();
             }
-            timer.on_sleep_status_changed(status);
+            timer.on_sleep_status_changed(status, last_session_id.clone());
             info!(
                 target: "main",
                 "{} detected",
@@ -98,6 +106,12 @@ pub fn run(
             let mut json = msg.to_string();
             json.push('\n');
             queue.enqueue(json.into_bytes());
+            // 唤醒先发 wake 再补 current，避免先到的 current 被 set_sleep(false) 清掉
+            if !is_sleeping {
+                if let Some(app) = &last_app {
+                    send_current(&queue, app, last_since, &last_session_id);
+                }
+            }
             // 跳过下面重复的 timer.tick
             continue;
         }
@@ -107,16 +121,7 @@ pub fn run(
         // 5s 一拍上报 current
         if !is_sleeping && beat % 5 == 0 {
             if let Some(app) = &last_app {
-                let msg = crate::models::MonitorMessage::Current {
-                    p: &app.process,
-                    f: (!app.executable_path.is_empty())
-                        .then_some(app.executable_path.as_str()),
-                    i: (!app.icon_path.is_empty()).then_some(app.icon_path.as_str()),
-                    s: last_since,
-                };
-                let mut json = msg.to_string();
-                json.push('\n');
-                queue.enqueue(json.into_bytes());
+                send_current(&queue, app, last_since, &last_session_id);
             }
         }
 
@@ -125,6 +130,24 @@ pub fn run(
             std::thread::sleep(Duration::from_secs(1) - elapsed);
         }
     }
+}
+
+fn send_current(
+    queue: &crate::transport::queue::MessageQueue,
+    app: &crate::models::AppInfo,
+    since: i64,
+    session_id: &str,
+) {
+    let msg = crate::models::MonitorMessage::Current {
+        p: &app.process,
+        f: (!app.executable_path.is_empty()).then_some(app.executable_path.as_str()),
+        i: (!app.icon_path.is_empty()).then_some(app.icon_path.as_str()),
+        s: since,
+        sid: session_id,
+    };
+    let mut json = msg.to_string();
+    json.push('\n');
+    queue.enqueue(json.into_bytes());
 }
 
 fn now_epoch_secs() -> i64 {
@@ -197,10 +220,12 @@ fn try_recover_session(data_dir: &std::path::Path, queue: &crate::transport::que
             } else {
                 Some(cp.process.as_str())
             };
+            let sid = crate::models::next_session_id();
             let msg = crate::models::MonitorMessage::App {
                 p: &cp.process,
                 d: delta,
                 a: cp.since_ts,
+                sid: &sid,
                 f: exe,
                 i: icon,
                 desc,

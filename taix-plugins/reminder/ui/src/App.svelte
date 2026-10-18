@@ -19,6 +19,15 @@
   let { api }: { api: TaixPluginUiApi } = $props();
 
   // 挂载一次的初始草稿：api 是宿主为本实例创建的稳定句柄，读初值不需要响应式绑定
+  // 规则序号只增不减：删掉最大序号的规则后，新规则也不得复用其 id（插件闸门按 id 记账）
+  function seedRuleSeq(rules: ReminderRule[], stored: unknown): number {
+    let max = 0;
+    rules.forEach((r, i) => {
+      const m = /^r(\d+)$/.exec(r.id ?? `r${i + 1}`);
+      if (m) max = Math.max(max, Number(m[1]));
+    });
+    return Math.max(max, Number(stored ?? 0) || 0);
+  }
   function initFromApi() {
     const values = api.values;
     // 与旧版编辑器相同的宽松兜底：非字符串一律 String 化，布尔取真值
@@ -35,9 +44,10 @@
       initialRules: rules,
       initialSound: !!values.sound,
       initialScript: values.script == null ? '' : String(values.script),
+      initialRuleSeq: seedRuleSeq(rules, values.ruleSeq),
     };
   }
-  const { initialMode, initialRules, initialSound, initialScript } = initFromApi();
+  const { initialMode, initialRules, initialSound, initialScript, initialRuleSeq } = initFromApi();
 
   // 宿主语言：挂载时读初值并订阅变化，宿主缺失 onLocale 时读一次即止
   $effect(() => {
@@ -48,6 +58,7 @@
   let sound = $state(initialSound);
   let script = $state(initialScript);
   let rules = $state<ReminderRule[]>(initialRules);
+  let ruleSeq = $state(initialRuleSeq);
 
   function setMode(m: '可视化规则' | 'Lua 脚本') {
     mode = m;
@@ -116,14 +127,11 @@
   );
   const scriptOverridden = $derived(scriptTouched && script !== compiled);
 
-  // 新规则生成稳定 id：取现有 r<N> 的最大序号 + 1
+  // 新规则 id 从 ruleSeq 递增，只增不减；删除规则也不会让 id 被复用
   function nextRuleId(): string {
-    let max = 0;
-    rules.forEach((r, i) => {
-      const m = /^r(\d+)$/.exec(r.id ?? `r${i + 1}`);
-      if (m) max = Math.max(max, Number(m[1]));
-    });
-    return `r${max + 1}`;
+    ruleSeq += 1;
+    api.patch({ ruleSeq });
+    return `r${ruleSeq}`;
   }
   function addRule(type: RuleType) {
     setRules([...rules, { ...defaultRule(type), id: nextRuleId() }]);

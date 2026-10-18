@@ -186,6 +186,8 @@ pub async fn set_sleep(state: &PluginState, pool: &SqlitePool, sleeping: bool) {
     if !sleeping {
         // 显式唤醒也算一次「平台活着」的信号，避免读路径立刻又按静默判空闲
         state.last_current_at.store(now, Ordering::Relaxed);
+        // 睡前快照已经结算，清掉，等下一拍 current 再填
+        *state.current_app.write().await = None;
     }
     persist(state);
     let snap = snapshot(state, pool).await;
@@ -193,7 +195,8 @@ pub async fn set_sleep(state: &PluginState, pool: &SqlitePool, sleeping: bool) {
 }
 
 /// 未结算的进行中会话只有这里能给出；空闲/睡眠期间没有进行中会话
-pub async fn ongoing_session(state: &PluginState) -> Option<(String, i64)> {
+/// current 快照可能还停在刚结算的会话上，按 sessionId 精确剔除
+pub async fn ongoing_session(state: &PluginState, pool: &SqlitePool) -> Option<(String, i64)> {
     if is_idle(state, now_epoch()) {
         return None;
     }
@@ -202,6 +205,20 @@ pub async fn ongoing_session(state: &PluginState) -> Option<(String, i64)> {
     let since = chrono::DateTime::parse_from_rfc3339(app["since"].as_str()?)
         .ok()?
         .timestamp();
+    let session_id = app["sessionId"].as_str()?;
+
+    let settled = sqlx::query_scalar::<_, i64>(
+        "SELECT 1 FROM AppDurationRequests WHERE SessionId = ?1 LIMIT 1",
+    )
+    .bind(session_id)
+    .fetch_optional(pool)
+    .await
+    .map(|row| row.is_some())
+    .unwrap_or(false);
+
+    if settled {
+        return None;
+    }
     Some((process, since))
 }
 

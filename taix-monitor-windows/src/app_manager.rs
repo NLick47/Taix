@@ -1,4 +1,4 @@
-use crate::models::{AppActiveEvent, AppInfo, AppType};
+use crate::models::{next_session_id, AppActiveEvent, AppInfo, AppType};
 use crate::win32::window::{
     get_foreground_window, get_window_info, get_window_thread_process_id,
     is_valid_visible_window,
@@ -215,7 +215,7 @@ impl AppManager {
             app.app_type, app.process, window.title, window.class_name
         );
 
-        Some(AppActiveEvent { app, window })
+        Some(AppActiveEvent { app, window, session_id: next_session_id() })
     }
 
     fn evict_if_needed(&mut self) {

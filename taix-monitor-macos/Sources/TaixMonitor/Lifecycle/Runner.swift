@@ -59,10 +59,11 @@ actor Runner {
 
         await transport.start()
         await sessionTracker.start()
+        // Heartbeat 先订阅，再让 AppObserver 发布启动时的前台事件，避免错过首段会话
+        await heartbeat.start(events: await eventBus.subscribe())
         await appObserver.start()
         await idleDetector.start()
         await gamepadMonitor.start()
-        await heartbeat.start(events: await eventBus.subscribe())
 
         Logger.info("TaixMonitor is running")
 

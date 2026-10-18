@@ -19,6 +19,7 @@ enum TimerState {
         start_tick: u64,
         accumulated_ms: i64,
         last_periodic_tick: u64,
+        session_id: String,
     },
     Suspended {
         app: Option<AppInfo>,
@@ -73,6 +74,7 @@ impl AppTimer {
                         start_tick: now_tick,
                         accumulated_ms: 0,
                         last_periodic_tick: now_tick,
+                        session_id: event.session_id,
                     };
                 }
                 return;
@@ -83,6 +85,7 @@ impl AppTimer {
                 start_time,
                 start_tick,
                 accumulated_ms,
+                session_id,
                 ..
             } => {
                 let identity_changed = event.app.process != app.process
@@ -97,6 +100,7 @@ impl AppTimer {
                         FlushKind::Final,
                         accumulated_ms,
                         app,
+                        session_id,
                     );
                     if let Some(duration_event) = &flush {
                         info!(
@@ -122,6 +126,7 @@ impl AppTimer {
                             start_tick: now_tick,
                             accumulated_ms: 0,
                             last_periodic_tick: now_tick,
+                            session_id: event.session_id,
                         };
                     } else {
                         self.state = TimerState::Idle;
@@ -135,7 +140,7 @@ impl AppTimer {
         }
     }
 
-    pub fn on_sleep_status_changed(&mut self, status: SleepStatus) {
+    pub fn on_sleep_status_changed(&mut self, status: SleepStatus, new_session_id: String) {
         let now = SystemTime::now();
         let now_tick = get_tick_ms();
         match status {
@@ -146,6 +151,7 @@ impl AppTimer {
                     start_time,
                     start_tick,
                     accumulated_ms,
+                    session_id,
                     ..
                 } => {
                     let flush = Self::compute_flush(
@@ -156,6 +162,7 @@ impl AppTimer {
                         FlushKind::Final,
                         accumulated_ms,
                         app,
+                        session_id,
                     );
                     if let Some(event) = &flush {
                         info!(
@@ -216,6 +223,7 @@ impl AppTimer {
                             start_tick: now_tick,
                             accumulated_ms: 0,
                             last_periodic_tick: now_tick,
+                            session_id: new_session_id,
                         };
                     } else {
                         self.state = TimerState::Idle;
@@ -238,6 +246,7 @@ impl AppTimer {
                 start_tick,
                 accumulated_ms,
                 last_periodic_tick,
+                ..
             } => {
                 // GetTickCount64 在睡眠时不 tick，但 periodic 检测需要的是"实际运行时间"，
                 // 所以直接用 tick 差值判断 60 秒周期
@@ -287,6 +296,7 @@ impl AppTimer {
         kind: FlushKind,
         accumulated_ms: &mut i64,
         app: &AppInfo,
+        session_id: &str,
     ) -> Option<AppDurationEvent> {
         let duration_ms = if now_tick >= start_tick {
             (now_tick - start_tick) as i64
@@ -321,6 +331,7 @@ impl AppTimer {
             duration_secs,
             app: app.clone(),
             start_time,
+            session_id: session_id.to_string(),
         })
     }
 
@@ -349,6 +360,7 @@ fn send_duration_event(queue: &MessageQueue, event: &AppDurationEvent) {
         p: &event.app.process,
         d: event.duration_secs,
         a,
+        sid: &event.session_id,
         f: exe,
         i: icon,
         desc,

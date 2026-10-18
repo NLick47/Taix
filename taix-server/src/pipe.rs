@@ -14,12 +14,14 @@ struct PipeAppMsg {
     p: String,
     d: i64,
     a: i64,
+    #[serde(default)]
+    sid: String,
     f: Option<String>,
     i: Option<String>,
     desc: Option<String>,
 }
 
-/// M4 心跳：p=进程名 / f=可执行路径 / i=图标 / s=会话开始 epoch 秒
+/// M4 心跳：p=进程名 / f=可执行路径 / i=图标 / s=会话开始 epoch 秒 / sid=会话 id
 /// f 解析时忽略；p 空 = 还没有前台应用
 #[derive(Debug, Deserialize)]
 struct PipeCurrentMsg {
@@ -29,6 +31,8 @@ struct PipeCurrentMsg {
     i: Option<String>,
     #[serde(default)]
     s: i64,
+    #[serde(default)]
+    sid: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -225,8 +229,17 @@ where
                             let since = chrono::DateTime::from_timestamp(cur.s, 0)
                                 .unwrap_or_else(chrono::Utc::now)
                                 .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+                            let session_id = if cur.sid.trim().is_empty() {
+                                format!("{}@{}", cur.p, since)
+                            } else {
+                                cur.sid
+                            };
+                            // 主键防御：与 update_app_duration 的落库钳制一致
+                            let session_id: String =
+                                session_id.chars().take(128).collect();
                             let app = serde_json::json!({
                                 "process": cur.p,
+                                "sessionId": session_id,
                                 "title": serde_json::Value::Null,
                                 "iconPath": cur.i,
                                 "since": since,
@@ -261,6 +274,7 @@ where
                                 process_name: extra.p,
                                 duration: extra.d,
                                 start_date_time: date_time,
+                                session_id: extra.sid,
                                 file: extra.f,
                                 icon_file: extra.i,
                                 description: extra.desc,

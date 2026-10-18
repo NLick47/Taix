@@ -6,13 +6,16 @@ struct Configuration: Sendable {
     let monitorConfig: MonitorConfig
     let iconCacheDirectory: URL
     let persistenceURL: URL
+    /// 单实例锁文件；隔离测试换路径即可与生产实例并存
+    let lockPath: String?
 
     static let `default` = Configuration(
         socketPath: "/tmp/taix_daemon.sock",
         tickInterval: 60,
         monitorConfig: .default,
         iconCacheDirectory: Configuration.defaultIconCacheDirectory,
-        persistenceURL: Configuration.defaultPersistenceURL
+        persistenceURL: Configuration.defaultPersistenceURL,
+        lockPath: nil
     )
 
     static let appIconsDirectoryName = "AppIcons"

@@ -412,7 +412,7 @@ fn transport_contract() {
         // reminder 已是侧车，睡眠语义从通用端点断言
         let current = http_json("GET", port, "/api/apptimer/current", None);
         assert_eq!(current["app"]["process"], json!("ITTestApp"));
-        for field in ["process", "since", "today", "todaySeconds"] {
+        for field in ["process", "sessionId", "since", "today", "todaySeconds"] {
             assert!(current["app"].get(field).is_some(), "current.app 缺少字段 {}", field);
         }
         assert_eq!(current["sleep"], json!(false));
@@ -442,7 +442,13 @@ fn transport_contract() {
         loop {
             let current = http_json("GET", port, "/api/apptimer/current", None);
             if current["sleep"] == json!(false) {
-                assert_eq!(current["app"]["process"], json!("ITTestApp"), "唤醒后前台应用应保持");
+                // 睡前快照已结算：唤醒后先清掉，等下一拍 current 再填，
+                // 否则睡眠时长会被 includeOngoing 算成旧应用的进行中
+                assert_eq!(
+                    current["app"],
+                    json!(null),
+                    "唤醒后睡前快照应被丢弃"
+                );
                 assert!(
                     current["continuousSince"].as_str().is_some(),
                     "唤醒应开启新的连续使用段"
@@ -450,6 +456,17 @@ fn transport_contract() {
                 break;
             }
             assert!(std::time::Instant::now() < deadline, "唤醒状态未生效");
+            std::thread::sleep(Duration::from_millis(200));
+        }
+
+        send_line(json!({ "t": "current", "p": "ITTestApp", "s": now_epoch() }));
+        let deadline = std::time::Instant::now() + TIMEOUT;
+        loop {
+            let current = http_json("GET", port, "/api/apptimer/current", None);
+            if current["app"]["process"] == json!("ITTestApp") {
+                break;
+            }
+            assert!(std::time::Instant::now() < deadline, "唤醒后心跳未恢复前台应用");
             std::thread::sleep(Duration::from_millis(200));
         }
     }

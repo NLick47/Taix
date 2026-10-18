@@ -3,7 +3,7 @@ import Foundation
 actor SessionTracker {
     private enum TimerState {
         case idle
-        case tracking(app: AppInfo, window: WindowInfo?, start: Date, startTick: TimeInterval, accumulatedMs: TimeInterval, lastPeriodicCheck: Date)
+        case tracking(app: AppInfo, window: WindowInfo?, start: Date, startTick: TimeInterval, accumulatedMs: TimeInterval, lastPeriodicCheck: Date, sessionId: String)
         case suspended
     }
 
@@ -65,7 +65,7 @@ actor SessionTracker {
         case .foregroundChanged:
             await flushFinal()
             if let app = event.app {
-                await beginSession(app: app, window: event.window)
+                await beginSession(app: app, window: event.window, sessionId: event.sessionId ?? UUID().uuidString)
             }
         case .idleDetected:
             // flushFinal 结算当前会话，suspendSession 再转入挂起态
@@ -78,10 +78,10 @@ actor SessionTracker {
         }
     }
 
-    private func beginSession(app: AppInfo, window: WindowInfo?) async {
+    private func beginSession(app: AppInfo, window: WindowInfo?, sessionId: String) async {
         let now = Date()
         let tick = nowTick
-        state = .tracking(app: app, window: window, start: now, startTick: tick, accumulatedMs: 0, lastPeriodicCheck: now)
+        state = .tracking(app: app, window: window, start: now, startTick: tick, accumulatedMs: 0, lastPeriodicCheck: now, sessionId: sessionId)
         await saveSnapshot()
 
         Logger.info("Session started: \(app.name) [\(app.bundleIdentifier ?? "no-bundle-id")]")
@@ -91,9 +91,19 @@ actor SessionTracker {
             timestamp: now,
             app: app,
             duration: 0,
-            window: window
+            window: window,
+            sessionId: sessionId
         )
         await transport.send(event)
+
+        await eventBus.publish(MonitorEvent(
+            kind: .sessionStarted,
+            timestamp: now,
+            app: app,
+            duration: nil,
+            window: window,
+            sessionId: sessionId
+        ))
     }
 
     private func suspendSession() async {
@@ -109,15 +119,24 @@ actor SessionTracker {
     }
 
     private func resumeSession() async {
-        let now = Date()
-        let tick = nowTick
         switch state {
         case .suspended:
             // 恢复后前台仍是某个可统计应用就立即续计，否则要等下次切应用
             if let frontmost = await frontmostProvider() {
-                state = .tracking(app: frontmost, window: nil, start: now, startTick: tick, accumulatedMs: 0, lastPeriodicCheck: now)
+                let now = Date()
+                let tick = nowTick
+                let sessionId = UUID().uuidString
+                state = .tracking(app: frontmost, window: nil, start: now, startTick: tick, accumulatedMs: 0, lastPeriodicCheck: now, sessionId: sessionId)
                 await saveSnapshot()
                 Logger.info("Session resumed after idle: \(frontmost.name)")
+                await eventBus.publish(MonitorEvent(
+                    kind: .sessionStarted,
+                    timestamp: now,
+                    app: frontmost,
+                    duration: nil,
+                    window: nil,
+                    sessionId: sessionId
+                ))
             } else {
                 state = .idle
             }
@@ -129,10 +148,10 @@ actor SessionTracker {
     private func periodicCheck() async {
         let now = Date()
         switch state {
-        case .tracking(let app, _, let start, let startTick, let accumulatedMs, let lastPeriodicCheck):
+        case .tracking(let app, _, let start, let startTick, let accumulatedMs, let lastPeriodicCheck, let sessionId):
             if now.timeIntervalSince(lastPeriodicCheck) >= tickInterval {
                 await saveSnapshot()
-                state = .tracking(app: app, window: nil, start: start, startTick: startTick, accumulatedMs: accumulatedMs, lastPeriodicCheck: now)
+                state = .tracking(app: app, window: nil, start: start, startTick: startTick, accumulatedMs: accumulatedMs, lastPeriodicCheck: now, sessionId: sessionId)
                 Logger.debug("Periodic checkpoint: \(app.name)")
             }
         case .idle:
@@ -145,8 +164,8 @@ actor SessionTracker {
     private func flushFinal() async {
         let tick = nowTick
         switch state {
-        case .tracking(let app, _, let start, let startTick, var accumulatedMs, _):
-            if let event = computeFlush(start: start, startTick: startTick, endTick: tick, accumulatedMs: &accumulatedMs, app: app, isFinal: true) {
+        case .tracking(let app, _, let start, let startTick, var accumulatedMs, _, let sessionId):
+            if let event = computeFlush(start: start, startTick: startTick, endTick: tick, accumulatedMs: &accumulatedMs, app: app, isFinal: true, sessionId: sessionId) {
                 Logger.info("Session ended: \(app.name) [duration: \(event.duration ?? 0)s]")
                 await transport.send(event)
             }
@@ -163,7 +182,8 @@ actor SessionTracker {
         endTick: TimeInterval,
         accumulatedMs: inout TimeInterval,
         app: AppInfo,
-        isFinal: Bool
+        isFinal: Bool,
+        sessionId: String
     ) -> MonitorEvent? {
         let durationMs = (endTick - startTick) * 1000 + accumulatedMs
         guard durationMs > 0 else { return nil }
@@ -187,7 +207,8 @@ actor SessionTracker {
             timestamp: start,
             app: app,
             duration: Double(durationSecs),
-            window: nil
+            window: nil,
+            sessionId: sessionId
         )
     }
 
@@ -195,7 +216,7 @@ actor SessionTracker {
         let now = Date()
         let tick = nowTick
         switch state {
-        case .tracking(let app, _, let start, let startTick, let accumulatedMs, _):
+        case .tracking(let app, _, let start, let startTick, let accumulatedMs, _, _):
             let accruedSeconds = (accumulatedMs + (tick - startTick) * 1000) / 1000
             let snapshot = SessionSnapshot(
                 bundleIdentifier: app.bundleIdentifier ?? "",
@@ -230,9 +251,18 @@ actor SessionTracker {
         if let frontmost = await frontmostProvider(), isSameApp(app, frontmost) {
             let now = Date()
             let tick = nowTick
-            state = .tracking(app: app, window: nil, start: now, startTick: tick, accumulatedMs: accMs, lastPeriodicCheck: now)
+            let sessionId = UUID().uuidString
+            state = .tracking(app: app, window: nil, start: now, startTick: tick, accumulatedMs: accMs, lastPeriodicCheck: now, sessionId: sessionId)
             await saveSnapshot()
             Logger.info("Session resumed after restart: \(app.name) [\(Int(accMs / 1000))s carried over]")
+            await eventBus.publish(MonitorEvent(
+                kind: .sessionStarted,
+                timestamp: now,
+                app: app,
+                duration: nil,
+                window: nil,
+                sessionId: sessionId
+            ))
             return
         }
 
@@ -245,7 +275,8 @@ actor SessionTracker {
                 timestamp: settledAt,
                 app: app,
                 duration: Double(secs),
-                window: nil
+                window: nil,
+                sessionId: UUID().uuidString
             )
             await transport.send(event)
             Logger.info("Session settled after restart: \(app.name) [\(secs)s]")

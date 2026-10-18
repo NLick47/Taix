@@ -8,7 +8,7 @@ use sqlx::SqlitePool;
 use std::collections::HashMap;
 use tracing::{info, warn};
 
-pub(crate) const MIGRATION_STEPS: [&str; 19] = [
+pub(crate) const MIGRATION_STEPS: [&str; 20] = [
     "baseline",
     "add_columns",
     "rename_columns",
@@ -28,6 +28,7 @@ pub(crate) const MIGRATION_STEPS: [&str; 19] = [
     "macos_icon_paths",
     "web_favicons_dir",
     "plugin_records",
+    "app_duration_session_id",
 ];
 
 const BASELINE_SQL: &str = r#"
@@ -103,11 +104,11 @@ CREATE TABLE IF NOT EXISTS WebBrowseLogModels (
 );
 
 CREATE TABLE IF NOT EXISTS AppDurationRequests (
+    SessionId TEXT NOT NULL PRIMARY KEY,
     ProcessName TEXT NOT NULL,
     StartDateTime TEXT NOT NULL,
     Duration INTEGER NOT NULL,
-    CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
-    PRIMARY KEY (ProcessName, StartDateTime)
+    CreatedAt TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS AppSessions (
@@ -358,6 +359,27 @@ pub(crate) async fn run(pool: &SqlitePool, tz_id: &str) -> anyhow::Result<()> {
         .await
         .context("创建 PluginRecords 表")?;
         mark_done(&mut tx, "plugin_records").await?;
+    }
+
+    if !is_done(&mut tx, "app_duration_session_id").await? {
+        execute_batch(
+            &mut tx,
+            r#"
+            DROP TABLE IF EXISTS AppDurationRequests;
+            CREATE TABLE AppDurationRequests (
+                SessionId TEXT NOT NULL PRIMARY KEY,
+                ProcessName TEXT NOT NULL,
+                StartDateTime TEXT NOT NULL,
+                Duration INTEGER NOT NULL,
+                CreatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_appduration_start ON AppDurationRequests(StartDateTime);
+            CREATE INDEX IF NOT EXISTS idx_appduration_process_start ON AppDurationRequests(ProcessName, StartDateTime);
+            "#,
+        )
+        .await
+        .context("重建 AppDurationRequests 会话主键")?;
+        mark_done(&mut tx, "app_duration_session_id").await?;
     }
 
     tx.commit().await.context("提交迁移事务失败")?;

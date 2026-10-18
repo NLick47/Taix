@@ -12,6 +12,7 @@ actor Heartbeat {
     private var isIdle = false
     private var since = Date()
     private var currentName: String?
+    private var sessionId: String?
     private var lastTrackedApp: AppInfo?
 
     init(transport: TransportClient, appProvider: @escaping () async -> AppInfo?) {
@@ -34,10 +35,17 @@ actor Heartbeat {
                     if await self.setSleeping(false) {
                         await self.transport.sendLifecycle(sleeping: false)
                     }
-                case .foregroundChanged:
+                case .foregroundChanged, .sessionStarted:
                     // 锁屏/屏保后回到前台不会触发 activityResumed，这里兜底恢复心跳
                     if await self.setSleeping(false) {
                         await self.transport.sendLifecycle(sleeping: false)
+                    }
+                    if let app = event.app {
+                        await self.publish(
+                            app: app,
+                            since: event.timestamp,
+                            sessionId: event.sessionId ?? UUID().uuidString
+                        )
                     }
                 default:
                     break
@@ -68,8 +76,10 @@ actor Heartbeat {
         isIdle = sleeping
         if sleeping {
             Logger.debug("Heartbeat paused (idle)")
+            sessionId = nil
         } else {
             since = Date() // 唤醒即新会话
+            sessionId = nil // 等 sessionStarted / foregroundChanged 给新 id
             Logger.debug("Heartbeat resumed")
         }
         return true
@@ -83,6 +93,14 @@ actor Heartbeat {
         provided ?? last
     }
 
+    private func publish(app: AppInfo, since: Date, sessionId: String) async {
+        lastTrackedApp = app
+        currentName = app.name
+        self.since = since
+        self.sessionId = sessionId
+        await transport.sendCurrent(app: app, since: since, sessionId: sessionId)
+    }
+
     private func beat() async {
         guard !isIdle else { return }
         let provided = await appProvider()
@@ -90,10 +108,16 @@ actor Heartbeat {
             lastTrackedApp = provided
         }
         let app = Self.heartbeatTarget(provided: provided, last: lastTrackedApp)
-        if app?.name != currentName {
-            currentName = app?.name
+        guard let app, let sessionId else { return }
+        if app.name != currentName {
+            currentName = app.name
             since = Date() // 应用切换即新会话起点
+            self.sessionId = UUID().uuidString
         }
-        await transport.sendCurrent(app: app, since: since)
+        await transport.sendCurrent(
+            app: app,
+            since: since,
+            sessionId: self.sessionId ?? sessionId
+        )
     }
 }

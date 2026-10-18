@@ -29,9 +29,11 @@ struct MonitorEvent: Codable, Sendable {
     let app: AppInfo?
     let duration: TimeInterval?
     let window: WindowInfo?
+    let sessionId: String?
 
     enum EventKind: String, Codable, Sendable {
         case foregroundChanged
+        case sessionStarted
         case sessionTick
         case sessionEnded
         case idleDetected

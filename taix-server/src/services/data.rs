@@ -1376,9 +1376,10 @@ mod tests {
             ("YesterdayApp", yesterday.as_str(), 600i64),
         ] {
             sqlx::query(
-                "INSERT INTO AppDurationRequests (ProcessName, StartDateTime, Duration) \
-                 VALUES (?1, ?2, ?3)",
+                "INSERT INTO AppDurationRequests (SessionId, ProcessName, StartDateTime, Duration) \
+                 VALUES (?1, ?2, ?3, ?4)",
             )
+            .bind(format!("test-{process}"))
             .bind(process)
             .bind(start)
             .bind(duration)

@@ -16,12 +16,13 @@ private struct LegacyMessage: Codable {
     let f: String?
     let i: String?
     let desc: String?
+    let sid: String?
 
     init(adapting event: MonitorEvent) {
         let timestamp = Int64(event.timestamp.timeIntervalSince1970)
 
         switch event.kind {
-        case .foregroundChanged:
+        case .foregroundChanged, .sessionStarted:
             self.t = "app"
             self.p = event.app?.name
             self.d = 0
@@ -29,6 +30,7 @@ private struct LegacyMessage: Codable {
             self.f = event.app?.executablePath
             self.i = event.app?.iconPath
             self.desc = event.app?.displayName
+            self.sid = event.sessionId
 
         case .sessionTick, .sessionEnded:
             self.t = "app"
@@ -38,6 +40,7 @@ private struct LegacyMessage: Codable {
             self.f = event.app?.executablePath
             self.i = event.app?.iconPath
             self.desc = event.app?.displayName
+            self.sid = event.sessionId
 
         case .idleDetected:
             self.t = "sleep"
@@ -47,6 +50,7 @@ private struct LegacyMessage: Codable {
             self.f = nil
             self.i = nil
             self.desc = nil
+            self.sid = nil
 
         case .activityResumed:
             self.t = "wake"
@@ -56,6 +60,7 @@ private struct LegacyMessage: Codable {
             self.f = nil
             self.i = nil
             self.desc = nil
+            self.sid = nil
         }
     }
 }
@@ -111,13 +116,14 @@ actor TransportClient {
     }
 
     /// M4 心跳消息（与 Windows monitor 同一 JSON 形状）
-    func sendCurrent(app: AppInfo?, since: Date) {
+    func sendCurrent(app: AppInfo?, since: Date, sessionId: String) {
         struct CurrentMessage: Encodable {
             let t: String
             let p: String?
             let f: String?
             let i: String?
             let s: Int64
+            let sid: String
         }
         let exePath = app?.executablePath
         let message = CurrentMessage(
@@ -125,7 +131,8 @@ actor TransportClient {
             p: app?.name,
             f: (exePath?.isEmpty == false) ? exePath : nil,
             i: app?.iconPath,
-            s: Int64(since.timeIntervalSince1970)
+            s: Int64(since.timeIntervalSince1970),
+            sid: sessionId
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
