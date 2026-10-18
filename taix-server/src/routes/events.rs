@@ -55,6 +55,22 @@ async fn sse_handler(
         )
             .into_response();
     }
+    if sub != "webui" && !crate::plugins::service::is_enabled(&state, &sub).await {
+        return (
+            StatusCode::CONFLICT,
+            Json(ApiResponse {
+                code: 409,
+                message: format!("plugin '{}' is disabled", sub),
+                data: None::<serde_json::Value>,
+            }),
+        )
+            .into_response();
+    }
+    // 插件可带已处理游标重连；webui 忽略
+    let after = params
+        .get("after")
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(0);
 
     let keep_alive =
         KeepAlive::default().interval(Duration::from_secs(constants::PLUGIN_SSE_KEEPALIVE_SECS));
@@ -80,7 +96,7 @@ async fn sse_handler(
         return Sse::new(broadcast).keep_alive(keep_alive).into_response();
     }
 
-    let full = command_stream(state, sub).merge(broadcast);
+    let full = command_stream(state, sub, after).merge(broadcast);
     Sse::new(full).keep_alive(keep_alive).into_response()
 }
 
@@ -88,13 +104,14 @@ async fn sse_handler(
 fn command_stream(
     state: Arc<PluginState>,
     id: String,
+    after: u64,
 ) -> impl tokio_stream::Stream<Item = Result<Event, Infallible>> {
     let (tx, rx) = tokio::sync::mpsc::channel(constants::PLUGIN_COMMAND_QUEUE_MAX);
     // 单订阅者的缓冲上限；指令日志另有上限，泵阻塞不影响其它订阅者
     tokio::spawn(async move {
         let notifier = state.command_notifier(&id);
-        // 起始游标 0 = 补投日志里保留下来的指令；插件端按 seq 去重
-        let mut cursor = 0u64;
+        // 插件带持久游标重连时只补投之后的指令；0 = 首次连接，补投日志
+        let mut cursor = after;
         loop {
             for command in state.commands_after(&id, cursor) {
                 cursor = cursor.max(command.seq);

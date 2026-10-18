@@ -104,6 +104,9 @@ pub async fn set_enabled(state: &PluginState, id: &str, enabled: bool) -> Result
 
     if !enabled {
         state.states.write().await.remove(id);
+        // 禁用后旧指令不能留到重新启用时再执行
+        state.queues.lock().unwrap().remove(id);
+        state.notify.lock().unwrap().remove(id);
     }
 
     broadcast(
@@ -149,6 +152,9 @@ pub async fn set_plugin_state(
 const STATUS_STALE_AFTER_SECS: i64 = 90;
 
 pub async fn get_status(state: &PluginState, id: &str) -> Option<PluginStatus> {
+    if !is_enabled(state, id).await {
+        return None;
+    }
     let status = state.states.read().await.get(id).cloned()?;
     match chrono::DateTime::parse_from_rfc3339(&status.ts) {
         Ok(ts) if chrono::Utc::now().signed_duration_since(ts).num_seconds() > STATUS_STALE_AFTER_SECS => {

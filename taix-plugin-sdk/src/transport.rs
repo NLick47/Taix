@@ -125,10 +125,13 @@ impl Transport {
         ensure_ok(&resp_body, path).map(|_| ())
     }
 
-    pub fn open_sse(&self) -> anyhow::Result<Box<dyn Read + Send>> {
+    pub fn open_sse(&self, after: u64) -> anyhow::Result<Box<dyn Read + Send>> {
         let resp = self
             .client
-            .get(self.url(&format!("/api/events?sub={}", self.plugin_id)))
+            .get(self.url(&format!(
+                "/api/events?sub={}&after={}",
+                self.plugin_id, after
+            )))
             .header("Accept", "text/event-stream")
             .connect_timeout(REQUEST_TIMEOUT)
             .send()

@@ -389,6 +389,13 @@ mod tests {
     #[tokio::test]
     async fn stale_status_is_reported_as_none() {
         let state = test_state("stale").await;
+        // 禁用插件不再返回状态；这个用例验证的是陈旧判定，先启用
+        state
+            .registry
+            .write()
+            .await
+            .enabled
+            .insert("reminder".to_string(), true);
         let status = |ts: chrono::DateTime<chrono::Utc>| PluginStatus {
             state: "running".to_string(),
             data: None,

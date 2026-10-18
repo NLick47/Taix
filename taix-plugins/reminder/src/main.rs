@@ -116,20 +116,30 @@ impl Gate {
             || (c.once_per_day && self.fired_today(&c.id, today))
     }
 
-    /// 按序取第一条可提醒的；其余顺延 ROUND_DEFER_SECS
-    fn pick(
-        &mut self,
+    /// 只选择，不落冷却；通知真正发出后才 commit
+    fn select(
+        &self,
         candidates: &[RemindCandidate],
         now: i64,
         today: &str,
     ) -> Option<RemindCandidate> {
-        let index = candidates
+        candidates
             .iter()
-            .position(|c| !self.is_blocked(c, now, today))?;
-        let action = candidates[index].clone();
+            .find(|c| !self.is_blocked(c, now, today))
+            .cloned()
+    }
 
+    /// 通知成功后落冷却/每日一次，其余命中顺延 ROUND_DEFER_SECS
+    fn commit(
+        &mut self,
+        action: &RemindCandidate,
+        candidates: &[RemindCandidate],
+        now: i64,
+        today: &str,
+    ) {
         if action.once_per_day {
-            self.fired_on.insert(action.id.clone(), today.to_string());
+            self.fired_on
+                .insert(action.id.clone(), today.to_string());
         }
         self.cooldowns
             .insert(action.id.clone(), now + action.cooldown_minutes * 60);
@@ -143,6 +153,18 @@ impl Gate {
                 *until = now + ROUND_DEFER_SECS;
             }
         }
+    }
+
+    /// 测试/纯逻辑用：选中并立即落闸门
+    #[cfg(test)]
+    fn pick(
+        &mut self,
+        candidates: &[RemindCandidate],
+        now: i64,
+        today: &str,
+    ) -> Option<RemindCandidate> {
+        let action = self.select(candidates, now, today)?;
+        self.commit(&action, candidates, now, today);
         Some(action)
     }
 }
@@ -285,10 +307,11 @@ fn identity(rt: &Runtime) -> taix_notify::AppIdentity {
     identity
 }
 
-fn notify(rt: &Runtime, title: &str, body: &str, sound: bool) {
-    // 通知是阻塞调用，放专用线程
+/// 同步等待通知结果（最多 5s）；失败时不落冷却，下一轮可重试
+fn notify(rt: &Runtime, title: &str, body: &str, sound: bool) -> bool {
     let (t, b) = (title.to_string(), body.to_string());
     let identity = identity(rt);
+    let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         let opts = taix_notify::NotifyOptions {
             aumid: identity.aumid,
@@ -296,10 +319,22 @@ fn notify(rt: &Runtime, title: &str, body: &str, sound: bool) {
             icon: identity.icon,
             ..Default::default()
         };
-        if let Err(e) = taix_notify::notify(&t, &b, &opts) {
-            tracing::warn!(target: "taix_plugin_reminder", "通知发送失败: {e:#}");
-        }
+        let ok = match taix_notify::notify(&t, &b, &opts) {
+            Ok(()) => true,
+            Err(e) => {
+                tracing::warn!(target: "taix_plugin_reminder", "通知发送失败: {e:#}");
+                false
+            }
+        };
+        let _ = tx.send(ok);
     });
+    match rx.recv_timeout(Duration::from_secs(5)) {
+        Ok(ok) => ok,
+        Err(_) => {
+            tracing::warn!(target: "taix_plugin_reminder", "通知发送超时");
+            false
+        }
+    }
 }
 
 /// 错误变化立即报，平时 30s 心跳
@@ -469,11 +504,12 @@ fn tick(ctx: &PluginCtx, rt: &Arc<Runtime>) {
     let now = now_epoch();
     let (_, _, today) = local_clock();
 
-    let mut gate = rt.gate.lock().unwrap();
-    // 已删规则的冷却可能残留，复用其 id 会被旧冷却压制
-    gate.prune(now);
-    let action = gate.pick(&candidates, now, &today);
-    drop(gate);
+    let action = {
+        let mut gate = rt.gate.lock().unwrap();
+        // 已删规则的冷却可能残留，复用其 id 会被旧冷却压制
+        gate.prune(now);
+        gate.select(&candidates, now, &today)
+    };
 
     let Some(action) = action else {
         // 全在冷却：仍要发心跳，否则详情页的剩余时间与连续时长一起冻住
@@ -486,12 +522,27 @@ fn tick(ctx: &PluginCtx, rt: &Arc<Runtime>) {
         return;
     };
 
-    notify(
+    let delivered = notify(
         rt,
         &action.title,
         &action.body,
         rt.sound.load(Ordering::Relaxed),
     );
+    if !delivered {
+        // 没送达不落 fired_on；短退避防每 5s 重试风暴
+        rt.gate
+            .lock()
+            .unwrap()
+            .cooldowns
+            .insert(action.id.clone(), now + 60);
+        tracing::warn!(
+            target: "taix_plugin_reminder",
+            "提醒未送达，60s 后重试 id={}",
+            action.id
+        );
+        report_state(ctx, rt, &snap, false);
+        return;
+    }
     tracing::info!(
         target: "taix_plugin_reminder",
         "已提醒 id={} title={} body={}",
@@ -505,8 +556,12 @@ fn tick(ctx: &PluginCtx, rt: &Arc<Runtime>) {
         "body": action.body,
         "at": rfc3339(now),
     }));
-    if let Err(e) = ctx.state_store().save(&*rt.gate.lock().unwrap()) {
-        tracing::warn!(target: "taix_plugin_reminder", "冷却状态未持久化: {e:#}");
+    {
+        let mut gate = rt.gate.lock().unwrap();
+        gate.commit(&action, &candidates, now, &today);
+        if let Err(e) = ctx.state_store().save(&*gate) {
+            tracing::warn!(target: "taix_plugin_reminder", "冷却状态未持久化: {e:#}");
+        }
     }
     report_state(ctx, rt, &snap, true);
 }

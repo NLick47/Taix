@@ -49,7 +49,7 @@ impl SseLoop {
     pub fn run_forever(&self) {
         let mut backoff = Backoff::new();
         loop {
-            match self.transport.open_sse() {
+            match self.transport.open_sse(self.ctx.last_seq()) {
                 Ok(reader) => {
                     tracing::info!(target: "taix_plugin_sdk", "SSE 已连接 {}", self.transport.server_url);
                     *self.sse_alive.lock().unwrap() = Instant::now();
@@ -117,6 +117,10 @@ impl SseLoop {
                     return;
                 }
                 let seq = event["seq"].as_u64().unwrap_or(0);
+                if seq <= self.ctx.last_seq() {
+                    tracing::debug!(target: "taix_plugin_sdk", "已处理指令 seq={} 已忽略", seq);
+                    return;
+                }
                 if !self.mark_seen(seq) {
                     tracing::debug!(target: "taix_plugin_sdk", "重复指令 seq={} 已忽略", seq);
                     return;
@@ -129,6 +133,7 @@ impl SseLoop {
                 } else {
                     tracing::info!(target: "taix_plugin_sdk", "未注册的指令 '{}'（seq={}）已忽略", cmd, seq);
                 }
+                self.ctx.advance_seq(seq);
             }
             Some("config") => {
                 if event["id"].as_str() != Some(self.ctx.id()) {
@@ -209,6 +214,9 @@ impl SseLoop {
                     }
                     for command in commands {
                         let seq = command["seq"].as_u64().unwrap_or(0);
+                        if seq <= self.ctx.last_seq() {
+                            continue;
+                        }
                         if !self.mark_seen(seq) {
                             continue;
                         }
@@ -220,6 +228,7 @@ impl SseLoop {
                             tracing::info!(target: "taix_plugin_sdk", "poll 降级消费指令 '{}'", cmd);
                             handler(&self.ctx, if payload.is_null() { None } else { Some(payload) });
                         }
+                        self.ctx.advance_seq(seq);
                     }
                 }
                 Err(_) => {} // 仍不可达，下轮重试

@@ -94,6 +94,22 @@ impl PluginSupervisor {
     }
 
     fn reconcile(&self, running: &mut HashMap<String, RunningPlugin>) {
+        // 监督线程自己退出（连续找不到 entry / panic）时不能一直占着 running，
+        // 否则 entry 恢复了也永远不会重试
+        let finished: Vec<String> = running
+            .iter()
+            .filter(|(_, r)| r.handle.is_finished())
+            .map(|(id, _)| id.clone())
+            .collect();
+        for id in finished {
+            tracing::warn!(
+                target: "taix_shell::plugins",
+                "plugin '{}' supervisor exited; will retry",
+                id
+            );
+            running.remove(&id);
+        }
+
         let desired = self.desired();
         let to_stop: Vec<String> = running
             .iter()

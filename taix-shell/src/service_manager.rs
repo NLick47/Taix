@@ -216,7 +216,7 @@ impl ServiceManager {
             // 已经有一个同名进程在跑 —— 通常是上一个 shell 崩溃后残留的 —— 等它自己
             // 退出后再重新拉起。两端都必须等：残留的 server 占着端口/单实例资源，
             // 新起的那个起来就挂，监督循环会陷入无意义的重启风暴。
-            if let Some(pid) = find_existing_process(&target.exe_name) {
+            if let Some(pid) = find_existing_process(&exe_path) {
                 tracing::warn!(
                     target: "taix_shell::service",
                     "{}: found a pre-existing pid={} (likely orphaned by a previous shell); waiting for it to exit",
@@ -471,7 +471,7 @@ fn spawn_process(exe: &Path, args: &[String], capture_output: bool) -> std::io::
 }
 
 #[cfg(target_os = "windows")]
-fn find_existing_process(exe_name: &str) -> Option<u32> {
+fn find_existing_process(exe_path: &std::path::Path) -> Option<u32> {
     use windows::Win32::Foundation::CloseHandle;
     use windows::Win32::System::ProcessStatus::EnumProcesses;
     use windows::Win32::System::Threading::{
@@ -490,13 +490,8 @@ fn find_existing_process(exe_name: &str) -> Option<u32> {
 
     let count = ((needed / std::mem::size_of::<u32>() as u32) as usize).min(pids.len());
     let current_pid = std::process::id();
-
-    let exe_bytes = exe_name.as_bytes();
-    let mut exe_wide = [0u16; 64];
-    for (i, &b) in exe_bytes.iter().enumerate() {
-        exe_wide[i] = b as u16;
-    }
-    let exe_wide = &exe_wide[..exe_bytes.len()];
+    let target = exe_path.to_string_lossy();
+    let target = target.strip_prefix(r"\\?\").unwrap_or(&target);
 
     for &pid in &pids[..count] {
         if pid == 0 || pid == current_pid {
@@ -508,7 +503,7 @@ fn find_existing_process(exe_name: &str) -> Option<u32> {
             Err(_) => continue,
         };
 
-        let mut name_buf = [0u16; 260];
+        let mut name_buf = [0u16; 1024];
         let mut name_len = name_buf.len() as u32;
         let name_result = unsafe {
             QueryFullProcessImageNameW(
@@ -524,16 +519,12 @@ fn find_existing_process(exe_name: &str) -> Option<u32> {
             continue;
         }
 
-        let slice = &name_buf[..name_len as usize];
-        let file_start = slice.iter().rposition(|&c| c == b'\\' as u16).map(|i| i + 1).unwrap_or(0);
-        let file_name = &slice[file_start..];
-        let file_name = if file_name.last() == Some(&0) {
-            &file_name[..file_name.len() - 1]
-        } else {
-            file_name
-        };
+        let process_path = String::from_utf16_lossy(&name_buf[..name_len as usize]);
+        let process_path = process_path.trim_end_matches('\0');
+        let process_path = process_path.strip_prefix(r"\\?\").unwrap_or(process_path);
 
-        if file_name == exe_wide {
+        // 完整路径比较：不同插件可以同名 entry，不能互相等待/收养
+        if process_path.eq_ignore_ascii_case(target) {
             return Some(pid);
         }
     }
@@ -542,22 +533,29 @@ fn find_existing_process(exe_name: &str) -> Option<u32> {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn find_existing_process(exe_name: &str) -> Option<u32> {
+fn find_existing_process(exe_path: &std::path::Path) -> Option<u32> {
     use std::process::Command;
 
-    let output = Command::new("pgrep")
-        .args(["-x", exe_name])
+    let output = Command::new("ps")
+        .args(["-Ao", "pid=,args="])
         .output()
         .ok()?;
-
-    if output.status.success() {
-        String::from_utf8_lossy(&output.stdout)
-            .lines()
-            .next()
-            .and_then(|s| s.parse::<u32>().ok())
-    } else {
-        None
+    if !output.status.success() {
+        return None;
     }
+
+    let target = exe_path.to_string_lossy();
+    for line in String::from_utf8_lossy(&output.stdout).lines() {
+        let line = line.trim_start();
+        let mut parts = line.splitn(2, char::is_whitespace);
+        let Some(pid_text) = parts.next() else { continue };
+        let Ok(pid) = pid_text.parse::<u32>() else { continue };
+        let args = parts.next().unwrap_or("").trim_start();
+        if args == target || args.starts_with(&format!("{target} ")) {
+            return Some(pid);
+        }
+    }
+    None
 }
 
 struct Backoff {

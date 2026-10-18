@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::error::AppError;
+use crate::plugins::manifest;
 use crate::plugins::service;
 use crate::plugins::PluginState;
 use crate::response::ApiResponse;
@@ -34,6 +35,14 @@ fn not_found(id: &str) -> Json<ApiResponse<Value>> {
     Json(ApiResponse {
         code: 404,
         message: format!("plugin '{}' not found", id),
+        data: None,
+    })
+}
+
+fn disabled(id: &str) -> Json<ApiResponse<Value>> {
+    Json(ApiResponse {
+        code: 409,
+        message: format!("plugin '{}' is disabled", id),
         data: None,
     })
 }
@@ -159,8 +168,20 @@ async fn set_enabled(
     Extension(state): Extension<Arc<PluginState>>,
     Json(req): Json<SetEnabledRequest>,
 ) -> Json<ApiResponse<Value>> {
-    if state.manifest_or_rescan(&id).await.is_none() {
+    let Some(m) = state.manifest_or_rescan(&id).await else {
         return not_found(&id);
+    };
+    if req.enabled {
+        let Some(dir) = state.plugin_dir_or_rescan(&id).await else {
+            return not_found(&id);
+        };
+        if manifest::resolve_entry(&dir, &m.entry).is_none() {
+            return Json(ApiResponse {
+                code: 400,
+                message: format!("plugin '{}': entry '{}' not found", id, m.entry),
+                data: None,
+            });
+        }
     }
 
     match service::set_enabled(&state, &id, req.enabled).await {
@@ -185,6 +206,9 @@ async fn post_command(
     if state.manifest_or_rescan(&id).await.is_none() {
         return not_found(&id);
     }
+    if !service::is_enabled(&state, &id).await {
+        return disabled(&id);
+    }
 
     let cmd = req.cmd.trim().to_string();
     if cmd.is_empty() || cmd.len() > 64 {
@@ -205,6 +229,9 @@ async fn poll(
 ) -> Json<ApiResponse<Value>> {
     if state.manifest_or_rescan(&id).await.is_none() {
         return not_found(&id);
+    }
+    if !service::is_enabled(&state, &id).await {
+        return disabled(&id);
     }
 
     let config = service::get_config(&state, &id).await;
@@ -231,6 +258,9 @@ async fn report_event(
 ) -> Json<ApiResponse<Value>> {
     if state.manifest_or_rescan(&id).await.is_none() {
         return not_found(&id);
+    }
+    if !service::is_enabled(&state, &id).await {
+        return disabled(&id);
     }
 
     let state_name = req.state.trim().to_string();

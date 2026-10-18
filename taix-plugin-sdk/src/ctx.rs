@@ -16,10 +16,14 @@ pub struct PluginCtx {
     last_state_push: Mutex<Option<(String, Instant)>>,
     /// 最近一次成功上报的状态，心跳线程用它重推做存活信号
     last_state_payload: Mutex<Option<(String, Option<Value>)>>,
+    /// 已处理到的 SSE 指令 seq；持久化在插件数据目录，重启后继续
+    last_seq: AtomicU64,
+    cursor_lock: Mutex<()>,
 }
 
 impl PluginCtx {
     pub(crate) fn new(transport: Transport, state_store: StateStore) -> Self {
+        let last_seq = state_store.load_cursor();
         Self {
             transport,
             state_store,
@@ -27,6 +31,27 @@ impl PluginCtx {
             config_version: AtomicU64::new(0),
             last_state_push: Mutex::new(None),
             last_state_payload: Mutex::new(None),
+            last_seq: AtomicU64::new(last_seq),
+            cursor_lock: Mutex::new(()),
+        }
+    }
+
+    pub(crate) fn last_seq(&self) -> u64 {
+        self.last_seq.load(Ordering::Relaxed)
+    }
+
+    /// 指令处理完成后推进游标；SSE 与 poll 两条通道共用
+    pub(crate) fn advance_seq(&self, seq: u64) {
+        if seq == 0 {
+            return;
+        }
+        let _guard = self.cursor_lock.lock().unwrap();
+        if seq <= self.last_seq.load(Ordering::Relaxed) {
+            return;
+        }
+        self.last_seq.store(seq, Ordering::Relaxed);
+        if let Err(e) = self.state_store.save_cursor(seq) {
+            tracing::warn!(target: "taix_plugin_sdk", "指令游标未持久化: {:#}", e);
         }
     }
 

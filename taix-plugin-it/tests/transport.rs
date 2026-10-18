@@ -87,10 +87,37 @@ fn post_command(port: u16, cmd: &str, data: Value) -> Value {
               Some(&json!({ "cmd": cmd, "data": data })))
 }
 
+fn http_json_raw(method: &str, port: u16, path: &str, body: Option<&Value>) -> Value {
+    let url = format!("http://127.0.0.1:{}{}", port, path);
+    let method = match method {
+        "GET" => attohttpc::Method::GET,
+        "POST" => attohttpc::Method::POST,
+        "PUT" => attohttpc::Method::PUT,
+        other => panic!("unsupported method {}", other),
+    };
+    let sent = if let Some(b) = body {
+        attohttpc::RequestBuilder::new(method, &url)
+            .header("Content-Type", "application/json")
+            .text(b.to_string())
+            .send()
+    } else {
+        attohttpc::RequestBuilder::new(method, &url).send()
+    };
+    let resp = sent.expect("请求失败");
+    serde_json::from_str(&resp.text().unwrap()).expect("响应不是合法 JSON")
+}
+
 /// 把每帧 data: 送进 channel，验证订阅过滤用
 fn open_sse(port: u16, sub: &str) -> mpsc::Receiver<String> {
+    open_sse_after(port, sub, 0)
+}
+
+fn open_sse_after(port: u16, sub: &str, after: u64) -> mpsc::Receiver<String> {
     let (tx, rx) = mpsc::channel();
-    let url = format!("http://127.0.0.1:{}/api/events?sub={}", port, sub);
+    let url = format!(
+        "http://127.0.0.1:{}/api/events?sub={}&after={}",
+        port, sub, after
+    );
     std::thread::spawn(move || {
         let Ok(resp) = attohttpc::get(&url)
             .header("Accept", "text/event-stream")
@@ -108,6 +135,39 @@ fn open_sse(port: u16, sub: &str) -> mpsc::Receiver<String> {
         }
     });
     rx
+}
+
+fn expect_raw_command(rx: &mpsc::Receiver<String>, step: &str) {
+    let deadline = std::time::Instant::now() + TIMEOUT;
+    loop {
+        let now = std::time::Instant::now();
+        assert!(now < deadline, "等待 after 补投指令 {} 超时", step);
+        match rx.recv_timeout(deadline - now) {
+            Ok(payload) => {
+                let v: Value = serde_json::from_str(&payload).expect("SSE 帧不是 JSON");
+                if v["type"] == json!("command") {
+                    assert_eq!(v["data"]["step"], json!(step), "补投指令内容不符: {v}");
+                    return;
+                }
+            }
+            Err(RecvTimeoutError::Timeout) => panic!("等待 after 补投指令 {} 超时", step),
+            Err(RecvTimeoutError::Disconnected) => panic!("SSE 连接已断开"),
+        }
+    }
+}
+
+fn expect_no_raw_command(rx: &mpsc::Receiver<String>, ms: u64) {
+    let deadline = std::time::Instant::now() + Duration::from_millis(ms);
+    while std::time::Instant::now() < deadline {
+        if let Ok(payload) = rx.recv_timeout(Duration::from_millis(50)) {
+            let v: Value = serde_json::from_str(&payload).expect("SSE 帧不是 JSON");
+            assert_ne!(
+                v["type"],
+                json!("command"),
+                "after 游标之后的连接不应重放旧指令: {v}"
+            );
+        }
+    }
 }
 
 fn wait_health(port: u16) {
@@ -150,6 +210,8 @@ fn write_manifest(data_dir: &Path) {
         .to_string(),
     )
     .unwrap();
+    // 这测试用进程内 SDK，不会真的执行 entry；但启用时会校验文件存在
+    std::fs::write(dir.join("itdemo-bin"), b"").unwrap();
 }
 
 async fn start_server(data_dir: &Path, port: u16) -> anyhow::Result<ServerHandle> {
@@ -305,6 +367,13 @@ fn transport_contract() {
     let port = free_port();
     let srv = TestServer::start(&data_dir, port);
     wait_health(port);
+    // 插件必须先启用：禁用时指令/状态/SSE 都会被拒
+    http_json(
+        "POST",
+        port,
+        &format!("/api/plugins/{}/enabled", PLUGIN_ID),
+        Some(&json!({ "enabled": true })),
+    );
     // ---------- S1a: 指令队列溢出 → 丢弃最旧 + poll 取走式 ----------
     for i in 0..20 {
         post_command(port, "overflow", json!({ "i": i }));
@@ -481,9 +550,17 @@ fn transport_contract() {
     expect_command(&rx, "after-restart");
 
     post_command(port, "ping", json!({ "step": "p1" }));
-    post_command(port, "ping", json!({ "step": "p2" }));
+    let p2 = post_command(port, "ping", json!({ "step": "p2" }));
+    let p2_seq = p2["seq"].as_u64().expect("p2 指令缺少 seq");
     expect_command(&rx, "p1");
     expect_command(&rx, "p2");
+
+    // after 游标：从 p2 之后连接不应重放，从 p2 之前连接必须补投 p2
+    let fresh = open_sse_after(port, PLUGIN_ID, p2_seq);
+    expect_no_raw_command(&fresh, 500);
+    let replay = open_sse_after(port, PLUGIN_ID, p2_seq - 1);
+    expect_raw_command(&replay, "p2");
+
     let poll = http_json("GET", port, &format!("/api/plugins/{}/poll", PLUGIN_ID), None);
     let steps: Vec<&str> = poll["commands"]
         .as_array()
@@ -832,6 +909,36 @@ fn transport_contract() {
             .unwrap_or(0);
         assert_eq!(seconds, 180, "未来时间戳不应写入: {summary}");
     }
+
+    // ---------- 禁用语义：指令/状态被拒，状态不再显示 ----------
+    http_json(
+        "POST",
+        port,
+        &format!("/api/plugins/{}/enabled", PLUGIN_ID),
+        Some(&json!({ "enabled": false })),
+    );
+    let cmd = http_json_raw(
+        "POST",
+        port,
+        &format!("/api/plugins/{}/commands", PLUGIN_ID),
+        Some(&json!({ "cmd": "ping", "data": { "step": "disabled" } })),
+    );
+    assert_eq!(cmd["code"], json!(409), "禁用时指令应被拒绝: {cmd}");
+
+    let poll = http_json_raw(
+        "GET",
+        port,
+        &format!("/api/plugins/{}/poll", PLUGIN_ID),
+        None,
+    );
+    assert_eq!(poll["code"], json!(409), "禁用时 poll 应被拒绝: {poll}");
+
+    let state = http_json("GET", port, &format!("/api/plugins/{}/state", PLUGIN_ID), None);
+    assert_eq!(state, json!(null), "禁用后不应再返回状态: {state}");
+
+    let detail = http_json("GET", port, &format!("/api/plugins/{}", PLUGIN_ID), None);
+    assert_eq!(detail["enabled"], json!(false));
+    assert_eq!(detail["status"], json!(null), "禁用插件不显示运行状态: {detail}");
 
     // ---------- 清理 ----------
     srv.stop();

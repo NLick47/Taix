@@ -82,12 +82,14 @@ pub fn scan(plugins_dir: &Path) -> Vec<Installed> {
     let mut out: Vec<Installed> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
 
-    let dir_entries = match std::fs::read_dir(plugins_dir) {
-        Ok(entries) => entries,
+    let mut dir_entries: Vec<_> = match std::fs::read_dir(plugins_dir) {
+        Ok(entries) => entries.flatten().collect(),
         Err(_) => return out, // 目录不存在 = 空集
     };
+    // 排序后再处理，重复 id 时 server/shell 选中的目录保持一致
+    dir_entries.sort_by_key(|entry| entry.file_name());
 
-    for entry in dir_entries.flatten() {
+    for entry in dir_entries {
         let json_path = entry.path().join("plugin.json");
         if !json_path.is_file() {
             continue;
@@ -187,11 +189,13 @@ fn valid_version(v: &str) -> bool {
     parts.len() == 3 && parts.iter().all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()))
 }
 
-/// 禁止路径分隔与 ..；纯空白名字会进列表却永远解析不到文件
+/// 禁止路径分隔、Windows 盘符前缀与 ..；纯空白名字会进列表却永远解析不到文件
 fn valid_entry(entry: &str) -> bool {
-    !entry.trim().is_empty()
+    entry.len() <= 128
+        && !entry.trim().is_empty()
         && !entry.contains('/')
         && !entry.contains('\\')
+        && !entry.contains(':')
         && entry != "."
         && entry != ".."
 }
@@ -272,6 +276,8 @@ mod tests {
         assert!(!valid_entry("a\\b"));
         assert!(!valid_entry("."));
         assert!(!valid_entry(""));
+        assert!(!valid_entry("C:evil.exe"), "Windows 盘符前缀必须拒绝");
+        assert!(!valid_entry(&"a".repeat(129)), "过长 entry 必须拒绝");
     }
 
     #[test]
