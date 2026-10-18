@@ -62,6 +62,20 @@ public class MultiTrackRow : Control
         set => SetValue(CornerRadiusProperty, value);
     }
 
+    /// <summary>
+    /// 本行当前悬停的片段范围，上报给外部做联动高亮。
+    /// </summary>
+    private TimeRange? _hoveredTimeRange;
+    public static readonly DirectProperty<MultiTrackRow, TimeRange?> HoveredTimeRangeProperty =
+        AvaloniaProperty.RegisterDirect<MultiTrackRow, TimeRange?>(
+            nameof(HoveredTimeRange), o => o.HoveredTimeRange);
+
+    public TimeRange? HoveredTimeRange
+    {
+        get => _hoveredTimeRange;
+        private set => SetAndRaise(HoveredTimeRangeProperty, ref _hoveredTimeRange, value);
+    }
+
     public IEnumerable<MultiTrackSegment> Segments
     {
         get => _segments;
@@ -200,6 +214,8 @@ public class MultiTrackRow : Control
             _lastTipText = null;
             ToolTip.SetTip(this, null);
         }
+        HoveredTimeRange = null;
+        PropagateHoverToTimeline(null);
         InvalidateVisual();
     }
 
@@ -269,6 +285,8 @@ public class MultiTrackRow : Control
                     _isPanning = true;
                     Cursor = PanCursor;
                     _hoveredSegment = null;
+                    HoveredTimeRange = null;
+                    PropagateHoverToTimeline(null);
                     if (_lastTipText != null)
                     {
                         _lastTipText = null;
@@ -341,6 +359,10 @@ public class MultiTrackRow : Control
         var changed = _hoveredSegment != nearestSeg || (nearestSeg != null && nearestDist > snapRadius);
         _hoveredSegment = nearestSeg != null && nearestDist <= snapRadius ? nearestSeg : null;
 
+        TimeRange? newRange = null;
+        if (_hoveredSegment != null)
+            newRange = new TimeRange(_hoveredSegment.Start, _hoveredSegment.End);
+
         var tipText = _hoveredSegment != null ? BuildSegmentTip(_hoveredSegment) : null;
 
         if (!string.Equals(_lastTipText, tipText, StringComparison.Ordinal))
@@ -351,6 +373,26 @@ public class MultiTrackRow : Control
 
         if (changed)
             InvalidateVisual();
+
+        if (HoveredTimeRange != newRange)
+        {
+            HoveredTimeRange = newRange;
+            PropagateHoverToTimeline(newRange);
+        }
+    }
+
+    private void PropagateHoverToTimeline(TimeRange? range)
+    {
+        var parent = this.GetVisualParent();
+        while (parent != null)
+        {
+            if (parent is MultiTrackTimeline timeline)
+            {
+                timeline.HoveredTimeRange = range;
+                return;
+            }
+            parent = parent.GetVisualParent();
+        }
     }
 
     /// <summary>

@@ -85,6 +85,17 @@ public class Timeline : Control
         AvaloniaProperty.RegisterDirect<Timeline, bool>(
             nameof(UseCategoryColor), o => o.UseCategoryColor, (o, v) => o.UseCategoryColor = v);
 
+    private TimeRange? _hoveredTimeRange;
+    public static readonly DirectProperty<Timeline, TimeRange?> HoveredTimeRangeProperty =
+        AvaloniaProperty.RegisterDirect<Timeline, TimeRange?>(
+            nameof(HoveredTimeRange), o => o.HoveredTimeRange, (o, v) => o.HoveredTimeRange = v);
+
+    public TimeRange? HoveredTimeRange
+    {
+        get => _hoveredTimeRange;
+        set => SetAndRaise(HoveredTimeRangeProperty, ref _hoveredTimeRange, value);
+    }
+
     public bool UseCategoryColor
     {
         get => _useCategoryColor;
@@ -357,7 +368,8 @@ public class Timeline : Control
             || change.Property == MajorTickIntervalProperty
             || change.Property == VisibleStartHourProperty
             || change.Property == VisibleEndHourProperty
-            || change.Property == UseCategoryColorProperty)
+            || change.Property == UseCategoryColorProperty
+            || change.Property == HoveredTimeRangeProperty)
         {
             if (change.Property == UsageItemsProperty)
             {
@@ -714,6 +726,8 @@ public class Timeline : Control
             if (!_isPanning && !_isSelecting && _hoveredItem != null && !IsIdle(_hoveredItem))
                 DrawHoverHighlight(ctx, pps);
 
+            DrawExternalHoverHighlight(ctx, pps);
+
             if (!_isSelecting)
                 DrawSelectedRange(ctx, pps);
             else
@@ -1059,6 +1073,68 @@ public class Timeline : Control
     private List<TimelineUsageItem> GetMergedCategoryItems()
     {
         return _cachedMergedCategoryItems ??= MergeCategory(GetNonIdleItems().ToList());
+    }
+
+    /// <summary>
+    /// 绘制来自多轨道图悬停的联动高亮（本地悬停优先）。
+    /// </summary>
+    private void DrawExternalHoverHighlight(DrawingContext ctx, double pps)
+    {
+        if (_hoveredItem != null) return;
+        if (_hoveredTimeRange is not { } range) return;
+
+        var dayStart = Date.Date;
+        var startSec = (range.Start - dayStart).TotalSeconds;
+        var endSec = (range.End - dayStart).TotalSeconds;
+        if (endSec <= startSec) return;
+
+        var x1 = startSec * pps + _offsetX;
+        var x2 = endSec * pps + _offsetX;
+
+        if (x2 < 0 || x1 > Bounds.Width) return;
+
+        x1 = Math.Max(0, x1);
+        x2 = Math.Min(Bounds.Width, x2);
+        if (x2 <= x1) return;
+
+        var dayEnd = dayStart.AddDays(1);
+        var isLight = this.ActualThemeVariant != ThemeVariant.Dark;
+        var colors = TimelineHelpers.GetHighlightColors(isLight);
+
+        // 1. 柔和暗化非高亮色块
+        var dimBrush = new ImmutableSolidColorBrush(colors.Dim);
+
+        foreach (var item in _usageItemsCache)
+        {
+            if (IsIdle(item)) continue;
+
+            var drawStart = item.Start < dayStart ? dayStart : item.Start;
+            var drawEnd = item.End > dayEnd ? dayEnd : item.End;
+            if (drawEnd <= drawStart) continue;
+
+            var ix = TimeToX(drawStart, pps);
+            var iw = Math.Max(DurationToW(drawStart, drawEnd, pps), 1);
+            if (ix + iw < 0 || ix > Bounds.Width) continue;
+
+            if (ix + iw > x1 && ix < x2) continue;
+
+            ctx.DrawRectangle(dimBrush, null, new Rect(ix, UsageY, iw, UsageH));
+        }
+
+        // 2. 底部柔光柱
+        var glowBrush = new ImmutableSolidColorBrush(colors.Glow);
+        ctx.DrawRectangle(glowBrush, null,
+            new Rect(x1, UsageY, x2 - x1, UsageH), 6, 6);
+
+        // 3. 顶部标尺指示条
+        var rulerBarBrush = new ImmutableSolidColorBrush(colors.Accent);
+        ctx.DrawRectangle(rulerBarBrush, null,
+            new Rect(x1, HeaderH - 3, x2 - x1, 3), 1.5, 1.5);
+
+        // 4. 两侧引导线
+        var guidePen = new Pen(new ImmutableSolidColorBrush(colors.Guide), 1);
+        ctx.DrawLine(guidePen, new Point(x1, HeaderH), new Point(x1, Bounds.Height));
+        ctx.DrawLine(guidePen, new Point(x2, HeaderH), new Point(x2, Bounds.Height));
     }
 
     private bool IsIdle(TimelineUsageItem i) => TimelineHelpers.IsIdleItem(i.Name);

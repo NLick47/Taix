@@ -52,6 +52,9 @@ public class MultiTrackTimeline : TemplatedControl
     public static readonly StyledProperty<ICommand?> ClickCommandProperty =
         AvaloniaProperty.Register<MultiTrackTimeline, ICommand?>(nameof(ClickCommand));
 
+    public static readonly StyledProperty<TimeRange?> HoveredTimeRangeProperty =
+        AvaloniaProperty.Register<MultiTrackTimeline, TimeRange?>(nameof(HoveredTimeRange));
+
     public IEnumerable<MultiTrackTimelineItem> DataItems
     {
         get => _dataItems;
@@ -94,9 +97,23 @@ public class MultiTrackTimeline : TemplatedControl
         set => SetValue(ClickCommandProperty, value);
     }
 
+    public TimeRange? HoveredTimeRange
+    {
+        get => GetValue(HoveredTimeRangeProperty);
+        set => SetValue(HoveredTimeRangeProperty, value);
+    }
+
     public MultiTrackTimeline()
     {
         AddHandler(InputElement.ContextRequestedEvent, OnContextRequested);
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == DataItemsProperty || change.Property == DateProperty)
+            HoveredTimeRange = null;
     }
 
 

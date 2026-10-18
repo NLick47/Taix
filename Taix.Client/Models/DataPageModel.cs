@@ -149,6 +149,13 @@ public partial class DataPageModel : ModelBase
 
     #endregion
 
+    private TimeRange? _hoveredTimeRange;
+    public TimeRange? HoveredTimeRange
+    {
+        get => _hoveredTimeRange;
+        set { _hoveredTimeRange = value; OnPropertyChanged(); }
+    }
+
     /// <summary>
     /// tabbar data
     /// </summary>
