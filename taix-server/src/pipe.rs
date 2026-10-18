@@ -223,10 +223,27 @@ where
                 "current" => {
                     match serde_json::from_str::<PipeCurrentMsg>(trimmed) {
                         Ok(cur) if cur.p.is_empty() => {
-                            tracing::debug!("[Pipe] current without process name, ignored");
+                            // monitor 明确表示当前没有可统计的前台应用
+                            crate::plugins::current::clear_current(&plugins, &pool).await;
                         }
                         Ok(cur) => {
-                            let since = chrono::DateTime::from_timestamp(cur.s, 0)
+                            // s 缺失/非法/超前时退化为当前时间，避免 1970 年或未来时间
+                            let now_ts = chrono::Utc::now().timestamp();
+                            let since_ts = if cur.s >= constants::MIN_VALID_TIMESTAMP
+                                && cur.s <= now_ts + constants::TIMESTAMP_FUTURE_TOLERANCE_SECS
+                            {
+                                cur.s
+                            } else {
+                                if cur.s != 0 {
+                                    tracing::warn!(
+                                        "[Pipe] Invalid current timestamp {} for {}, using now",
+                                        cur.s,
+                                        cur.p
+                                    );
+                                }
+                                now_ts
+                            };
+                            let since = chrono::DateTime::from_timestamp(since_ts, 0)
                                 .unwrap_or_else(chrono::Utc::now)
                                 .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
                             let session_id = if cur.sid.trim().is_empty() {

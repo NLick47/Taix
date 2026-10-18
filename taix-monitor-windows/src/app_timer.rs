@@ -5,9 +5,27 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
+const CHECKPOINT_INTERVAL_MS: u64 = 10_000;
+
 enum FlushKind {
     Periodic,
     Final,
+}
+
+#[derive(Debug, Clone)]
+pub struct ActiveSession {
+    pub app: AppInfo,
+    pub start_time: SystemTime,
+    pub session_id: String,
+}
+
+impl ActiveSession {
+    pub fn start_epoch(&self) -> i64 {
+        self.start_time
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as i64
+    }
 }
 
 enum TimerState {
@@ -18,7 +36,7 @@ enum TimerState {
         start_time: SystemTime,
         start_tick: u64,
         accumulated_ms: i64,
-        last_periodic_tick: u64,
+        last_checkpoint_tick: u64,
         session_id: String,
     },
     Suspended {
@@ -73,7 +91,7 @@ impl AppTimer {
                         start_time: now,
                         start_tick: now_tick,
                         accumulated_ms: 0,
-                        last_periodic_tick: now_tick,
+                        last_checkpoint_tick: now_tick,
                         session_id: event.session_id,
                     };
                 }
@@ -125,7 +143,7 @@ impl AppTimer {
                             start_time: now,
                             start_tick: now_tick,
                             accumulated_ms: 0,
-                            last_periodic_tick: now_tick,
+                            last_checkpoint_tick: now_tick,
                             session_id: event.session_id,
                         };
                     } else {
@@ -222,7 +240,7 @@ impl AppTimer {
                             start_time: now,
                             start_tick: now_tick,
                             accumulated_ms: 0,
-                            last_periodic_tick: now_tick,
+                            last_checkpoint_tick: now_tick,
                             session_id: new_session_id,
                         };
                     } else {
@@ -234,52 +252,81 @@ impl AppTimer {
         }
     }
 
-    /// 主循环每秒调用。检查 periodic flush，返回累积的 duration event
+    /// 当前真正在跟踪的会话；Idle/睡眠/非统计应用都返回 None
+    pub fn active_session(&self) -> Option<ActiveSession> {
+        match &self.state {
+            TimerState::Tracking {
+                app,
+                start_time,
+                session_id,
+                ..
+            } => Some(ActiveSession {
+                app: app.clone(),
+                start_time: *start_time,
+                session_id: session_id.clone(),
+            }),
+            _ => None,
+        }
+    }
+
+    pub fn checkpoint_now(&self, data_dir: &Option<std::path::PathBuf>) {
+        let Some(dir) = data_dir else {
+            return;
+        };
+        match &self.state {
+            TimerState::Tracking {
+                app,
+                start_time,
+                session_id,
+                ..
+            } => {
+                let since_ts = start_time
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs() as i64;
+                let last_seen = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs() as i64;
+                let cp = SessionCheckpoint {
+                    process: app.process.clone(),
+                    exe_path: app.executable_path.clone(),
+                    icon_path: app.icon_path.clone(),
+                    desc: app.description.clone(),
+                    since_ts,
+                    session_id: session_id.clone(),
+                    last_seen,
+                };
+                write_checkpoint(dir, &cp);
+            }
+            TimerState::Idle | TimerState::Suspended { .. } => clear_checkpoint(data_dir),
+        }
+    }
+
     pub fn tick(&mut self, data_dir: &Option<std::path::PathBuf>, queue: &MessageQueue) {
         let now_tick = get_tick_ms();
+        let mut checkpoint_due = false;
 
         match &mut self.state {
             TimerState::Tracking {
-                app,
-                window,
-                start_time,
-                start_tick,
-                accumulated_ms,
-                last_periodic_tick,
+                last_checkpoint_tick,
                 ..
             } => {
-                // GetTickCount64 在睡眠时不 tick，但 periodic 检测需要的是"实际运行时间"，
-                // 所以直接用 tick 差值判断 60 秒周期
-                if now_tick >= *last_periodic_tick && now_tick - *last_periodic_tick >= 60_000 {
-                    *last_periodic_tick = now_tick;
-
-                    // 只写检查点，不发送 duration event。
-                    // 这样连续使用同一个应用不会产生碎片化 session，
-                    // 只有在 Final flush（应用切换/睡眠）时才写入数据库。
-                    if let Some(dir) = data_dir {
-                        let since_ts = start_time
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap_or_default()
-                            .as_secs() as i64;
-                        let cp = SessionCheckpoint {
-                            process: app.process.clone(),
-                            exe_path: app.executable_path.clone(),
-                            icon_path: app.icon_path.clone(),
-                            desc: app.description.clone(),
-                            since_ts,
-                        };
-                        write_checkpoint(dir, &cp);
-                    }
+                if now_tick >= *last_checkpoint_tick
+                    && now_tick - *last_checkpoint_tick >= CHECKPOINT_INTERVAL_MS
+                {
+                    *last_checkpoint_tick = now_tick;
+                    checkpoint_due = true;
                 }
             }
-            TimerState::Idle => {
-                // 不活跃时删除旧的 checkpoint，防止崩溃恢复时上报虚假会话
+            TimerState::Idle | TimerState::Suspended { .. } => {
+                // 不活跃/睡眠时不能留下可恢复的进行中会话
                 clear_checkpoint(data_dir);
             }
-            TimerState::Suspended { .. } => {
-                // 睡眠时也删除 checkpoint，原因同上
-                clear_checkpoint(data_dir);
-            }
+        }
+
+        if checkpoint_due {
+            self.checkpoint_now(data_dir);
         }
 
         // 消费 pending event
@@ -387,5 +434,59 @@ fn clear_checkpoint(data_dir: &Option<std::path::PathBuf>) {
         let _ = std::fs::remove_file(&path);
         let tmp = dir.join("active_session.json.tmp");
         let _ = std::fs::remove_file(&tmp);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::AppActiveEvent;
+
+    fn app(process: &str) -> AppInfo {
+        AppInfo {
+            process: process.to_string(),
+            description: process.to_string(),
+            executable_path: format!(r"C:\{process}.exe"),
+            icon_path: String::new(),
+            app_type: AppType::Win32,
+        }
+    }
+
+    fn event(process: &str, session_id: &str) -> AppActiveEvent {
+        AppActiveEvent {
+            app: app(process),
+            window: WindowInfo::new("class".to_string(), "title".to_string(), 1),
+            session_id: session_id.to_string(),
+        }
+    }
+
+    #[test]
+    fn same_process_window_change_keeps_session_identity() {
+        let mut timer = AppTimer::new();
+        timer.on_app_switch(event("chrome.exe", "s1"));
+        let first = timer.active_session().unwrap();
+        timer.on_app_switch(event("chrome.exe", "s2"));
+        let second = timer.active_session().unwrap();
+        assert_eq!(second.session_id, "s1");
+        assert_eq!(second.start_time, first.start_time);
+    }
+
+    #[test]
+    fn different_process_starts_new_session() {
+        let mut timer = AppTimer::new();
+        timer.on_app_switch(event("chrome.exe", "s1"));
+        timer.on_app_switch(event("code.exe", "s2"));
+        let session = timer.active_session().unwrap();
+        assert_eq!(session.session_id, "s2");
+        assert_eq!(session.app.process, "code.exe");
+    }
+
+    #[test]
+    fn non_statistical_app_has_no_active_session() {
+        let mut timer = AppTimer::new();
+        let mut ev = event("system.exe", "s1");
+        ev.app.app_type = AppType::SystemComponent;
+        timer.on_app_switch(ev);
+        assert!(timer.active_session().is_none());
     }
 }

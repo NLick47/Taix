@@ -194,6 +194,16 @@ pub async fn set_sleep(state: &PluginState, pool: &SqlitePool, sleeping: bool) {
     let _ = state.tx.send(envelope(&snap).to_string());
 }
 
+/// monitor 明确表示「当前没有可统计的前台应用」时清理快照，
+/// 但仍算平台活着（刷新心跳时间，避免看门狗把连续段冻结）
+pub async fn clear_current(state: &PluginState, pool: &SqlitePool) {
+    state.last_current_at.store(now_epoch(), Ordering::Relaxed);
+    state.sleep_flag.store(false, Ordering::Relaxed);
+    *state.current_app.write().await = None;
+    let snap = snapshot(state, pool).await;
+    let _ = state.tx.send(envelope(&snap).to_string());
+}
+
 /// 未结算的进行中会话只有这里能给出；空闲/睡眠期间没有进行中会话
 /// current 快照可能还停在刚结算的会话上，按 sessionId 精确剔除
 pub async fn ongoing_session(state: &PluginState, pool: &SqlitePool) -> Option<(String, i64)> {
@@ -207,7 +217,7 @@ pub async fn ongoing_session(state: &PluginState, pool: &SqlitePool) -> Option<(
         .timestamp();
     let session_id = app["sessionId"].as_str()?;
 
-    let settled = sqlx::query_scalar::<_, i64>(
+    let mut settled = sqlx::query_scalar::<_, i64>(
         "SELECT 1 FROM AppDurationRequests WHERE SessionId = ?1 LIMIT 1",
     )
     .bind(session_id)
@@ -215,6 +225,25 @@ pub async fn ongoing_session(state: &PluginState, pool: &SqlitePool) -> Option<(
     .await
     .map(|row| row.is_some())
     .unwrap_or(false);
+
+    // 兼容旧版 monitor：兜底 key 是 process@since，不含时长。
+    // 新会话 id 不含 @，不会走到这里
+    if !settled && session_id.contains('@') {
+        let since_key = chrono::DateTime::from_timestamp(since, 0)
+            .map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
+        if let Some(since_key) = since_key {
+            settled = sqlx::query_scalar::<_, i64>(
+                "SELECT 1 FROM AppDurationRequests \
+                 WHERE ProcessName = ?1 AND StartDateTime = ?2 LIMIT 1",
+            )
+            .bind(&process)
+            .bind(since_key)
+            .fetch_optional(pool)
+            .await
+            .map(|row| row.is_some())
+            .unwrap_or(false);
+        }
+    }
 
     if settled {
         return None;

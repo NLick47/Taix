@@ -187,23 +187,41 @@ fn json_escape(s: &str) -> String {
 }
 
 // 崩溃恢复用的会话检查点
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SessionCheckpoint {
     pub process: String,
     pub exe_path: String,
     pub icon_path: String,
     pub desc: String,
     pub since_ts: i64,
+    /// 会话 id。恢复时复用，server 按 SessionId 去重，避免把已结算会话再记一遍
+    pub session_id: String,
+    /// 最后一次观测到该会话仍活跃的时间。恢复只补到此刻，不把停机时间算成使用
+    pub last_seen: i64,
+}
+
+/// 恢复时实际要上报的内容
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecoveryPlan {
+    pub session_id: String,
+    pub since_ts: i64,
+    pub duration_secs: i64,
 }
 
 impl fmt::Display for SessionCheckpoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // 简单 key=value 格式，用 \0 分隔避免路径中的特殊字符问题
-        // process\0<process>\0path\0<exe_path>\0icon\0<icon_path>\0desc\0<desc>\0since\0<ts>
+        // process\0<process>\0path\0<exe_path>\0icon\0<icon_path>\0desc\0<desc>\0since\0<ts>\0sid\0<id>\0last\0<ts>
         write!(
             f,
-            "process\x00{}\x00path\x00{}\x00icon\x00{}\x00desc\x00{}\x00since\x00{}",
-            self.process, self.exe_path, self.icon_path, self.desc, self.since_ts
+            "process\x00{}\x00path\x00{}\x00icon\x00{}\x00desc\x00{}\x00since\x00{}\x00sid\x00{}\x00last\x00{}",
+            self.process,
+            self.exe_path,
+            self.icon_path,
+            self.desc,
+            self.since_ts,
+            self.session_id,
+            self.last_seen
         )
     }
 }
@@ -220,6 +238,8 @@ impl SessionCheckpoint {
         let mut icon_path = "";
         let mut desc = "";
         let mut since_ts = 0i64;
+        let mut session_id = "";
+        let mut last_seen = 0i64;
         for chunk in parts.chunks(2) {
             if chunk.len() < 2 {
                 break;
@@ -230,6 +250,8 @@ impl SessionCheckpoint {
                 "icon" => icon_path = chunk[1],
                 "desc" => desc = chunk[1],
                 "since" => since_ts = chunk[1].parse().ok()?,
+                "sid" => session_id = chunk[1],
+                "last" => last_seen = chunk[1].parse().ok()?,
                 _ => {}
             }
         }
@@ -239,6 +261,24 @@ impl SessionCheckpoint {
             icon_path: icon_path.to_owned(),
             desc: desc.to_owned(),
             since_ts,
+            session_id: session_id.to_owned(),
+            last_seen,
+        })
+    }
+
+    /// 旧格式没有 sid/last，无法安全恢复：宁可丢一小段，也不重复记账
+    pub fn recovery_plan(&self) -> Option<RecoveryPlan> {
+        if self.session_id.trim().is_empty() || self.since_ts <= 0 || self.last_seen <= 0 {
+            return None;
+        }
+        let duration_secs = self.last_seen.max(self.since_ts) - self.since_ts;
+        if duration_secs <= 0 {
+            return None;
+        }
+        Some(RecoveryPlan {
+            session_id: self.session_id.clone(),
+            since_ts: self.since_ts,
+            duration_secs,
         })
     }
 }
@@ -303,5 +343,68 @@ mod tests {
         assert_ne!(a, b);
         assert!(a.contains('-'), "{a}");
         assert!(a.chars().all(|c| c.is_ascii_digit() || c == '-'), "{a}");
+    }
+
+    #[test]
+    fn checkpoint_roundtrip_keeps_session_id_and_last_seen() {
+        let cp = SessionCheckpoint {
+            process: "chrome.exe".to_string(),
+            exe_path: r"C:\app\chrome.exe".to_string(),
+            icon_path: "icon.png".to_string(),
+            desc: "Chrome".to_string(),
+            since_ts: 1_792_300_000,
+            session_id: "1792300000000000000-7".to_string(),
+            last_seen: 1_792_300_120,
+        };
+        let parsed = SessionCheckpoint::from_str(&cp.to_string()).unwrap();
+        assert_eq!(parsed, cp);
+        assert_eq!(
+            parsed.recovery_plan(),
+            Some(RecoveryPlan {
+                session_id: "1792300000000000000-7".to_string(),
+                since_ts: 1_792_300_000,
+                duration_secs: 120,
+            })
+        );
+    }
+
+    #[test]
+    fn legacy_checkpoint_is_not_recovered() {
+        // 旧格式没有 sid/last：宁可跳过，也不能用新 sid 重复记账
+        let legacy = "process\x00old.exe\x00path\x00C:\\old.exe\x00icon\x00\x00desc\x00Old\x00since\x001792300000";
+        let parsed = SessionCheckpoint::from_str(legacy).unwrap();
+        assert!(parsed.session_id.is_empty());
+        assert_eq!(parsed.last_seen, 0);
+        assert!(parsed.recovery_plan().is_none());
+    }
+
+    #[test]
+    fn recovery_uses_last_seen_not_now() {
+        let cp = SessionCheckpoint {
+            process: "a.exe".to_string(),
+            exe_path: String::new(),
+            icon_path: String::new(),
+            desc: String::new(),
+            since_ts: 1_792_300_000,
+            session_id: "sid-1".to_string(),
+            last_seen: 1_792_300_090,
+        };
+        let plan = cp.recovery_plan().unwrap();
+        assert_eq!(plan.duration_secs, 90);
+        assert_eq!(plan.session_id, "sid-1");
+    }
+
+    #[test]
+    fn checkpoint_without_elapsed_time_is_not_recovered() {
+        let cp = SessionCheckpoint {
+            process: "a.exe".to_string(),
+            exe_path: String::new(),
+            icon_path: String::new(),
+            desc: String::new(),
+            since_ts: 1_792_300_000,
+            session_id: "sid-1".to_string(),
+            last_seen: 1_792_300_000,
+        };
+        assert!(cp.recovery_plan().is_none());
     }
 }

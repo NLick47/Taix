@@ -52,9 +52,20 @@ impl MessageQueue {
                         thread::sleep(CONSUMER_INTERVAL);
                         continue;
                     }
-                    // pending 中超时消息丢弃
+                    // 只丢过期的 current；app 结算和 sleep/wake 状态转换要保留
                     let now = Instant::now();
-                    pending.retain(|m| now.duration_since(m.enqueued_at) < PENDING_TTL);
+                    pending.retain(|m| {
+                        !is_current_message(&m.data)
+                            || now.duration_since(m.enqueued_at) < PENDING_TTL
+                    });
+                    if pending.len() > MAX_QUEUED {
+                        let overflow = pending.len() - MAX_QUEUED;
+                        pending.drain(0..overflow);
+                        warn!(
+                            target: "message_queue",
+                            "Pending messages overflow, dropped {} oldest", overflow
+                        );
+                    }
                     // 把 pending 中没发成功的放回队列头部
                     let mut all: VecDeque<TimedMessage> = pending.drain(..).collect();
                     all.append(&mut *buf);
@@ -96,13 +107,36 @@ impl MessageQueue {
     pub fn enqueue(&self, data: Vec<u8>) {
         let mut buf = self.inner.buf.lock().unwrap_or_else(|e| e.into_inner());
         if buf.len() >= MAX_QUEUED {
-            buf.pop_front();
-            warn!(target: "message_queue", "Queue full, dropped oldest message");
+            // 优先丢一条 current；结算和 sleep/wake 尽量保留
+            if let Some(pos) = buf.iter().position(|m| is_current_message(&m.data)) {
+                buf.remove(pos);
+                warn!(target: "message_queue", "Queue full, dropped one current message");
+            } else {
+                buf.pop_front();
+                warn!(target: "message_queue", "Queue full, dropped oldest message");
+            }
         }
         buf.push_back(TimedMessage {
             data,
             enqueued_at: Instant::now(),
         });
+    }
+}
+
+fn is_current_message(data: &[u8]) -> bool {
+    data.starts_with(br#"{"t":"current""#)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_current_message;
+
+    #[test]
+    fn distinguishes_current_from_state_changes() {
+        assert!(is_current_message(br#"{"t":"current","p":"chrome.exe"}"#));
+        assert!(!is_current_message(br#"{"t":"app","p":"chrome.exe"}"#));
+        assert!(!is_current_message(br#"{"t":"sleep"}"#));
+        assert!(!is_current_message(br#"{"t":"wake"}"#));
     }
 }
 

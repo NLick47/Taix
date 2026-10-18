@@ -251,10 +251,14 @@ actor SessionTracker {
         if let frontmost = await frontmostProvider(), isSameApp(app, frontmost) {
             let now = Date()
             let tick = nowTick
+            let carriedSecs = accMs / 1000
             let sessionId = UUID().uuidString
-            state = .tracking(app: app, window: nil, start: now, startTick: tick, accumulatedMs: accMs, lastPeriodicCheck: now, sessionId: sessionId)
+            // 保留原始会话起点：把已累计时长折算进 startTick，避免把重启前的时间记到重启之后
+            state = .tracking(app: app, window: nil, start: snapshot.startTime, startTick: tick - carriedSecs, accumulatedMs: 0, lastPeriodicCheck: now, sessionId: sessionId)
             await saveSnapshot()
             Logger.info("Session resumed after restart: \(app.name) [\(Int(accMs / 1000))s carried over]")
+            // current 的 since 用 now：恢复后的进行中只从重启时刻算，
+            // 不把停机时间算进 today-summary；结算仍用原始 startTime
             await eventBus.publish(MonitorEvent(
                 kind: .sessionStarted,
                 timestamp: now,
@@ -269,10 +273,9 @@ actor SessionTracker {
         var secs = Int64(accMs / 1000)
         if accMs.truncatingRemainder(dividingBy: 1000) >= 500 { secs += 1 }
         if secs > 0 {
-            let settledAt = snapshot.savedAt ?? snapshot.startTime
             let event = MonitorEvent(
                 kind: .sessionEnded,
-                timestamp: settledAt,
+                timestamp: snapshot.startTime,
                 app: app,
                 duration: Double(secs),
                 window: nil,

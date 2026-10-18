@@ -36,6 +36,14 @@ impl AppTimerService {
             debug!("update_app_duration: skip invalid timestamp");
             return Ok(());
         }
+        let now_ts = Utc::now().timestamp();
+        if start_time.timestamp() > now_ts + constants::TIMESTAMP_FUTURE_TOLERANCE_SECS {
+            debug!(
+                "update_app_duration: skip future timestamp {} for {}",
+                start_time, process
+            );
+            return Ok(());
+        }
 
         // 单次上报时长不超过 24 小时，防止异常膨胀数据库
         const MAX_DURATION_SECS: i64 = constants::SECS_PER_DAY;
@@ -51,8 +59,12 @@ impl AppTimerService {
 
         let start_time_key = start_time.to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
 
+        // 旧客户端没有 sessionId：用进程+开始时间+时长兜底。
+        // 时长参与 key，避免同进程同一秒的两段不同会话被合并（旧行为）。
         let session_id = if req.session_id.trim().is_empty() {
-            format!("{}@{}", process, start_time_key)
+            let base = format!("{}@{}", process, start_time_key);
+            let base: String = base.chars().take(120).collect();
+            format!("{}#{}", base, duration)
         } else {
             req.session_id
         };

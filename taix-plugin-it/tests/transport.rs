@@ -781,6 +781,58 @@ fn transport_contract() {
         }
     }
 
+    {
+        let now = now_epoch();
+        let day_start = now - (now + 8 * 3600).rem_euclid(86_400);
+        let start_key = chrono::DateTime::from_timestamp(day_start, 0)
+            .unwrap()
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        for duration in [60, 120, 60] {
+            http_json(
+                "POST",
+                port,
+                "/api/apptimer/duration",
+                Some(&json!({
+                    "processName": "LegacyApp",
+                    "duration": duration,
+                    "startDateTime": start_key,
+                })),
+            );
+        }
+        let summary = http_json("GET", port, "/api/data/today-summary", None);
+        let row = summary["apps"]
+            .as_array()
+            .and_then(|rows| rows.iter().find(|r| r["name"] == json!("LegacyApp")))
+            .expect("无 sid 的会话应写入今日统计");
+        assert_eq!(
+            row["seconds"],
+            json!(180),
+            "同进程同秒的 60s/120s 两段会话应分开，重复上报仍去重: {summary}"
+        );
+
+        // 未来时间戳应被拒绝
+        let future = chrono::DateTime::from_timestamp(now + 3600, 0)
+            .unwrap()
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        http_json(
+            "POST",
+            port,
+            "/api/apptimer/duration",
+            Some(&json!({
+                "processName": "LegacyApp",
+                "duration": 60,
+                "startDateTime": future,
+            })),
+        );
+        let summary = http_json("GET", port, "/api/data/today-summary", None);
+        let seconds = summary["apps"]
+            .as_array()
+            .and_then(|rows| rows.iter().find(|r| r["name"] == json!("LegacyApp")))
+            .map(|r| r["seconds"].as_i64().unwrap())
+            .unwrap_or(0);
+        assert_eq!(seconds, 180, "未来时间戳不应写入: {summary}");
+    }
+
     // ---------- 清理 ----------
     srv.stop();
     let _ = std::fs::remove_dir_all(&data_dir);
