@@ -29,6 +29,9 @@ export const zh = {
   'rule.title': '通知标题',
   'rule.titlePlaceholder': '留空自动生成',
   'rule.add': '添加',
+  'rule.index': '规则 {n}',
+  'rule.groupTrigger': '触发条件',
+  'rule.groupNotify': '提醒方式',
 
   'type.continuous': '连续使用',
   'type.daily': '每日总时长',
@@ -108,6 +111,9 @@ export const en: Record<keyof typeof zh, string> = {
   'rule.title': 'Notification title',
   'rule.titlePlaceholder': 'Leave empty to auto-generate',
   'rule.add': 'Add',
+  'rule.index': 'Rule {n}',
+  'rule.groupTrigger': 'Trigger',
+  'rule.groupNotify': 'Notification',
 
   'type.continuous': 'Continuous use',
   'type.daily': 'Daily total',

@@ -199,14 +199,16 @@
 
   .ap-box {
     display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
-    min-height: 29px; padding: 3px 8px;
-    border: 0.5px solid var(--line-strong);
+    min-height: 32px; padding: 3px 9px;
+    border: 1px solid transparent;
     border-radius: var(--r-control);
-    background: var(--card);
+    background: var(--card-inset);
+    box-shadow: inset 0 0 0 1px var(--line-strong);
     cursor: pointer;
-    transition: border-color 0.12s, box-shadow 0.12s;
+    transition: background 0.16s ease, box-shadow 0.16s ease;
   }
-  .ap-box:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+  .ap-box:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 22%, var(--line-strong)); }
+  .ap-box:focus-visible { outline: none; background: var(--card); border-color: var(--accent); box-shadow: var(--ring); }
   .ap-ph { font-size: 12.5px; color: var(--text-4); }
 
   .ap-chip {
@@ -231,8 +233,8 @@
     position: fixed; z-index: 40;
     display: flex; flex-direction: column;
     background: var(--card);
-    border: 0.5px solid var(--line-strong);
-    border-radius: 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-card);
     box-shadow: var(--sh-pop);
     overflow: hidden;
   }

@@ -371,7 +371,7 @@
 <style>
   .hint-line {
     font-size: 12px; color: var(--text-3);
-    margin: -6px 2px 10px;
+    margin: 0 2px 10px;
   }
   .json-err {
     margin-top: 6px;

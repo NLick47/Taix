@@ -33,27 +33,31 @@
 
 <div class="shell">
   <header class="topbar">
-    <a class="home" href="#/plugins" onclick={onCrumbClick} title={t('topbar.home')}>
-      <span class="brand">Taix</span>
-    </a>
-    <span class="spacer"></span>
-    <span class="conn" class:bad={pluginStore.conn !== 'live'} title={t('topbar.conn', { host: location.host })}>
-      <span class="dot"></span>{pluginStore.conn === 'live' ? t('topbar.connected') : t('topbar.reconnecting')}
-    </span>
-    <button class="icon-btn" onclick={cycleLocale} title={t('topbar.locale', { label: localeLabel(locale.choice) })}>
-      {#if locale.choice === 'auto'}
-        <Icon name="globe" size={14} />
-      {:else}
-        <span class="loc-t">{localeShort[locale.resolved]}</span>
-      {/if}
-    </button>
-    <button
-      class="icon-btn"
-      onclick={cycleTheme}
-      title={t('topbar.theme', { label: themeLabel(theme.choice) })}
-    >
-      <Icon name={theme.choice === 'auto' ? 'contrast' : theme.choice === 'light' ? 'sun' : 'moon'} size={14} />
-    </button>
+    <div class="topbar-inner">
+      <a class="home" href="#/plugins" onclick={onCrumbClick} title={t('topbar.home')}>
+        <span class="brand">Taix</span>
+      </a>
+      <span class="spacer"></span>
+      <span class="conn" class:bad={pluginStore.conn !== 'live'} title={t('topbar.conn', { host: location.host })}>
+        <span class="dot"></span>{pluginStore.conn === 'live' ? t('topbar.connected') : t('topbar.reconnecting')}
+      </span>
+      <div class="tool-group">
+        <button class="icon-btn" onclick={cycleLocale} title={t('topbar.locale', { label: localeLabel(locale.choice) })}>
+          {#if locale.choice === 'auto'}
+            <Icon name="globe" size={14} />
+          {:else}
+            <span class="loc-t">{localeShort[locale.resolved]}</span>
+          {/if}
+        </button>
+        <button
+          class="icon-btn"
+          onclick={cycleTheme}
+          title={t('topbar.theme', { label: themeLabel(theme.choice) })}
+        >
+          <Icon name={theme.choice === 'auto' ? 'contrast' : theme.choice === 'light' ? 'sun' : 'moon'} size={14} />
+        </button>
+      </div>
+    </div>
   </header>
 
   <!-- 配置页默认窄画布，插件自带 UI 时由页面把 layout.canvasWide 置宽 -->
@@ -72,5 +76,5 @@
 </div>
 
 <style>
-  .loc-t { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+  .loc-t { font-size: 11px; font-weight: 500; letter-spacing: 0.02em; }
 </style>

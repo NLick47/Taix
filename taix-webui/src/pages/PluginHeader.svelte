@@ -35,10 +35,7 @@
 
 <div class="page-head">
   <div class="h-main">
-    <h1>
-      <span class="glyph"><Icon name="puzzle" size={16} /></span>
-      {plugin.name}
-    </h1>
+    <h1>{plugin.name}</h1>
     <div class="sub">
       <span class="tag {s === 'running' || s === 'idle' ? 'ok' : s === 'paused' ? 'warn' : ''}">
         <span class="tdot"></span>{statusLabel(s)}
@@ -57,10 +54,9 @@
     <a href={'#/plugins/' + plugin.id} class="seg-a" class:active={tab === 'overview'} onclick={guardClick}>{t('header.overview')}</a>
     <a href={'#/plugins/' + plugin.id + '/config'} class="seg-a" class:active={tab === 'config'} onclick={guardClick}>{t('header.config')}</a>
   </div>
-  <span class="spacer"></span>
   {#if onRefresh}
-    <button onclick={onRefresh} disabled={busy}>
-      <Icon name="refresh" size={13} />{t('plugins.refresh')}
+    <button class="icon-only" onclick={onRefresh} disabled={busy} title={t('plugins.refreshTitle')} aria-label={t('plugins.refresh')}>
+      <span class:spin={busy}><Icon name="refresh" size={14} /></span>
     </button>
   {/if}
 </div>
@@ -68,31 +64,34 @@
 <style>
   .crumb a {
     display: inline-flex; align-items: center; gap: 4px;
-    margin: 0 0 9px -6px; padding: 4px 7px 4px 5px;
-    border-radius: 7px;
+    margin: 0 0 10px -6px; padding: 4px 7px 4px 5px;
+    border-radius: 6px;
     font-size: 12.5px; color: var(--text-2);
-    transition: background 0.12s, color 0.12s;
+    transition: background 0.16s ease, color 0.16s ease;
   }
-  .crumb a:hover { background: var(--card-inset); color: var(--text); }
+  .crumb a:hover { background: var(--hover); color: var(--text); }
 
   .pid { color: var(--text-3); }
 
   .view-bar {
     display: flex; align-items: center; gap: 9px;
-    margin-bottom: 18px;
+    margin-bottom: 14px;
   }
+
+  .icon-only { width: 32px; padding: 0; }
 
   /* 分段控件内是链接，不能直接用 .seg button 的规则 */
   .seg .seg-a {
     display: inline-flex; align-items: center;
-    height: 26px; padding: 0 14px;
-    border-radius: 7px;
+    height: 26px; padding: 0 12px;
+    border: 1px solid transparent; border-radius: 6px;
     font-size: 12.5px; color: var(--text-2);
-    transition: background 0.12s, color 0.12s;
+    transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
   }
-  .seg .seg-a:hover { color: var(--text); }
+  .seg .seg-a:hover { background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text); }
   .seg .seg-a.active {
     background: var(--seg-active); color: var(--text); font-weight: 500;
-    box-shadow: var(--sh-pill);
+    border-color: var(--line-strong);
+    box-shadow: 0 1px 2px rgb(16 24 40 / 9%);
   }
 </style>

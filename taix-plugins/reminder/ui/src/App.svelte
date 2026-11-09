@@ -276,6 +276,7 @@
         <button class:active={isVisual} onclick={() => setMode('可视化规则')}>{t('bar.visual')}</button>
         <button class:active={!isVisual} onclick={() => setMode('Lua 脚本')}>Lua</button>
       </div>
+      <span class="re-divider"></span>
       <label class="re-sound">
         {t('bar.sound')}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -288,49 +289,49 @@
           <span class="track"></span>
         </span>
       </label>
-      <span class="spacer"></span>
+      <span class="re-divider"></span>
       <button onclick={dryRun} disabled={running}>
         <Icon name="play" size={11} />{running ? t('bar.running') : t('bar.dryRun')}
       </button>
     </div>
 
     {#if isVisual}
-      <div class="card">
-        {#if overwriteRisk || scriptOverridden}
-          <div class="strip warn">
-            <Icon name="alert" size={14} />
-            {overwriteRisk ? t('warn.overwriteRisk') : t('warn.overwriteSession')}
+      {#if overwriteRisk || scriptOverridden}
+        <div class="strip warn">
+          <Icon name="alert" size={14} />
+          {overwriteRisk ? t('warn.overwriteRisk') : t('warn.overwriteSession')}
+        </div>
+      {/if}
+      {#if rules.length === 0}
+        <div class="empty">
+          <div class="glyph"><Icon name="bell" size={22} /></div>
+          <div class="et">{t('rules.empty')}</div>
+          <div class="eh">{t('rules.emptyHint')}</div>
+        </div>
+      {/if}
+      {#each rules as r, i (i)}
+        <div class="card rule-card">
+          <div class="rule-head">
+            <span class="rule-idx">{t('rule.index', { n: i + 1 })}</span>
+            <select
+              value={r.type}
+              onchange={(e) => updateRule(i, { type: (e.target as HTMLSelectElement).value as RuleType })}
+            >
+              {#each RULE_TYPES as tp (tp)}
+                <option value={tp}>{typeText(tp)}</option>
+              {/each}
+            </select>
+            <span class="spacer"></span>
+            <button class="icon" onclick={() => removeRule(i)} title={t('rules.delete')}>
+              <Icon name="x" size={12} />
+            </button>
           </div>
-        {/if}
-        {#if rules.length === 0}
-          <div class="empty" style="box-shadow: none; border-radius: 0; padding: 34px 20px">
-            <div class="glyph"><Icon name="bell" size={22} /></div>
-            <div class="et">{t('rules.empty')}</div>
-            <div class="eh">{t('rules.emptyHint')}</div>
-          </div>
-        {/if}
-        {#each rules as r, i (i)}
-          <div class="rule">
-            <div class="rule-head">
-              <span class="rule-idx">{i + 1}</span>
-              <select
-                style="width: auto; height: 27px"
-                value={r.type}
-                onchange={(e) => updateRule(i, { type: (e.target as HTMLSelectElement).value as RuleType })}
-              >
-                {#each RULE_TYPES as tp (tp)}
-                  <option value={tp}>{typeText(tp)}</option>
-                {/each}
-              </select>
-              <span class="rule-summary">{ruleSummary(r)}</span>
-              <span class="spacer"></span>
-              <button class="icon" onclick={() => removeRule(i)} title={t('rules.delete')}>
-                <Icon name="x" size={12} />
-              </button>
-            </div>
-            <div class="rule-grid" class:with-match={needMatch(r.type)}>
+          <div class="rule-desc">{ruleSummary(r)}</div>
+          <div class="rule-body">
+            <div class="group-label">{t('rule.groupTrigger')}</div>
+            <div class="rg-grid">
               {#if needMatch(r.type)}
-                <div class="rg span2">
+                <div class="rg span-all">
                   {#if r.type === 'category'}
                     <span class="rg-label">{t('rule.category')}</span>
                     <AppPicker
@@ -368,15 +369,6 @@
                 </select>
               </div>
               <div class="rg">
-                <span class="rg-label">{t('rule.cooldown')}</span>
-                <input
-                  type="number" min="1" value={r.cooldown}
-                  disabled={r.repeat === 'once'}
-                  title={r.repeat === 'once' ? t('rule.cooldownOnceHint') : t('rule.cooldownHint')}
-                  oninput={(e) => updateRule(i, { cooldown: Number((e.target as HTMLInputElement).value) })}
-                />
-              </div>
-              <div class="rg">
                 <span class="rg-label">{t('rule.repeat')}</span>
                 <select
                   value={r.repeat ?? 'repeat'}
@@ -387,7 +379,19 @@
                   {/each}
                 </select>
               </div>
-              <div class="rg" class:span2={needMatch(r.type)}>
+            </div>
+            <div class="group-label">{t('rule.groupNotify')}</div>
+            <div class="rg-grid">
+              <div class="rg">
+                <span class="rg-label">{t('rule.cooldown')}</span>
+                <input
+                  type="number" min="1" value={r.cooldown}
+                  disabled={r.repeat === 'once'}
+                  title={r.repeat === 'once' ? t('rule.cooldownOnceHint') : t('rule.cooldownHint')}
+                  oninput={(e) => updateRule(i, { cooldown: Number((e.target as HTMLInputElement).value) })}
+                />
+              </div>
+              <div class="rg span-rest">
                 <span class="rg-label">{t('rule.title')}</span>
                 <input
                   type="text" value={r.title} placeholder={t('rule.titlePlaceholder')}
@@ -396,15 +400,15 @@
               </div>
             </div>
           </div>
-        {/each}
-        <div class="rule-add">
-          <span class="faint">{t('rule.add')}</span>
-          {#each RULE_TYPES as tp (tp)}
-            <button class="small" onclick={() => addRule(tp)}>
-              <Icon name="plus" size={11} />{typeText(tp)}
-            </button>
-          {/each}
         </div>
+      {/each}
+      <div class="rule-add">
+        <span class="faint">{t('rule.add')}</span>
+        {#each RULE_TYPES as tp, i (tp)}
+          <button class="small" class:primary={i === 0} onclick={() => addRule(tp)}>
+            <Icon name="plus" size={11} />{typeText(tp)}
+          </button>
+        {/each}
       </div>
     {:else}
       <div class="card">
@@ -474,89 +478,99 @@
 </div>
 
 <style>
-  .re-grid {
-    display: block;
-  }
+  .re-grid { display: block; }
 
-  .re-bar {
-    display: flex; align-items: center; gap: 9px;
-    margin-bottom: 11px;
-  }
-  /* 「可视化 / Lua」是规则编辑方式，属次级控件：
-     缩小尺寸与上方「概览 / 配置」页面级切换拉开权重 */
-  .re-bar .seg { padding: 1px; border-radius: 8px; }
+  .re-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  /* 「可视化 / Lua」是规则编辑方式，属次级控件：比页面级切换小一档 */
+  .re-bar .seg { padding: 1px; border-radius: 7px; }
   .re-bar .seg button {
-    height: 22px; padding: 0 10px;
-    font-size: 11.5px; font-weight: 400; border-radius: 6px;
+    height: 22px; padding: 0 9px;
+    font-size: 11.5px; font-weight: 400; border-radius: 5px;
+    box-shadow: none;
   }
+  .re-bar .seg button.active {
+    background: var(--seg-active); color: var(--text); font-weight: 500;
+    border-color: var(--line-strong);
+    box-shadow: 0 1px 2px rgb(16 24 40 / 9%);
+  }
+  .re-divider { width: 1px; height: 18px; background: var(--line-strong); flex: none; }
   .re-sound {
-    display: inline-flex; align-items: center; gap: 7px;
-    height: 26px; padding: 0 10px; border-radius: 8px;
-    background: var(--card); box-shadow: var(--sh-1);
-    font-size: 11.5px; color: var(--text-2); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 32px; padding: 0 10px;
+    border: 1px solid var(--line-strong); border-radius: var(--r-control);
+    background: var(--card);
+    box-shadow: 0 1px 1px rgb(16 24 40 / 4%);
+    font-size: 12px; color: var(--text-2); cursor: pointer;
   }
 
   .strip {
     display: flex; align-items: center; gap: 8px;
-    padding: 9px 14px; font-size: 12.5px;
-    border-bottom: 0.5px solid var(--line);
+    padding: 10px 13px; font-size: 12.5px;
+    border-bottom: 1px solid var(--line);
   }
-  .strip.warn { background: var(--warn-quiet); color: var(--warn); }
-  .strip.head { background: transparent; color: var(--text-2); }
+  .strip.warn {
+    background: var(--warn-quiet); color: var(--warn);
+    border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+    border-radius: var(--r-control); margin-bottom: 12px;
+  }
+  .strip.head { background: var(--card-inset); color: var(--text-2); }
 
-  .rule { border-top: 0.5px solid var(--line); }
-  .rule:first-of-type { border-top: 0; }
-  .rule-head { display: flex; align-items: center; gap: 9px; padding: 11px 14px 0; }
+  .empty { margin-bottom: 12px; }
+
+  .rule-card { margin-bottom: 10px; }
+  .rule-head { display: flex; align-items: center; gap: 9px; padding: 10px 13px; border-bottom: 1px solid var(--line); }
   .rule-idx {
-    width: 20px; height: 20px; border-radius: 6px;
-    display: grid; place-items: center; flex: none;
+    display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
+    border-radius: 5px; flex: none;
     background: var(--accent-quiet); color: var(--accent);
     font-size: 11px; font-weight: 500;
   }
-  .rule-summary {
-    font-size: 12px; color: var(--text-3);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
+  .rule-head select { width: 132px; height: 30px; font-size: 12.5px; }
+  .rule-head button.icon:hover { background: var(--err-quiet); color: var(--err); }
+  .rule-desc { padding: 9px 13px; font-size: 11.5px; color: var(--text-3); border-bottom: 1px solid var(--line); }
 
-  /* 均等四列：需要大空间的「应用匹配」跨两列，不再把窄列分给它 */
-  .rule-grid {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 9px;
-    padding: 10px 14px 13px;
+  .rule-body { padding: 12px 13px 14px; }
+  .group-label { font-size: 11px; font-weight: 500; color: var(--text-2); margin: 0 0 8px; }
+  .rg-grid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px; margin-bottom: 14px;
   }
-  .rule-grid.with-match { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .rule-grid .span2 { grid-column: span 2; }
-  .rule-grid input:disabled { opacity: 0.45; cursor: not-allowed; }
-  @media (max-width: 1180px) {
-    .rule-grid, .rule-grid.with-match { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rg-grid:last-child { margin-bottom: 0; }
+  .rg { min-width: 0; }
+  .span-all { grid-column: 1 / -1; max-width: 520px; }
+  .span-rest { grid-column: span 2; }
+  .span-rest input { max-width: 360px; }
+  .rg-label { display: block; font-size: 11.5px; color: var(--text-2); margin-bottom: 5px; }
+  @media (max-width: 760px) {
+    .rg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .span-rest { grid-column: span 1; }
+    .span-rest input { max-width: 100%; }
   }
-  @media (max-width: 680px) {
-    .rule-grid, .rule-grid.with-match { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 480px) {
+    .rg-grid { grid-template-columns: minmax(0, 1fr); }
+    .span-rest, .span-all { grid-column: 1 / -1; }
   }
-  .rg-label { display: block; font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
 
   .rule-add {
     display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
-    padding: 11px 14px;
-    border-top: 0.5px solid var(--line);
+    margin-top: 12px;
   }
 
   .rule-foot {
     display: flex; align-items: center; gap: 13px;
-    padding: 8px 14px;
-    border-top: 0.5px solid var(--line);
+    padding: 9px 13px;
+    border-top: 1px solid var(--line);
     font-size: 11px; color: var(--text-3);
   }
 
   .dry-out {
-    margin-top: 11px; padding: 10px 14px;
+    margin-top: 12px; padding: 11px 13px;
     display: flex; align-items: baseline; gap: 10px;
     font-size: 12.5px;
   }
   .dry-tag {
     flex: none; font-size: 11px; font-weight: 500;
-    padding: 2px 8px; border-radius: 6px;
+    padding: 2px 8px; border-radius: 5px;
     background: var(--card-inset); color: var(--text-2);
   }
   .dry-tag.ok { background: var(--ok-quiet); color: var(--ok-deep); }
@@ -576,7 +590,7 @@
     padding: 12px 0;
     color: var(--text-4); user-select: none;
     overflow: hidden;
-    border-right: 0.5px solid var(--line);
+    border-right: 1px solid var(--line);
     max-height: 420px;
   }
   .gutter span { display: block; padding-right: 9px; }
@@ -599,5 +613,6 @@
     resize: vertical; min-height: 360px; max-height: 420px;
     overflow: auto; outline: none;
   }
-  .code-area textarea:focus { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .code-area textarea:hover { box-shadow: none; }
+  .code-area textarea:focus { background: transparent; box-shadow: inset 0 0 0 1.5px var(--accent); }
 </style>
