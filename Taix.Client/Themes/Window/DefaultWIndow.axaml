@@ -168,7 +168,8 @@
                                             IsVisible="{TemplateBinding TitleBarCommandVisible}"
                                             HandlesPointerPressed="True" />
                                         <Border Width="1" Height="16" Margin="4,0,6,0"
-                                                Background="{DynamicResource WindowBorderBrush}" />
+                                                Background="{DynamicResource StandardTextBrush}"
+                                                Opacity="0.28" />
 
                                         <button:IconButton
                                             x:Name="MinimizeButton"
