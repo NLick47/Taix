@@ -189,3 +189,45 @@ pub fn is_elevated() -> bool {
         Err(_) => false,
     }
 }
+
+/// taix-plugin-<id>.exe 由 shell 拉起，SDK 侧不会自行退出；卸载前必须显式结束，
+/// 否则进程可能在注册表清理后重新写入通知身份
+pub fn stop_plugin_processes() {
+    let _ = silent_cmd("taskkill")
+        .args(["/F", "/FI", "IMAGENAME eq taix-plugin-*"])
+        .output();
+}
+
+/// 清理插件系统写入的 Toast 通知身份：共享的 Taix.Plugin（install.ps1 注册）
+/// 与插件运行时按 id 建的 Taix.Plugin.<id>（taix-notify/src/lib.rs）
+pub fn remove_plugin_notification_identity() {
+    const AUMID_ROOT: &str = r"HKCU\SOFTWARE\Classes\AppUserModelId";
+    const SHARED: &str = "Taix.Plugin";
+
+    if let Ok(output) = silent_cmd("reg").args(["query", AUMID_ROOT]).output() {
+        if output.status.success() {
+            for line in String::from_utf8_lossy(&output.stdout).lines() {
+                // reg query 输出子键的完整路径；值行带类型/数据，必然含空白
+                let name = line.trim().rsplit('\\').next().unwrap_or_default();
+                if name.is_empty() || name.contains(char::is_whitespace) {
+                    continue;
+                }
+                let is_plugin_identity =
+                    name == SHARED || name.starts_with(concat!("Taix.Plugin", "."));
+                if is_plugin_identity {
+                    let _ = silent_cmd("reg")
+                        .args(["delete", &format!(r"{AUMID_ROOT}\{name}"), "/f"])
+                        .output();
+                }
+            }
+        }
+    }
+
+    // 通知图标与 AUMID 成对落盘，首次发通知时会重新生成
+    if let Some(local) = dirs::data_local_dir() {
+        let dir = local.join("Taix").join("plugin-icons");
+        if dir.exists() {
+            let _ = std::fs::remove_dir_all(dir);
+        }
+    }
+}

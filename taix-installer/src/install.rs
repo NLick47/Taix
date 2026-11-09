@@ -92,6 +92,8 @@ pub fn run_uninstall(install_dir: Option<PathBuf>, _silent: bool) -> Result<()> 
     for proc_name in PROCESSES {
         <() as Platform>::stop_process(proc_name)?;
     }
+    #[cfg(target_os = "windows")]
+    crate::platform::windows::stop_plugin_processes();
     std::thread::sleep(std::time::Duration::from_secs(1));
 
     cli::show_step(2, 4, "删除快捷方式...");
@@ -120,6 +122,9 @@ pub fn run_uninstall(install_dir: Option<PathBuf>, _silent: bool) -> Result<()> 
                 .args(["/DELETE", "/F", "/TN", task])
                 .output();
         }
+
+        // 插件系统写入的通知身份（共享 AUMID + 每个插件一份）
+        crate::platform::windows::remove_plugin_notification_identity();
     }
 
     cli::show_step(4, 4, "删除程序文件...");

@@ -548,6 +548,15 @@ mod tests {
     }
 
     #[test]
+    fn uninstaller_removes_plugin_identities() {
+        let uninstaller = include_str!("../../script/uninstall.ps1");
+        assert!(
+            uninstaller.contains(r#""Taix.Plugin.*""#),
+            "uninstall.ps1 必须按前缀清理插件 AUMID（共享 + 每个插件一份）"
+        );
+    }
+
+    #[test]
     fn script_str_escapes_user_text() {
         assert_eq!(as_script_str("普通文本"), "\"普通文本\"");
         assert_eq!(as_script_str("带\"引号"), "\"带\\\"引号\"");

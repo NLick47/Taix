@@ -132,8 +132,12 @@ $exeFiles = @(
 
 foreach ($exe in $exeFiles) {
     if (Test-Path $exe) {
-        Remove-Item $exe -Force
-        Write-Host "[+] Removed executable: $exe"
+        try {
+            Remove-Item $exe -Force -ErrorAction Stop
+            Write-Host "[+] Removed executable: $exe"
+        } catch {
+            Write-Host "[-] Could not remove: $exe (locked by another process)" -ForegroundColor Yellow
+        }
     }
 }
 
@@ -150,15 +154,33 @@ foreach ($dirName in @("plugins", "webui")) {
     }
 }
 
-# 插件系统：Toast AUMID 注销（install.ps1 注册的 Taix.Plugin）
-try {
-    $aumidKey = "HKCU:\SOFTWARE\Classes\AppUserModelId\Taix.Plugin"
-    if (Test-Path $aumidKey) {
-        Remove-Item $aumidKey -Force
-        Write-Host "[+] Unregistered Toast AUMID: Taix.Plugin"
+# 插件系统：Toast 通知身份注册表项
+# install.ps1 只注册共享的 Taix.Plugin；插件运行时还会按自己的 id 建
+# Taix.Plugin.<id>（taix-notify/src/lib.rs），这里按前缀一并清掉
+$AumidRoot = "HKCU:\SOFTWARE\Classes\AppUserModelId"
+if (Test-Path $AumidRoot) {
+    $pluginAumids = @(Get-ChildItem -Path $AumidRoot -ErrorAction SilentlyContinue |
+        Where-Object { $_.PSChildName -eq "Taix.Plugin" -or $_.PSChildName -like "Taix.Plugin.*" })
+    foreach ($key in $pluginAumids) {
+        try {
+            Remove-Item -Path $key.PSPath -Recurse -Force -ErrorAction Stop
+            Write-Host "[+] Unregistered Toast AUMID: $($key.PSChildName)"
+        } catch {
+            Write-Host "[-] Could not unregister Toast AUMID: $($key.PSChildName) ($_)" -ForegroundColor Yellow
+        }
     }
-} catch {
-    Write-Host "[*] Failed to unregister Toast AUMID: $_" -ForegroundColor Yellow
+}
+
+# 通知图标与 AUMID 成对落盘（%LOCALAPPDATA%\Taix\plugin-icons），一并清掉；
+# 首次发通知时会自动重新生成
+$pluginIconDir = Join-Path $env:LOCALAPPDATA "Taix\plugin-icons"
+if (Test-Path $pluginIconDir) {
+    try {
+        Remove-Item $pluginIconDir -Recurse -Force -ErrorAction Stop
+        Write-Host "[+] Removed directory: $pluginIconDir"
+    } catch {
+        Write-Host "[-] Could not remove: $pluginIconDir (locked by another process)" -ForegroundColor Yellow
+    }
 }
 
 Write-Host "`n========================================" -ForegroundColor Green

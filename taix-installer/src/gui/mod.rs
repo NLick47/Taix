@@ -562,6 +562,8 @@ fn run_uninstall_with_progress(
     for proc_name in platform::PROCESSES {
         let _ = <() as platform::Platform>::stop_process(proc_name);
     }
+    #[cfg(target_os = "windows")]
+    platform::windows::stop_plugin_processes();
     std::thread::sleep(std::time::Duration::from_secs(1));
 
     progress(2, 4, i18n.step_remove_shortcut(), proxy);
@@ -590,6 +592,9 @@ fn run_uninstall_with_progress(
                 .creation_flags(CREATE_NO_WINDOW)
                 .output();
         }
+
+        // 插件系统写入的通知身份（共享 AUMID + 每个插件一份）
+        platform::windows::remove_plugin_notification_identity();
     }
 
     progress(4, 4, i18n.step_delete_files(), proxy);
