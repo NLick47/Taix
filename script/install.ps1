@@ -54,6 +54,27 @@ if ($missing.Count -gt 0) {
     exit 1
 }
 
+# 覆盖升级时先停掉旧进程，避免旧 shell 继续拉起旧版本
+$stopped = @()
+foreach ($procName in @("taix-shell", "taix-server", "taix-monitor-windows", "Taix")) {
+    $running = Get-Process -Name $procName -ErrorAction SilentlyContinue
+    if ($running) {
+        $running | Stop-Process -Force -ErrorAction SilentlyContinue
+        $stopped += $procName
+    }
+}
+$pluginProcs = Get-Process -Name "taix-plugin-*" -ErrorAction SilentlyContinue
+if ($pluginProcs) {
+    $pluginProcs | Stop-Process -Force -ErrorAction SilentlyContinue
+    $stopped += ($pluginProcs | ForEach-Object { $_.Name } | Select-Object -Unique)
+}
+if ($stopped.Count -gt 0) {
+    Write-Host "[!] Detected running Taix processes: $($stopped -join ', ')" -ForegroundColor Yellow
+    Write-Host "[!] They have been stopped. Re-extract the release files now, then run install.ps1 again." -ForegroundColor Yellow
+    Read-Host "Press Enter to exit"
+    exit 1
+}
+
 $clientExe       = Join-Path $InstallDir "Taix.exe"
 $StartMenuDir    = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs"
 $startMenuSc     = Join-Path $StartMenuDir "Taix.lnk"

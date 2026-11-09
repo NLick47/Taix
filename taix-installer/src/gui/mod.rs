@@ -398,6 +398,8 @@ fn run_install_with_progress(
             <() as platform::Platform>::stop_process(proc_name)?;
         }
     }
+    #[cfg(target_os = "windows")]
+    platform::windows::stop_plugin_processes();
 
     std::thread::sleep(std::time::Duration::from_secs(2));
     for proc_name in platform::PROCESSES {
@@ -475,6 +477,8 @@ fn run_update_with_progress(
             <() as platform::Platform>::stop_process(proc_name)?;
         }
     }
+    #[cfg(target_os = "windows")]
+    platform::windows::stop_plugin_processes();
     std::thread::sleep(std::time::Duration::from_secs(2));
     for proc_name in platform::PROCESSES {
         let mut retries = 0;

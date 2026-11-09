@@ -28,6 +28,8 @@ pub fn run_install(
             <() as Platform>::stop_process(proc_name)?;
         }
     }
+    #[cfg(target_os = "windows")]
+    crate::platform::windows::stop_plugin_processes();
 
     std::thread::sleep(std::time::Duration::from_secs(2));
 

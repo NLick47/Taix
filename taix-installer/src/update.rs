@@ -33,6 +33,8 @@ pub fn run_update(install_dir: Option<PathBuf>, _silent: bool) -> Result<()> {
             <() as Platform>::stop_process(proc_name)?;
         }
     }
+    #[cfg(target_os = "windows")]
+    crate::platform::windows::stop_plugin_processes();
 
     std::thread::sleep(Duration::from_secs(2));
 
