@@ -234,6 +234,29 @@ EOF
 # launchd 里有旧登记时 bootstrap 会报 5 I/O error，先清一次再装
 launchctl bootout "gui/$(id -u)/com.taix.shell" 2>/dev/null || true
 
+# bootout 只覆盖 LaunchAgent 拉起的实例；手动启动的旧 shell 也要停掉，
+# 否则它继续跑旧代码并占着单实例锁
+pkill -x "taix-shell" 2>/dev/null || true
+i=0
+while pgrep -x "taix-shell" >/dev/null 2>&1; do
+    i=$((i + 1))
+    if [ "$i" -ge 5 ]; then
+        pkill -9 -x "taix-shell" 2>/dev/null || true
+        break
+    fi
+    sleep 1
+done
+
+# shell 被强杀时子进程会变孤儿；统一兜底清理
+pkill -x "taix-server" 2>/dev/null || true
+pkill -f "$SCRIPT_DIR/taix-monitor-macos" 2>/dev/null || true
+pkill -f "/Applications/TaixTools/taix-monitor-macos" 2>/dev/null || true
+pkill -f "$SCRIPT_DIR/plugins/" 2>/dev/null || true
+pkill -f "/Applications/TaixTools/plugins/" 2>/dev/null || true
+sleep 1
+
+echo "If Taix.app is running, quit and reopen it to use the new client."
+
 # 顺手清掉旧版本留下的输出重定向文件
 rm -f "$LOG_DIR/shell.log"
 
