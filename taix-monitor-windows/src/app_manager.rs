@@ -50,7 +50,7 @@ impl CacheKey {
 
 pub struct AppManager {
     cache: HashMap<CacheKey, CachedApp>,
-    data_dir: PathBuf,
+    icon_dir: PathBuf,
 }
 
 #[derive(Debug)]
@@ -59,18 +59,10 @@ pub enum AppInfoError {
 }
 
 impl AppManager {
-    pub fn new(data_dir: Option<PathBuf>) -> Self {
-        let data_dir = data_dir
-            .or_else(|| std::env::var("TAIX_DATA_DIR").ok().map(PathBuf::from))
-            .unwrap_or_else(|| {
-                std::env::current_exe()
-                    .ok()
-                    .and_then(|p| p.parent().map(|d| d.to_path_buf()))
-                    .unwrap_or_else(|| PathBuf::from("."))
-            });
+    pub fn new(icon_dir: PathBuf) -> Self {
         Self {
             cache: HashMap::with_capacity(MAX_CACHE_SIZE),
-            data_dir,
+            icon_dir,
         }
     }
 
@@ -146,7 +138,7 @@ impl AppManager {
 
         let icon_path = exe_path
             .as_deref()
-            .and_then(|p| extract_icon(&self.data_dir, p, &process_name))
+            .and_then(|p| extract_icon(&self.icon_dir, p, &process_name))
             .unwrap_or_default();
 
         let info = AppInfo {
@@ -241,8 +233,8 @@ impl AppManager {
     }
 }
 
-fn extract_icon(data_dir: &Path, exe_path: &str, process_name: &str) -> Option<String> {
-    let icon_dir = data_dir.join("AppIcons");
+fn extract_icon(icon_root: &Path, exe_path: &str, process_name: &str) -> Option<String> {
+    let icon_dir = icon_root.join("AppIcons");
     std::fs::create_dir_all(&icon_dir).ok()?;
 
     let safe_name: String = process_name
@@ -253,7 +245,7 @@ fn extract_icon(data_dir: &Path, exe_path: &str, process_name: &str) -> Option<S
     let icon_path = icon_dir.join(format!("{}_{}.png", safe_name, path_hash));
 
     if icon_path.exists() {
-        return relative_path(&icon_path, data_dir);
+        return relative_path(&icon_path, icon_root);
     }
 
     if let Err(e) = extract_icon_to_png(exe_path, &icon_path) {
@@ -263,7 +255,7 @@ fn extract_icon(data_dir: &Path, exe_path: &str, process_name: &str) -> Option<S
         );
         return None;
     }
-    relative_path(&icon_path, data_dir)
+    relative_path(&icon_path, icon_root)
 }
 
 fn get_uwp_path(hwnd: HWND, owner_pid: u32) -> Option<String> {

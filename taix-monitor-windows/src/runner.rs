@@ -9,6 +9,7 @@ use tracing::{error, info, warn};
 
 pub fn run(
     data_dir: Option<PathBuf>,
+    icon_dir: Option<PathBuf>,
     inactive_threshold_secs: Option<u64>,
     max_sound_duration_secs: Option<u64>,
     sleep_watch: Option<bool>,
@@ -28,7 +29,14 @@ pub fn run(
                 .unwrap_or_else(|| PathBuf::from("."))
         });
 
-    info!(target: "main", "Starting... dataDir={:?}", data_dir);
+    let icon_dir = icon_dir.unwrap_or_else(|| default_icon_dir(&data_dir));
+
+    info!(
+        target: "main",
+        "Starting... dataDir={:?} iconDir={:?}", data_dir, icon_dir
+    );
+
+    migrate_legacy_icon_cache(&data_dir, &icon_dir);
 
     let config = MonitorConfig {
         inactive_threshold_secs: inactive_threshold_secs.unwrap_or(900),
@@ -48,7 +56,7 @@ pub fn run(
     let audio_state = audio_monitor.state();
 
     // 初始化组件
-    let mut app_manager = crate::app_manager::AppManager::new(Some(data_dir.clone()));
+    let mut app_manager = crate::app_manager::AppManager::new(icon_dir);
     let mut timer = crate::app_timer::AppTimer::new();
     let mut sleep_detector = crate::sleep_detector::SleepDetector::new(audio_state, &config);
     let queue = MessageQueue::new("TaixDaemon");
@@ -215,4 +223,149 @@ fn try_recover_session(data_dir: &Path, queue: &MessageQueue) {
 fn cleanup_checkpoint(data_dir: &Path) {
     let _ = std::fs::remove_file(data_dir.join("active_session.json"));
     let _ = std::fs::remove_file(data_dir.join("active_session.json.tmp"));
+}
+
+fn default_icon_dir(data_dir: &Path) -> PathBuf {
+    #[cfg(target_os = "windows")]
+    {
+        std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+            .unwrap_or_else(|| data_dir.to_path_buf())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        data_dir.to_path_buf()
+    }
+}
+
+fn migrate_legacy_icon_cache(data_dir: &Path, icon_dir: &Path) {
+    if data_dir == icon_dir {
+        return;
+    }
+
+    let source = data_dir.join("AppIcons");
+    if !source.is_dir() {
+        return;
+    }
+
+    let target = icon_dir.join("AppIcons");
+    if std::fs::create_dir_all(&target).is_err() {
+        return;
+    }
+
+    let Ok(entries) = std::fs::read_dir(&source) else {
+        return;
+    };
+
+    let mut copied = 0usize;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(file_name) = path.file_name() else {
+            continue;
+        };
+        let destination = target.join(file_name);
+        if destination.exists() {
+            let _ = std::fs::remove_file(&path);
+            continue;
+        }
+        match std::fs::copy(&path, &destination) {
+            Ok(_) => {
+                copied += 1;
+                let _ = std::fs::remove_file(&path);
+            }
+            Err(e) => {
+                let _ = std::fs::remove_file(&destination);
+                warn!(
+                    target: "main",
+                    "Failed to migrate icon {:?}: {}", path, e
+                );
+            }
+        }
+    }
+
+    if copied > 0 {
+        info!(
+            target: "main",
+            "Migrated {} app icons from {:?} to {:?}", copied, source, target
+        );
+    }
+
+    if let Err(e) = std::fs::remove_dir_all(&source) {
+        warn!(
+            target: "main",
+            "Failed to remove legacy icon dir {:?}: {}", source, e
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn test_root(name: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!(
+            "taix-icon-migrate-{}-{}", name, std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        root
+    }
+
+    #[test]
+    fn copies_then_removes_source_dir() {
+        let root = test_root("copy");
+        let data = root.join("Data");
+        let install = root.join("Install");
+        let source = data.join("AppIcons");
+        fs::create_dir_all(&source).unwrap();
+        fs::write(source.join("a.png"), b"a").unwrap();
+        fs::write(source.join("b.png"), b"b").unwrap();
+
+        migrate_legacy_icon_cache(&data, &install);
+
+        assert_eq!(fs::read(install.join("AppIcons/a.png")).unwrap(), b"a");
+        assert_eq!(fs::read(install.join("AppIcons/b.png")).unwrap(), b"b");
+        assert!(!source.exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn keeps_existing_icon_and_cleans_source() {
+        let root = test_root("existing");
+        let data = root.join("Data");
+        let install = root.join("Install");
+        let source = data.join("AppIcons");
+        let target = install.join("AppIcons");
+        fs::create_dir_all(&source).unwrap();
+        fs::create_dir_all(&target).unwrap();
+        fs::write(source.join("a.png"), b"legacy").unwrap();
+        fs::write(target.join("a.png"), b"current").unwrap();
+
+        migrate_legacy_icon_cache(&data, &install);
+
+        assert_eq!(fs::read(target.join("a.png")).unwrap(), b"current");
+        assert!(!source.exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn preserves_source_when_target_cannot_be_created() {
+        let root = test_root("fail");
+        let data = root.join("Data");
+        let source = data.join("AppIcons");
+        let install = root.join("Install");
+        fs::create_dir_all(&source).unwrap();
+        fs::write(source.join("a.png"), b"a").unwrap();
+        fs::write(&install, b"not a dir").unwrap();
+
+        migrate_legacy_icon_cache(&data, &install);
+
+        assert!(source.join("a.png").exists());
+        let _ = fs::remove_dir_all(&root);
+    }
 }

@@ -42,6 +42,23 @@ fn build_data_dir_args(data_dir: &Path) -> Vec<String> {
     ]
 }
 
+#[cfg(target_os = "windows")]
+fn build_icon_dir_args(data_dir: &Path) -> Vec<String> {
+    let icon_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        .unwrap_or_else(|| data_dir.to_path_buf());
+    vec![
+        "--icon-dir".to_owned(),
+        icon_dir.to_string_lossy().to_string(),
+    ]
+}
+
+#[cfg(not(target_os = "windows"))]
+fn build_icon_dir_args(_data_dir: &Path) -> Vec<String> {
+    Vec::new()
+}
+
 /// 被监督目标：server/monitor 按 exe 名解析，插件用完整路径
 #[derive(Debug, Clone)]
 pub struct SupervisedTarget {
@@ -90,6 +107,7 @@ impl ServiceManager {
         let monitor_config = crate::config::load_monitor_config(&self.data_dir);
         let mut monitor_args = build_monitor_args(&monitor_config);
         monitor_args.extend(build_data_dir_args(&self.data_dir));
+        monitor_args.extend(build_icon_dir_args(&self.data_dir));
 
         tracing::info!(
             target: "taix_shell::service",
