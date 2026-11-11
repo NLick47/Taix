@@ -1,13 +1,17 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tracing::{debug, error, warn};
 use windows::Win32::Media::Audio::{eConsole, eRender, IMMDeviceEnumerator, MMDeviceEnumerator};
+use windows::Win32::Media::Audio::Endpoints::IAudioMeterInformation;
 use windows::Win32::System::Com::{
     CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_ALL, COINIT_APARTMENTTHREADED,
 };
-use windows::Win32::Media::Audio::Endpoints::IAudioMeterInformation;
+
+const SAMPLE_INTERVAL: Duration = Duration::from_secs(5);
+/// 缓存的 meter 定期重建，跟上默认音频设备变更
+const METER_REFRESH: Duration = Duration::from_secs(30);
 
 /// 音频播放状态的轻量句柄，可跨线程 Clone
 #[derive(Clone)]
@@ -59,49 +63,38 @@ impl AudioMonitor {
                     }
                 };
 
+                let mut meter: Option<IAudioMeterInformation> = None;
+                let mut meter_acquired = Instant::now();
+
                 loop {
-                    let playing = match enumerator.GetDefaultAudioEndpoint(eRender, eConsole) {
-                        Ok(device) => {
-                            let meter: windows::core::Result<IAudioMeterInformation> =
-                                device.Activate(CLSCTX_ALL, None);
-                            match meter {
-                                Ok(m) => match m.GetPeakValue() {
-                                    Ok(peak) => peak > 0.0001,
-                                    Err(e) => {
-                                        debug!(
-                                            target: "audio_monitor",
-                                            "GetPeakValue failed: {:?}", e
-                                        );
-                                        false
-                                    }
-                                },
-                                Err(e) => {
-                                    debug!(
-                                        target: "audio_monitor",
-                                        "Activate(IAudioMeterInformation) failed: {:?}", e
-                                    );
-                                    false
-                                }
+                    let mut peak = meter.as_ref().and_then(|m| match m.GetPeakValue() {
+                        Ok(p) => Some(p),
+                        Err(e) => {
+                            debug!(target: "audio_monitor", "GetPeakValue failed: {:?}", e);
+                            None
+                        }
+                    });
+                    if peak.is_none() || meter_acquired.elapsed() >= METER_REFRESH {
+                        if let Some(m) = acquire_meter(&enumerator) {
+                            meter = Some(m);
+                            meter_acquired = Instant::now();
+                            if peak.is_none() {
+                                peak = meter.as_ref().and_then(|m| m.GetPeakValue().ok());
                             }
                         }
-                        Err(e) => {
-                            debug!(
-                                target: "audio_monitor",
-                                "GetDefaultAudioEndpoint failed: {:?}", e
-                            );
-                            false
-                        }
-                    };
+                    }
 
-                    is_playing_clone.store(playing, Ordering::Relaxed);
+                    is_playing_clone.store(peak.map_or(false, |p| p > 0.0001), Ordering::Relaxed);
 
-                    match shutdown_rx.recv_timeout(Duration::from_secs(5)) {
+                    match shutdown_rx.recv_timeout(SAMPLE_INTERVAL) {
                         Ok(()) => break,
                         Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
                         Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
                     }
                 }
 
+                drop(meter);
+                drop(enumerator);
                 CoUninitialize();
             }
         });
@@ -124,6 +117,25 @@ impl AudioMonitor {
         if let Some(h) = self.handle.take() {
             if let Err(e) = h.join() {
                 error!(target: "audio_monitor", "Audio thread panicked: {:?}", e);
+            }
+        }
+    }
+}
+
+fn acquire_meter(enumerator: &IMMDeviceEnumerator) -> Option<IAudioMeterInformation> {
+    unsafe {
+        let device = match enumerator.GetDefaultAudioEndpoint(eRender, eConsole) {
+            Ok(d) => d,
+            Err(e) => {
+                debug!(target: "audio_monitor", "GetDefaultAudioEndpoint failed: {:?}", e);
+                return None;
+            }
+        };
+        match device.Activate::<IAudioMeterInformation>(CLSCTX_ALL, None) {
+            Ok(m) => Some(m),
+            Err(e) => {
+                debug!(target: "audio_monitor", "Activate(IAudioMeterInformation) failed: {:?}", e);
+                None
             }
         }
     }

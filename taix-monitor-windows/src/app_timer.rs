@@ -5,7 +5,7 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
-const CHECKPOINT_INTERVAL_MS: u64 = 10_000;
+const CHECKPOINT_INTERVAL_MS: u64 = 60_000;
 
 enum FlushKind {
     Periodic,
@@ -319,10 +319,8 @@ impl AppTimer {
                     checkpoint_due = true;
                 }
             }
-            TimerState::Idle | TimerState::Suspended { .. } => {
-                // 不活跃/睡眠时不能留下可恢复的进行中会话
-                clear_checkpoint(data_dir);
-            }
+            // 状态切换时 checkpoint_now 已清过，这里不必每拍删文件
+            TimerState::Idle | TimerState::Suspended { .. } => {}
         }
 
         if checkpoint_due {
