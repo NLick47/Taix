@@ -7,11 +7,11 @@ use std::time::{Duration, Instant};
 use tracing::{debug, warn};
 
 const MAX_QUEUED: usize = 2048;
-/// 无消息时的兜底唤醒，正常路径靠 enqueue 唤醒
-const IDLE_WAIT: Duration = Duration::from_secs(5);
 const MAX_SEND_ATTEMPTS: u32 = 10;
 /// pending 中的消息超过此时间则丢弃，防止 daemon 长期不可用时积压
 const PENDING_TTL: Duration = Duration::from_secs(300);
+const RECONNECT_MIN: Duration = Duration::from_millis(500);
+const RECONNECT_MAX: Duration = Duration::from_secs(10);
 
 #[derive(Clone)]
 struct TimedMessage {
@@ -45,15 +45,16 @@ impl MessageQueue {
         let _consumer = thread::spawn(move || {
             let mut transport = NamedPipeTransport::new(&inner_clone.pipe_name);
             let mut pending: Vec<TimedMessage> = Vec::new();
+            let mut backoff = RECONNECT_MIN;
 
             while inner_clone.running.load(Ordering::Relaxed) {
                 // 1. 从共享缓冲取消息
                 let batch = {
                     let mut buf = inner_clone.buf.lock().unwrap_or_else(|e| e.into_inner());
                     if buf.is_empty() && pending.is_empty() {
-                        let (guard, _) = inner_clone
+                        let guard = inner_clone
                             .ready
-                            .wait_timeout(buf, IDLE_WAIT)
+                            .wait(buf)
                             .unwrap_or_else(|e| e.into_inner());
                         drop(guard);
                         continue;
@@ -82,11 +83,12 @@ impl MessageQueue {
                 match send_batch(&mut transport, &batch) {
                     Ok(()) => {
                         pending.clear();
+                        backoff = RECONNECT_MIN;
                     }
                     Err(unsent) => {
                         pending = unsent;
-                        // 连接失败，等一会再试
-                        thread::sleep(Duration::from_millis(500));
+                        thread::sleep(backoff);
+                        backoff = (backoff * 2).min(RECONNECT_MAX);
                     }
                 }
             }
