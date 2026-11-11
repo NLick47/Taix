@@ -14,7 +14,7 @@ use crate::win32::window::{enum_child_windows, extract_icon_to_png, get_window_c
 use tracing::{debug, error, info, warn};
 
 const MAX_CACHE_SIZE: usize = 500;
-const CACHE_TTL_SECS: u64 = 3600;
+const CACHE_TTL_SECS: u64 = 86400;
 
 static SYS_CLASS_NAMES: &[&str] = &[
     "Progman", "WorkerW", "Shell_TrayWnd", "XamlExplorerHostIslandWindow",
@@ -61,7 +61,7 @@ pub enum AppInfoError {
 impl AppManager {
     pub fn new(icon_dir: PathBuf) -> Self {
         Self {
-            cache: HashMap::with_capacity(MAX_CACHE_SIZE),
+            cache: HashMap::with_capacity(64),
             icon_dir,
         }
     }
