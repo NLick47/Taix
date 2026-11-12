@@ -4,7 +4,7 @@ use crate::win32::gamepad::GamepadState;
 use crate::win32::get_system_idle_time;
 use crate::win32::power_watcher::{PowerEvent, PowerWatcher};
 use std::time::{Duration, Instant};
-use tracing::info;
+use tracing::{debug, info};
 
 /// 恢复后判定用户活跃的 idle 阈值
 const RESUME_IDLE_THRESHOLD: Duration = Duration::from_secs(30);
@@ -177,7 +177,7 @@ impl SleepDetector {
         let is_playing_sound = self.audio_state.is_playing();
         let is_gamepad_active = self.gamepad_state.is_active();
 
-        info!(
+        debug!(
             target: "sleep_detector",
             "tick: idle={:?}, threshold={:?}, sound={}, gamepad={}",
             idle, self.inactive_threshold, is_playing_sound, is_gamepad_active

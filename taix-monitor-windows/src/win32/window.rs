@@ -234,6 +234,7 @@ fn extract_icon_rgba_from_hicon(icon: HICON) -> Result<(i32, i32, Vec<u8>), Box<
                 let _ = DeleteObject(HGDIOBJ::from(info.hbmColor));
             }
             let _ = DeleteObject(HGDIOBJ::from(info.hbmMask));
+            let _ = DeleteDC(mem_dc);
             let _ = ReleaseDC(None, hdc);
             let _ = DestroyIcon(icon);
             return Err("Invalid bitmap dimensions (width or height is 0)".into());

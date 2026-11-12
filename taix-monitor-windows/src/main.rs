@@ -72,11 +72,7 @@ fn print_usage(program: &str) {
 }
 
 fn main() {
-    let log_filter = if cfg!(debug_assertions) {
-        "info"
-    } else {
-        "taix_monitor=info"
-    };
+    let log_filter = if cfg!(debug_assertions) { "debug" } else { "info" };
     let _guard = init("taix-monitor", log_filter, PanicMode::SyncFile, 30);
 
     let args: Vec<String> = std::env::args().collect();

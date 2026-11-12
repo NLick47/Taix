@@ -1,16 +1,17 @@
 use super::pipe::NamedPipeTransport;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use tracing::{debug, warn};
 
 const MAX_QUEUED: usize = 2048;
-const CONSUMER_INTERVAL: Duration = Duration::from_millis(100);
 const MAX_SEND_ATTEMPTS: u32 = 10;
 /// pending 中的消息超过此时间则丢弃，防止 daemon 长期不可用时积压
 const PENDING_TTL: Duration = Duration::from_secs(300);
+const RECONNECT_MIN: Duration = Duration::from_millis(500);
+const RECONNECT_MAX: Duration = Duration::from_secs(10);
 
 #[derive(Clone)]
 struct TimedMessage {
@@ -25,6 +26,7 @@ pub struct MessageQueue {
 
 struct Inner {
     buf: Mutex<VecDeque<TimedMessage>>,
+    ready: Condvar,
     running: AtomicBool,
     pipe_name: String,
 }
@@ -33,6 +35,7 @@ impl MessageQueue {
     pub fn new(pipe_name: &str) -> Self {
         let inner = Arc::new(Inner {
             buf: Mutex::new(VecDeque::with_capacity(256)),
+            ready: Condvar::new(),
             running: AtomicBool::new(true),
             pipe_name: pipe_name.to_owned(),
         });
@@ -42,14 +45,18 @@ impl MessageQueue {
         let _consumer = thread::spawn(move || {
             let mut transport = NamedPipeTransport::new(&inner_clone.pipe_name);
             let mut pending: Vec<TimedMessage> = Vec::new();
+            let mut backoff = RECONNECT_MIN;
 
             while inner_clone.running.load(Ordering::Relaxed) {
                 // 1. 从共享缓冲取消息
                 let batch = {
                     let mut buf = inner_clone.buf.lock().unwrap_or_else(|e| e.into_inner());
                     if buf.is_empty() && pending.is_empty() {
-                        drop(buf);
-                        thread::sleep(CONSUMER_INTERVAL);
+                        let guard = inner_clone
+                            .ready
+                            .wait(buf)
+                            .unwrap_or_else(|e| e.into_inner());
+                        drop(guard);
                         continue;
                     }
                     // 只丢过期的 current；app 结算和 sleep/wake 状态转换要保留
@@ -76,11 +83,12 @@ impl MessageQueue {
                 match send_batch(&mut transport, &batch) {
                     Ok(()) => {
                         pending.clear();
+                        backoff = RECONNECT_MIN;
                     }
                     Err(unsent) => {
                         pending = unsent;
-                        // 连接失败，等一会再试
-                        thread::sleep(Duration::from_millis(500));
+                        thread::sleep(backoff);
+                        backoff = (backoff * 2).min(RECONNECT_MAX);
                     }
                 }
             }
@@ -120,6 +128,8 @@ impl MessageQueue {
             data,
             enqueued_at: Instant::now(),
         });
+        drop(buf);
+        self.inner.ready.notify_one();
     }
 }
 

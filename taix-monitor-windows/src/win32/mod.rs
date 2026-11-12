@@ -31,7 +31,7 @@ pub fn get_system_idle_time() -> Option<Duration> {
             let last_input_64 = if now_low_32 >= last_input_32 {
                 (now & !0xFFFF_FFFF) | last_input_32
             } else {
-                ((now & !0xFFFF_FFFF) + 0x1_0000_0000) | last_input_32
+                (now & !0xFFFF_FFFF).saturating_sub(0x1_0000_0000) | last_input_32
             };
             let idle_ms = now.saturating_sub(last_input_64);
             Some(Duration::from_millis(idle_ms))
