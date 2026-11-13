@@ -1,5 +1,5 @@
 use crate::migrations;
-use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
 use sqlx::SqlitePool;
 use std::path::Path;
 use std::str::FromStr;
@@ -49,7 +49,8 @@ pub async fn init_db(db_path: &str, tz_id: &str) -> anyhow::Result<SqlitePool> {
     pool.close().await;
 
     let opts = SqliteConnectOptions::from_str(&format!("sqlite:{}", db_path))?
-        .journal_mode(SqliteJournalMode::Wal);
+        .journal_mode(SqliteJournalMode::Wal)
+        .synchronous(SqliteSynchronous::Normal);
     let pool = SqlitePoolOptions::new()
         .max_connections(4)
         .connect_with(opts)
