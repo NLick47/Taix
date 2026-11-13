@@ -23,9 +23,9 @@ pub struct PluginQueue {
 }
 
 pub struct PluginState {
-    /// 启动时扫描；热安装靠 404 路径限量重扫。保留安装目录，ui 资源与 shell 启动用同一份路径
     manifests: tokio::sync::RwLock<Vec<manifest::Installed>>,
     last_scan_ms: AtomicU64,
+    last_dir_mtime: std::sync::Mutex<Option<std::time::SystemTime>>,
     pub registry: RwLock<PluginRegistry>,
     /// 写盘串行化，避免交错 rename
     pub registry_write: tokio::sync::Mutex<()>,
@@ -70,6 +70,8 @@ pub struct PluginStatus {
 
 impl PluginState {
     pub async fn init(plugins_dir: &Path, data_dir: &Path) -> Result<Self, AppError> {
+        // mtime 先于扫描读取：两者之间落进来的安装会留下更新的 mtime，下一拍兜住
+        let dir_mtime = manifest::dir_mtime(plugins_dir);
         let manifests = manifest::scan(plugins_dir);
         let (tx, _) = broadcast::channel(constants::PLUGIN_EVENT_CHANNEL_CAPACITY);
 
@@ -110,6 +112,7 @@ impl PluginState {
         let state = Self {
             manifests: tokio::sync::RwLock::new(manifests),
             last_scan_ms: AtomicU64::new(0),
+            last_dir_mtime: std::sync::Mutex::new(dir_mtime),
             registry: RwLock::new(registry::load_or_default(data_dir).await?),
             registry_write: tokio::sync::Mutex::new(()),
             queues: Mutex::new(HashMap::new()),
@@ -146,8 +149,16 @@ impl PluginState {
             .map(|m| m.manifest.clone())
     }
 
-    /// 未命中时限量重扫，支持热安装
-    async fn rescan_throttled(&self) {
+    /// 限量重扫：目录 mtime 未变 = 缓存即现状，只做一次 stat 直接返回（零盘读）；
+    /// 变化时 1s 窗口内只放行一次。列表与未命中路径共用，谁先到谁触发
+    pub async fn rescan_throttled(&self) {
+        let unchanged = {
+            let last = self.last_dir_mtime.lock().unwrap_or_else(|e| e.into_inner());
+            *last == manifest::dir_mtime(&self.plugins_dir)
+        };
+        if unchanged {
+            return;
+        }
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_millis() as u64)
@@ -200,9 +211,12 @@ impl PluginState {
     }
 
     pub async fn rescan(&self) {
+        // mtime 先于扫描读取：扫描期间发生的安装会留下更新的 mtime，由下一拍兜住，不丢更新
+        let dir_mtime = manifest::dir_mtime(&self.plugins_dir);
         let scanned = manifest::scan(&self.plugins_dir);
         let n = scanned.len();
         *self.manifests.write().await = scanned;
+        *self.last_dir_mtime.lock().unwrap_or_else(|e| e.into_inner()) = dir_mtime;
         tracing::debug!(target: "taix_server::plugins", "rescanned {} manifest(s)", n);
     }
 
@@ -335,24 +349,57 @@ mod tests {
         );
     }
 
-    /// 未重扫的调用不得推进时间戳，否则高频轮询会把重扫饿死
+    /// mtime 门控：目录未变时零盘读不重扫；变化时才重扫并受 1s 窗口限量
     #[tokio::test]
-    async fn throttled_rescan_only_advances_when_it_scans() {
-        let state = test_state("throttle-ts").await;
+    async fn rescan_only_when_plugins_dir_changes() {
+        let state = test_state("rescan-gate").await;
 
-        state.rescan_throttled().await;
-        let after_first = state.last_scan_ms.load(Ordering::Relaxed);
-        assert!(after_first > 0, "首次调用应真正重扫并推进时间戳");
-
-        // 间隔要大于毫秒精度，否则「推进了时间戳」也看不出来
-        for _ in 0..4 {
-            tokio::time::sleep(std::time::Duration::from_millis(60)).await;
+        // init 已扫过同一目录且未变化：重复调用全部命中门控，不重扫
+        for _ in 0..3 {
             state.rescan_throttled().await;
         }
         assert_eq!(
             state.last_scan_ms.load(Ordering::Relaxed),
+            0,
+            "未变化的目录应被 mtime 门控挡下"
+        );
+
+        // 目录级变化（新增插件）→ 真正重扫并推进时间戳
+        let dir = state.plugins_dir.join("late");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("plugin.json"),
+            r#"{"id":"late","name":"Late","version":"1.0.0","entry":"taix-plugin-late"}"#,
+        )
+        .unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        state.rescan_throttled().await;
+        let after_first = state.last_scan_ms.load(Ordering::Relaxed);
+        assert!(after_first > 0, "目录变化应真正重扫并推进时间戳");
+        assert!(state.manifest("late").await.is_some());
+
+        // 窗口内再次变化：1s 节流挡下，时间戳不推进
+        let dir2 = state.plugins_dir.join("late2");
+        std::fs::create_dir_all(&dir2).unwrap();
+        std::fs::write(
+            dir2.join("plugin.json"),
+            r#"{"id":"late2","name":"Late2","version":"1.0.0","entry":"taix-plugin-late2"}"#,
+        )
+        .unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        state.rescan_throttled().await;
+        assert_eq!(
+            state.last_scan_ms.load(Ordering::Relaxed),
             after_first,
             "节流窗口内的调用不得推进时间戳"
+        );
+
+        // 窗口过期后：窗口内的变化必须可见
+        tokio::time::sleep(std::time::Duration::from_millis(1100)).await;
+        state.rescan_throttled().await;
+        assert!(
+            state.manifest("late2").await.is_some(),
+            "窗口内的变化过期后必须可见"
         );
     }
 

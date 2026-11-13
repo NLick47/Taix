@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use taix_plugin_manifest::{log_once, resolve_entry, scan, Installed};
+use taix_plugin_manifest::{log_once, resolve_entry, Installed};
 
 use crate::constants;
 use crate::service_manager::{ServiceManager, SupervisedTarget};
@@ -18,6 +18,9 @@ pub struct PluginSupervisor {
     data_dir: PathBuf,
     plugins_dir: PathBuf,
     shutdown: Shutdown,
+    /// 全量扫描缓存：(扫描时的目录 mtime, 结果)。mtime 未变则每拍只做一次 stat，
+    /// 不再重复 read_dir + 解析全部清单。启用集与 entry 探测仍每拍刷新，启停响应不受影响
+    scan_cache: std::sync::Mutex<Option<(Option<std::time::SystemTime>, Vec<Installed>)>>,
 }
 
 impl PluginSupervisor {
@@ -30,6 +33,7 @@ impl PluginSupervisor {
             data_dir,
             plugins_dir,
             shutdown,
+            scan_cache: std::sync::Mutex::new(None),
         }
     }
 
@@ -58,11 +62,32 @@ impl PluginSupervisor {
         }
     }
 
+    /// mtime 门控的清单扫描：目录未变时复用上一拍结果（每次仅一次 stat）。
+    /// 清单文件的就地升级不改父目录 mtime，靠 reconcile 里逐插件的 json mtime
+    /// 停机检查兜底，新清单内容等下一次目录级变化或重启后生效
+    fn scan_cached(&self) -> Vec<Installed> {
+        let mut cache = self.scan_cache.lock().unwrap_or_else(|e| e.into_inner());
+        let last = match cache.as_ref() {
+            Some((mtime, _)) => *mtime,
+            None => None,
+        };
+        // mtime 先于扫描读取：扫描期间落进来的安装会留下更新的 mtime，下一拍兜住
+        if let Some((mtime, manifests)) =
+            taix_plugin_manifest::scan_if_changed(&self.plugins_dir, last)
+        {
+            *cache = Some((mtime, manifests));
+        }
+        cache
+            .as_ref()
+            .map(|(_, manifests)| manifests.clone())
+            .unwrap_or_default()
+    }
+
     fn desired(&self) -> HashMap<String, (Installed, PathBuf)> {
         let enabled = read_enabled(&self.data_dir);
         let mut out = HashMap::new();
 
-        for installed in scan(&self.plugins_dir) {
+        for installed in self.scan_cached() {
             if !enabled.get(&installed.manifest.id).copied().unwrap_or(false) {
                 continue;
             }
@@ -220,6 +245,7 @@ fn read_enabled(data_dir: &std::path::Path) -> HashMap<String, bool> {
 mod tests {
     use super::*;
     use std::path::Path;
+    use taix_plugin_manifest::scan;
 
     fn temp_dir(tag: &str) -> PathBuf {
         let dir =
@@ -305,6 +331,59 @@ mod tests {
             "插件目录应指向 <exe 旁>/plugins，实际 {:?}",
             sup.plugins_dir
         );
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn scan_cached_reuses_unchanged_dir() {
+        let dir = temp_dir("scan-cache");
+        let sup = PluginSupervisor {
+            data_dir: dir.clone(),
+            plugins_dir: dir.join("plugins"),
+            shutdown: Shutdown::new(),
+            scan_cache: std::sync::Mutex::new(None),
+        };
+
+        // 空目录：记录 mtime，重复调用复用缓存
+        assert!(sup.scan_cached().is_empty());
+        assert!(sup.scan_cached().is_empty());
+
+        // 新增插件目录 → mtime 变化 → 重新扫描
+        let demo = dir.join("plugins").join("demo");
+        std::fs::create_dir_all(&demo).unwrap();
+        std::fs::write(
+            demo.join("plugin.json"),
+            r#"{"id":"demo","name":"Demo","version":"1.0.0","entry":"taix-plugin-demo"}"#,
+        )
+        .unwrap();
+        let found = sup.scan_cached();
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].manifest.name, "Demo");
+
+        // 清单就地编辑不改父目录 mtime：缓存复用，保持旧内容（停机检查由逐插件 mtime 兜底）
+        std::fs::write(
+            demo.join("plugin.json"),
+            r#"{"id":"demo","name":"Demo2","version":"1.1.0","entry":"taix-plugin-demo"}"#,
+        )
+        .unwrap();
+        let cached = sup.scan_cached();
+        assert_eq!(cached[0].manifest.name, "Demo", "未变化应复用缓存");
+
+        // 下一次目录级变化（新增插件）触发重扫，就地编辑的内容随之生效
+        let other = dir.join("plugins").join("other");
+        std::fs::create_dir_all(&other).unwrap();
+        std::fs::write(
+            other.join("plugin.json"),
+            r#"{"id":"other","name":"Other","version":"1.0.0","entry":"taix-plugin-other"}"#,
+        )
+        .unwrap();
+        let fresh = sup.scan_cached();
+        assert_eq!(fresh.len(), 2);
+        assert!(
+            fresh.iter().any(|i| i.manifest.name == "Demo2"),
+            "重扫应读到就地编辑后的新清单"
+        );
+
         std::fs::remove_dir_all(&dir).ok();
     }
 }

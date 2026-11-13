@@ -73,7 +73,7 @@ fn ok_empty() -> Json<ApiResponse<Value>> {
 async fn list(
     Extension(state): Extension<Arc<PluginState>>,
 ) -> Json<ApiResponse<Value>> {
-    state.rescan().await;
+    state.rescan_throttled().await;
     let manifests = state.list_manifests().await;
     let mut items = Vec::with_capacity(manifests.len());
 
@@ -591,5 +591,33 @@ mod tests {
         );
 
         std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[tokio::test]
+    async fn list_picks_up_hot_installed_plugin() {
+        let root = std::env::temp_dir().join(format!("taix-ui-list-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let app = ui_test_app(&root).await;
+
+        let (_, _, body) = get(&app, "/api/plugins").await;
+        assert!(String::from_utf8_lossy(&body).contains("\"id\":\"reminder\""));
+
+        let late = root.join("plugins").join("late");
+        std::fs::create_dir_all(&late).unwrap();
+        std::fs::write(
+            late.join("plugin.json"),
+            r#"{"id":"late","name":"Late","version":"1.0.0","entry":"taix-plugin-late"}"#,
+        )
+        .unwrap();
+
+        // 节流窗口内的重复请求不再扫盘，直到窗口过期后必然可见
+        for _ in 0..3 {
+            tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+            let (_, _, body) = get(&app, "/api/plugins").await;
+            if String::from_utf8_lossy(&body).contains("\"id\":\"late\"") {
+                return;
+            }
+        }
+        panic!("热安装插件应最迟 1s 后出现在列表");
     }
 }

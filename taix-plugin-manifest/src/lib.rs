@@ -141,6 +141,24 @@ pub fn scan(plugins_dir: &Path) -> Vec<Installed> {
     out
 }
 
+pub fn dir_mtime(plugins_dir: &Path) -> Option<std::time::SystemTime> {
+    std::fs::metadata(plugins_dir)
+        .ok()?
+        .modified()
+        .ok()
+}
+
+pub fn scan_if_changed(
+    plugins_dir: &Path,
+    last: Option<std::time::SystemTime>,
+) -> Option<(Option<std::time::SystemTime>, Vec<Installed>)> {
+    let mtime = dir_mtime(plugins_dir);
+    if mtime == last {
+        return None;
+    }
+    Some((mtime, scan(plugins_dir)))
+}
+
 fn read_manifest(path: &Path) -> Option<PluginManifest> {
     let mut content = std::fs::read_to_string(path).ok()?;
     if content.starts_with('\u{FEFF}') {
