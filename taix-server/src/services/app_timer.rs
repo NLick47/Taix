@@ -346,6 +346,10 @@ impl AppTimerService {
                     tracing::error!(error = %e, "failed to trim PluginRecords");
                 }
             }
+
+            if let Err(e) = sqlx::query("PRAGMA optimize").execute(&pool).await {
+                tracing::error!(error = %e, "failed to run PRAGMA optimize");
+            }
         }
     }
 }
