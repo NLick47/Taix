@@ -269,9 +269,10 @@
                                                    Width="22" Height="22"
                                                    VerticalAlignment="Center"
                                                    Command="{Binding GoPreviousCommand, RelativeSource={RelativeSource TemplatedParent}}" />
+
                                 <Border Padding="8,5"
                                         CornerRadius="6"
-                                        MinWidth="96"
+                                        Width="122"
                                         Background="Transparent"
                                         Cursor="Hand">
                                     <Interaction.Behaviors>
@@ -287,7 +288,11 @@
                                         <base:Icon x:Name="Icon" IconType="Calendar"
                                                    Foreground="{DynamicResource StandardTextBrush}" />
                                         <TextBlock Foreground="{DynamicResource StandardTextBrush}"
-                                                   Text="{TemplateBinding DateStr}" VerticalAlignment="Center" Margin="5,0,0,0" />
+                                                   Text="{TemplateBinding DateStr}" VerticalAlignment="Center" Margin="5,0,0,0"
+                                                   MaxWidth="110"
+                                                   TextAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip.Tip="{TemplateBinding DateStr}" />
                                     </StackPanel>
                                 </Border>
                                 <button:IconButton Icon="ChevronRight" FontSize="10"
