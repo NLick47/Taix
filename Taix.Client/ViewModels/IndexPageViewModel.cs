@@ -18,6 +18,7 @@ using Taix.Client.Servicers;
 using Taix.Client.Servicers.Interfaces;
 using Taix.Client.Shared.Librarys;
 using Taix.Client.Shared.Models;
+using Taix.Client.Shared.Models.Data;
 using Taix.Client.Shared.Models.Web;
 using Taix.Client.Shared.Servicers.Interfaces;
 using Taix.Client.Views;
@@ -142,22 +143,10 @@ public partial class IndexPageViewModel : IndexPageModel
     {
         var week = Time.GetThisWeekDate();
 
-        var appDataTask = _dataService.GetDateRangelogListAsync(week[0], week[1], cancellationToken: cancellationToken);
-        var webDataTask = _webDataService.GetDateRangeWebSiteListAsync(week[0], week[1], cancellationToken: cancellationToken);
-
-        await Task.WhenAll(appDataTask, webDataTask);
+        var bundle = await _dataService.GetOverviewBundleAsync(week[0], week[1], cancellationToken: cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var appList = await appDataTask;
-        var appChartData = ChartDataMapper.MapFromDailyLogs(appList);
-        WeekData = appChartData;
-        AppFrequentUseData = appChartData.Take(FrequentUseNum).ToList();
-        AppMoreData = appChartData.Skip(FrequentUseNum).Take(MoreNum).ToList();
-
-        var webList = await webDataTask;
-        var webChartData = ChartDataMapper.MapFromWebSites(webList);
-        WebFrequentUseData = webChartData.Take(FrequentUseNum).ToList();
-        WebMoreData = webChartData.Skip(FrequentUseNum).Take(MoreNum).ToList();
+        ApplyOverviewBundle(bundle);
     }
 
     /// <summary>
@@ -167,20 +156,20 @@ public partial class IndexPageViewModel : IndexPageModel
     {
         var today = DateTime.Now.Date;
 
-        var appDataTask = _dataService.GetDateRangelogListAsync(today, today, cancellationToken: cancellationToken);
-        var webDataTask = _webDataService.GetDateRangeWebSiteListAsync(today, today, cancellationToken: cancellationToken);
-
-        await Task.WhenAll(appDataTask, webDataTask);
+        var bundle = await _dataService.GetOverviewBundleAsync(today, today, cancellationToken: cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var appList = await appDataTask;
-        var appChartData = ChartDataMapper.MapFromDailyLogs(appList);
+        ApplyOverviewBundle(bundle);
+    }
+
+    private void ApplyOverviewBundle(OverviewBundleModel bundle)
+    {
+        var appChartData = ChartDataMapper.MapFromDailyLogs(bundle.Apps);
         WeekData = appChartData;
         AppFrequentUseData = appChartData.Take(FrequentUseNum).ToList();
         AppMoreData = appChartData.Skip(FrequentUseNum).Take(MoreNum).ToList();
 
-        var webList = await webDataTask;
-        var webChartData = ChartDataMapper.MapFromWebSites(webList);
+        var webChartData = ChartDataMapper.MapFromWebSites(bundle.Sites);
         WebFrequentUseData = webChartData.Take(FrequentUseNum).ToList();
         WebMoreData = webChartData.Skip(FrequentUseNum).Take(MoreNum).ToList();
     }

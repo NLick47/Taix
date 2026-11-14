@@ -827,37 +827,54 @@ public class CategoryPageViewModel : CategoryPageModel
     {
         if (ShowType.Id == 0)
         {
-            Data.Clear();
-            var categories = await _categoryService.GetCategoriesAsync(cancellationToken);
+            // 先取数构建临时列表，成功后再整体替换，避免清空后失败/取消留下空页
+            var categories = await _categoryService.GetCategoriesWithCountsAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
+            var items = new List<CategoryModel>(categories.Count);
             foreach (var item in categories)
             {
-                var appCount = await _appDataService.GetAppCountByCategoryIDAsync(item.ID);
-                cancellationToken.ThrowIfCancellationRequested();
-                Data.Add(new CategoryModel
+                items.Add(new CategoryModel
                 {
-                    Count = appCount,
-                    Data = item
+                    Count = item.Count,
+                    Data = new Taix.Client.Shared.Models.CategoryModel
+                    {
+                        ID = item.ID, Name = item.Name, IconFile = item.IconFile, Color = item.Color,
+                        IsDirectoryMatch = item.IsDirectoryMatch, IsSystem = item.IsSystem, Directories = item.Directories
+                    }
                 });
             }
+            ReplaceItems(Data, items);
             ComputeHasDirectoryMatchCategory();
         }
         else
         {
             HasDirectoryMatchCategory = false;
-            WebCategoryData.Clear();
-            var webCategories = await _webDataService.GetWebSiteCategoriesAsync(cancellationToken);
+            var webCategories = await _webDataService.GetWebCategoriesWithCountsAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
+            var items = new List<WebCategoryModel>(webCategories.Count);
             foreach (var item in webCategories)
             {
-                var siteCount = await _webDataService.GetWebSitesCountAsync(item.ID);
-                cancellationToken.ThrowIfCancellationRequested();
-                WebCategoryData.Add(new WebCategoryModel
+                items.Add(new WebCategoryModel
                 {
-                    Data = item,
-                    Count = siteCount
+                    Data = new WebSiteCategoryModel
+                    {
+                        ID = item.ID, Name = item.Name, IconFile = item.IconFile, Color = item.Color,
+                        IsUrlMatch = item.IsUrlMatch, UrlPatterns = item.UrlPatterns, IsSystem = item.IsSystem
+                    },
+                    Count = item.Count
                 });
             }
+            ReplaceItems(WebCategoryData, items);
+        }
+    }
+
+    /// <summary>整体替换 ObservableCollection 内容：仅在成功取数后执行</summary>
+    private static void ReplaceItems<T>(System.Collections.ObjectModel.ObservableCollection<T> target, List<T> items)
+    {
+        target.Clear();
+        foreach (var item in items)
+        {
+            target.Add(item);
         }
     }
 

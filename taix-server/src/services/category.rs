@@ -1,9 +1,12 @@
 use sqlx::SqlitePool;
+use std::collections::HashMap;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
 use crate::error::AppError;
+use crate::models::bundle::{CategoryColumn, CategoryWithCount};
 use crate::models::category::CategoryModel;
+use crate::models::log::ColumnDataModel;
 use crate::models::request::{CreateCategoryRequest, UpdateCategoryRequest};
 
 static CATEGORY_CACHE: std::sync::OnceLock<RwLock<Option<Vec<CategoryModel>>>> = std::sync::OnceLock::new();
@@ -17,7 +20,7 @@ fn dir_match_cache() -> &'static RwLock<Option<Vec<(i64, Vec<String>)>>> {
     DIR_MATCH_CACHE.get_or_init(|| RwLock::new(None))
 }
 
-async fn invalidate_category_cache() {
+pub(crate) async fn invalidate_category_cache() {
     let mut cache = category_cache().write().await;
     *cache = None;
     let mut dir_cache = dir_match_cache().write().await;
@@ -47,6 +50,8 @@ impl CategoryService {
     pub async fn get_categories(pool: &SqlitePool) -> Result<Vec<CategoryModel>, AppError> {
         debug!("get_categories");
 
+        // 缓存是进程级全局的；测试用独立内存库并行跑，跨池缓存会互相污染，测试下直连
+        #[cfg(not(test))]
         {
             let cache = category_cache().read().await;
             if let Some(cached) = cache.as_ref() {
@@ -73,8 +78,11 @@ impl CategoryService {
             categories
         };
 
-        let mut cache = category_cache().write().await;
-        *cache = Some(result.clone());
+        #[cfg(not(test))]
+        {
+            let mut cache = category_cache().write().await;
+            *cache = Some(result.clone());
+        }
 
         Ok(result)
     }
@@ -373,6 +381,57 @@ impl CategoryService {
         tx.commit().await?;
 
         Ok(updated)
+    }
+
+    /// 分类列表 + 每类应用数：列表走缓存，计数一次 GROUP BY，
+    /// 替代客户端逐分类发请求的 N+1 模式
+    pub async fn get_categories_with_counts(
+        pool: &SqlitePool,
+    ) -> Result<Vec<CategoryWithCount>, AppError> {
+        debug!("get_categories_with_counts");
+        let categories = Self::get_categories(pool).await?;
+        let counts: HashMap<i64, i64> =
+            sqlx::query_as("SELECT CategoryID, COUNT(*) FROM AppModels GROUP BY CategoryID")
+                .fetch_all(pool)
+                .await?
+                .into_iter()
+                .collect();
+
+        Ok(categories
+            .into_iter()
+            .map(|c| CategoryWithCount {
+                count: counts.get(&c.id).copied().unwrap_or(0),
+                category: c,
+            })
+            .collect())
+    }
+
+    /// 给聚合列（category_id → values）补上分类元数据，供图表 bundle 直接渲染
+    pub async fn enrich_columns(
+        pool: &SqlitePool,
+        cols: Vec<ColumnDataModel>,
+    ) -> Result<Vec<CategoryColumn>, AppError> {
+        let categories = Self::get_categories(pool).await?;
+        let map: HashMap<i64, &CategoryModel> = categories.iter().map(|c| (c.id, c)).collect();
+
+        Ok(cols
+            .into_iter()
+            .map(|c| {
+                let cat = map.get(&c.category_id.unwrap_or(0));
+                CategoryColumn {
+                    category_id: c.category_id.unwrap_or(0),
+                    name: cat
+                        .and_then(|x| x.name.clone())
+                        .unwrap_or_else(|| "Unknown".to_string()),
+                    color: match cat {
+                        Some(x) => x.color.clone(),
+                        None => Some("#ccc".to_string()),
+                    },
+                    icon_file: cat.and_then(|x| x.icon_file.clone()),
+                    values: c.values,
+                }
+            })
+            .collect())
     }
 }
 

@@ -168,4 +168,74 @@ impl AppDataService {
             .filter_map(AppJoinCols::to_app_model)
             .collect())
     }
+
+    pub async fn batch_update_category(
+        pool: &SqlitePool,
+        req: crate::models::bundle::BatchCategoryRequest,
+    ) -> Result<Vec<AppModel>, AppError> {
+        debug!("batch_update_category: {} app(s) -> {}", req.app_ids.len(), req.category_id);
+        if req.app_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut category_id = req.category_id;
+        if category_id > 0 {
+            let cat_exists: Option<(i64,)> = sqlx::query_as("SELECT ID FROM CategoryModels WHERE ID = ?")
+                .bind(category_id)
+                .fetch_optional(pool)
+                .await?;
+            if cat_exists.is_none() {
+                warn!("batch_update_category: category_id={} not found, fallback to system category", category_id);
+                category_id = 0;
+            }
+        }
+        let category_id = if category_id > 0 {
+            category_id
+        } else {
+            CategoryService::get_system_category_id(pool).await?
+        };
+
+        // 分块避开 SQLite 变量数上限；UPDATE 单条完成
+        const CHUNK: usize = 500;
+        for chunk in req.app_ids.chunks(CHUNK) {
+            let mut qb = sqlx::QueryBuilder::new("UPDATE AppModels SET CategoryID = ");
+            qb.push_bind(category_id);
+            qb.push(" WHERE ID IN (");
+            let mut sep = qb.separated(", ");
+            for id in chunk {
+                sep.push_bind(id);
+            }
+            sep.push_unseparated(")");
+            qb.build().execute(pool).await?;
+        }
+
+        let mut apps = Vec::with_capacity(req.app_ids.len());
+        for chunk in req.app_ids.chunks(CHUNK) {
+            apps.extend(Self::get_apps_by_ids(pool, chunk).await?);
+        }
+        Ok(apps)
+    }
+
+    /// 按主键批量取应用（含分类联表），保持与 by-category 一致的行结构
+    pub(crate) async fn get_apps_by_ids(
+        pool: &SqlitePool,
+        ids: &[i64],
+    ) -> Result<Vec<AppModel>, AppError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let sql = format!(
+            "SELECT {cols} FROM AppModels a \
+             LEFT JOIN CategoryModels c ON a.CategoryID = c.ID \
+             WHERE a.ID IN ({})",
+            crate::utils::in_clause(ids),
+            cols = APP_JOIN_COLS_SQL
+        );
+        let mut q = sqlx::query_as::<_, AppJoinCols>(&sql);
+        for id in ids {
+            q = q.bind(*id);
+        }
+        let rows = q.fetch_all(pool).await?;
+        Ok(rows.iter().filter_map(AppJoinCols::to_app_model).collect())
+    }
 }

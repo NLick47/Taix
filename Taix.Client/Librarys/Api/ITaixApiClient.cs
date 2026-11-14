@@ -11,9 +11,6 @@ namespace Taix.Client.Librarys.Api;
 
 public interface ITaixApiClient
 {
-    // AppTimer
-    Task UpdateAppDurationAsync(string processName, int duration, DateTime startDateTime);
-
     // AppData
     Task<List<AppModel>> GetAllAppsAsync();
     Task<AppModel?> GetAppAsync(int id);
@@ -32,10 +29,10 @@ public interface ITaixApiClient
     Task<int> ApplyDirectoryMatchAsync(string[]? patterns = null);
 
     // CategorySummary
-    Task<CategorySummaryModel> GetAppCategorySummaryAsync(int categoryId, DateTime start, DateTime end, DateTime? prevStart = null, DateTime? prevEnd = null, CancellationToken cancellationToken = default);
-    Task<CategorySummaryModel> GetWebCategorySummaryAsync(int categoryId, DateTime start, DateTime end, DateTime? prevStart = null, DateTime? prevEnd = null, CancellationToken cancellationToken = default);
-    Task<List<CategoryMemberModel>> GetAppCategoryMembersAsync(int categoryId, DateTime start, DateTime end, CancellationToken cancellationToken = default);
-    Task<List<CategoryMemberModel>> GetWebCategoryMembersAsync(int categoryId, DateTime start, DateTime end, CancellationToken cancellationToken = default);
+    Task<CategorySummaryModel> GetAppCategorySummaryAsync(int categoryId, DateTime start, DateTime end, DateTime? prevStart = null, DateTime? prevEnd = null, bool withMembers = false, bool withModels = false, CancellationToken cancellationToken = default);
+    Task<CategorySummaryModel> GetWebCategorySummaryAsync(int categoryId, DateTime start, DateTime end, DateTime? prevStart = null, DateTime? prevEnd = null, bool withMembers = false, bool withModels = false, CancellationToken cancellationToken = default);
+    Task<List<CategoryMemberModel>> GetAppCategoryMembersAsync(int categoryId, DateTime start, DateTime end, bool withModels = false, CancellationToken cancellationToken = default);
+    Task<List<CategoryMemberModel>> GetWebCategoryMembersAsync(int categoryId, DateTime start, DateTime end, bool withModels = false, CancellationToken cancellationToken = default);
 
     // Data
     Task<List<DailyLogModel>> GetDateRangeLogListAsync(DateTime start, DateTime end, int take = -1, int skip = -1, CancellationToken cancellationToken = default);
@@ -43,14 +40,6 @@ public interface ITaixApiClient
     Task ClearAppDataAsync(int appId, DateTime? month = null);
     Task ClearRangeAsync(DateTime start, DateTime end);
     Task<List<HoursLogModel>> GetTimeRangeLogListAsync(DateTime time, CancellationToken cancellationToken = default);
-    Task<List<HoursLogModel>> GetHoursRangeLogListAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
-    Task<List<AppSessionModel>> GetAppSessionsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
-    Task<double[]> GetRangeTotalDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
-    Task<double[]> GetMonthTotalDataAsync(DateTime year, CancellationToken cancellationToken = default);
-    Task<int> GetDateRangeAppCountAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
-    Task<List<ColumnDataModel>> GetCategoryHoursDataAsync(DateTime date, CancellationToken cancellationToken = default);
-    Task<List<ColumnDataModel>> GetCategoryRangeDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
-    Task<List<ColumnDataModel>> GetCategoryYearDataAsync(DateTime date, CancellationToken cancellationToken = default);
     Task<List<ColumnDataModel>> GetAppDayDataAsync(int appId, DateTime date, CancellationToken cancellationToken = default);
     Task<List<ColumnDataModel>> GetAppRangeDataAsync(int appId, DateTime start, DateTime end, CancellationToken cancellationToken = default);
     Task<List<ColumnDataModel>> GetAppYearDataAsync(int appId, DateTime date, CancellationToken cancellationToken = default);
@@ -73,15 +62,17 @@ public interface ITaixApiClient
     Task<List<WebSiteModel>> GetUnSetCategoryWebSitesAsync(CancellationToken cancellationToken = default);
     Task ClearWebDataAsync(DateTime? start = null, DateTime? end = null, int? siteId = null);
     Task<List<WebSiteModel>> GetDateRangeWebSiteListAsync(DateTime start, DateTime end, int take = 0, int skip = -1, bool isTime = false, CancellationToken cancellationToken = default);
-    Task<int> GetWebSitesCountAsync(int categoryId);
-    Task<List<InfrastructureDataModel>> GetCategoriesStatisticsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
     Task<List<InfrastructureDataModel>> GetBrowseDataStatisticsAsync(DateTime start, DateTime end, int siteId = 0, CancellationToken cancellationToken = default);
-    Task<List<ColumnDataModel>> GetBrowseDataByCategoryStatisticsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
-    Task<int> GetBrowseDurationTotalAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
-    Task<int> GetBrowseSitesTotalAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
-    Task<int> GetBrowsePagesTotalAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
     Task<List<WebBrowseLogModel>> GetBrowseLogListAsync(DateTime start, DateTime end, int siteId = 0, CancellationToken cancellationToken = default);
     Task<List<WebSiteModel>> GetWebSiteLogListAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default);
     Task<WebExportDataResult> GetWebExportDataAsync(DateTime start, DateTime end);
     Task<int> ApplyUrlMatchAsync(string[]? patterns = null);
+
+    Task<OverviewBundleModel> GetOverviewBundleAsync(DateTime start, DateTime end, int take = 0, bool withColumns = false, CancellationToken cancellationToken = default);
+    Task<ChartBundleModel> GetChartBundleAsync(DateTime start, DateTime end, DateTime? prevStart, DateTime? prevEnd, string bucket = "hour", int take = 5, CancellationToken cancellationToken = default);
+    Task<WebChartBundleModel> GetWebChartBundleAsync(DateTime start, DateTime end, int take = 10, CancellationToken cancellationToken = default);
+    Task<DayDetailBundleModel> GetDayDetailBundleAsync(DateTime date, CancellationToken cancellationToken = default);
+    Task<List<CategoryWithCountModel>> GetCategoriesWithCountsAsync(CancellationToken cancellationToken = default);
+    Task<List<WebCategoryWithCountModel>> GetWebCategoriesWithCountsAsync(CancellationToken cancellationToken = default);
+    Task<List<AppModel>> BatchUpdateCategoryAsync(int[] appIds, int categoryId);
 }

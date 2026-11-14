@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Taix.Client.Librarys.Api;
+using Taix.Client.Shared.Models.Data;
 using Taix.Client.Shared.Models;
 using Taix.Client.Shared.Servicers.Interfaces;
 
@@ -38,6 +40,11 @@ public class ApiCategorys : ICategorys
 
     public async Task<CategoryModel?> GetCategoryAsync(int id, CancellationToken cancellationToken = default)
     {
+        if (_cachedCategories != null)
+        {
+            var cached = _cachedCategories.FirstOrDefault(c => c.ID == id);
+            if (cached != null) return cached;
+        }
         return await _apiClient.GetCategoryAsync(id, cancellationToken);
     }
 
@@ -72,4 +79,7 @@ public class ApiCategorys : ICategorys
     {
         return await _apiClient.ApplyDirectoryMatchAsync(patterns);
     }
+
+    public Task<List<CategoryWithCountModel>> GetCategoriesWithCountsAsync(CancellationToken cancellationToken = default) =>
+        _apiClient.GetCategoriesWithCountsAsync(cancellationToken);
 }

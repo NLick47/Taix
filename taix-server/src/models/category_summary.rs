@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+use crate::models::app::AppModel;
+use crate::models::web::WebSiteModel;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CategorySummaryModel {
@@ -13,6 +16,8 @@ pub struct CategorySummaryModel {
     pub daily_trend: Vec<DailyPointModel>,
     /// 按本地时区小时的时长分布，固定 24 个元素，索引 0..23
     pub hourly_distribution: Vec<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub members: Option<Vec<CategoryMemberModel>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,4 +35,8 @@ pub struct CategoryMemberModel {
     pub name: String,
     pub icon_file: Option<String>,
     pub seconds: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app: Option<AppModel>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub site: Option<WebSiteModel>,
 }

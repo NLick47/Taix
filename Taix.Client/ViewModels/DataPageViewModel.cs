@@ -92,6 +92,14 @@ public partial class DataPageViewModel : DataPageModel
         TimelineStartHour = 0.0;
         TimelineEndHour = 24.0;
 
+        // 初始赋值必须发生在任何 WhenPropertyChanged 订阅之前：订阅后赋值触发的
+        // PropertyChanged 会先在管线里排队 Do(CancelAndResetLoadToken)，若该作业在
+        // OnNavigatedToAsync 的首次加载之后才被 Dispatcher 排空，初始加载会被取消
+        // 且无任何路径重新触发（数据页空白竞态）
+        SelectedPeriod = PeriodOptions[0];
+        SelectedColorMode = ColorModeOptions[0];
+        TabbarSelectedIndex = 0;
+
         WhenPropertyChanged(this, x => x.DayDate, date => OnDateChangedAsync(date, 0));
         WhenPropertyChanged(this, x => x.WeekDate, date => OnDateChangedAsync(date, 1));
         WhenPropertyChanged(this, x => x.MonthDate, date => OnDateChangedAsync(date, 2));
@@ -132,30 +140,28 @@ public partial class DataPageViewModel : DataPageModel
                 return;
             }
             await LoadDataAsync(date, dataType);
-        }, skipInitial: false);
+        });
 
-        WhenPropertyChanged(this, x => x.ShowType, async _ =>
+        WhenPropertyChanged(this, x => x.ShowType, _ =>
         {
-            await LoadDataAsync(DayDate, 0);
-            await LoadDataAsync(WeekDate, 1);
-            await LoadDataAsync(MonthDate, 2);
-            await LoadDataAsync(YearDate, 3);
+            // 四个时段并行预取，tab 点击时已有缓存
+            return Task.WhenAll(
+                LoadDataAsync(DayDate, 0),
+                LoadDataAsync(WeekDate, 1),
+                LoadDataAsync(MonthDate, 2),
+                LoadDataAsync(YearDate, 3));
         });
 
         WhenPropertyChanged(this, x => x.TimelineStartHour, async _ =>
         {
             if (!_suppressTimelineFilterUpdate)
                 await DebounceUpdateFilteredDataAsync();
-        });
+        }, cancelLoads: false);
         WhenPropertyChanged(this, x => x.TimelineEndHour, async _ =>
         {
             if (!_suppressTimelineFilterUpdate)
                 await DebounceUpdateFilteredDataAsync();
-        });
-
-        SelectedPeriod = PeriodOptions[0];
-        SelectedColorMode = ColorModeOptions[0];
-        TabbarSelectedIndex = 0;
+        }, cancelLoads: false);
     }
 
 
@@ -222,14 +228,19 @@ public partial class DataPageViewModel : DataPageModel
             List<ChartsDataModel> chartData;
             if (ShowType.Id == 0)
             {
-                var result = await _dataService.GetDateRangelogListAsync(start, end, cancellationToken: ct);
-                ct.ThrowIfCancellationRequested();
-                chartData = await Task.Run(() => ChartDataMapper.MapFromDailyLogs(result, includeBadges: true), ct);
-
                 if (dataType == 0)
                 {
+                    var bundle = await _dataService.GetDayDetailBundleAsync(date, ct);
+                    ct.ThrowIfCancellationRequested();
+                    chartData = await Task.Run(() => ChartDataMapper.MapFromDailyLogs(bundle.Apps, includeBadges: true), ct);
                     _dayAppRawData = chartData;
-                    await LoadTimelineDataAsync(date, ct);
+                    await LoadTimelineDataAsync(bundle.Sessions, date, ct);
+                }
+                else
+                {
+                    var result = await _dataService.GetDateRangelogListAsync(start, end, cancellationToken: ct);
+                    ct.ThrowIfCancellationRequested();
+                    chartData = await Task.Run(() => ChartDataMapper.MapFromDailyLogs(result, includeBadges: true), ct);
                 }
             }
             else
@@ -268,13 +279,11 @@ public partial class DataPageViewModel : DataPageModel
 
     private const int IdleGapSeconds = 60;
 
-    private async Task LoadTimelineDataAsync(DateTime date, CancellationToken ct)
+    private async Task LoadTimelineDataAsync(IEnumerable<AppSessionModel> sessions, DateTime date, CancellationToken ct)
     {
         var dayStart = date.Date;
         var dayEnd = dayStart.AddDays(1).AddSeconds(-1);
 
-        var sessions = await _dataService.GetAppSessionsAsync(dayStart, dayEnd, ct);
-        ct.ThrowIfCancellationRequested();
         DaySessions = sessions.ToList();
 
         var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;

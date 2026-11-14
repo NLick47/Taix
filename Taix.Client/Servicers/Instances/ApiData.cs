@@ -23,16 +23,19 @@ public class ApiData : IData
         _apiClient = apiClient;
     }
 
-
-    public Task UpdateAppDurationAsync(string processName, int duration, DateTime startDateTime)
-    {
-        return _apiClient.UpdateAppDurationAsync(processName, duration, startDateTime);
-    }
-
     public async Task<IEnumerable<DailyLogModel>> GetDateRangelogListAsync(DateTime start, DateTime end, int take = -1, int skip = -1, CancellationToken cancellationToken = default)
     {
         return await _apiClient.GetDateRangeLogListAsync(start, end, take, skip, cancellationToken);
     }
+
+    public Task<OverviewBundleModel> GetOverviewBundleAsync(DateTime start, DateTime end, int take = 0, bool withColumns = false, CancellationToken cancellationToken = default) =>
+        _apiClient.GetOverviewBundleAsync(start, end, take, withColumns, cancellationToken);
+
+    public Task<ChartBundleModel> GetChartBundleAsync(DateTime start, DateTime end, DateTime? prevStart, DateTime? prevEnd, string bucket = "hour", int take = 5, CancellationToken cancellationToken = default) =>
+        _apiClient.GetChartBundleAsync(start, end, prevStart, prevEnd, bucket, take, cancellationToken);
+
+    public Task<DayDetailBundleModel> GetDayDetailBundleAsync(DateTime date, CancellationToken cancellationToken = default) =>
+        _apiClient.GetDayDetailBundleAsync(date, cancellationToken);
 
     public async Task<IEnumerable<DailyLogModel>> GetThisWeeklogListAsync(CancellationToken cancellationToken = default)
     {
@@ -49,24 +52,6 @@ public class ApiData : IData
     public Task ClearAsync(int appId, DateTime month)
     {
         return _apiClient.ClearAppDataAsync(appId, month);
-    }
-
-    public async Task<IReadOnlyList<ColumnDataModel>> GetCategoryHoursDataAsync(DateTime date, CancellationToken cancellationToken = default)
-    {
-        var result = await _apiClient.GetCategoryHoursDataAsync(date, cancellationToken);
-        return result.AsReadOnly();
-    }
-
-    public async Task<IReadOnlyList<ColumnDataModel>> GetCategoryRangeDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
-    {
-        var result = await _apiClient.GetCategoryRangeDataAsync(start, end, cancellationToken);
-        return result.AsReadOnly();
-    }
-
-    public async Task<IReadOnlyList<ColumnDataModel>> GetCategoryYearDataAsync(DateTime date, CancellationToken cancellationToken = default)
-    {
-        var result = await _apiClient.GetCategoryYearDataAsync(date, cancellationToken);
-        return result.AsReadOnly();
     }
 
     public async Task<IReadOnlyList<ColumnDataModel>> GetAppDayDataAsync(int appId, DateTime date, CancellationToken cancellationToken = default)
@@ -150,34 +135,9 @@ public class ApiData : IData
         return $"{ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
     }
 
-    public async Task<int> GetDateRangeAppCountAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
-    {
-        return await _apiClient.GetDateRangeAppCountAsync(start, end, cancellationToken);
-    }
-
     public async Task<IEnumerable<HoursLogModel>> GetTimeRangelogListAsync(DateTime time, CancellationToken cancellationToken = default)
     {
         return await _apiClient.GetTimeRangeLogListAsync(time, cancellationToken);
-    }
-
-    public async Task<IEnumerable<HoursLogModel>> GetHoursRangeLogListAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
-    {
-        return await _apiClient.GetHoursRangeLogListAsync(start, end, cancellationToken);
-    }
-
-    public async Task<IEnumerable<AppSessionModel>> GetAppSessionsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
-    {
-        return await _apiClient.GetAppSessionsAsync(start, end, cancellationToken);
-    }
-
-    public async Task<double[]> GetRangeTotalDataAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
-    {
-        return await _apiClient.GetRangeTotalDataAsync(start, end, cancellationToken);
-    }
-
-    public async Task<double[]> GetMonthTotalDataAsync(DateTime year, CancellationToken cancellationToken = default)
-    {
-        return await _apiClient.GetMonthTotalDataAsync(year, cancellationToken);
     }
 
     public Task ClearAsync(int appId)

@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 
+using Taix.Client.Shared.Models;
+using Taix.Client.Shared.Models.Web;
+
 namespace Taix.Client.Shared.Models.Category;
 
 public record CategorySummaryModel
@@ -20,6 +23,8 @@ public record CategorySummaryModel
 
     /// <summary>按本地时区小时的时长分布，固定 24 个元素</summary>
     public List<long> HourlyDistribution { get; init; } = new();
+
+    public List<CategoryMemberModel>? Members { get; init; }
 }
 
 public record DailyPointModel
@@ -38,4 +43,8 @@ public record CategoryMemberModel
     public string? IconFile { get; init; }
 
     public long Seconds { get; init; }
+
+    public AppModel? App { get; init; }
+
+    public WebSiteModel? Site { get; init; }
 }

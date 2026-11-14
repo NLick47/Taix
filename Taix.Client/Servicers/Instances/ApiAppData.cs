@@ -39,10 +39,10 @@ public class ApiAppData : IAppData
         return apps;
     }
 
-    public async Task<int> GetAppCountByCategoryIDAsync(int categoryID)
+    public async Task<IReadOnlyCollection<AppModel>> BatchUpdateCategoryAsync(int[] appIds, int categoryId)
     {
-        var apps = await _apiClient.GetAppsByCategoryAsync(categoryID);
-        return apps.Count;
+        var apps = await _apiClient.BatchUpdateCategoryAsync(appIds, categoryId);
+        return apps;
     }
 
     public async Task AddAppAsync(AppModel app, CancellationToken cancellationToken = default)

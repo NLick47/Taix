@@ -180,38 +180,22 @@ public class SearchService : ISearchService
         var today = DateTime.Now.Date;
         var halfMax = Math.Max(1, max / 2);
 
-        var appsTask = SafeAsync(
-            () => _dataService.GetDateRangelogListAsync(today, today, take: halfMax, cancellationToken: cancellationToken),
-            Enumerable.Empty<DailyLogModel>(),
-            "今日应用列表");
-
-        var sitesTask = SafeAsync(
-            () => _webData.GetDateRangeWebSiteListAsync(today, today, take: halfMax, cancellationToken: cancellationToken),
-            (IReadOnlyList<WebSiteModel>)Array.Empty<WebSiteModel>(),
-            "今日网站列表");
+        var bundleTask = SafeAsync(
+            () => _dataService.GetOverviewBundleAsync(today, today, take: halfMax, withColumns: true, cancellationToken),
+            new OverviewBundleModel(),
+            "今日概览数据");
 
         // 分类列表从 corpus 缓存获取
         var corpusTask = GetCorpusAsync(cancellationToken);
 
-        // 今日各分类总时长，用于卡片展示和排序
-        var appCategoryTodayTask = SafeAsync<IReadOnlyList<ColumnDataModel>>(
-            () => _dataService.GetCategoryHoursDataAsync(today, cancellationToken),
-            Array.Empty<ColumnDataModel>(),
-            "今日应用分类时长");
-        var webCategoryTodayTask = SafeAsync<IReadOnlyList<ColumnDataModel>>(
-            () => _webData.GetBrowseDataByCategoryStatisticsAsync(today, today, cancellationToken),
-            Array.Empty<ColumnDataModel>(),
-            "今日网站分类时长");
-
-        await Task.WhenAll(appsTask, sitesTask, corpusTask, appCategoryTodayTask, webCategoryTodayTask).ConfigureAwait(false);
+        await Task.WhenAll(bundleTask, corpusTask).ConfigureAwait(false);
 
         var (_, _, appCategories, webCategories) = await corpusTask;
-        var appCategoryToday = await appCategoryTodayTask;
-        var webCategoryToday = await webCategoryTodayTask;
+        var bundle = await bundleTask;
 
         // ColumnDataModel.Values 聚合为 categoryId -> totalSeconds
-        var appCatSeconds = SumByCategory(appCategoryToday);
-        var webCatSeconds = SumByCategory(webCategoryToday);
+        var appCatSeconds = SumByCategory(bundle.AppCategoryHours);
+        var webCatSeconds = SumByCategory(bundle.WebCategoryHours);
 
         var result = new List<SearchResultItem>(max + 16);
 
@@ -254,8 +238,8 @@ public class SearchService : ISearchService
         }
 
         // 今日活跃区段
-        var todayApps = await appsTask;
-        var todaySites = await sitesTask;
+        var todayApps = bundle.Apps;
+        var todaySites = bundle.Sites;
         var todayHasItems = todayApps.Any(l => l.AppModel != null) || todaySites.Any();
 
         if (todayHasItems)
@@ -435,25 +419,30 @@ public class SearchService : ISearchService
                 _cachedAppCategories == null || _cachedWebCategories == null ||
                 DateTime.UtcNow - _cacheTime > CacheTtl)
             {
-                _cachedApps = await SafeAsync(
+                // 四路互不依赖，并行拉取，冷启动/TTL 过期时首个按键不再串行等待
+                var appsTask = SafeAsync(
                     () => _appData.GetAllAppsAsync(cancellationToken),
                     (IReadOnlyCollection<AppModel>)Array.Empty<AppModel>(),
-                    "应用全集").ConfigureAwait(false);
-
-                _cachedSites = await SafeAsync(
+                    "应用全集");
+                var sitesTask = SafeAsync(
                     () => _webSiteData.GetAllWebSitesAsync(cancellationToken),
                     (IReadOnlyCollection<WebSiteModel>)Array.Empty<WebSiteModel>(),
-                    "网站全集").ConfigureAwait(false);
-
-                _cachedAppCategories = await SafeAsync<IReadOnlyCollection<CategoryModel>>(
+                    "网站全集");
+                var appCatsTask = SafeAsync<IReadOnlyCollection<CategoryModel>>(
                     async () => await _categorys.GetCategoriesAsync(cancellationToken),
                     Array.Empty<CategoryModel>(),
-                    "应用分类列表").ConfigureAwait(false);
-
-                _cachedWebCategories = await SafeAsync<IReadOnlyCollection<WebSiteCategoryModel>>(
+                    "应用分类列表");
+                var webCatsTask = SafeAsync<IReadOnlyCollection<WebSiteCategoryModel>>(
                     async () => await _webData.GetWebSiteCategoriesAsync(cancellationToken),
                     Array.Empty<WebSiteCategoryModel>(),
-                    "网站分类列表").ConfigureAwait(false);
+                    "网站分类列表");
+
+                await Task.WhenAll(appsTask, sitesTask, appCatsTask, webCatsTask).ConfigureAwait(false);
+
+                _cachedApps = await appsTask.ConfigureAwait(false);
+                _cachedSites = await sitesTask.ConfigureAwait(false);
+                _cachedAppCategories = await appCatsTask.ConfigureAwait(false);
+                _cachedWebCategories = await webCatsTask.ConfigureAwait(false);
 
                 _cacheTime = DateTime.UtcNow;
             }

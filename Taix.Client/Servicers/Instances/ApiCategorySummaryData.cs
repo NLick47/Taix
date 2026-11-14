@@ -24,12 +24,14 @@ public class ApiCategorySummaryData : ICategorySummaryData
         DateTime end,
         DateTime? prevStart = null,
         DateTime? prevEnd = null,
+        bool withMembers = false,
+        bool withModels = false,
         CancellationToken cancellationToken = default)
     {
         return kind switch
         {
-            CategorySummaryKind.App => _apiClient.GetAppCategorySummaryAsync(categoryId, start, end, prevStart, prevEnd, cancellationToken),
-            CategorySummaryKind.Web => _apiClient.GetWebCategorySummaryAsync(categoryId, start, end, prevStart, prevEnd, cancellationToken),
+            CategorySummaryKind.App => _apiClient.GetAppCategorySummaryAsync(categoryId, start, end, prevStart, prevEnd, withMembers, withModels, cancellationToken),
+            CategorySummaryKind.Web => _apiClient.GetWebCategorySummaryAsync(categoryId, start, end, prevStart, prevEnd, withMembers, withModels, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
     }
@@ -39,12 +41,13 @@ public class ApiCategorySummaryData : ICategorySummaryData
         int categoryId,
         DateTime start,
         DateTime end,
+        bool withModels = false,
         CancellationToken cancellationToken = default)
     {
         return kind switch
         {
-            CategorySummaryKind.App => _apiClient.GetAppCategoryMembersAsync(categoryId, start, end, cancellationToken),
-            CategorySummaryKind.Web => _apiClient.GetWebCategoryMembersAsync(categoryId, start, end, cancellationToken),
+            CategorySummaryKind.App => _apiClient.GetAppCategoryMembersAsync(categoryId, start, end, withModels, cancellationToken),
+            CategorySummaryKind.Web => _apiClient.GetWebCategoryMembersAsync(categoryId, start, end, withModels, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
     }

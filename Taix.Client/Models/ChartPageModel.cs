@@ -173,6 +173,7 @@ public partial class ChartPageModel : ModelBase
         get => _tabbarSelectedIndex;
         set
         {
+            if (_tabbarSelectedIndex == value) return;
             _tabbarSelectedIndex = value;
             OnPropertyChanged();
         }
@@ -318,6 +319,7 @@ public partial class ChartPageModel : ModelBase
         get => _columnSelectedIndex;
         set
         {
+            if (_columnSelectedIndex == value) return;
             _columnSelectedIndex = value;
             OnPropertyChanged();
         }
@@ -598,6 +600,7 @@ public partial class ChartPageModel : ModelBase
         get => _webColSelectedIndex;
         set
         {
+            if (_webColSelectedIndex == value) return;
             _webColSelectedIndex = value;
             OnPropertyChanged();
         }

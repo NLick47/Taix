@@ -1,16 +1,31 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Tz;
-use std::sync::OnceLock;
+use std::sync::{OnceLock, RwLock};
 
 /// 解析 IANA 时区 ID。解析失败时回退到 UTC。
 pub fn parse_timezone(tz_id: &str) -> Tz {
-    match tz_id.parse::<Tz>() {
+    static LAST: RwLock<Option<(String, Tz)>> = RwLock::new(None);
+
+    if let Ok(last) = LAST.read() {
+        if let Some((id, tz)) = last.as_ref() {
+            if id == tz_id {
+                return *tz;
+            }
+        }
+    }
+
+    let tz = match tz_id.parse::<Tz>() {
         Ok(tz) => tz,
         Err(_) => {
             tracing::warn!("未知时区 ID: {}，回退到 UTC", tz_id);
             chrono_tz::UTC
         }
+    };
+
+    if let Ok(mut last) = LAST.write() {
+        *last = Some((tz_id.to_string(), tz));
     }
+    tz
 }
 
 
@@ -60,6 +75,43 @@ pub fn tz_date_to_utc_range(date: NaiveDate, tz: &Tz) -> (DateTime<Utc>, DateTim
         resolve_local(tz, naive_start).with_timezone(&Utc),
         resolve_local(tz, naive_end).with_timezone(&Utc),
     )
+}
+
+/// 指定时区本地日期的 0 点（UTC）
+pub fn tz_day_start(date: NaiveDate, tz: &Tz) -> DateTime<Utc> {
+    resolve_local(tz, date.and_hms_opt(0, 0, 0).unwrap()).with_timezone(&Utc)
+}
+
+/// 指定时区本地日期的 23:59:59（UTC）；旧统计查询使用的闭区间右端点
+pub fn tz_day_end(date: NaiveDate, tz: &Tz) -> DateTime<Utc> {
+    resolve_local(tz, date.and_hms_opt(23, 59, 59).unwrap()).with_timezone(&Utc)
+}
+
+/// 构造「排除 ID 集合」的 SQL 片段：空集合返回空串，否则 ` AND <col> NOT IN (?,?,...)`。
+/// 与 `bind_excluded!` 配对使用，消除逐处手写的占位符拼接与绑定循环。
+pub fn excluded_clause(column: &str, ids: &[i64]) -> String {
+    if ids.is_empty() {
+        return String::new();
+    }
+    let placeholders = ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+    format!(" AND {column} NOT IN ({placeholders})")
+}
+
+/// 构造 `?,?,...` 占位符串，供 `IN (...)` 查询拼接
+pub fn in_clause(ids: &[i64]) -> String {
+    ids.iter().map(|_| "?").collect::<Vec<_>>().join(",")
+}
+
+/// 逐个追加排除 ID 绑定：`let q = bind_excluded!(sqlx::query_as(...).bind(a), &ids);`
+#[macro_export]
+macro_rules! bind_excluded {
+    ($query:expr, $ids:expr) => {{
+        let mut q = $query;
+        for id in $ids {
+            q = q.bind(*id);
+        }
+        q
+    }};
 }
 
 /// 将指定时区的本地 NaiveDateTime 转换为 UTC

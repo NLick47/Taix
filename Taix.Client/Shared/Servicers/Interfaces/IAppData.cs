@@ -15,9 +15,9 @@ public interface IAppData
 
     Task<IReadOnlyCollection<AppModel>> GetAppsByCategoryIDAsync(int categoryID, CancellationToken cancellationToken = default);
 
-    Task<int> GetAppCountByCategoryIDAsync(int categoryID);
-
     Task AddAppAsync(AppModel app, CancellationToken cancellationToken = default);
 
     Task UpdateAppAsync(AppModel app, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<AppModel>> BatchUpdateCategoryAsync(int[] appIds, int categoryId);
 }

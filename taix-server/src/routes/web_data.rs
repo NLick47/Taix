@@ -148,7 +148,7 @@ async fn update_web_site(State(pool): State<SqlitePool>, Path(id): Path<i64>, Js
     }
 }
 
-async fn get_web_site_categories(State(pool): State<SqlitePool>) -> Json<ApiResponse<Vec<WebSiteCategoryModel>>> {
+async fn get_web_site_categories(State(pool): State<SqlitePool>) -> Json<ApiResponse<std::sync::Arc<Vec<WebSiteCategoryModel>>>> {
     match WebDataService::get_web_site_categories(&pool).await {
         Ok(data) => Json(ApiResponse::ok(data)),
         Err(e) => Json(ApiResponse { code: 500, message: e.to_string(), data: None }),
