@@ -70,6 +70,11 @@ actor TransportClient {
     private var fileDescriptor: Int32?
     private var messageContinuation: AsyncStream<Data>.Continuation?
     private var sendTask: Task<Void, Never>?
+    private let encoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        return encoder
+    }()
 
     init(socketPath: String) {
         self.socketPath = socketPath
@@ -100,8 +105,6 @@ actor TransportClient {
 
     func send(_ event: MonitorEvent) {
         let legacy = LegacyMessage(adapting: event)
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
 
         guard let data = try? encoder.encode(legacy) else {
             Logger.error("Transport encoding failed")
@@ -134,8 +137,6 @@ actor TransportClient {
             s: Int64(since.timeIntervalSince1970),
             sid: sessionId
         )
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
         guard let data = try? encoder.encode(message) else {
             Logger.error("Current message encoding failed")
             return
@@ -151,8 +152,6 @@ actor TransportClient {
             let t: String
         }
         let message = LifecycleMessage(t: sleeping ? "sleep" : "wake")
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
         guard let data = try? encoder.encode(message) else {
             Logger.error("Lifecycle message encoding failed")
             return
@@ -251,6 +250,9 @@ actor TransportClient {
             Logger.error("Socket connection failed to \(socketPath)")
             throw TransportError.connectionFailed
         }
+
+        var noSigPipe: Int32 = 1
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe, socklen_t(MemoryLayout<Int32>.size))
 
         self.fileDescriptor = fd
         Logger.info("Socket connected successfully")

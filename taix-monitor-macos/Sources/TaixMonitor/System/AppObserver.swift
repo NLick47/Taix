@@ -18,6 +18,7 @@ actor AppObserver {
     private var observation: Any?
     private var lastEmittedApp: AppInfo?
     private var lastEmittedPID: pid_t?
+    private var displayNameCache: [String: String] = [:]
 
     init(eventBus: EventBus, iconExtractor: IconExtractor, sleepWatch: Bool) {
         self.eventBus = eventBus
@@ -141,15 +142,22 @@ actor AppObserver {
 
     private func getDisplayName(from bundleURL: URL?) -> String? {
         guard let bundleURL else { return nil }
+        if let cached = displayNameCache[bundleURL.path] {
+            return cached.isEmpty ? nil : cached
+        }
+
         let infoPlistURL = bundleURL.appendingPathComponent("Contents/Info.plist")
         guard let info = NSDictionary(contentsOf: infoPlistURL) else { return nil }
 
         if let displayName = info["CFBundleDisplayName"] as? String, !displayName.isEmpty {
+            displayNameCache[bundleURL.path] = displayName
             return displayName
         }
         if let bundleName = info["CFBundleName"] as? String, !bundleName.isEmpty {
+            displayNameCache[bundleURL.path] = bundleName
             return bundleName
         }
+        displayNameCache[bundleURL.path] = ""
         return nil
     }
 }

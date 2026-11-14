@@ -42,6 +42,8 @@ actor IdleDetector {
     }
 
     func start() {
+        guard config.sleepWatch else { return }
+
         // 监听系统睡眠通知
         sleepObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.willSleepNotification,
@@ -137,10 +139,17 @@ actor IdleDetector {
         }
 
         let idleSeconds = getIdleTime()
-        let audioPlaying = audioMonitor.isAudioPlaying()
         let gamepadActive = await gamepadMonitor?.consumeActivity() ?? false
 
-        Logger.debug("Idle check: \(String(format: "%.1f", idleSeconds))s idle (threshold: \(config.inactiveThresholdSecs)s), audio: \(audioPlaying ? "playing" : "silent"), gamepad: \(gamepadActive ? "active" : "inactive")")
+        var audioCache: Bool?
+        let audioPlaying = { [audioMonitor] in
+            if let cached = audioCache { return cached }
+            let playing = audioMonitor.isAudioPlaying()
+            audioCache = playing
+            return playing
+        }
+
+        Logger.debug("Idle check: \(String(format: "%.1f", idleSeconds))s idle (threshold: \(config.inactiveThresholdSecs)s), audio: \(audioCache.map { $0 ? "playing" : "silent" } ?? "skipped"), gamepad: \(gamepadActive ? "active" : "inactive")")
 
         // 检测锁屏/休眠恢复：idle 在单个 tick 内大幅跳变
         if let lastIdle = lastIdleTime, !isIdle {
@@ -160,7 +169,7 @@ actor IdleDetector {
 
         // 恢复后等待用户操作确认
         if isResumePending {
-            let userActive = idleSeconds < resumeIdleThreshold || gamepadActive || audioPlaying
+            let userActive = idleSeconds < resumeIdleThreshold || gamepadActive || audioPlaying()
             if userActive {
                 Logger.info("User activity detected after resume, exiting resume cooldown")
                 isResumePending = false
@@ -177,7 +186,7 @@ actor IdleDetector {
         let userActive = idleSeconds < config.inactiveThresholdSecs || gamepadActive
 
         // 音频处理：无输入但有持续声音视为活跃；超 maxSoundDurationSecs 仍无输入则强制转 idle
-        if !isIdle && !userActive && audioPlaying {
+        if !isIdle && !userActive && audioPlaying() {
             if soundStart == nil {
                 soundStart = Date()
                 Logger.debug("Sound playing without user input, tracking duration")
@@ -203,7 +212,7 @@ actor IdleDetector {
             effectiveIdle = !userActive
         } else {
             // 当前是 Wake 状态，音频播放可以阻止进入 Sleep
-            effectiveIdle = !audioPlaying && !gamepadActive && idleSeconds >= config.inactiveThresholdSecs
+            effectiveIdle = !gamepadActive && idleSeconds >= config.inactiveThresholdSecs && !audioPlaying()
         }
 
         if effectiveIdle && !isIdle {
@@ -228,22 +237,15 @@ actor IdleDetector {
         let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOHIDSystem"))
         defer { IOObjectRelease(service) }
 
-        var properties: Unmanaged<CFMutableDictionary>?
-        let result = IORegistryEntryCreateCFProperties(service, &properties, kCFAllocatorDefault, 0)
-
-        guard result == KERN_SUCCESS else {
-            Logger.error("Failed to get IORegistry properties: \(result)")
+        guard let idleNumber = IORegistryEntryCreateCFProperty(
+            service, "HIDIdleTime" as CFString, kCFAllocatorDefault, 0
+        )?.takeRetainedValue() as? Int64 else {
+            Logger.error("Failed to get HIDIdleTime from registry")
             // 读取失败时沿用上次成功读数（或 0），不返回阈值以免把活跃用户误判为 idle
             return lastKnownIdleSeconds ?? 0
         }
 
-        guard let dict = properties?.takeRetainedValue() as? [String: Any],
-              let idleTime = dict["HIDIdleTime"] as? Int64 else {
-            Logger.error("Failed to get HIDIdleTime from registry")
-            return lastKnownIdleSeconds ?? 0
-        }
-
-        let idle = Double(idleTime) / 1_000_000_000 // nanoseconds to seconds
+        let idle = Double(idleNumber) / 1_000_000_000 // nanoseconds to seconds
         lastKnownIdleSeconds = idle
         return idle
     }

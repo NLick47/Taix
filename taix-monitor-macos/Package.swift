@@ -11,7 +11,8 @@ let package = Package(
         .executableTarget(
             name: "TaixMonitor",
             swiftSettings: [
-                .unsafeFlags(["-parse-as-library"])
+                .unsafeFlags(["-parse-as-library"]),
+                .define("TAIX_VERBOSE", .when(configuration: .debug))
             ],
             linkerSettings: [
                 .linkedFramework("AppKit"),

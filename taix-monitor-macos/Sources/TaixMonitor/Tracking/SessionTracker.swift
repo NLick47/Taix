@@ -45,10 +45,9 @@ actor SessionTracker {
         }
 
         tickTask = Task { [weak self] in
-            // 1s 粒度轮询 lastPeriodicCheck：beginSession 会重置它，
-            // 固定 60s 相位会错过保存窗口，崩溃时丢掉整段会话（实测 80s 全丢）
             while !Task.isCancelled, let self = self {
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                let delay = await self.nextCheckpointDelay()
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 await self.periodicCheck()
             }
         }
@@ -144,6 +143,16 @@ actor SessionTracker {
             }
         default:
             break
+        }
+    }
+
+    private func nextCheckpointDelay() -> TimeInterval {
+        switch state {
+        case .tracking(_, _, _, _, _, let lastPeriodicCheck, _):
+            let remaining = tickInterval - Date().timeIntervalSince(lastPeriodicCheck)
+            return max(remaining, 0.1)
+        case .idle, .suspended:
+            return tickInterval
         }
     }
 

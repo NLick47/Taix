@@ -2,11 +2,33 @@ import Foundation
 import IOKit
 import IOKit.hid
 
+private final class GamepadActivityFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = false
+
+    func set() {
+        lock.lock()
+        let wasActive = value
+        value = true
+        lock.unlock()
+        if !wasActive {
+            Logger.info("Gamepad input detected")
+        }
+    }
+
+    func take() -> Bool {
+        lock.lock()
+        defer {
+            value = false
+            lock.unlock()
+        }
+        return value
+    }
+}
+
 actor GamepadMonitor {
     private var manager: IOHIDManager?
-    private var isActive: Bool = false
-
-    init() {}
+    private let activityFlag = GamepadActivityFlag()
 
     func start() {
         let hidManager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
@@ -18,7 +40,7 @@ actor GamepadMonitor {
 
         IOHIDManagerSetDeviceMatching(hidManager, matching)
 
-        let context = Unmanaged.passUnretained(self).toOpaque()
+        let context = Unmanaged.passUnretained(activityFlag).toOpaque()
         IOHIDManagerRegisterInputValueCallback(hidManager, inputCallback, context)
 
         IOHIDManagerScheduleWithRunLoop(hidManager, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
@@ -35,17 +57,8 @@ actor GamepadMonitor {
         self.manager = nil
     }
 
-    func markActive() {
-        if !isActive {
-            Logger.info("Gamepad input detected")
-        }
-        isActive = true
-    }
-
     func consumeActivity() -> Bool {
-        let wasActive = isActive
-        isActive = false
-        return wasActive
+        activityFlag.take()
     }
 }
 
@@ -56,6 +69,6 @@ private func inputCallback(
     _ value: IOHIDValue
 ) {
     guard let context else { return }
-    let monitor = Unmanaged<GamepadMonitor>.fromOpaque(context).takeUnretainedValue()
-    Task { await monitor.markActive() }
+    let flag = Unmanaged<GamepadActivityFlag>.fromOpaque(context).takeUnretainedValue()
+    flag.set()
 }

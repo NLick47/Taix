@@ -69,7 +69,7 @@ actor Runner {
 
         isRunning = true
         while isRunning && !Task.isCancelled {
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            try? await Task.sleep(nanoseconds: 3_600_000_000_000)
         }
     }
 
