@@ -172,6 +172,9 @@ pub async fn update_and_broadcast(state: &PluginState, pool: &SqlitePool, app: V
         persist(state);
     }
     *state.current_app.write().await = Some(app);
+    if state.tx.receiver_count() == 0 {
+        return;
+    }
     let snap = snapshot(state, pool).await;
     let _ = state.tx.send(envelope(&snap).to_string());
 }
@@ -190,6 +193,9 @@ pub async fn set_sleep(state: &PluginState, pool: &SqlitePool, sleeping: bool) {
         *state.current_app.write().await = None;
     }
     persist(state);
+    if state.tx.receiver_count() == 0 {
+        return;
+    }
     let snap = snapshot(state, pool).await;
     let _ = state.tx.send(envelope(&snap).to_string());
 }
@@ -200,6 +206,9 @@ pub async fn clear_current(state: &PluginState, pool: &SqlitePool) {
     state.last_current_at.store(now_epoch(), Ordering::Relaxed);
     state.sleep_flag.store(false, Ordering::Relaxed);
     *state.current_app.write().await = None;
+    if state.tx.receiver_count() == 0 {
+        return;
+    }
     let snap = snapshot(state, pool).await;
     let _ = state.tx.send(envelope(&snap).to_string());
 }
