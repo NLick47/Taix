@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Taix.Client.Controls.Charts;
@@ -24,7 +25,6 @@ public class CategorySummaryPageViewModel : ModelBase
     private readonly ICategorySummaryData _summaryData;
     private readonly ICategorys _categorys;
     private readonly IWebData _webData;
-    private readonly IAppData _appData;
     private readonly INavigationDataService _navigationData;
 
     // 内部存储分类列表
@@ -78,13 +78,11 @@ public class CategorySummaryPageViewModel : ModelBase
         ICategorySummaryData summaryData,
         ICategorys categorys,
         IWebData webData,
-        IAppData appData,
         INavigationDataService navigationData)
     {
         _summaryData = summaryData;
         _categorys = categorys;
         _webData = webData;
-        _appData = appData;
         _navigationData = navigationData;
 
         BackCommand = AsyncRelayCommand.Create<object?>(OnBack).DisposeWith(Disposables);
@@ -96,7 +94,7 @@ public class CategorySummaryPageViewModel : ModelBase
         ObservablePropertyChangedExtensions.WhenPropertyChanged(this, x => x.ColumnSelectedIndex)
             .Skip(1)
             .ObserveOn(AvaloniaContextScheduler.Instance)
-            .Select(_ => RxObservable.FromAsync(_ => LoadMembersAsync()))
+            .Select(_ => RxObservable.FromAsync(ct => LoadMembersAsync(ct)))
             .Switch()
             .Subscribe()
             .DisposeWith(Disposables);
@@ -466,7 +464,8 @@ public class CategorySummaryPageViewModel : ModelBase
         SelectedDate = DateTime.Today;
 
         await BuildCategoryChipsAsync().ConfigureAwait(false);
-        await LoadAsync().ConfigureAwait(false);
+        // LoadAsync 的前段会在 UI 线程外写可观察属性，必须保持在 UI 线程上执行
+        await LoadAsync();
     }
 
     public override Task RefreshAsync() => LoadAsync();
@@ -592,9 +591,11 @@ public class CategorySummaryPageViewModel : ModelBase
         SelectedMembers = new();
         SelectedColumnLabel = null;
 
+        List<CategoryMemberModel>? initialMembers = null;
         await ExecuteAsync(async ct =>
         {
-            var summary = await _summaryData.GetSummaryAsync(Kind, CategoryId, start, end, prevStart, prevEnd, ct).ConfigureAwait(false);
+            var summary = await _summaryData.GetSummaryAsync(Kind, CategoryId, start, end, prevStart, prevEnd, withMembers: true, withModels: true, ct).ConfigureAwait(false);
+            initialMembers = summary.Members;
 
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -637,8 +638,14 @@ public class CategorySummaryPageViewModel : ModelBase
             });
         });
 
-        // 默认全选，加载整个周期成员
-        await LoadMembersAsync();
+        if (ColumnSelectedIndex < 0 && initialMembers != null)
+        {
+            ApplyMembers(initialMembers);
+        }
+        else
+        {
+            await LoadMembersAsync();
+        }
     }
 
     /// <summary>计算环比差值与方向</summary>
@@ -816,7 +823,7 @@ public class CategorySummaryPageViewModel : ModelBase
     }
 
     /// <summary>加载成员列表：ColumnSelectedIndex &lt; 0 为全选（整个周期），否则该列子区间。</summary>
-    private async Task LoadMembersAsync()
+    private async Task LoadMembersAsync(CancellationToken pipelineCt = default)
     {
         DateTime subStart, subEnd;
         string label;
@@ -837,40 +844,30 @@ public class CategorySummaryPageViewModel : ModelBase
 
         await ExecuteAsync(async ct =>
         {
-            var members = await _summaryData.GetMembersAsync(Kind, CategoryId, subStart, subEnd, ct).ConfigureAwait(false);
+            var members = await _summaryData.GetMembersAsync(Kind, CategoryId, subStart, subEnd, withModels: true, ct).ConfigureAwait(false);
+            // 管线已被新的点击 Switch 掉（快速连点）时，过期结果不得落地
+            pipelineCt.ThrowIfCancellationRequested();
+            ApplyMembers(members);
+        });
+    }
 
-            // 解析成员完整模型（供右键菜单操作使用），id == -1 为"其他"聚合行，无对应模型
-            Dictionary<int, object>? modelMap = null;
-            if (members.Any(m => m.Id > 0))
+    private void ApplyMembers(List<CategoryMemberModel> members)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            var list = new List<ChartsDataModel>();
+            foreach (var m in members)
             {
-                if (Kind == CategorySummaryKind.App)
+                list.Add(new ChartsDataModel
                 {
-                    var apps = await _appData.GetAppsByCategoryIDAsync(CategoryId, ct).ConfigureAwait(false);
-                    modelMap = apps.Where(a => a.ID > 0).ToDictionary(a => a.ID, a => (object)a);
-                }
-                else
-                {
-                    var sites = await _webData.GetWebSitesAsync(CategoryId, ct).ConfigureAwait(false);
-                    modelMap = sites.Where(s => s.ID > 0).ToDictionary(s => s.ID, s => (object)s);
-                }
+                    Name = m.Name,
+                    Value = m.Seconds,
+                    Icon = m.IconFile,
+                    Tag = m.Seconds > 0 ? Time.ToString((int)Math.Min(m.Seconds, int.MaxValue)) : string.Empty,
+                    Data = m.Id > 0 ? (object?)m.App ?? m.Site : null,
+                });
             }
-
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                var list = new List<ChartsDataModel>();
-                foreach (var m in members)
-                {
-                    list.Add(new ChartsDataModel
-                    {
-                        Name = m.Name,
-                        Value = m.Seconds,
-                        Icon = m.IconFile,
-                        Tag = m.Seconds > 0 ? Time.ToString((int)Math.Min(m.Seconds, int.MaxValue)) : string.Empty,
-                        Data = m.Id > 0 && modelMap != null && modelMap.TryGetValue(m.Id, out var model) ? model : null,
-                    });
-                }
-                SelectedMembers = list;
-            });
+            SelectedMembers = list;
         });
     }
 

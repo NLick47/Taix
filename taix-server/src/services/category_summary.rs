@@ -5,11 +5,14 @@ use std::collections::HashMap;
 use tracing::debug;
 
 use crate::error::AppError;
+use crate::models::app::{AppJoinCols, AppModel, APP_JOIN_COLS_SQL};
 use crate::models::category_summary::{
     CategoryMemberModel, CategorySummaryModel, DailyPointModel,
 };
+use crate::models::web::{WebSiteJoinCols, WebSiteModel, WEB_SITE_JOIN_COLS_SQL};
 use crate::services::config::ConfigService;
-use crate::utils::{parse_timezone, tz_date_to_utc_range, tz_naive_to_utc};
+use crate::utils::{excluded_clause, parse_timezone, tz_date_to_utc_range, tz_naive_to_utc};
+use crate::bind_excluded;
 
 pub struct CategorySummaryService;
 
@@ -42,58 +45,33 @@ impl CategorySummaryService {
 
         let excluded = config_service.get_excluded_app_id_set(pool).await;
         let excluded_vec: Vec<i64> = excluded.into_iter().collect();
-        let has_excluded = !excluded_vec.is_empty();
 
         // 一次 SQL 拉取后在内存聚合
-        let rows: Vec<(DateTime<Utc>, i64)> = if !has_excluded {
-            sqlx::query_as(
-                r#"
-                SELECT h.DataTime, h.Time
-                FROM HoursLogModels h
-                JOIN AppModels a ON h.AppModelID = a.ID
-                WHERE a.CategoryID = ?
-                  AND h.DataTime >= ? AND h.DataTime < ?
-                  AND h.AppModelID != 0
-                "#,
-            )
-            .bind(category_id)
-            .bind(utc_start)
-            .bind(utc_end)
-            .fetch_all(pool)
-            .await?
-        } else {
-            let placeholders = excluded_vec
-                .iter()
-                .map(|_| "?")
-                .collect::<Vec<_>>()
-                .join(",");
-            let sql = format!(
-                r#"
-                SELECT h.DataTime, h.Time
-                FROM HoursLogModels h
-                JOIN AppModels a ON h.AppModelID = a.ID
-                WHERE a.CategoryID = ?
-                  AND h.DataTime >= ? AND h.DataTime < ?
-                  AND h.AppModelID != 0
-                  AND h.AppModelID NOT IN ({})
-                "#,
-                placeholders
-            );
-            let mut q = sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
+        let sql = format!(
+            r#"
+            SELECT h.DataTime, h.Time
+            FROM HoursLogModels h
+            JOIN AppModels a ON h.AppModelID = a.ID
+            WHERE a.CategoryID = ?
+              AND h.DataTime >= ? AND h.DataTime < ?
+              AND h.AppModelID != 0{}
+            "#,
+            excluded_clause("h.AppModelID", &excluded_vec)
+        );
+        let rows: Vec<(DateTime<Utc>, i64)> = bind_excluded!(
+            sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
                 .bind(category_id)
                 .bind(utc_start)
-                .bind(utc_end);
-            for id in &excluded_vec {
-                q = q.bind(*id);
-            }
-            q.fetch_all(pool).await?
-        };
+                .bind(utc_end),
+            &excluded_vec
+        )
+        .fetch_all(pool)
+        .await?;
 
         // 环比总时长，纯 SUM 标量查询
         let previous_total_seconds = match (prev_start, prev_end) {
             (Some(ps), Some(pe)) if ps <= pe => {
-                sum_app_range_total(pool, category_id, ps, pe, &tz, has_excluded, &excluded_vec)
-                    .await
+                sum_app_range_total(pool, category_id, ps, pe, &tz, &excluded_vec).await
             }
             _ => 0,
         };
@@ -135,6 +113,7 @@ impl CategorySummaryService {
             average_daily_seconds,
             daily_trend,
             hourly_distribution,
+            members: None,
         })
     }
 
@@ -225,10 +204,11 @@ impl CategorySummaryService {
             average_daily_seconds,
             daily_trend,
             hourly_distribution,
+            members: None,
         })
     }
 
-    /// 区间成员明细，用于柱状图点击列展开
+    /// 区间成员明细，用于柱状图点击列展开；with_models 时内嵌完整应用模型
     pub async fn get_app_category_members(
         pool: &SqlitePool,
         category_id: i64,
@@ -236,6 +216,7 @@ impl CategorySummaryService {
         end: NaiveDateTime,
         tz_id: &str,
         config_service: &ConfigService,
+        with_models: bool,
     ) -> Result<Vec<CategoryMemberModel>, AppError> {
         let tz = parse_timezone(tz_id);
         let utc_start = tz_naive_to_utc(start, &tz);
@@ -243,67 +224,48 @@ impl CategorySummaryService {
 
         let excluded = config_service.get_excluded_app_id_set(pool).await;
         let excluded_vec: Vec<i64> = excluded.into_iter().collect();
-        let has_excluded = !excluded_vec.is_empty();
 
-        let rows: Vec<(i64, i64)> = if !has_excluded {
-            sqlx::query_as(
-                r#"
-                SELECT a.ID, h.Time
-                FROM HoursLogModels h
-                JOIN AppModels a ON h.AppModelID = a.ID
-                WHERE a.CategoryID = ?
-                  AND h.DataTime >= ? AND h.DataTime < ?
-                  AND h.AppModelID != 0
-                "#,
-            )
-            .bind(category_id)
-            .bind(utc_start)
-            .bind(utc_end)
-            .fetch_all(pool)
-            .await?
-        } else {
-            let placeholders = excluded_vec
-                .iter()
-                .map(|_| "?")
-                .collect::<Vec<_>>()
-                .join(",");
-            let sql = format!(
-                r#"
-                SELECT a.ID, h.Time
-                FROM HoursLogModels h
-                JOIN AppModels a ON h.AppModelID = a.ID
-                WHERE a.CategoryID = ?
-                  AND h.DataTime >= ? AND h.DataTime < ?
-                  AND h.AppModelID != 0
-                  AND h.AppModelID NOT IN ({})
-                "#,
-                placeholders
-            );
-            let mut q = sqlx::query_as::<_, (i64, i64)>(&sql)
+        let sql = format!(
+            r#"
+            SELECT a.ID, h.Time
+            FROM HoursLogModels h
+            JOIN AppModels a ON h.AppModelID = a.ID
+            WHERE a.CategoryID = ?
+              AND h.DataTime >= ? AND h.DataTime < ?
+              AND h.AppModelID != 0{}
+            "#,
+            excluded_clause("h.AppModelID", &excluded_vec)
+        );
+        let rows: Vec<(i64, i64)> = bind_excluded!(
+            sqlx::query_as::<_, (i64, i64)>(&sql)
                 .bind(category_id)
                 .bind(utc_start)
-                .bind(utc_end);
-            for id in &excluded_vec {
-                q = q.bind(*id);
-            }
-            q.fetch_all(pool).await?
-        };
+                .bind(utc_end),
+            &excluded_vec
+        )
+        .fetch_all(pool)
+        .await?;
 
         let mut by_app: HashMap<i64, i64> = HashMap::new();
         for (app_id, secs) in &rows {
             *by_app.entry(*app_id).or_insert(0) += secs;
         }
 
-        build_top_items_for_apps(pool, &by_app).await
+        let mut members = build_top_items_for_apps(pool, &by_app).await?;
+        if with_models {
+            attach_app_models(pool, &mut members).await?;
+        }
+        Ok(members)
     }
 
-    /// 网站分类区间成员明细
+    /// 网站分类区间成员明细；with_models 时内嵌完整站点模型
     pub async fn get_web_category_members(
         pool: &SqlitePool,
         category_id: i64,
         start: NaiveDateTime,
         end: NaiveDateTime,
         tz_id: &str,
+        with_models: bool,
     ) -> Result<Vec<CategoryMemberModel>, AppError> {
         let tz = parse_timezone(tz_id);
         let utc_start = tz_naive_to_utc(start, &tz);
@@ -329,8 +291,72 @@ impl CategorySummaryService {
             *by_site.entry(*site_id).or_insert(0) += secs;
         }
 
-        build_top_items_for_sites(pool, &by_site).await
+        let mut members = build_top_items_for_sites(pool, &by_site).await?;
+        if with_models {
+            attach_site_models(pool, &mut members).await?;
+        }
+        Ok(members)
     }
+}
+
+async fn attach_app_models(
+    pool: &SqlitePool,
+    members: &mut [CategoryMemberModel],
+) -> Result<(), AppError> {
+    let ids: Vec<i64> = members.iter().filter(|m| m.id > 0).map(|m| m.id).collect();
+    if ids.is_empty() {
+        return Ok(());
+    }
+    let sql = format!(
+        "SELECT {cols} FROM AppModels a \
+         LEFT JOIN CategoryModels c ON a.CategoryID = c.ID \
+         WHERE a.ID IN ({})",
+        crate::utils::in_clause(&ids),
+        cols = APP_JOIN_COLS_SQL
+    );
+    let mut q = sqlx::query_as::<_, AppJoinCols>(&sql);
+    for id in &ids {
+        q = q.bind(*id);
+    }
+    let rows = q.fetch_all(pool).await?;
+    let map: HashMap<i64, AppModel> = rows
+        .into_iter()
+        .filter_map(|r| r.to_app_model().map(|m| (m.id, m)))
+        .collect();
+    for m in members.iter_mut() {
+        m.app = map.get(&m.id).cloned();
+    }
+    Ok(())
+}
+
+async fn attach_site_models(
+    pool: &SqlitePool,
+    members: &mut [CategoryMemberModel],
+) -> Result<(), AppError> {
+    let ids: Vec<i64> = members.iter().filter(|m| m.id > 0).map(|m| m.id).collect();
+    if ids.is_empty() {
+        return Ok(());
+    }
+    let sql = format!(
+        "SELECT {cols} FROM WebSiteModels s \
+         LEFT JOIN WebSiteCategoryModels c ON s.CategoryID = c.ID \
+         WHERE s.ID IN ({})",
+        crate::utils::in_clause(&ids),
+        cols = WEB_SITE_JOIN_COLS_SQL
+    );
+    let mut q = sqlx::query_as::<_, WebSiteJoinCols>(&sql);
+    for id in &ids {
+        q = q.bind(*id);
+    }
+    let rows = q.fetch_all(pool).await?;
+    let map: HashMap<i64, WebSiteModel> = rows
+        .into_iter()
+        .filter_map(|r| r.to_site_model().map(|m| (m.id, m)))
+        .collect();
+    for m in members.iter_mut() {
+        m.site = map.get(&m.id).cloned();
+    }
+    Ok(())
 }
 
 fn build_daily_trend(
@@ -453,6 +479,8 @@ fn reduce_to_top_n(
                 name,
                 icon_file: icon,
                 seconds: secs,
+                app: None,
+                site: None,
             }
         })
         .collect()
@@ -465,57 +493,32 @@ async fn sum_app_range_total(
     start: NaiveDate,
     end: NaiveDate,
     tz: &Tz,
-    has_excluded: bool,
     excluded_vec: &[i64],
 ) -> i64 {
     let utc_start = tz_date_to_utc_range(start, tz).0;
     let utc_end = tz_date_to_utc_range(end, tz).1;
 
-    let total: i64 = if !has_excluded {
-        sqlx::query_scalar(
-            r#"
-            SELECT COALESCE(SUM(h.Time), 0)
-            FROM HoursLogModels h
-            JOIN AppModels a ON h.AppModelID = a.ID
-            WHERE a.CategoryID = ?
-              AND h.DataTime >= ? AND h.DataTime < ?
-              AND h.AppModelID != 0
-            "#,
-        )
-        .bind(category_id)
-        .bind(utc_start)
-        .bind(utc_end)
-        .fetch_one(pool)
-        .await
-        .unwrap_or(0)
-    } else {
-        let placeholders = excluded_vec
-            .iter()
-            .map(|_| "?")
-            .collect::<Vec<_>>()
-            .join(",");
-        let sql = format!(
-            r#"
-            SELECT COALESCE(SUM(h.Time), 0)
-            FROM HoursLogModels h
-            JOIN AppModels a ON h.AppModelID = a.ID
-            WHERE a.CategoryID = ?
-              AND h.DataTime >= ? AND h.DataTime < ?
-              AND h.AppModelID != 0
-              AND h.AppModelID NOT IN ({})
-            "#,
-            placeholders
-        );
-        let mut q = sqlx::query_scalar::<_, i64>(&sql)
+    let sql = format!(
+        r#"
+        SELECT COALESCE(SUM(h.Time), 0)
+        FROM HoursLogModels h
+        JOIN AppModels a ON h.AppModelID = a.ID
+        WHERE a.CategoryID = ?
+          AND h.DataTime >= ? AND h.DataTime < ?
+          AND h.AppModelID != 0{}
+        "#,
+        excluded_clause("h.AppModelID", excluded_vec)
+    );
+    bind_excluded!(
+        sqlx::query_scalar::<_, i64>(&sql)
             .bind(category_id)
             .bind(utc_start)
-            .bind(utc_end);
-        for id in excluded_vec {
-            q = q.bind(*id);
-        }
-        q.fetch_one(pool).await.unwrap_or(0)
-    };
-    total
+            .bind(utc_end),
+        excluded_vec
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap_or(0)
 }
 
 /// Web 分类区间总时长，纯 SUM 标量查询

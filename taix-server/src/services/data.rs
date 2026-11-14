@@ -11,9 +11,10 @@ use crate::models::log::{
 };
 use crate::services::config::ConfigService;
 use crate::utils::{
-    last_day_of_month, parse_timezone, tz_date_range_to_utc_date_range, tz_date_to_utc_range,
-    tz_naive_to_utc,
+    excluded_clause, last_day_of_month, parse_timezone, tz_date_range_to_utc_date_range,
+    tz_date_to_utc_range, tz_naive_to_utc,
 };
+use crate::bind_excluded;
 
 pub struct DataService;
 
@@ -141,13 +142,19 @@ impl DataService {
         // 只扫「结束时间在今天之后」的行；表按天清理，全表扫可接受
         const ONSET: &str = "CAST(strftime('%s', adr.StartDateTime) AS INTEGER) + adr.Duration > ?1";
 
-        let mut apps: Vec<(String, i64)> = sqlx::query_as(&format!(
+        let mut per_process: Vec<(String, i64)> = sqlx::query_as(&format!(
             "SELECT adr.ProcessName, SUM({CLIP}) FROM AppDurationRequests adr \
-             WHERE {ONSET} GROUP BY adr.ProcessName ORDER BY 2 DESC LIMIT 200",
+             WHERE {ONSET} GROUP BY adr.ProcessName",
         ))
         .bind(day_start)
         .fetch_all(pool)
         .await?;
+
+        let mut total_seconds: i64 = per_process.iter().map(|(_, secs)| *secs).sum();
+
+        per_process.sort_by(|a, b| b.1.cmp(&a.1));
+        per_process.truncate(200);
+        let mut apps = per_process;
 
         // 分类按进程名联 AppModels 近似归属
         let mut categories: Vec<(String, i64)> = sqlx::query_as(&format!(
@@ -160,14 +167,6 @@ impl DataService {
         ))
         .bind(day_start)
         .fetch_all(pool)
-        .await?;
-
-        // apps 有 LIMIT 200，总量单独求和
-        let mut total_seconds: i64 = sqlx::query_scalar(&format!(
-            "SELECT COALESCE(SUM({CLIP}), 0) FROM AppDurationRequests adr WHERE {ONSET}",
-        ))
-        .bind(day_start)
-        .fetch_one(pool)
         .await?;
 
         if let Some(ongoing) = ongoing {
@@ -235,7 +234,6 @@ impl DataService {
         // 大范围（>31天）：从 DailyLogModels 查询，SQL 层过滤排除应用
         let excluded = config_service.get_excluded_app_id_set(pool).await;
         let excluded_vec: Vec<i64> = excluded.into_iter().collect();
-        let has_excluded = !excluded_vec.is_empty();
 
         let agg_rows: Vec<AggJoinRow> = if days <= 31 {
             let utc_start = tz_date_to_utc_range(start, &tz).0;
@@ -246,19 +244,19 @@ impl DataService {
                  FROM HoursLogModels h \
                  LEFT JOIN AppModels a ON h.AppModelID = a.ID \
                  LEFT JOIN CategoryModels c ON a.CategoryID = c.ID \
-                 WHERE h.DataTime >= ? AND h.DataTime < ? AND h.AppModelID != 0 \
-                 {excl} \
+                 WHERE h.DataTime >= ? AND h.DataTime < ? AND h.AppModelID != 0{excl} \
                  GROUP BY h.AppModelID",
                 cols = APP_JOIN_COLS_SQL,
-                excl = if has_excluded { "AND h.AppModelID NOT IN ({})".replace("{}", &excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",")) } else { String::new() },
+                excl = excluded_clause("h.AppModelID", &excluded_vec),
             );
-            let mut query = sqlx::query_as::<_, AggJoinRow>(&sql)
-                .bind(utc_start)
-                .bind(utc_end);
-            for id in &excluded_vec {
-                query = query.bind(*id);
-            }
-            query.fetch_all(pool).await?
+            bind_excluded!(
+                sqlx::query_as::<_, AggJoinRow>(&sql)
+                    .bind(utc_start)
+                    .bind(utc_end),
+                &excluded_vec
+            )
+            .fetch_all(pool)
+            .await?
         } else {
             let (utc_start, utc_end) = tz_date_range_to_utc_date_range(start, end, &tz);
 
@@ -267,19 +265,19 @@ impl DataService {
                  FROM DailyLogModels d \
                  LEFT JOIN AppModels a ON d.AppModelID = a.ID \
                  LEFT JOIN CategoryModels c ON a.CategoryID = c.ID \
-                 WHERE d.Date >= ? AND d.Date <= ? AND d.AppModelID != 0 \
-                 {excl} \
+                 WHERE d.Date >= ? AND d.Date <= ? AND d.AppModelID != 0{excl} \
                  GROUP BY d.AppModelID",
                 cols = APP_JOIN_COLS_SQL,
-                excl = if has_excluded { "AND d.AppModelID NOT IN ({})".replace("{}", &excluded_vec.iter().map(|_| "?").collect::<Vec<_>>().join(",")) } else { String::new() },
+                excl = excluded_clause("d.AppModelID", &excluded_vec),
             );
-            let mut query = sqlx::query_as::<_, AggJoinRow>(&sql)
-                .bind(utc_start)
-                .bind(utc_end);
-            for id in &excluded_vec {
-                query = query.bind(*id);
-            }
-            query.fetch_all(pool).await?
+            bind_excluded!(
+                sqlx::query_as::<_, AggJoinRow>(&sql)
+                    .bind(utc_start)
+                    .bind(utc_end),
+                &excluded_vec
+            )
+            .fetch_all(pool)
+            .await?
         };
 
         // 已在 SQL 层聚合并过滤排除应用，直接排序分页
@@ -574,22 +572,18 @@ impl DataService {
                 .bind(utc_start).bind(utc_end)
                 .fetch_all(pool).await?
             } else {
-                let placeholders = excluded_vec
-                    .iter()
-                    .map(|_| "?")
-                    .collect::<Vec<_>>()
-                    .join(",");
                 let sql = format!(
-                    "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID NOT IN ({}) GROUP BY DataTime",
-                    placeholders
+                    "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ?{} GROUP BY DataTime",
+                    excluded_clause("AppModelID", &excluded_vec)
                 );
-                let mut query = sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
-                    .bind(utc_start)
-                    .bind(utc_end);
-                for id in &excluded_vec {
-                    query = query.bind(*id);
-                }
-                query.fetch_all(pool).await?
+                bind_excluded!(
+                    sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
+                        .bind(utc_start)
+                        .bind(utc_end),
+                    &excluded_vec
+                )
+                .fetch_all(pool)
+                .await?
             };
 
             // 按桶记录的时间归到本地小时 半小时时区和 DST 回拨都能对上
@@ -613,22 +607,18 @@ impl DataService {
                 .bind(utc_start).bind(utc_end)
                 .fetch_all(pool).await?
             } else {
-                let placeholders = excluded_vec
-                    .iter()
-                    .map(|_| "?")
-                    .collect::<Vec<_>>()
-                    .join(",");
                 let sql = format!(
-                    "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID NOT IN ({}) GROUP BY DataTime",
-                    placeholders
+                    "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ?{} GROUP BY DataTime",
+                    excluded_clause("AppModelID", &excluded_vec)
                 );
-                let mut query = sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
-                    .bind(utc_start)
-                    .bind(utc_end);
-                for id in &excluded_vec {
-                    query = query.bind(*id);
-                }
-                query.fetch_all(pool).await?
+                bind_excluded!(
+                    sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
+                        .bind(utc_start)
+                        .bind(utc_end),
+                    &excluded_vec
+                )
+                .fetch_all(pool)
+                .await?
             };
 
             let days = (end - start).num_days() + 1;
@@ -668,22 +658,18 @@ impl DataService {
             .bind(utc_start).bind(utc_end)
             .fetch_all(pool).await?
         } else {
-            let placeholders = excluded_vec
-                .iter()
-                .map(|_| "?")
-                .collect::<Vec<_>>()
-                .join(",");
             let sql = format!(
-                "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID NOT IN ({}) GROUP BY DataTime",
-                placeholders
+                "SELECT DataTime, SUM(Time) as total FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ?{} GROUP BY DataTime",
+                excluded_clause("AppModelID", &excluded_vec)
             );
-            let mut query = sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
-                .bind(utc_start)
-                .bind(utc_end);
-            for id in &excluded_vec {
-                query = query.bind(*id);
-            }
-            query.fetch_all(pool).await?
+            bind_excluded!(
+                sqlx::query_as::<_, (DateTime<Utc>, i64)>(&sql)
+                    .bind(utc_start)
+                    .bind(utc_end),
+                &excluded_vec
+            )
+            .fetch_all(pool)
+            .await?
         };
 
         let mut result = vec![0.0; 12];
@@ -717,32 +703,30 @@ impl DataService {
         let utc_start = tz_date_to_utc_range(start, &tz).0;
         let utc_end = tz_date_to_utc_range(end, &tz).1;
 
-        let rows: Vec<i64> = if !has_excluded {
+        let count: i64 = if !has_excluded {
             sqlx::query_scalar(
-                "SELECT DISTINCT AppModelID FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0"
+                "SELECT COUNT(DISTINCT AppModelID) FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0",
             )
-            .bind(utc_start).bind(utc_end)
-            .fetch_all(pool).await?
+            .bind(utc_start)
+            .bind(utc_end)
+            .fetch_one(pool)
+            .await?
         } else {
-            let placeholders = excluded_vec
-                .iter()
-                .map(|_| "?")
-                .collect::<Vec<_>>()
-                .join(",");
             let sql = format!(
-                "SELECT DISTINCT AppModelID FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0 AND AppModelID NOT IN ({})",
-                placeholders
+                "SELECT COUNT(DISTINCT AppModelID) FROM HoursLogModels WHERE DataTime >= ? AND DataTime < ? AND AppModelID != 0{}",
+                excluded_clause("AppModelID", &excluded_vec)
             );
-            let mut query = sqlx::query_scalar::<_, i64>(&sql)
-                .bind(utc_start)
-                .bind(utc_end);
-            for id in &excluded_vec {
-                query = query.bind(*id);
-            }
-            query.fetch_all(pool).await?
+            bind_excluded!(
+                sqlx::query_scalar::<_, i64>(&sql)
+                    .bind(utc_start)
+                    .bind(utc_end),
+                &excluded_vec
+            )
+            .fetch_one(pool)
+            .await?
         };
 
-        Ok(rows.len() as i64)
+        Ok(count)
     }
 
     pub async fn get_category_hours_data(
@@ -774,28 +758,24 @@ impl DataService {
             .fetch_all(pool)
             .await?
         } else {
-            let placeholders = excluded_vec
-                .iter()
-                .map(|_| "?")
-                .collect::<Vec<_>>()
-                .join(",");
             let sql = format!(
                 r#"
                 SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
                 FROM HoursLogModels h
                 JOIN AppModels a ON h.AppModelID = a.ID
-                WHERE h.DataTime >= ? AND h.DataTime < ? AND h.AppModelID NOT IN ({})
+                WHERE h.DataTime >= ? AND h.DataTime < ?{}
                 GROUP BY a.CategoryID, h.DataTime
                 "#,
-                placeholders
+                excluded_clause("h.AppModelID", &excluded_vec)
             );
-            let mut query = sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
-                .bind(utc_start)
-                .bind(utc_end);
-            for id in &excluded_vec {
-                query = query.bind(*id);
-            }
-            query.fetch_all(pool).await?
+            bind_excluded!(
+                sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
+                    .bind(utc_start)
+                    .bind(utc_end),
+                &excluded_vec
+            )
+            .fetch_all(pool)
+            .await?
         };
 
         let mut map: HashMap<i64, Vec<f64>> = HashMap::new();
@@ -850,28 +830,24 @@ impl DataService {
             .fetch_all(pool)
             .await?
         } else {
-            let placeholders = excluded_vec
-                .iter()
-                .map(|_| "?")
-                .collect::<Vec<_>>()
-                .join(",");
             let sql = format!(
                 r#"
                 SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
                 FROM HoursLogModels h
                 JOIN AppModels a ON h.AppModelID = a.ID
-                WHERE h.DataTime >= ? AND h.DataTime < ? AND h.AppModelID NOT IN ({})
+                WHERE h.DataTime >= ? AND h.DataTime < ?{}
                 GROUP BY a.CategoryID, h.DataTime
                 "#,
-                placeholders
+                excluded_clause("h.AppModelID", &excluded_vec)
             );
-            let mut query = sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
-                .bind(utc_start)
-                .bind(utc_end);
-            for id in &excluded_vec {
-                query = query.bind(*id);
-            }
-            query.fetch_all(pool).await?
+            bind_excluded!(
+                sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
+                    .bind(utc_start)
+                    .bind(utc_end),
+                &excluded_vec
+            )
+            .fetch_all(pool)
+            .await?
         };
 
         let days = (end - start).num_days() + 1;
@@ -932,28 +908,24 @@ impl DataService {
             .fetch_all(pool)
             .await?
         } else {
-            let placeholders = excluded_vec
-                .iter()
-                .map(|_| "?")
-                .collect::<Vec<_>>()
-                .join(",");
             let sql = format!(
                 r#"
                 SELECT a.CategoryID, h.DataTime, SUM(h.Time) as total
                 FROM HoursLogModels h
                 JOIN AppModels a ON h.AppModelID = a.ID
-                WHERE h.DataTime >= ? AND h.DataTime < ? AND h.AppModelID NOT IN ({})
+                WHERE h.DataTime >= ? AND h.DataTime < ?{}
                 GROUP BY a.CategoryID, h.DataTime
                 "#,
-                placeholders
+                excluded_clause("h.AppModelID", &excluded_vec)
             );
-            let mut query = sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
-                .bind(utc_start)
-                .bind(utc_end);
-            for id in &excluded_vec {
-                query = query.bind(*id);
-            }
-            query.fetch_all(pool).await?
+            bind_excluded!(
+                sqlx::query_as::<_, (i64, DateTime<Utc>, i64)>(&sql)
+                    .bind(utc_start)
+                    .bind(utc_end),
+                &excluded_vec
+            )
+            .fetch_all(pool)
+            .await?
         };
 
         let mut map: HashMap<i64, Vec<f64>> = HashMap::new();

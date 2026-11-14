@@ -78,6 +78,7 @@ pub fn create_app(
 
     Router::new()
         .merge(routes::app_data::router())
+        .merge(routes::bundles::router())
         .merge(routes::category::router())
         .merge(routes::category_summary::router())
         .merge(routes::app_timer::router())

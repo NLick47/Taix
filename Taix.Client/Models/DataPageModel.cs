@@ -178,6 +178,7 @@ public partial class DataPageModel : ModelBase
         get => _tabbarSelectedIndex;
         set
         {
+            if (_tabbarSelectedIndex == value) return;
             _tabbarSelectedIndex = value;
             OnPropertyChanged();
         }
@@ -203,6 +204,7 @@ public partial class DataPageModel : ModelBase
         get => _selectedPeriod;
         set
         {
+            if (ReferenceEquals(_selectedPeriod, value)) return;
             _selectedPeriod = value;
             OnPropertyChanged();
         }

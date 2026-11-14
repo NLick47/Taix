@@ -137,7 +137,8 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
         TSource source,
         Expression<Func<TSource, TProperty>> property,
         Func<TProperty, Task> handler,
-        bool skipInitial = true) where TSource : ModelBase
+        bool skipInitial = true,
+        bool cancelLoads = true) where TSource : ModelBase
     {
         var observable = ObservablePropertyChangedExtensions.WhenPropertyChanged(source, property);
         if (skipInitial) observable = observable.Skip(1);
@@ -145,7 +146,7 @@ public class ModelBase : UINotifyPropertyChanged, IDisposable
         return observable
             .Where(_ => !source.IsRestoringState)
             .ObserveOn(AvaloniaContextScheduler.Instance)
-            .Do(_ => source.CancelAndResetLoadToken())
+            .Do(_ => { if (cancelLoads) source.CancelAndResetLoadToken(); })
             .Select(value => RxObservable.FromAsync(async _ =>
             {
                 try

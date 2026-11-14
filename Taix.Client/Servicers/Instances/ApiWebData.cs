@@ -78,17 +78,6 @@ public class ApiWebData : IWebData
         return await _webSiteData.GetWebSitesByCategoryIDAsync(categoryId);
     }
 
-    public async Task<int> GetWebSitesCount(int categoryId)
-    {
-        var sites = await _webSiteData.GetWebSitesByCategoryIDAsync(categoryId);
-        return sites.Count;
-    }
-
-    public async Task<int> GetWebSitesCountAsync(int categoryId)
-    {
-        return await _apiClient.GetWebSitesCountAsync(categoryId);
-    }
-
     public async Task<IReadOnlyCollection<WebSiteModel>> GetUnSetCategoryWebSitesAsync(CancellationToken cancellationToken = default)
     {
         return await _apiClient.GetUnSetCategoryWebSitesAsync(cancellationToken);
@@ -97,12 +86,6 @@ public class ApiWebData : IWebData
     public async Task UpdateWebSitesCategoryAsync(int[] siteIds, int categoryId)
     {
         await _apiClient.UpdateWebSitesCategoryAsync(siteIds, categoryId);
-    }
-
-    public async Task<IReadOnlyList<InfrastructureDataModel>> GetCategoriesStatisticsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
-    {
-        var result = await _apiClient.GetCategoriesStatisticsAsync(start, end, cancellationToken);
-        return result.AsReadOnly();
     }
 
     public async Task<WebSiteCategoryModel> GetWebSiteCategoryAsync(int categoryId, CancellationToken cancellationToken = default)
@@ -117,26 +100,12 @@ public class ApiWebData : IWebData
         return result.AsReadOnly();
     }
 
-    public async Task<IReadOnlyList<ColumnDataModel>> GetBrowseDataByCategoryStatisticsAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
-    {
-        var result = await _apiClient.GetBrowseDataByCategoryStatisticsAsync(start, end, cancellationToken);
-        return result.AsReadOnly();
-    }
+    public Task<WebChartBundleModel> GetWebChartBundleAsync(DateTime start, DateTime end, int take = 10, CancellationToken cancellationToken = default) =>
+        _apiClient.GetWebChartBundleAsync(start, end, take, cancellationToken);
 
-    public async Task<int> GetBrowseDurationTotalAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
-    {
-        return await _apiClient.GetBrowseDurationTotalAsync(start, end, cancellationToken);
-    }
+    public Task<List<WebCategoryWithCountModel>> GetWebCategoriesWithCountsAsync(CancellationToken cancellationToken = default) =>
+        _apiClient.GetWebCategoriesWithCountsAsync(cancellationToken);
 
-    public async Task<int> GetBrowseSitesTotalAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
-    {
-        return await _apiClient.GetBrowseSitesTotalAsync(start, end, cancellationToken);
-    }
-
-    public async Task<int> GetBrowsePagesTotalAsync(DateTime start, DateTime end, CancellationToken cancellationToken = default)
-    {
-        return await _apiClient.GetBrowsePagesTotalAsync(start, end, cancellationToken);
-    }
 
     public async Task<IReadOnlyList<WebBrowseLogModel>> GetBrowseLogListAsync(DateTime start, DateTime end, int siteId = 0, CancellationToken cancellationToken = default)
     {

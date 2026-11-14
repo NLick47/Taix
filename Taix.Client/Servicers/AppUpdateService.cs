@@ -94,16 +94,7 @@ public class AppUpdateService : IAppUpdateService
             categoryId = category?.ID ?? 0;
         }
 
-        var updatedApps = new List<AppModel>();
-        foreach (var appId in appIds)
-        {
-            var app = await _appData.GetAppAsync(appId);
-            if (app == null) continue;
-
-            var updated = app with { CategoryID = categoryId, Category = category };
-            await _appData.UpdateAppAsync(updated);
-            updatedApps.Add(updated);
-        }
+        var updatedApps = await _appData.BatchUpdateCategoryAsync(appIds.ToArray(), categoryId);
 
         foreach (var app in updatedApps)
         {

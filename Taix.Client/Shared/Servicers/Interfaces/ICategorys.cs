@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Taix.Client.Shared.Models;
 
 namespace Taix.Client.Shared.Servicers.Interfaces;
+using Taix.Client.Shared.Models.Data;
 
 public interface ICategorys
 {
@@ -24,6 +25,8 @@ public interface ICategorys
     Task DeleteAsync(CategoryModel category);
 
     Task<int> ApplyDirectoryMatchAsync(string[]? patterns = null);
+
+    Task<List<CategoryWithCountModel>> GetCategoriesWithCountsAsync(CancellationToken cancellationToken = default);
 
     void RefreshCache();
 }
