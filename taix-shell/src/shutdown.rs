@@ -1,14 +1,25 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
 const POLL_INTERVAL: Duration = Duration::from_millis(500);
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Shutdown {
     flag: Arc<AtomicBool>,
+    wakeup: Arc<(Mutex<()>, Condvar)>,
     /// 全局退出传播到子循环；插件单停只 request 自己的实例
     parent: Option<Box<Shutdown>>,
+}
+
+impl Default for Shutdown {
+    fn default() -> Self {
+        Self {
+            flag: Arc::new(AtomicBool::new(false)),
+            wakeup: Arc::new((Mutex::new(()), Condvar::new())),
+            parent: None,
+        }
+    }
 }
 
 impl Shutdown {
@@ -20,12 +31,17 @@ impl Shutdown {
     pub fn child(&self) -> Self {
         Self {
             flag: Arc::new(AtomicBool::new(false)),
+            wakeup: self.wakeup.clone(),
             parent: Some(Box::new(self.clone())),
         }
     }
 
     pub fn request(&self) {
         self.flag.store(true, Ordering::Release);
+        let (lock, cvar) = &*self.wakeup;
+        let guard = lock.lock().unwrap_or_else(|e| e.into_inner());
+        drop(guard);
+        cvar.notify_all();
     }
 
     pub fn is_requested(&self) -> bool {
@@ -44,6 +60,14 @@ impl Shutdown {
                 return true;
             }
             std::thread::sleep((deadline - now).min(POLL_INTERVAL));
+        }
+    }
+
+    pub fn wait(&self) {
+        let (lock, cvar) = &*self.wakeup;
+        let mut guard = lock.lock().unwrap_or_else(|e| e.into_inner());
+        while !self.is_requested() {
+            guard = cvar.wait(guard).unwrap_or_else(|e| e.into_inner());
         }
     }
 }

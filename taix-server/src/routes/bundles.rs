@@ -176,18 +176,14 @@ async fn data_chart_bundle(
             Ok(rows) => rows.iter().sum(),
             Err(e) => return err_json(e),
         };
-        web_prev.duration_total = match WebDataService::get_browse_duration_total(&pool, ps, pe, tz_id, &config_service).await {
-            Ok(v) => v,
-            Err(e) => return err_json(e),
-        };
-        web_prev.sites_total = match WebDataService::get_browse_sites_total(&pool, ps, pe, tz_id, &config_service).await {
-            Ok(v) => v,
-            Err(e) => return err_json(e),
-        };
-        web_prev.pages_total = match WebDataService::get_browse_pages_total(&pool, ps, pe, tz_id, &config_service).await {
-            Ok(v) => v,
-            Err(e) => return err_json(e),
-        };
+        let (duration_total, sites_total, pages_total) =
+            match WebDataService::get_browse_totals(&pool, ps, pe, tz_id, &config_service).await {
+                Ok(v) => v,
+                Err(e) => return err_json(e),
+            };
+        web_prev.duration_total = duration_total;
+        web_prev.sites_total = sites_total;
+        web_prev.pages_total = pages_total;
     }
 
     Json(ApiResponse::ok(ChartBundle {
@@ -239,18 +235,11 @@ async fn web_chart_bundle(
         Ok(data) => data,
         Err(e) => return err_json(e),
     };
-    let duration_total = match WebDataService::get_browse_duration_total(&pool, q.start, q.end, tz_id, &config_service).await {
-        Ok(v) => v,
-        Err(e) => return err_json(e),
-    };
-    let sites_total = match WebDataService::get_browse_sites_total(&pool, q.start, q.end, tz_id, &config_service).await {
-        Ok(v) => v,
-        Err(e) => return err_json(e),
-    };
-    let pages_total = match WebDataService::get_browse_pages_total(&pool, q.start, q.end, tz_id, &config_service).await {
-        Ok(v) => v,
-        Err(e) => return err_json(e),
-    };
+    let (duration_total, sites_total, pages_total) =
+        match WebDataService::get_browse_totals(&pool, q.start, q.end, tz_id, &config_service).await {
+            Ok(v) => v,
+            Err(e) => return err_json(e),
+        };
 
     Json(ApiResponse::ok(WebChartBundle {
         categories,

@@ -21,6 +21,7 @@ pub struct PluginSupervisor {
     /// 全量扫描缓存：(扫描时的目录 mtime, 结果)。mtime 未变则每拍只做一次 stat，
     /// 不再重复 read_dir + 解析全部清单。启用集与 entry 探测仍每拍刷新，启停响应不受影响
     scan_cache: std::sync::Mutex<Option<(Option<std::time::SystemTime>, Vec<Installed>)>>,
+    registry_cache: std::sync::Mutex<Option<(Option<std::time::SystemTime>, HashMap<String, bool>)>>,
 }
 
 impl PluginSupervisor {
@@ -34,6 +35,7 @@ impl PluginSupervisor {
             plugins_dir,
             shutdown,
             scan_cache: std::sync::Mutex::new(None),
+            registry_cache: std::sync::Mutex::new(None),
         }
     }
 
@@ -84,7 +86,7 @@ impl PluginSupervisor {
     }
 
     fn desired(&self) -> HashMap<String, (Installed, PathBuf)> {
-        let enabled = read_enabled(&self.data_dir);
+        let enabled = self.read_enabled();
         let mut out = HashMap::new();
 
         for installed in self.scan_cached() {
@@ -210,15 +212,37 @@ impl PluginSupervisor {
             let _ = r.handle.join();
         }
     }
+
+    fn read_enabled(&self) -> HashMap<String, bool> {
+        let path = self.data_dir.join("plugins").join("registry.json");
+        let mtime = std::fs::metadata(&path).and_then(|m| m.modified()).ok();
+        if let Ok(cache) = self.registry_cache.lock() {
+            if let Some((cached_mtime, enabled)) = cache.as_ref() {
+                if *cached_mtime == mtime {
+                    return enabled.clone();
+                }
+            }
+        }
+
+        let enabled = read_enabled_file(&path);
+        if let Ok(mut cache) = self.registry_cache.lock() {
+            *cache = Some((mtime, enabled.clone()));
+        }
+        enabled
+    }
 }
 
 fn mtime_of(path: &std::path::Path) -> Option<std::time::SystemTime> {
     std::fs::metadata(path).and_then(|m| m.modified()).ok()
 }
 
+#[cfg(test)]
 fn read_enabled(data_dir: &std::path::Path) -> HashMap<String, bool> {
-    let path = data_dir.join("plugins").join("registry.json");
-    let Ok(content) = std::fs::read_to_string(&path) else {
+    read_enabled_file(&data_dir.join("plugins").join("registry.json"))
+}
+
+fn read_enabled_file(path: &std::path::Path) -> HashMap<String, bool> {
+    let Ok(content) = std::fs::read_to_string(path) else {
         return HashMap::new();
     };
     #[derive(serde::Deserialize)]
@@ -342,6 +366,7 @@ mod tests {
             plugins_dir: dir.join("plugins"),
             shutdown: Shutdown::new(),
             scan_cache: std::sync::Mutex::new(None),
+            registry_cache: std::sync::Mutex::new(None),
         };
 
         // 空目录：记录 mtime，重复调用复用缓存

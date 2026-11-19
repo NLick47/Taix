@@ -1,7 +1,7 @@
 use std::path::PathBuf;
-use std::sync::mpsc::{self, RecvTimeoutError};
+use std::sync::mpsc;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use crate::constants::{default_data_dir, SHELL_MUTEX_NAME};
 use crate::platform::{run_tray, try_acquire_single_instance, TrayCmd};
@@ -67,7 +67,8 @@ pub fn run(data_dir: Option<PathBuf>) -> anyhow::Result<()> {
     tracing::info!(target: "taix_shell::lifecycle", "plugin supervisor thread spawned");
 
     let action_shutdown = shutdown.clone();
-    let action_handle = thread::spawn(move || run_action_loop(cmd_rx, action_shutdown));
+    let action_tx = cmd_tx.clone();
+    let action_handle = thread::spawn(move || run_action_loop(cmd_rx, action_shutdown, action_tx));
     tracing::info!(target: "taix_shell::lifecycle", "tray action thread spawned");
 
     // 阻塞到托盘事件循环结束
@@ -123,11 +124,23 @@ pub fn run(data_dir: Option<PathBuf>) -> anyhow::Result<()> {
 
 /// 消费托盘菜单动作。
 ///
-fn run_action_loop(rx: mpsc::Receiver<TrayCmd>, shutdown: Shutdown) {
+fn run_action_loop(
+    rx: mpsc::Receiver<TrayCmd>,
+    shutdown: Shutdown,
+    wake_tx: mpsc::SyncSender<TrayCmd>,
+) {
     tracing::debug!(target: "taix_shell::runner", "tray action loop started");
-    while !shutdown.is_requested() {
-        match rx.recv_timeout(Duration::from_millis(100)) {
-            Ok(TrayCmd::LaunchClient) => {
+    let waiter_shutdown = shutdown.clone();
+    let waiter = thread::spawn(move || {
+        waiter_shutdown.wait();
+        let _ = wake_tx.try_send(TrayCmd::Quit);
+    });
+    while let Ok(cmd) = rx.recv() {
+        if shutdown.is_requested() && !matches!(cmd, TrayCmd::Quit) {
+            break;
+        }
+        match cmd {
+            TrayCmd::LaunchClient => {
                 tracing::info!(target: "taix_shell::runner", "tray action received: LaunchClient");
                 let started = Instant::now();
                 match crate::client::launch_or_wake() {
@@ -144,15 +157,9 @@ fn run_action_loop(rx: mpsc::Receiver<TrayCmd>, shutdown: Shutdown) {
                     ),
                 }
             }
-            Err(RecvTimeoutError::Timeout) => continue,
-            Err(RecvTimeoutError::Disconnected) => {
-                tracing::info!(
-                    target: "taix_shell::runner",
-                    "tray command channel disconnected; action loop exiting"
-                );
-                return;
-            }
+            TrayCmd::Quit => break,
         }
     }
+    let _ = waiter.join();
     tracing::info!(target: "taix_shell::runner", "shutdown observed; action loop exiting");
 }

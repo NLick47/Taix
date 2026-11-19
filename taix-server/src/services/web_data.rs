@@ -783,21 +783,6 @@ impl WebDataService {
         let site_clause = excluded_clause("wbl.SiteId", &excluded_site_ids);
 
         let sql = format!(
-            r#"SELECT COALESCE(ws.CategoryID, 0) as cat_id, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
-            LEFT JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
-            WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?{site_clause}
-            GROUP BY cat_id"#
-        );
-        let categories: Vec<(i64, i64)> = bind_excluded!(
-            sqlx::query_as::<_, (i64, i64)>(&sql)
-                .bind(utc_start)
-                .bind(utc_end),
-            &excluded_site_ids
-        )
-        .fetch_all(pool)
-        .await?;
-
-        let sql = format!(
             r#"SELECT COALESCE(ws.CategoryID, 0) as cat_id, wbl.LogTime, SUM(wbl.Duration) as total FROM WebBrowseLogModels wbl
             LEFT JOIN WebSiteModels ws ON wbl.SiteId = ws.ID
             WHERE wbl.LogTime >= ? AND wbl.LogTime <= ?{site_clause}
@@ -812,11 +797,17 @@ impl WebDataService {
         .fetch_all(pool)
         .await?;
 
+        let mut seen_categories = std::collections::HashSet::new();
+        let mut categories: Vec<i64> = data.iter()
+            .filter_map(|(cid, _, _)| seen_categories.insert(*cid).then_some(*cid))
+            .collect();
+        categories.sort_unstable();
+
         let mut result = Vec::new();
         let mut result_map: HashMap<i64, &mut ColumnDataModel> = HashMap::new();
 
         if start == end {
-            for (cat_id, _) in &categories {
+            for cat_id in &categories {
                 result.push(ColumnDataModel { app_id: None, category_id: Some(*cat_id), values: vec![0.0; 24] });
             }
             for item in &mut result {
@@ -835,7 +826,7 @@ impl WebDataService {
         } else {
             let days = (end - start).num_days() + 1;
             if days <= constants::DAY_VIEW_THRESHOLD {
-                for (cat_id, _) in &categories {
+                for cat_id in &categories {
                     result.push(ColumnDataModel { app_id: None, category_id: Some(*cat_id), values: vec![0.0; days as usize] });
                 }
                 for item in &mut result {
@@ -854,7 +845,7 @@ impl WebDataService {
                     }
                 }
             } else {
-                for (cat_id, _) in &categories {
+                for cat_id in &categories {
                     result.push(ColumnDataModel { app_id: None, category_id: Some(*cat_id), values: vec![0.0; 12] });
                 }
                 for item in &mut result {
@@ -946,6 +937,34 @@ impl WebDataService {
         .fetch_one(pool)
         .await?;
         Ok(count.0)
+    }
+
+    pub async fn get_browse_totals(
+        pool: &SqlitePool,
+        start: NaiveDateTime,
+        end: NaiveDateTime,
+        tz_id: &str,
+        config_service: &ConfigService,
+    ) -> Result<(i64, i64, i64), AppError> {
+        let excluded_site_ids = get_excluded_site_ids(pool, config_service).await;
+
+        let tz = parse_timezone(tz_id);
+        let utc_start = tz_day_start(start.date(), &tz);
+        let utc_end = tz_day_end(end.date(), &tz);
+
+        let sql = format!(
+            "SELECT COALESCE(SUM(Duration), 0), COUNT(DISTINCT SiteId), COUNT(DISTINCT UrlId) FROM WebBrowseLogModels WHERE LogTime >= ? AND LogTime <= ?{}",
+            excluded_clause("SiteId", &excluded_site_ids)
+        );
+        let row: (i64, i64, i64) = bind_excluded!(
+            sqlx::query_as::<_, (i64, i64, i64)>(&sql)
+                .bind(utc_start)
+                .bind(utc_end),
+            &excluded_site_ids
+        )
+        .fetch_one(pool)
+        .await?;
+        Ok(row)
     }
 
     #[allow(non_snake_case)]

@@ -1,6 +1,7 @@
 #[derive(Debug)]
 pub enum TrayCmd {
     LaunchClient,
+    Quit,
 }
 
 #[cfg(target_os = "windows")]
