@@ -21,7 +21,7 @@ pub struct PluginSupervisor {
     /// 全量扫描缓存：(扫描时的目录 mtime, 结果)。mtime 未变则每拍只做一次 stat，
     /// 不再重复 read_dir + 解析全部清单。启用集与 entry 探测仍每拍刷新，启停响应不受影响
     scan_cache: std::sync::Mutex<Option<(Option<std::time::SystemTime>, Vec<Installed>)>>,
-    registry_cache: std::sync::Mutex<Option<(Option<std::time::SystemTime>, HashMap<String, bool>)>>,
+    registry_cache: std::sync::Mutex<Option<(Option<std::time::SystemTime>, Option<u64>, HashMap<String, bool>)>>,
 }
 
 impl PluginSupervisor {
@@ -215,10 +215,12 @@ impl PluginSupervisor {
 
     fn read_enabled(&self) -> HashMap<String, bool> {
         let path = self.data_dir.join("plugins").join("registry.json");
-        let mtime = std::fs::metadata(&path).and_then(|m| m.modified()).ok();
+        let meta = std::fs::metadata(&path).ok();
+        let mtime = meta.as_ref().and_then(|m| m.modified().ok());
+        let len = meta.as_ref().map(|m| m.len());
         if let Ok(cache) = self.registry_cache.lock() {
-            if let Some((cached_mtime, enabled)) = cache.as_ref() {
-                if *cached_mtime == mtime {
+            if let Some((cached_mtime, cached_len, enabled)) = cache.as_ref() {
+                if *cached_mtime == mtime && *cached_len == len {
                     return enabled.clone();
                 }
             }
@@ -226,7 +228,7 @@ impl PluginSupervisor {
 
         let enabled = read_enabled_file(&path);
         if let Ok(mut cache) = self.registry_cache.lock() {
-            *cache = Some((mtime, enabled.clone()));
+            *cache = Some((mtime, len, enabled.clone()));
         }
         enabled
     }

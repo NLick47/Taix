@@ -157,7 +157,10 @@ fn run_action_loop(
                     ),
                 }
             }
-            TrayCmd::Quit => break,
+            TrayCmd::Quit => {
+                shutdown.request();
+                break;
+            }
         }
     }
     let _ = waiter.join();
