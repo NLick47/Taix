@@ -3,7 +3,7 @@ use cocoa::{
         NSApp, NSApplication, NSApplicationActivateIgnoringOtherApps, NSMenu, NSMenuItem,
         NSRunningApplication, NSStatusBar, NSStatusItem,
     },
-    base::{id, nil, YES},
+    base::{id, nil, NO, YES},
     foundation::{NSPoint, NSString},
 };
 use objc::declare::ClassDecl;
@@ -18,6 +18,7 @@ use crate::platform::TrayCmd;
 use crate::shutdown::Shutdown;
 
 use std::ffi::c_void;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// `NSEventTypeApplicationDefined`
 const NS_EVENT_TYPE_APPLICATION_DEFINED: usize = 15;
@@ -128,107 +129,82 @@ impl INSObject for MenuAppearanceDelegate {
     }
 }
 
-const SHUTDOWN_POLL_SECS: f64 = 0.25;
-
-struct WatcherState {
-    shutdown: Shutdown,
-    reported_termination: std::sync::atomic::AtomicBool,
-    reported_stop: std::sync::atomic::AtomicBool,
+unsafe fn create_wake_pipe() -> anyhow::Result<(i32, i32)> {
+    let mut fds = [0 as libc::c_int; 2];
+    if libc::pipe(fds.as_mut_ptr()) != 0 {
+        anyhow::bail!("pipe() failed: {}", std::io::Error::last_os_error());
+    }
+    for fd in fds {
+        if libc::fcntl(fd, libc::F_SETFD, libc::FD_CLOEXEC) != 0 {
+            let _ = libc::close(fds[0]);
+            let _ = libc::close(fds[1]);
+            anyhow::bail!("fcntl(FD_CLOEXEC) failed: {}", std::io::Error::last_os_error());
+        }
+    }
+    Ok((fds[0], fds[1]))
 }
 
-pub(crate) enum ShutdownWatcher {}
-unsafe impl objc::Message for ShutdownWatcher {}
+unsafe fn spawn_signal_bridge(shutdown: Shutdown) -> anyhow::Result<()> {
+    let (read_fd, write_fd) = create_wake_pipe()?;
+    super::set_termination_wake_pipe(write_fd);
 
-impl INSObject for ShutdownWatcher {
-    fn class() -> &'static Class {
-        let cname = "TaixShutdownWatcher";
-
-        let mut klass = Class::get(cname);
-        if klass.is_none() {
-            let superclass = class!(NSObject);
-            let mut decl = ClassDecl::new(cname, superclass).unwrap();
-            decl.add_ivar::<usize>("_stateptr");
-
-            extern "C" fn tick(this: &Object, _cmd: Sel, _timer: id) {
-                unsafe {
-                    let ptr: usize = *this.get_ivar("_stateptr");
-                    let state = &*(ptr as *const WatcherState);
-
-                    if super::termination_requested() {
-                        if !state
-                            .reported_termination
-                            .swap(true, std::sync::atomic::Ordering::SeqCst)
-                        {
-                            tracing::info!(
-                                target: "taix_shell::signal",
-                                "external termination (SIGTERM/SIGINT) observed on the main run loop; translating into a shutdown request"
-                            );
-                        }
-                        state.shutdown.request();
+    std::thread::Builder::new()
+        .name("taix-signal-bridge".to_string())
+        .spawn(move || {
+            let reported = AtomicBool::new(false);
+            if super::termination_requested() {
+                if !reported.swap(true, Ordering::SeqCst) {
+                    tracing::info!(
+                        target: "taix_shell::signal",
+                        "external termination (SIGTERM/SIGINT) observed via wake pipe; translating into a shutdown request"
+                    );
+                }
+                shutdown.request();
+            }
+            loop {
+                let mut byte = [0u8; 1];
+                let n = unsafe { libc::read(read_fd, byte.as_mut_ptr() as *mut c_void, 1) };
+                if n == 1 {
+                    if !reported.swap(true, Ordering::SeqCst) {
+                        tracing::info!(
+                            target: "taix_shell::signal",
+                            "external termination (SIGTERM/SIGINT) observed via wake pipe; translating into a shutdown request"
+                        );
                     }
-
-                    if state.shutdown.is_requested() {
-                        if !state
-                            .reported_stop
-                            .swap(true, std::sync::atomic::Ordering::SeqCst)
-                        {
-                            tracing::info!(
-                                target: "taix_shell::tray",
-                                "shutdown requested; stopping the NSApp run loop"
-                            );
-                        }
-                        stop_run_loop();
+                    shutdown.request();
+                } else {
+                    std::thread::sleep(std::time::Duration::from_secs(1));
+                    if super::termination_requested() {
+                        shutdown.request();
                     }
                 }
             }
-
-            unsafe {
-                decl.add_method(sel!(tick:), tick as extern "C" fn(&Object, Sel, id));
-            }
-
-            decl.register();
-            klass = Class::get(cname);
-        }
-        klass.unwrap()
-    }
+        })?;
+    Ok(())
 }
 
-impl ShutdownWatcher {
-    fn new(shutdown: Shutdown) -> Id<Self> {
-        let state = WatcherState {
-            shutdown,
-            reported_termination: std::sync::atomic::AtomicBool::new(false),
-            reported_stop: std::sync::atomic::AtomicBool::new(false),
-        };
-        let ptr = Box::into_raw(Box::new(state)) as usize;
-        let mut oid = <ShutdownWatcher as INSObject>::new();
-        (*oid).set_stateptr(ptr);
-        oid
-    }
-
-    fn set_stateptr(&mut self, uptr: usize) {
-        unsafe {
-            let obj = &mut *(self as *mut _ as *mut ::objc::runtime::Object);
-            obj.set_ivar("_stateptr", uptr);
-        }
-    }
-}
-
-unsafe fn schedule_shutdown_watcher(shutdown: Shutdown) {
-    let watcher = ShutdownWatcher::new(shutdown);
-    let _: id = msg_send![
-        class!(NSTimer),
-        scheduledTimerWithTimeInterval: SHUTDOWN_POLL_SECS
-        target: watcher
-        selector: sel!(tick:)
-        userInfo: nil
-        repeats: YES
-    ];
-    tracing::debug!(
-        target: "taix_shell::tray",
-        "shutdown watcher scheduled on the main run loop every {}s",
-        SHUTDOWN_POLL_SECS
-    );
+unsafe fn spawn_run_loop_stopper(shutdown: Shutdown) {
+    std::thread::Builder::new()
+        .name("taix-shutdown-watch".to_string())
+        .spawn(move || {
+            shutdown.wait();
+            tracing::info!(
+                target: "taix_shell::tray",
+                "shutdown requested; stopping the NSApp run loop"
+            );
+            let mut cb = Callback::from(Box::new(|| {
+                stop_run_loop();
+            }));
+            let obj: *mut Object = &mut *cb as *mut Callback as *mut Object;
+            let _: () = msg_send![
+                obj,
+                performSelectorOnMainThread: sel!(call)
+                withObject: nil
+                waitUntilDone: NO
+            ];
+            std::mem::forget(cb);
+        })
+        .expect("failed to spawn shutdown watcher thread");
 }
 
 unsafe fn stop_run_loop() {
@@ -328,12 +304,11 @@ pub fn run_tray(
         config.language, config.is_visible
     );
 
-    // 接管 SIGTERM / SIGINT：让 shell 被外部要求终止时也有机会先收掉子进程
-    super::install_termination_handler();
-
     unsafe {
         let app = NSApp();
-        schedule_shutdown_watcher(shutdown.clone());
+        spawn_signal_bridge(shutdown.clone())?;
+        super::install_termination_handler();
+        spawn_run_loop_stopper(shutdown.clone());
 
         if config.is_visible {
             app.activateIgnoringOtherApps_(YES);

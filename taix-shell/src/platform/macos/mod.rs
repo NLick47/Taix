@@ -8,14 +8,26 @@ pub use tray::run_tray;
 
 use cocoa::base::id;
 use objc::{class, msg_send, sel, sel_impl};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 
 use crate::config::Language;
 
 static TERMINATION_REQUESTED: AtomicBool = AtomicBool::new(false);
+static WAKE_PIPE_FD: AtomicI32 = AtomicI32::new(-1);
 
 extern "C" fn on_termination_signal(_signal: libc::c_int) {
     TERMINATION_REQUESTED.store(true, Ordering::SeqCst);
+    let fd = WAKE_PIPE_FD.load(Ordering::SeqCst);
+    if fd >= 0 {
+        let byte = 1u8;
+        unsafe {
+            libc::write(fd, &byte as *const u8 as *const libc::c_void, 1);
+        }
+    }
+}
+
+fn set_termination_wake_pipe(fd: i32) {
+    WAKE_PIPE_FD.store(fd, Ordering::SeqCst);
 }
 
 pub fn install_termination_handler() {

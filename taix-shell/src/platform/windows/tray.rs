@@ -9,11 +9,11 @@ use windows::Win32::UI::Shell::{
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyIcon, DestroyMenu,
-    DestroyWindow, DispatchMessageW, GetCursorPos, GetWindowLongPtrW, LoadImageW, PeekMessageW,
+    DestroyWindow, DispatchMessageW, GetCursorPos, GetMessageW, GetWindowLongPtrW, LoadImageW,
     PostMessageW, PostQuitMessage, RegisterClassW, RegisterWindowMessageW, SetForegroundWindow,
     SetWindowLongPtrW, TrackPopupMenu, TranslateMessage, CREATESTRUCTW, CW_USEDEFAULT,
     GWLP_USERDATA, HICON, IMAGE_ICON, LR_DEFAULTSIZE, LR_LOADFROMFILE, MF_SEPARATOR, MF_STRING,
-    MSG, PM_REMOVE, TPM_LEFTBUTTON, TPM_NONOTIFY, TPM_RETURNCMD, WM_DESTROY, WM_LBUTTONDOWN,
+    MSG, TPM_LEFTBUTTON, TPM_NONOTIFY, TPM_RETURNCMD, WM_APP, WM_DESTROY, WM_LBUTTONDOWN,
     WM_NCCREATE, WM_NULL, WM_RBUTTONUP, WM_USER, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE,
     WS_EX_TOOLWINDOW, WS_EX_TRANSPARENT, WS_OVERLAPPED,
 };
@@ -24,6 +24,7 @@ use crate::platform::TrayCmd;
 use crate::shutdown::Shutdown;
 
 const WM_TRAYICON: u32 = WM_USER + 1;
+const WM_APP_SHUTDOWN: u32 = WM_APP + 1;
 const ID_TRAYICON: u32 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -268,17 +269,12 @@ pub fn run_tray(
     };
     tracing::debug!(target: "taix_shell::tray", "tray icon loaded");
 
-    // 计划任务启动时托盘区域可能还没就绪，先等一小会儿
-    let deadline = std::time::Instant::now() + Duration::from_secs(1);
-    while std::time::Instant::now() < deadline {
-        if shutdown.is_requested() {
-            tracing::info!(
-                target: "taix_shell::tray",
-                "shutdown during taskbar readiness wait; aborting tray startup"
-            );
-            return Ok(());
-        }
-        std::thread::sleep(Duration::from_millis(100));
+    if !shutdown.wait_for(Duration::from_secs(1)) {
+        tracing::info!(
+            target: "taix_shell::tray",
+            "shutdown during taskbar readiness wait; aborting tray startup"
+        );
+        return Ok(());
     }
 
     let userdata = Box::new(TrayUserData {
@@ -306,12 +302,33 @@ pub fn run_tray(
         set_icon_hidden(hwnd, ID_TRAYICON);
     }
 
+    let hwnd_value = hwnd.0 as isize;
+    std::thread::Builder::new()
+        .name("taix-tray-shutdown-watch".to_string())
+        .spawn({
+            let shutdown = shutdown.clone();
+            move || {
+                shutdown.wait();
+                unsafe {
+                    let _ = PostMessageW(
+                        Some(HWND(hwnd_value as *mut std::ffi::c_void)),
+                        WM_APP_SHUTDOWN,
+                        WPARAM(0),
+                        LPARAM(0),
+                    );
+                }
+            }
+        })?;
+
     tracing::info!(target: "taix_shell::tray", "entering message loop");
     unsafe {
         let mut msg: MSG = std::mem::zeroed();
         loop {
-            if shutdown.is_requested() {
-                // 主动销毁窗口，触发 WM_DESTROY → 清理图标与 userdata
+            if GetMessageW(&mut msg, None, 0, 0).0 <= 0 {
+                break;
+            }
+
+            if msg.message == WM_APP_SHUTDOWN {
                 tracing::info!(
                     target: "taix_shell::tray",
                     "shutdown observed in message loop; destroying the tray window"
@@ -320,19 +337,8 @@ pub fn run_tray(
                 break;
             }
 
-            if PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
-                if msg.message == WM_DESTROY {
-                    tracing::debug!(
-                        target: "taix_shell::tray",
-                        "message loop saw WM_DESTROY; breaking out"
-                    );
-                    break;
-                }
-                let _ = TranslateMessage(&msg);
-                DispatchMessageW(&msg);
-            } else {
-                std::thread::sleep(Duration::from_millis(50));
-            }
+            let _ = TranslateMessage(&msg);
+            DispatchMessageW(&msg);
         }
     }
 
