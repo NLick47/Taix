@@ -1292,13 +1292,6 @@ async fn save_icon(icon_url: &str, favicons_dir: &Path, site_id: i64, url_id: i6
         return Ok(());
     }
 
-    let png_filename = format!("site_{}.png", site_id);
-    let png_filepath = favicons_dir.join(&png_filename);
-    if tokio::fs::try_exists(&png_filepath).await.unwrap_or(false) {
-        tracing::debug!("Icon already exists for site {}, skipping download", site_id);
-        return Ok(());
-    }
-
     let is_svg_by_url = icon_url.to_lowercase().ends_with(".svg");
 
     let ext = std::path::Path::new(icon_url)
@@ -1309,6 +1302,14 @@ async fn save_icon(icon_url: &str, favicons_dir: &Path, site_id: i64, url_id: i6
     let mut filename = format!("site_{}.{}", site_id, ext);
     let mut relative_path = format!("WebFavicons/{}", filename);
     let mut filepath = favicons_dir.join(&filename);
+
+    let png_filepath = favicons_dir.join(format!("site_{}.png", site_id));
+    if tokio::fs::try_exists(&filepath).await.unwrap_or(false)
+        || tokio::fs::try_exists(&png_filepath).await.unwrap_or(false)
+    {
+        tracing::debug!("Icon already exists for site {}, skipping download", site_id);
+        return Ok(());
+    }
 
     tokio::fs::create_dir_all(favicons_dir).await?;
 
