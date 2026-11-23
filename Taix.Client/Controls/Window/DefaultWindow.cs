@@ -83,8 +83,11 @@ public class DefaultWindow : Avalonia.Controls.Window
     private Func<string, bool> InputModalValidFnc;
     private string? InputValue;
     private bool IsDialogConfirm;
-    private bool IsShowConfirmDialog, IsShowInputModal, IsShowActionDialog;
+    private bool IsShowInputModal;
     private int ActionDialogResult = -1;
+    private TaskCompletionSource<bool>? _confirmDialogTcs;
+    private TaskCompletionSource<int>? _actionDialogTcs;
+    private TaskCompletionSource<string?>? _inputModalTcs;
     private Border? _statusDot;
     private EventHandler? _onLoadPagedHandler;
     private readonly IDisposable _windowStateSubscription;
@@ -355,7 +358,8 @@ public class DefaultWindow : Avalonia.Controls.Window
 
     public Task<bool> ShowConfirmDialogAsync(string title, string message)
     {
-        IsShowConfirmDialog = true;
+        _confirmDialogTcs?.TrySetResult(false);
+        _confirmDialogTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         ToastGrid.IsVisible = true;
         ToastBorder.IsVisible = false;
         DialogBorder.IsVisible = true;
@@ -366,18 +370,14 @@ public class DefaultWindow : Avalonia.Controls.Window
         DialogBorder.RenderTransform = TransformOperations.Parse("translateY(0px)");
         Masklayer.Opacity = 0;
 
-        return Task.Run(async () =>
-        {
-            while (IsShowConfirmDialog) await Task.Delay(10);
-
-            return IsDialogConfirm;
-        });
+        return _confirmDialogTcs.Task;
     }
 
     public Task<int> ShowActionDialogAsync(string title, string message, string[] buttons)
     {
-        IsShowActionDialog = true;
+        _actionDialogTcs?.TrySetResult(-1);
         ActionDialogResult = -1;
+        _actionDialogTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
         ToastGrid.IsVisible = true;
         ToastBorder.IsVisible = false;
         DialogBorder.IsVisible = false;
@@ -416,12 +416,7 @@ public class DefaultWindow : Avalonia.Controls.Window
             }
         }
 
-        return Task.Run(async () =>
-        {
-            while (IsShowActionDialog) await Task.Delay(10);
-
-            return ActionDialogResult;
-        });
+        return _actionDialogTcs.Task;
     }
 
     private void ToastGrid_MouseLeftButtonDown(object? sender, PointerPressedEventArgs e)
@@ -434,6 +429,8 @@ public class DefaultWindow : Avalonia.Controls.Window
     public Task<string?> ShowInputModalAsync(string title, string message, string value, Func<string, bool> validate)
     {
         IsShowInputModal = true;
+        _inputModalTcs?.TrySetResult(null);
+        _inputModalTcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
         ToastGrid.IsVisible = true;
         ToastBorder.IsVisible = false;
         DialogBorder.IsVisible = false;
@@ -449,12 +446,7 @@ public class DefaultWindow : Avalonia.Controls.Window
 
         Masklayer.Opacity = 0.6;
 
-        return Task.Run(async () =>
-        {
-            while (IsShowInputModal) await Task.Delay(10);
-
-            return IsDialogConfirm ? InputValue : null;
-        });
+        return _inputModalTcs.Task;
     }
 
 
@@ -583,7 +575,7 @@ public class DefaultWindow : Avalonia.Controls.Window
         InputModalBorder.RenderTransform = TransformOperations.Parse("translateY(-150px)");
         Masklayer.Opacity = 0;
         ToastGrid.IsVisible = false;
-        IsShowConfirmDialog = false;
+        _confirmDialogTcs?.TrySetResult(IsDialogConfirm);
     }
 
     private void HideActionDialog()
@@ -591,7 +583,7 @@ public class DefaultWindow : Avalonia.Controls.Window
         ActionDialogBorder.RenderTransform = TransformOperations.Parse("translateY(-150px)");
         Masklayer.Opacity = 0;
         ToastGrid.IsVisible = false;
-        IsShowActionDialog = false;
+        _actionDialogTcs?.TrySetResult(ActionDialogResult);
     }
 
     private void HideInputModal()
@@ -600,6 +592,7 @@ public class DefaultWindow : Avalonia.Controls.Window
         Masklayer.Opacity = 0;
         ToastGrid.IsVisible = false;
         IsShowInputModal = false;
+        _inputModalTcs?.TrySetResult(IsDialogConfirm ? InputValue : null);
     }
 
     private void UpdateConnectionStatus()
@@ -635,6 +628,9 @@ public class DefaultWindow : Avalonia.Controls.Window
         _windowStateSubscription.Dispose();
         base.OnClosed(e);
         IsWindowClosed = true;
+        _confirmDialogTcs?.TrySetResult(false);
+        _actionDialogTcs?.TrySetResult(-1);
+        _inputModalTcs?.TrySetResult(null);
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
